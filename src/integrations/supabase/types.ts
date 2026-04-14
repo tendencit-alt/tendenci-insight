@@ -5584,20 +5584,78 @@ export type Database = {
           },
         ]
       }
+      fin_recurring_contract_timeline: {
+        Row: {
+          contract_id: string
+          created_at: string
+          created_by: string | null
+          description: string
+          event_type: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          contract_id: string
+          created_at?: string
+          created_by?: string | null
+          description: string
+          event_type: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          contract_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          event_type?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_recurring_contract_timeline_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "fin_recurring_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_recurring_contract_timeline_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fin_recurring_contracts: {
         Row: {
           adjustment_rate: number | null
+          adjustment_type: string
           amount: number
           auto_generate: boolean | null
           bank_account_id: string | null
           chart_account_id: string | null
+          contract_mode: string
+          contract_name: string | null
           cost_center_id: string | null
           created_at: string | null
           created_by: string | null
+          day_due: number | null
           description: string
           end_date: string | null
+          entry_type: string
           frequency: string
+          generated_count: number
           id: string
+          last_adjustment_date: string | null
           next_generation_date: string
           notes: string | null
           party_id: string | null
@@ -5606,21 +5664,29 @@ export type Database = {
           start_date: string
           status: string | null
           tenant_id: string | null
+          total_installments: number | null
           updated_at: string | null
         }
         Insert: {
           adjustment_rate?: number | null
+          adjustment_type?: string
           amount?: number
           auto_generate?: boolean | null
           bank_account_id?: string | null
           chart_account_id?: string | null
+          contract_mode?: string
+          contract_name?: string | null
           cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          day_due?: number | null
           description: string
           end_date?: string | null
+          entry_type?: string
           frequency?: string
+          generated_count?: number
           id?: string
+          last_adjustment_date?: string | null
           next_generation_date: string
           notes?: string | null
           party_id?: string | null
@@ -5629,21 +5695,29 @@ export type Database = {
           start_date: string
           status?: string | null
           tenant_id?: string | null
+          total_installments?: number | null
           updated_at?: string | null
         }
         Update: {
           adjustment_rate?: number | null
+          adjustment_type?: string
           amount?: number
           auto_generate?: boolean | null
           bank_account_id?: string | null
           chart_account_id?: string | null
+          contract_mode?: string
+          contract_name?: string | null
           cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          day_due?: number | null
           description?: string
           end_date?: string | null
+          entry_type?: string
           frequency?: string
+          generated_count?: number
           id?: string
+          last_adjustment_date?: string | null
           next_generation_date?: string
           notes?: string | null
           party_id?: string | null
@@ -5652,6 +5726,7 @@ export type Database = {
           start_date?: string
           status?: string | null
           tenant_id?: string | null
+          total_installments?: number | null
           updated_at?: string | null
         }
         Relationships: [
