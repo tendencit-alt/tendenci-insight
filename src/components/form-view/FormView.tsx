@@ -20,10 +20,6 @@ export function FormView({
   showSidePanel = true, timeline, relations, alerts, sidePanelExtra, sidePanelTabs,
   createdAt, createdBy, updatedAt, updatedBy,
   onBack, backLabel,
-  autosave, autosaveDelay = 3000, onAutosave, lastSavedAt,
-  showSidePanel = true, timeline, relations, alerts, sidePanelExtra,
-  createdAt, createdBy, updatedAt, updatedBy,
-  onBack, backLabel,
 }: FormViewProps) {
   const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.key || "");
   const [internalErrors, setInternalErrors] = useState<FormValidationError[]>([]);
