@@ -47,6 +47,7 @@ import ExecutiveCenter from "./pages/ExecutiveCenter";
 import AccessGovernance from "./pages/AccessGovernance";
 import Billing from "./pages/Billing";
 import CustomerLifecycle from "./pages/CustomerLifecycle";
+import CustomerSuccessOps from "./pages/CustomerSuccessOps";
 
 const queryClient = new QueryClient();
 
