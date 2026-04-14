@@ -55,6 +55,7 @@ import { AutomationEngineWidget } from "@/components/automation/AutomationEngine
 import { ScenarioForecastWidget } from "@/components/forecast/ScenarioForecastWidget";
 import { PerformanceIntelligenceWidget } from "@/components/performance/PerformanceIntelligenceWidget";
 import { GovernanceWidget } from "@/components/governance/GovernanceWidget";
+import { MasterDataWidget } from "@/components/masterdata/MasterDataWidget";
 
 // ─── Module definitions ───
 const MODULES = [
@@ -1511,6 +1512,12 @@ export default function HomeLauncher() {
         {!executiveMode && !actionLayer.rapidMode && (
           <div className="mt-2">
             <GovernanceWidget />
+          </div>
+        )}
+
+        {!executiveMode && !actionLayer.rapidMode && (
+          <div className="mt-2">
+            <MasterDataWidget />
           </div>
         )}
 

@@ -163,6 +163,12 @@ export function CommandBar() {
       { id: "gov-permissoes", label: "Matriz de Permissões", keywords: ["permissões", "acesso", "níveis", "controle", "matriz"], icon: Shield, action: () => go("/central-navegacao"), group: "Governança" },
       { id: "gov-aprovacoes", label: "Aprovações Pendentes", keywords: ["aprovações", "pendentes", "fluxo", "autorização"], icon: Shield, action: () => go("/aprovacoes"), group: "Governança" },
       { id: "gov-bloqueios", label: "Bloqueios Estruturais", keywords: ["bloqueios", "trava", "conciliado", "fechado", "faturado"], icon: Shield, action: () => go("/central-navegacao"), group: "Governança" },
+
+      // Master Data
+      { id: "md-fornecedores", label: "Cadastro Fornecedores", keywords: ["fornecedores", "cadastro", "mestre", "suppliers"], icon: Package, action: () => go("/fornecedores"), group: "Dados Mestres" },
+      { id: "md-clientes", label: "Cadastro Clientes", keywords: ["clientes", "cadastro", "mestre"], icon: Users, action: () => go("/clientes"), group: "Dados Mestres" },
+      { id: "md-duplicados", label: "Detecção Duplicados", keywords: ["duplicados", "duplicidade", "unificação", "merge"], icon: Database, action: () => go("/central-navegacao"), group: "Dados Mestres" },
+      { id: "md-centros-custo", label: "Centros de Custo", keywords: ["centros", "custo", "departamento", "setor"], icon: Database, action: () => go("/cadastros-financeiros"), group: "Dados Mestres" },
     ];
 
     // Apply role-based priority
