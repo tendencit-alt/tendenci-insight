@@ -136,6 +136,10 @@ export function CommandBar() {
       { id: "flow-producao", label: "Fluxo Produção", keywords: ["fluxo", "produção", "corte", "montagem", "embalagem"], icon: Factory, action: () => go("/central-navegacao"), group: "Fluxos" },
       { id: "flow-financeiro", label: "Fluxo Financeiro", keywords: ["fluxo", "financeiro", "conciliação", "baixa"], icon: Wallet, action: () => go("/central-navegacao"), group: "Fluxos" },
       { id: "flow-fechamento", label: "Fluxo Fechamento Mensal", keywords: ["fluxo", "fechamento", "mensal", "dre", "resultado"], icon: BarChart3, action: () => go("/central-navegacao"), group: "Fluxos" },
+
+      // Integrity commands
+      { id: "int-integridade", label: "Integridade da Base", keywords: ["integridade", "consistência", "validação", "score"], icon: Shield, action: () => go("/central-navegacao"), group: "Integridade" },
+      { id: "int-auditoria", label: "Auditoria Automática", keywords: ["auditoria", "automática", "inconsistências", "órfãos"], icon: ClipboardList, action: () => go("/auditoria"), group: "Integridade" },
     ];
 
     // Apply role-based priority
@@ -242,6 +246,13 @@ export function CommandBar() {
               {/* Fluxos */}
               <Command.Group heading="Fluxos Operacionais">
                 {commands.filter(c => c.group === "Fluxos").map(item => (
+                  <CommandItemRow key={item.id} item={item} />
+                ))}
+              </Command.Group>
+
+              {/* Integridade */}
+              <Command.Group heading="Integridade">
+                {commands.filter(c => c.group === "Integridade").map(item => (
                   <CommandItemRow key={item.id} item={item} />
                 ))}
               </Command.Group>

@@ -50,6 +50,7 @@ import { useLearningLayer } from "@/hooks/useLearningLayer";
 import { MiniActivityFeed } from "@/components/activity/ActivityFeed";
 import { NotificationSummaryWidget } from "@/components/notifications/NotificationSummaryWidget";
 import { FlowWidget } from "@/components/flow/FlowPanel";
+import { DataIntegrityWidget } from "@/components/integrity/DataIntegrityWidget";
 
 // ─── Module definitions ───
 const MODULES = [
@@ -1474,6 +1475,13 @@ export default function HomeLauncher() {
         {!executiveMode && !actionLayer.rapidMode && (
           <div className="mt-2">
             <FlowWidget />
+          </div>
+        )}
+
+        {/* ── Data Integrity Widget ── */}
+        {!executiveMode && !actionLayer.rapidMode && (
+          <div className="mt-2">
+            <DataIntegrityWidget />
           </div>
         )}
 
