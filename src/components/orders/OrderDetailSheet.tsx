@@ -182,10 +182,10 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
     queryKey: ['order-financials', orderId],
     queryFn: async () => {
       const { data } = await supabase
-        .from('ledger')
-        .select('id, type, amount, due_date, status, description, cash_date')
+        .from('fin_ledger_entries')
+        .select('id, type, amount, competence_date, status, description, cash_date')
         .eq('order_id', orderId)
-        .order('due_date');
+        .order('competence_date');
       return data || [];
     },
     enabled: !!orderId,
