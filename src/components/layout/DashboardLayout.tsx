@@ -2,6 +2,7 @@ import { AppNavbar } from "./AppNavbar";
 import { useGlobalRealtime } from "@/hooks/useGlobalRealtime";
 import { GlobalBreadcrumb } from "./GlobalBreadcrumb";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
+import { useProductAnalytics } from "@/hooks/useProductAnalytics";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -9,6 +10,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   useGlobalRealtime();
+  useProductAnalytics();
 
   return (
     <div className="flex min-h-screen w-full flex-col">
