@@ -2858,6 +2858,300 @@ export type Database = {
           },
         ]
       }
+      customer_activation: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          days_to_activate: number | null
+          id: string
+          milestone_key: string
+          milestone_name: string
+          tenant_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          days_to_activate?: number | null
+          id?: string
+          milestone_key: string
+          milestone_name: string
+          tenant_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          days_to_activate?: number | null
+          id?: string
+          milestone_key?: string
+          milestone_name?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_activation_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_adoption: {
+        Row: {
+          active_users: number
+          adoption_score: number
+          created_at: string
+          days_without_use: number
+          features_used: Json | null
+          id: string
+          modules_used: Json | null
+          period_month: string
+          tenant_id: string
+        }
+        Insert: {
+          active_users?: number
+          adoption_score?: number
+          created_at?: string
+          days_without_use?: number
+          features_used?: Json | null
+          id?: string
+          modules_used?: Json | null
+          period_month?: string
+          tenant_id: string
+        }
+        Update: {
+          active_users?: number
+          adoption_score?: number
+          created_at?: string
+          days_without_use?: number
+          features_used?: Json | null
+          id?: string
+          modules_used?: Json | null
+          period_month?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_adoption_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_expansion_opportunities: {
+        Row: {
+          converted_at: string | null
+          created_at: string
+          description: string | null
+          estimated_value: number | null
+          id: string
+          metadata: Json | null
+          opportunity_type: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          converted_at?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_value?: number | null
+          id?: string
+          metadata?: Json | null
+          opportunity_type: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          converted_at?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_value?: number | null
+          id?: string
+          metadata?: Json | null
+          opportunity_type?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_expansion_opportunities_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_health_scores: {
+        Row: {
+          access_score: number
+          activation_score: number
+          calculated_at: string
+          classification: string | null
+          created_at: string
+          dre_score: number
+          id: string
+          payment_score: number
+          reconciliation_score: number
+          support_score: number
+          tenant_id: string
+          total_score: number | null
+          usage_score: number
+        }
+        Insert: {
+          access_score?: number
+          activation_score?: number
+          calculated_at?: string
+          classification?: string | null
+          created_at?: string
+          dre_score?: number
+          id?: string
+          payment_score?: number
+          reconciliation_score?: number
+          support_score?: number
+          tenant_id: string
+          total_score?: number | null
+          usage_score?: number
+        }
+        Update: {
+          access_score?: number
+          activation_score?: number
+          calculated_at?: string
+          classification?: string | null
+          created_at?: string
+          dre_score?: number
+          id?: string
+          payment_score?: number
+          reconciliation_score?: number
+          support_score?: number
+          tenant_id?: string
+          total_score?: number | null
+          usage_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_health_scores_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_onboarding: {
+        Row: {
+          created_at: string
+          first_dashboard: boolean
+          first_dashboard_at: string | null
+          first_dre: boolean
+          first_dre_at: string | null
+          first_import: boolean
+          first_import_at: string | null
+          first_reconciliation: boolean
+          first_reconciliation_at: string | null
+          id: string
+          progress_pct: number | null
+          setup_completed: boolean
+          setup_completed_at: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          first_dashboard?: boolean
+          first_dashboard_at?: string | null
+          first_dre?: boolean
+          first_dre_at?: string | null
+          first_import?: boolean
+          first_import_at?: string | null
+          first_reconciliation?: boolean
+          first_reconciliation_at?: string | null
+          id?: string
+          progress_pct?: number | null
+          setup_completed?: boolean
+          setup_completed_at?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          first_dashboard?: boolean
+          first_dashboard_at?: string | null
+          first_dre?: boolean
+          first_dre_at?: string | null
+          first_import?: boolean
+          first_import_at?: string | null
+          first_reconciliation?: boolean
+          first_reconciliation_at?: string | null
+          id?: string
+          progress_pct?: number | null
+          setup_completed?: boolean
+          setup_completed_at?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_onboarding_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_retention_events: {
+        Row: {
+          created_at: string
+          description: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_retention_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dashboards_personalizados: {
         Row: {
           atualizado_em: string | null
