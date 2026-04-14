@@ -2374,6 +2374,171 @@ export type Database = {
           },
         ]
       }
+      crm_proposal_versions: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          delivery_days: number | null
+          id: string
+          notes: string | null
+          payment_condition: string | null
+          proposal_id: string
+          value: number | null
+          version_number: number
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          delivery_days?: number | null
+          id?: string
+          notes?: string | null
+          payment_condition?: string | null
+          proposal_id: string
+          value?: number | null
+          version_number: number
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          delivery_days?: number | null
+          id?: string
+          notes?: string | null
+          payment_condition?: string | null
+          proposal_id?: string
+          value?: number | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_proposal_versions_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_proposals: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          deal_id: string
+          delivery_days: number | null
+          id: string
+          notes: string | null
+          payment_condition: string | null
+          status: string | null
+          tenant_id: string | null
+          updated_at: string | null
+          value: number | null
+          version_number: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          deal_id: string
+          delivery_days?: number | null
+          id?: string
+          notes?: string | null
+          payment_condition?: string | null
+          status?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+          value?: number | null
+          version_number?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          deal_id?: string
+          delivery_days?: number | null
+          id?: string
+          notes?: string | null
+          payment_condition?: string | null
+          status?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+          value?: number | null
+          version_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_proposals_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_proposals_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_revenue_forecast: {
+        Row: {
+          created_at: string | null
+          deal_id: string
+          gross_value: number | null
+          id: string
+          probability_percent: number | null
+          project_id: string | null
+          reference_month: string
+          tenant_id: string | null
+          updated_at: string | null
+          weighted_value: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          deal_id: string
+          gross_value?: number | null
+          id?: string
+          probability_percent?: number | null
+          project_id?: string | null
+          reference_month: string
+          tenant_id?: string | null
+          updated_at?: string | null
+          weighted_value?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          deal_id?: string
+          gross_value?: number | null
+          id?: string
+          probability_percent?: number | null
+          project_id?: string | null
+          reference_month?: string
+          tenant_id?: string | null
+          updated_at?: string | null
+          weighted_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_revenue_forecast_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_revenue_forecast_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "prj_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_revenue_forecast_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_stages: {
         Row: {
           cadence_id: string | null
@@ -2382,6 +2547,7 @@ export type Database = {
           name: string
           pipeline_id: string
           position: number
+          probability_percent: number | null
           sla_hours: number | null
           updated_at: string | null
         }
@@ -2392,6 +2558,7 @@ export type Database = {
           name: string
           pipeline_id: string
           position?: number
+          probability_percent?: number | null
           sla_hours?: number | null
           updated_at?: string | null
         }
@@ -2402,6 +2569,7 @@ export type Database = {
           name?: string
           pipeline_id?: string
           position?: number
+          probability_percent?: number | null
           sla_hours?: number | null
           updated_at?: string | null
         }
