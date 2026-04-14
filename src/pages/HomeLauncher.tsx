@@ -26,6 +26,7 @@ import {
   Gauge, ShieldAlert, ArrowUpRight, ArrowDownRight,
   Sparkles, Calculator, MessageSquareText, BarChart,
   ShieldCheck, RefreshCw, Database,
+  Undo2, ListChecks, Play, CheckSquare,
 } from "lucide-react";
 import {
   useActionItems,
@@ -41,6 +42,7 @@ import { usePredictiveLayer, useSimulator } from "@/hooks/usePredictiveLayer";
 import { Slider } from "@/components/ui/slider";
 import { useExplainabilityLayer } from "@/hooks/useExplainabilityLayer";
 import { useTrustLayer } from "@/hooks/useTrustLayer";
+import { useActionLayer } from "@/hooks/useActionLayer";
 
 // ─── Module definitions ───
 const MODULES = [
@@ -231,6 +233,7 @@ export default function HomeLauncher() {
   const { data: explainability, isLoading: loadingExplain, showBreakdown, setShowBreakdown } = useExplainabilityLayer();
   const { data: trust, isLoading: loadingTrust } = useTrustLayer();
   const [showTrustDetail, setShowTrustDetail] = useState(false);
+  const actionLayer = useActionLayer();
 
   const showOnboarding = onboardingDone.length < ONBOARDING_STEPS.length;
 
