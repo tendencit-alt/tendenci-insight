@@ -157,6 +157,17 @@ const menuGroups: MenuGroup[] = [
     ],
   },
   {
+    label: "Projetos",
+    icon: Briefcase,
+    items: [
+      { title: "Cadastro", url: "/projetos", icon: FolderOpen },
+      { title: "Planejamento", url: "/projetos", icon: Calendar },
+      { title: "Execução", url: "/projetos", icon: Play },
+      { title: "Custos", url: "/projetos", icon: DollarSign },
+      { title: "Analytics", url: "/projetos", icon: BarChart3 },
+    ],
+  },
+  {
     label: "Planejamento",
     icon: Target,
     separator: true,
