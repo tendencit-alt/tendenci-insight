@@ -9325,6 +9325,384 @@ export type Database = {
           },
         ]
       }
+      prj_execution_logs: {
+        Row: {
+          cost: number | null
+          created_at: string | null
+          description: string | null
+          employee_id: string | null
+          hours: number | null
+          id: string
+          log_type: string | null
+          ops_order_id: string | null
+          project_id: string
+          tenant_id: string | null
+          work_date: string | null
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string | null
+          description?: string | null
+          employee_id?: string | null
+          hours?: number | null
+          id?: string
+          log_type?: string | null
+          ops_order_id?: string | null
+          project_id: string
+          tenant_id?: string | null
+          work_date?: string | null
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string | null
+          description?: string | null
+          employee_id?: string | null
+          hours?: number | null
+          id?: string
+          log_type?: string | null
+          ops_order_id?: string | null
+          project_id?: string
+          tenant_id?: string | null
+          work_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prj_execution_logs_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prj_execution_logs_ops_order_id_fkey"
+            columns: ["ops_order_id"]
+            isOneToOne: false
+            referencedRelation: "ops_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prj_execution_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "prj_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prj_execution_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prj_phases: {
+        Row: {
+          actual_cost: number | null
+          actual_end: string | null
+          actual_hours: number | null
+          actual_start: string | null
+          completion_percent: number | null
+          created_at: string | null
+          estimated_cost: number | null
+          estimated_hours: number | null
+          id: string
+          notes: string | null
+          phase_type: string | null
+          planned_end: string | null
+          planned_start: string | null
+          position: number | null
+          project_id: string
+          status: string | null
+          tenant_id: string | null
+          title: string
+        }
+        Insert: {
+          actual_cost?: number | null
+          actual_end?: string | null
+          actual_hours?: number | null
+          actual_start?: string | null
+          completion_percent?: number | null
+          created_at?: string | null
+          estimated_cost?: number | null
+          estimated_hours?: number | null
+          id?: string
+          notes?: string | null
+          phase_type?: string | null
+          planned_end?: string | null
+          planned_start?: string | null
+          position?: number | null
+          project_id: string
+          status?: string | null
+          tenant_id?: string | null
+          title: string
+        }
+        Update: {
+          actual_cost?: number | null
+          actual_end?: string | null
+          actual_hours?: number | null
+          actual_start?: string | null
+          completion_percent?: number | null
+          created_at?: string | null
+          estimated_cost?: number | null
+          estimated_hours?: number | null
+          id?: string
+          notes?: string | null
+          phase_type?: string | null
+          planned_end?: string | null
+          planned_start?: string | null
+          position?: number | null
+          project_id?: string
+          status?: string | null
+          tenant_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prj_phases_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "prj_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prj_phases_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prj_planned_resources: {
+        Row: {
+          created_at: string | null
+          description: string
+          id: string
+          notes: string | null
+          project_id: string
+          quantity: number | null
+          resource_type: string
+          tenant_id: string | null
+          total_cost: number | null
+          unit: string | null
+          unit_cost: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          id?: string
+          notes?: string | null
+          project_id: string
+          quantity?: number | null
+          resource_type?: string
+          tenant_id?: string | null
+          total_cost?: number | null
+          unit?: string | null
+          unit_cost?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          id?: string
+          notes?: string | null
+          project_id?: string
+          quantity?: number | null
+          resource_type?: string
+          tenant_id?: string | null
+          total_cost?: number | null
+          unit?: string | null
+          unit_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prj_planned_resources_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "prj_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prj_planned_resources_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prj_projects: {
+        Row: {
+          actual_cost: number | null
+          actual_end_date: string | null
+          actual_margin: number | null
+          admin_cost: number | null
+          client_id: string | null
+          completion_percent: number | null
+          cost_center_id: string | null
+          cost_deviation: number | null
+          created_at: string | null
+          description: string | null
+          estimated_cost: number | null
+          estimated_margin: number | null
+          expected_end_date: string | null
+          id: string
+          labor_cost: number | null
+          logistics_cost: number | null
+          material_cost: number | null
+          notes: string | null
+          outsourcing_cost: number | null
+          project_number: number
+          project_type: string | null
+          responsible_id: string | null
+          rework_cost: number | null
+          sold_value: number | null
+          start_date: string | null
+          status: string
+          tenant_id: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          actual_cost?: number | null
+          actual_end_date?: string | null
+          actual_margin?: number | null
+          admin_cost?: number | null
+          client_id?: string | null
+          completion_percent?: number | null
+          cost_center_id?: string | null
+          cost_deviation?: number | null
+          created_at?: string | null
+          description?: string | null
+          estimated_cost?: number | null
+          estimated_margin?: number | null
+          expected_end_date?: string | null
+          id?: string
+          labor_cost?: number | null
+          logistics_cost?: number | null
+          material_cost?: number | null
+          notes?: string | null
+          outsourcing_cost?: number | null
+          project_number?: number
+          project_type?: string | null
+          responsible_id?: string | null
+          rework_cost?: number | null
+          sold_value?: number | null
+          start_date?: string | null
+          status?: string
+          tenant_id?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          actual_cost?: number | null
+          actual_end_date?: string | null
+          actual_margin?: number | null
+          admin_cost?: number | null
+          client_id?: string | null
+          completion_percent?: number | null
+          cost_center_id?: string | null
+          cost_deviation?: number | null
+          created_at?: string | null
+          description?: string | null
+          estimated_cost?: number | null
+          estimated_margin?: number | null
+          expected_end_date?: string | null
+          id?: string
+          labor_cost?: number | null
+          logistics_cost?: number | null
+          material_cost?: number | null
+          notes?: string | null
+          outsourcing_cost?: number | null
+          project_number?: number
+          project_type?: string | null
+          responsible_id?: string | null
+          rework_cost?: number | null
+          sold_value?: number | null
+          start_date?: string | null
+          status?: string
+          tenant_id?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prj_projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prj_projects_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prj_projects_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prj_scope_changes: {
+        Row: {
+          approved: boolean | null
+          approved_at: string | null
+          cost_impact: number | null
+          created_at: string | null
+          description: string
+          id: string
+          project_id: string
+          requested_by: string | null
+          schedule_impact_days: number | null
+          tenant_id: string | null
+        }
+        Insert: {
+          approved?: boolean | null
+          approved_at?: string | null
+          cost_impact?: number | null
+          created_at?: string | null
+          description: string
+          id?: string
+          project_id: string
+          requested_by?: string | null
+          schedule_impact_days?: number | null
+          tenant_id?: string | null
+        }
+        Update: {
+          approved?: boolean | null
+          approved_at?: string | null
+          cost_impact?: number | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          project_id?: string
+          requested_by?: string | null
+          schedule_impact_days?: number | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prj_scope_changes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "prj_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prj_scope_changes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_analytics_events: {
         Row: {
           created_at: string
