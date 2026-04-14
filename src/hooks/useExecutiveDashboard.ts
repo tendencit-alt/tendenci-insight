@@ -56,7 +56,7 @@ export function useExecResultadoHoje() {
     queryFn: async (): Promise<ExecResultadoHoje> => {
       const today = format(new Date(), "yyyy-MM-dd");
 
-      const q = (t: string) => (supabase.from(t) as any);
+      const q = (t: string) => (supabase as any).from(t);
       const cashRes = await q("fin_bank_accounts").select("opening_balance").eq("active", true);
       const recRes = await q("fin_ledger_entries").select("amount").eq("entry_type", "credit").eq("competence_date", today);
       const expRes = await q("fin_ledger_entries").select("amount").eq("entry_type", "debit").eq("competence_date", today);
@@ -152,10 +152,11 @@ export function useExecRiscoOperacional() {
     queryFn: async (): Promise<ExecRiscoOperacional> => {
       const today = format(new Date(), "yyyy-MM-dd");
 
-        const ordensRes = await (supabase.from("ops_orders").select("id", { count: "exact", head: true }).in("status", ["em_producao", "planejada"]).lt("planned_end", today) as any);
-        const projRes = await (supabase.from("prj_projects").select("id", { count: "exact", head: true }).in("status", ["em_andamento"]).lt("planned_end_date", today) as any);
-        const purchRes = await (supabase.from("purchase_orders").select("id, priority", { count: "exact" }).eq("priority", "urgente").in("status", ["aprovado", "pendente"]) as any);
-        const stockRes = await (supabase.from("products").select("id, quantity, min_stock").not("min_stock", "is", null) as any);
+        const q = (t: string) => (supabase as any).from(t);
+        const ordensRes = await q("ops_orders").select("id", { count: "exact", head: true }).in("status", ["em_producao", "planejada"]).lt("planned_end", today);
+        const projRes = await q("prj_projects").select("id", { count: "exact", head: true }).in("status", ["em_andamento"]).lt("planned_end_date", today);
+        const purchRes = await q("purchase_orders").select("id, priority", { count: "exact" }).eq("priority", "urgente").in("status", ["aprovado", "pendente"]);
+        const stockRes = await q("products").select("id, quantity, min_stock").not("min_stock", "is", null);
 
       const rupturaEstoque = (stockRes.data as any[])?.filter((p: any) => (p.quantity || 0) < (p.min_stock || 0)).length || 0;
 
