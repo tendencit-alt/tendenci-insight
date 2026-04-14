@@ -589,7 +589,7 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
       {/* Sub-tabs */}
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="space-y-4">
         {/* Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* Lançamentos Card */}
           <button
             onClick={() => setActiveSubTab("ledger")}
