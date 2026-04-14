@@ -1335,6 +1335,202 @@ export type Database = {
           },
         ]
       }
+      benchmark_clusters: {
+        Row: {
+          active: boolean
+          created_at: string
+          criteria: Json | null
+          id: string
+          maturity_level: string | null
+          name: string
+          porte: string | null
+          segment: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          criteria?: Json | null
+          id?: string
+          maturity_level?: string | null
+          name: string
+          porte?: string | null
+          segment?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          criteria?: Json | null
+          id?: string
+          maturity_level?: string | null
+          name?: string
+          porte?: string | null
+          segment?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      benchmark_metrics: {
+        Row: {
+          avg_value: number | null
+          category: string
+          cluster_id: string
+          created_at: string
+          id: string
+          median_value: number | null
+          metric_key: string
+          p25_value: number | null
+          p75_value: number | null
+          p90_value: number | null
+          period: string | null
+          sample_size: number | null
+          snapshot_at: string
+        }
+        Insert: {
+          avg_value?: number | null
+          category: string
+          cluster_id: string
+          created_at?: string
+          id?: string
+          median_value?: number | null
+          metric_key: string
+          p25_value?: number | null
+          p75_value?: number | null
+          p90_value?: number | null
+          period?: string | null
+          sample_size?: number | null
+          snapshot_at?: string
+        }
+        Update: {
+          avg_value?: number | null
+          category?: string
+          cluster_id?: string
+          created_at?: string
+          id?: string
+          median_value?: number | null
+          metric_key?: string
+          p25_value?: number | null
+          p75_value?: number | null
+          p90_value?: number | null
+          period?: string | null
+          sample_size?: number | null
+          snapshot_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benchmark_metrics_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "benchmark_clusters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      benchmark_percentile_scores: {
+        Row: {
+          calculated_at: string
+          category: string
+          cluster_id: string
+          id: string
+          metric_key: string
+          percentile: number | null
+          period: string | null
+          tenant_id: string
+          tenant_value: number | null
+        }
+        Insert: {
+          calculated_at?: string
+          category: string
+          cluster_id: string
+          id?: string
+          metric_key: string
+          percentile?: number | null
+          period?: string | null
+          tenant_id: string
+          tenant_value?: number | null
+        }
+        Update: {
+          calculated_at?: string
+          category?: string
+          cluster_id?: string
+          id?: string
+          metric_key?: string
+          percentile?: number | null
+          period?: string | null
+          tenant_id?: string
+          tenant_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benchmark_percentile_scores_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "benchmark_clusters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "benchmark_percentile_scores_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      benchmark_recommendations: {
+        Row: {
+          category: string
+          created_at: string
+          current_percentile: number | null
+          id: string
+          metadata: Json | null
+          metric_key: string
+          priority: number | null
+          recommendation: string
+          status: string
+          target_percentile: number | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          current_percentile?: number | null
+          id?: string
+          metadata?: Json | null
+          metric_key: string
+          priority?: number | null
+          recommendation: string
+          status?: string
+          target_percentile?: number | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          current_percentile?: number | null
+          id?: string
+          metadata?: Json | null
+          metric_key?: string
+          priority?: number | null
+          recommendation?: string
+          status?: string
+          target_percentile?: number | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benchmark_recommendations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_events: {
         Row: {
           created_at: string
