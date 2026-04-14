@@ -554,7 +554,8 @@ export default function HomeLauncher() {
           )}
         </div>
 
-        {/* ── Quick Actions ── */}
+        {/* ── Quick Actions (hidden in executive mode) ── */}
+        {!executiveMode && (
         <div className="space-y-3">
           <h2 className="text-sm font-semibold flex items-center gap-2">
             <Zap className="h-4 w-4 text-primary" /> Ações Rápidas
