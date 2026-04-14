@@ -1463,6 +1463,11 @@ export default function HomeLauncher() {
         </div>
         )}
 
+        {/* ── Global Activity Feed ── */}
+        {!executiveMode && !actionLayer.rapidMode && (
+          <MiniActivityFeed className="mt-2" />
+        )}
+
         {!executiveMode && !actionLayer.rapidMode && (
         <>
         {/* ── Favorites ── */}
