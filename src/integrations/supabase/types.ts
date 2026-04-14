@@ -11235,6 +11235,91 @@ export type Database = {
         }
         Relationships: []
       }
+      tenant_customization_snapshots: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          label: string | null
+          snapshot: Json
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          snapshot: Json
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          snapshot?: Json
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_customization_snapshots_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_customizations: {
+        Row: {
+          created_at: string | null
+          dre_aliases: Json | null
+          id: string
+          kpi_priorities: Json | null
+          launcher_shortcuts: Json | null
+          module_aliases: Json | null
+          segment: string | null
+          sidebar_config: Json | null
+          tenant_id: string
+          updated_at: string | null
+          workflow_config: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          dre_aliases?: Json | null
+          id?: string
+          kpi_priorities?: Json | null
+          launcher_shortcuts?: Json | null
+          module_aliases?: Json | null
+          segment?: string | null
+          sidebar_config?: Json | null
+          tenant_id: string
+          updated_at?: string | null
+          workflow_config?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          dre_aliases?: Json | null
+          id?: string
+          kpi_priorities?: Json | null
+          launcher_shortcuts?: Json | null
+          module_aliases?: Json | null
+          segment?: string | null
+          sidebar_config?: Json | null
+          tenant_id?: string
+          updated_at?: string | null
+          workflow_config?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_customizations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_plans: {
         Row: {
           active: boolean | null
