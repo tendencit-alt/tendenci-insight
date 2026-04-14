@@ -27,6 +27,7 @@ import {
   Sparkles, Calculator, MessageSquareText, BarChart,
   ShieldCheck, RefreshCw, Database,
   Undo2, ListChecks, Play, CheckSquare,
+  MessageCircle, UserCheck,
 } from "lucide-react";
 import {
   useActionItems,
@@ -44,6 +45,7 @@ import { useExplainabilityLayer } from "@/hooks/useExplainabilityLayer";
 import { useTrustLayer } from "@/hooks/useTrustLayer";
 import { useActionLayer } from "@/hooks/useActionLayer";
 import { useAutomationLayer } from "@/hooks/useAutomationLayer";
+import { useCollaborationLayer, type CollabFilter } from "@/hooks/useCollaborationLayer";
 
 // ─── Module definitions ───
 const MODULES = [
@@ -237,6 +239,9 @@ export default function HomeLauncher() {
   const actionLayer = useActionLayer();
   const { summary: autoSummary, suggestions: autoSuggestions, activeRules: autoRules, activateRule } = useAutomationLayer();
   const [showAutoPanel, setShowAutoPanel] = useState(false);
+  const [collabFilter, setCollabFilter] = useState<CollabFilter>("mine");
+  const { data: collab } = useCollaborationLayer(collabFilter);
+  const [showCollabTimeline, setShowCollabTimeline] = useState(false);
 
   const showOnboarding = onboardingDone.length < ONBOARDING_STEPS.length;
 
@@ -1263,6 +1268,120 @@ export default function HomeLauncher() {
               )}
             </div>
           )}
+        </div>
+        )}
+
+        {/* ── Collaboration Layer ── */}
+        {!executiveMode && !actionLayer.rapidMode && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
+              <Users className="h-4 w-4 text-sky-500" /> Colaboração
+            </h2>
+            <div className="flex items-center gap-1">
+              {(["mine", "financeiro", "comercial", "operacional"] as CollabFilter[]).map((f) => (
+                <Button
+                  key={f}
+                  variant={collabFilter === f ? "default" : "ghost"}
+                  size="sm"
+                  className="h-6 text-[9px] px-2 rounded-md"
+                  onClick={() => setCollabFilter(f)}
+                >
+                  {f === "mine" ? "Minhas" : f.charAt(0).toUpperCase() + f.slice(1)}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Bottleneck Alerts */}
+          {collab?.bottlenecks && collab.bottlenecks.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {collab.bottlenecks.map((b) => (
+                <div key={b.type} className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs ${
+                  b.type === "overdue" ? "border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300" :
+                  b.type === "unassigned" ? "border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300" :
+                  "border-blue-300 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300"
+                }`}>
+                  {b.type === "overdue" && <AlertTriangle className="h-3 w-3" />}
+                  {b.type === "unassigned" && <UserCheck className="h-3 w-3" />}
+                  {b.type === "awaiting_approval" && <Clock className="h-3 w-3" />}
+                  <span className="font-medium">{b.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Task Summary Cards */}
+          <div className="grid grid-cols-3 gap-2">
+            <Card className="border-sky-200/60 dark:border-sky-800/40">
+              <CardContent className="p-3 text-center">
+                <p className="text-lg font-bold leading-none">{collab?.assignedToMe?.length || 0}</p>
+                <p className="text-[9px] text-muted-foreground mt-1">Atribuídas a mim</p>
+              </CardContent>
+            </Card>
+            <Card className="border-indigo-200/60 dark:border-indigo-800/40">
+              <CardContent className="p-3 text-center">
+                <p className="text-lg font-bold leading-none">{collab?.assignedByMe?.length || 0}</p>
+                <p className="text-[9px] text-muted-foreground mt-1">Delegadas por mim</p>
+              </CardContent>
+            </Card>
+            <Card className="border-red-200/60 dark:border-red-800/40">
+              <CardContent className="p-3 text-center">
+                <p className="text-lg font-bold leading-none">{collab?.overdue?.length || 0}</p>
+                <p className="text-[9px] text-muted-foreground mt-1">Atrasadas</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Task List */}
+          {collab?.allTasks && collab.allTasks.length > 0 && (
+            <div className="space-y-1">
+              {collab.allTasks.slice(0, 6).map((t) => (
+                <div key={t.id} className="flex items-center gap-2 rounded-lg border p-2 text-xs hover:bg-muted/40 transition-colors">
+                  <div className={`h-2 w-2 rounded-full shrink-0 ${t.isOverdue ? "bg-red-500" : t.priority === "critica" ? "bg-orange-500" : "bg-emerald-500"}`} />
+                  <span className="font-medium flex-1 truncate">{t.title}</span>
+                  {t.assigneeName ? (
+                    <Badge variant="outline" className="text-[8px] h-4 shrink-0">@{t.assigneeName.split(" ")[0]}</Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-[8px] h-4 shrink-0">Sem responsável</Badge>
+                  )}
+                  {t.module && <Badge variant="outline" className="text-[8px] h-4 shrink-0">{t.module}</Badge>}
+                  {t.isOverdue && <AlertTriangle className="h-3 w-3 text-red-500 shrink-0" />}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Collaborative Timeline */}
+          <div className="space-y-2">
+            <button onClick={() => setShowCollabTimeline((p) => !p)} className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors">
+              <MessageCircle className="h-3 w-3" />
+              Timeline Colaborativa
+              <ChevronRight className={`h-3 w-3 transition-transform ${showCollabTimeline ? "rotate-90" : ""}`} />
+            </button>
+            {showCollabTimeline && collab?.events && (
+              <div className="space-y-1 pl-1 border-l-2 border-muted ml-1.5">
+                {collab.events.length === 0 ? (
+                  <p className="text-xs text-muted-foreground pl-3">Nenhum evento recente.</p>
+                ) : (
+                  collab.events.map((ev) => (
+                    <div key={ev.id} className="flex items-start gap-2 pl-3 py-1 text-xs">
+                      <div className="h-1.5 w-1.5 rounded-full bg-sky-500 mt-1.5 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate">
+                          <span className="font-medium">{ev.actorName || "Sistema"}</span>{" "}
+                          <span className="text-muted-foreground">{ev.description}</span>
+                        </p>
+                        <p className="text-[9px] text-muted-foreground">
+                          {new Date(ev.timestamp).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         </div>
         )}
 
