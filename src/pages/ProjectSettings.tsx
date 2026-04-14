@@ -5,9 +5,10 @@ import { useNavigate } from "react-router-dom";
 import { UsersTab } from "@/components/settings/UsersTab";
 import { ProfileTypesManager } from "@/components/settings/ProfileTypesManager";
 import { CompanySettingsTab } from "@/components/settings/CompanySettingsTab";
+import { CustomizationSettings } from "@/components/settings/CustomizationSettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Users, Tags, Building2 } from "lucide-react";
+import { Users, Tags, Building2, Palette } from "lucide-react";
 
 const ProjectSettings = () => {
   const navigate = useNavigate();
@@ -26,13 +27,13 @@ const ProjectSettings = () => {
               ⚙️ Configurações
             </h1>
             <p className="text-muted-foreground text-lg">
-              Gerencie usuários e permissões do sistema
+              Gerencie usuários, permissões e personalização do sistema
             </p>
           </div>
         </div>
 
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className={`grid w-full ${isMaster ? 'grid-cols-3' : 'grid-cols-1'}`}>
+          <TabsList className={`grid w-full ${isMaster ? 'grid-cols-4' : 'grid-cols-1'}`}>
             <TabsTrigger value="users" className="flex items-center gap-1.5">
               <Users className="h-4 w-4" />
               Usuários
@@ -47,6 +48,12 @@ const ProjectSettings = () => {
               <TabsTrigger value="empresa" className="flex items-center gap-1.5">
                 <Building2 className="h-4 w-4" />
                 Empresa
+              </TabsTrigger>
+            )}
+            {isMaster && (
+              <TabsTrigger value="customization" className="flex items-center gap-1.5">
+                <Palette className="h-4 w-4" />
+                Personalização
               </TabsTrigger>
             )}
           </TabsList>
@@ -64,6 +71,12 @@ const ProjectSettings = () => {
           {isMaster && (
             <TabsContent value="empresa" className="space-y-6 pt-6">
               <CompanySettingsTab />
+            </TabsContent>
+          )}
+
+          {isMaster && (
+            <TabsContent value="customization" className="space-y-6 pt-6">
+              <CustomizationSettings />
             </TabsContent>
           )}
         </Tabs>
