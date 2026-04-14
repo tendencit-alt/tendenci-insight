@@ -3,12 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import {
   TrendingUp, TrendingDown, Minus, DollarSign, PieChart, Wallet,
-  Gauge, ShieldAlert, Activity, Target, BarChart3,
+  Gauge, ShieldAlert,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -183,7 +181,7 @@ export function ExecutiveKPIPanel({ filters }: Props) {
     });
 
     const receitaLiquida = receita - deducao;
-    const margemContribuicao = receitaLiquida - despesaOp * 0; // MC = RL - custos diretos (deducao already subtracted)
+    const _margemContribuicao = receitaLiquida;
     const ebitda = receitaLiquida - despesaOp;
     const resultadoEconomico = ebitda - depreciacao + financeiro - imposto;
     const ticketMedio = entryCount > 0 ? receita / Math.max(entryCount, 1) : 0;
@@ -213,7 +211,7 @@ export function ExecutiveKPIPanel({ filters }: Props) {
 
     // Goals
     const metaReceita = goals?.get("receita_liquida") || budgetData?.bReceita || 0;
-    const metaEbitda = goals?.get("resultado_operacional_ebitda") || 0;
+    const _metaEbitda = goals?.get("resultado_operacional_ebitda") || 0;
     const receitaVsMeta = metaReceita > 0 ? ((receita - metaReceita) / metaReceita) * 100 : 0;
 
     // Safety balance
