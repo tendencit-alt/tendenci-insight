@@ -8,7 +8,7 @@ import {
   TrendingUp, Calculator, History, Zap, Shield,
   LineChart, PieChart, UserCog, Link2,
   Landmark, ClipboardList, FolderOpen, Wrench,
-  Star, AlertTriangle
+  Star, AlertTriangle, UserCheck, Clock
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -140,6 +140,18 @@ const menuGroups: MenuGroup[] = [
       { title: "Classificação Automática", url: "/classificacao-automatica", icon: Zap, comingSoon: true },
       { title: "Automações por Evento", url: "/automacoes", icon: Zap },
       { title: "Auditoria", url: "/auditoria", icon: History },
+    ],
+  },
+  {
+    label: "RH",
+    icon: UserCheck,
+    items: [
+      { title: "Colaboradores", url: "/rh", icon: Users },
+      { title: "Estrutura Organizacional", url: "/rh", icon: Building2 },
+      { title: "Jornadas e Ponto", url: "/rh", icon: Clock },
+      { title: "Custos de Mão de Obra", url: "/rh", icon: DollarSign },
+      { title: "Performance", url: "/rh", icon: TrendingUp },
+      { title: "RH Analytics", url: "/rh", icon: BarChart3 },
     ],
   },
   {
