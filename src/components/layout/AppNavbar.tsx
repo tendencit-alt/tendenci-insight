@@ -277,10 +277,10 @@ export function AppNavbar() {
 
         {/* Desktop: Dashboard direct link + module dropdowns */}
         <div className="hidden xl:flex items-center gap-0.5 flex-1 ml-3">
-          {/* Dashboard Executivo - direct link */}
           {(!loading && hasModuleAccess("dashboard" as any)) && (
             <NavLink
-              to="/bi-dashboard"
+              to="/"
+              end
               className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md hover:bg-muted/50 font-medium transition-colors"
               activeClassName="bg-primary/10 text-primary font-semibold"
             >
@@ -289,7 +289,6 @@ export function AppNavbar() {
             </NavLink>
           )}
 
-          {/* Module dropdowns */}
           {visibleModules.map(renderModuleDropdown)}
         </div>
 
@@ -311,11 +310,11 @@ export function AppNavbar() {
                 <p className="text-xs text-muted-foreground font-semibold tracking-wider uppercase mt-2">ERP</p>
               </div>
               <div className="flex-1 overflow-y-auto py-2">
-                {/* Dashboard direct */}
                 {(!loading && hasModuleAccess("dashboard" as any)) && (
                   <div className="px-3 mb-1">
                     <NavLink
-                      to="/bi-dashboard"
+                      to="/"
+                      end
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all hover:bg-muted"
                       activeClassName="bg-primary text-primary-foreground font-semibold"
@@ -326,13 +325,13 @@ export function AppNavbar() {
                   </div>
                 )}
 
-                {/* Module groups */}
                 {visibleModules.map((mod) => {
-                  const availableItems = mod.items.filter(i => {
-                    if (!i.available) return false;
-                    if (i.module && !loading) return hasModuleAccess(i.module as any);
+                  const availableItems = mod.items.filter((item) => {
+                    if (!item.available) return false;
+                    if (item.module && !loading) return hasModuleAccess(item.module as any);
                     return true;
                   });
+
                   if (availableItems.length === 0) return null;
 
                   return (
@@ -362,7 +361,6 @@ export function AppNavbar() {
                   );
                 })}
 
-                {/* Owner */}
                 {isOwner && (
                   <div className="mb-1">
                     <p className="text-[10px] text-muted-foreground font-semibold tracking-wider uppercase px-6 py-2 flex items-center gap-2">
