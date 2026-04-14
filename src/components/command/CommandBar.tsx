@@ -130,6 +130,12 @@ export function CommandBar() {
       { id: "notif-contas", label: "Contas Vencidas", keywords: ["contas", "vencidas", "atraso", "inadimplência"], icon: CreditCard, action: () => go("/contas-pagar?filter=vencidas"), group: "Notificações" },
       { id: "notif-aprovacoes", label: "Aprovações Pendentes", keywords: ["aprovações", "pendentes", "aprovar"], icon: Shield, action: () => go("/aprovacoes?status=pending"), group: "Notificações" },
       { id: "notif-resumo", label: "Resumo do Dia", keywords: ["resumo", "dia", "diário", "pendências"], icon: Star, action: () => go("/central-navegacao"), group: "Notificações" },
+
+      // Flow commands
+      { id: "flow-comercial", label: "Fluxo Comercial", keywords: ["fluxo", "comercial", "lead", "orçamento", "pedido"], icon: ShoppingCart, action: () => go("/central-navegacao"), group: "Fluxos" },
+      { id: "flow-producao", label: "Fluxo Produção", keywords: ["fluxo", "produção", "corte", "montagem", "embalagem"], icon: Factory, action: () => go("/central-navegacao"), group: "Fluxos" },
+      { id: "flow-financeiro", label: "Fluxo Financeiro", keywords: ["fluxo", "financeiro", "conciliação", "baixa"], icon: Wallet, action: () => go("/central-navegacao"), group: "Fluxos" },
+      { id: "flow-fechamento", label: "Fluxo Fechamento Mensal", keywords: ["fluxo", "fechamento", "mensal", "dre", "resultado"], icon: BarChart3, action: () => go("/central-navegacao"), group: "Fluxos" },
     ];
 
     // Apply role-based priority
@@ -229,6 +235,13 @@ export function CommandBar() {
               {/* Feed */}
               <Command.Group heading="Feed de Atividades">
                 {commands.filter(c => c.group === "Feed").map(item => (
+                  <CommandItemRow key={item.id} item={item} />
+                ))}
+              </Command.Group>
+
+              {/* Fluxos */}
+              <Command.Group heading="Fluxos Operacionais">
+                {commands.filter(c => c.group === "Fluxos").map(item => (
                   <CommandItemRow key={item.id} item={item} />
                 ))}
               </Command.Group>
