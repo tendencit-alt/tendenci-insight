@@ -244,6 +244,7 @@ const menuGroups: MenuGroup[] = [
       { title: "Painel Owner", url: "/super-admin", icon: Building2 },
       { title: "Billing & Subscriptions", url: "/billing", icon: CreditCard },
       { title: "Customer Lifecycle", url: "/customer-lifecycle", icon: Users },
+      { title: "Customer Success", url: "/customer-success", icon: Star },
     ],
   },
 ];
