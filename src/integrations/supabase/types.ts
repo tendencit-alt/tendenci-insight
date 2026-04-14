@@ -1584,6 +1584,45 @@ export type Database = {
           },
         ]
       }
+      contextual_help: {
+        Row: {
+          common_errors: Json | null
+          created_at: string | null
+          description: string | null
+          faq: Json | null
+          how_to_fix: Json | null
+          id: string
+          screen_key: string
+          title: string
+          updated_at: string | null
+          when_to_open_support: string | null
+        }
+        Insert: {
+          common_errors?: Json | null
+          created_at?: string | null
+          description?: string | null
+          faq?: Json | null
+          how_to_fix?: Json | null
+          id?: string
+          screen_key: string
+          title: string
+          updated_at?: string | null
+          when_to_open_support?: string | null
+        }
+        Update: {
+          common_errors?: Json | null
+          created_at?: string | null
+          description?: string | null
+          faq?: Json | null
+          how_to_fix?: Json | null
+          id?: string
+          screen_key?: string
+          title?: string
+          updated_at?: string | null
+          when_to_open_support?: string | null
+        }
+        Relationships: []
+      }
       contracts: {
         Row: {
           client_id: string | null
@@ -10918,6 +10957,116 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "suppliers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_history: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          performed_by: string | null
+          tenant_id: string | null
+          ticket_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          performed_by?: string | null
+          tenant_id?: string | null
+          ticket_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          performed_by?: string | null
+          tenant_id?: string | null
+          ticket_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_history_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_history_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          assigned_to: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          module: string | null
+          priority: string
+          recurrence_count: number | null
+          reported_by: string | null
+          resolution: string | null
+          resolved_at: string | null
+          root_cause: string | null
+          status: string
+          tenant_id: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          module?: string | null
+          priority?: string
+          recurrence_count?: number | null
+          reported_by?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          root_cause?: string | null
+          status?: string
+          tenant_id?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          module?: string | null
+          priority?: string
+          recurrence_count?: number | null
+          reported_by?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          root_cause?: string | null
+          status?: string
+          tenant_id?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
