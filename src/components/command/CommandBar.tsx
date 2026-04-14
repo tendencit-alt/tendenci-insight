@@ -140,6 +140,11 @@ export function CommandBar() {
       // Integrity commands
       { id: "int-integridade", label: "Integridade da Base", keywords: ["integridade", "consistência", "validação", "score"], icon: Shield, action: () => go("/central-navegacao"), group: "Integridade" },
       { id: "int-auditoria", label: "Auditoria Automática", keywords: ["auditoria", "automática", "inconsistências", "órfãos"], icon: ClipboardList, action: () => go("/auditoria"), group: "Integridade" },
+
+      // Automation commands
+      { id: "auto-regras", label: "Regras de Automação", keywords: ["automação", "regras", "motor", "engine"], icon: Zap, action: () => go("/automacoes"), group: "Automação" },
+      { id: "auto-pedido", label: "Automação Pedido Aprovado", keywords: ["automação", "pedido", "aprovado", "comissão", "receber"], icon: Zap, action: () => go("/automacoes"), group: "Automação" },
+      { id: "auto-fechamento", label: "Checklist Fechamento", keywords: ["fechamento", "mensal", "checklist", "verificação"], icon: ClipboardList, action: () => go("/automacoes"), group: "Automação" },
     ];
 
     // Apply role-based priority
