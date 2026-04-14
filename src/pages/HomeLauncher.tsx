@@ -256,7 +256,7 @@ export default function HomeLauncher() {
   const [showCollabTimeline, setShowCollabTimeline] = useState(false);
   const learning = useLearningLayer();
 
-  const showOnboarding = onboardingDone.length < ONBOARDING_STEPS.length;
+  
 
   const orderedModules = useMemo(() => {
     const customOrder = workspacePrefs.order.length > 0 ? workspacePrefs.order : moduleOrder;
@@ -289,13 +289,6 @@ export default function HomeLauncher() {
     navigate(route);
   }, [navigate, learning]);
 
-  const completeOnboardingStep = useCallback((key: string, route: string) => {
-    setOnboardingDone((prev) => {
-      const next = prev.includes(key) ? prev : [...prev, key];
-      return next;
-    });
-    navigate(route);
-  }, [navigate]);
 
   const toggleFavorite = (item: (typeof SEARCHABLE_ITEMS)[0]) => {
     const exists = tempFavorites.some((f) => f.label === item.label);
