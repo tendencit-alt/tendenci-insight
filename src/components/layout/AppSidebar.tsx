@@ -91,6 +91,7 @@ const menuGroups: MenuGroup[] = [
     icon: Home,
     items: [
       { title: "Central de Navegação", url: "/central-navegacao", icon: Home },
+      { title: "Executive Center", url: "/executive", icon: LineChart },
     ],
   },
   {
