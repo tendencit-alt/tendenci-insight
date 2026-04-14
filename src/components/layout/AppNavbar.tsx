@@ -135,8 +135,7 @@ const ERP_MODULES: ModuleGroup[] = [
     requiredModules: ["dashboard"],
     items: [
       { label: "BI Analítico", route: "/bi-dashboard", icon: "LayoutDashboard", module: "dashboard", available: true },
-      { label: "Relatórios Financeiros", route: "/relatorios-financeiros", icon: "FileSpreadsheet", available: false },
-      { label: "Relatórios Operacionais", route: "/relatorios-operacionais", icon: "ClipboardCheck", available: false },
+      { label: "Relatórios", route: "/relatorios", icon: "FileSpreadsheet", module: "dashboard", available: true },
     ],
   },
   {
