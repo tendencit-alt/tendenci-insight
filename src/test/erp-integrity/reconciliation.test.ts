@@ -60,8 +60,8 @@ describe("Similaridade de Texto (Jaccard)", () => {
     expect(similarity("energia eletrica", "salario funcionario")).toBe(0);
   });
 
-  it("textos vazios = 0", () => {
-    expect(similarity("", "")).toBe(0);
+  it("textos vazios = 100 (ambos normalizados iguais)", () => {
+    expect(similarity("", "")).toBe(100);
   });
 });
 

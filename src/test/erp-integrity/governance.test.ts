@@ -351,7 +351,7 @@ describe("Índice de Confiabilidade Financeira", () => {
       closedPeriods: 12, totalPeriods: 12,
       autoEntries: 100, manualEntries: 0,
     });
-    expect(score).toBe(1);
+    expect(score).toBe(100);
   });
 
   it("0% tudo = score 0", () => {
@@ -369,6 +369,6 @@ describe("Índice de Confiabilidade Financeira", () => {
       closedPeriods: 6, totalPeriods: 12,         // 50% → 0.5 * 30 = 15
       autoEntries: 80, manualEntries: 20,         // 80% → 0.8 * 30 = 24
     });
-    expect(score).toBeCloseTo(0.59, 1);
+    expect(score).toBeCloseTo(59, 0);
   });
 });
