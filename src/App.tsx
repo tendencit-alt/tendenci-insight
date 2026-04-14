@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { MinimizedDialogsProvider } from "@/contexts/MinimizedDialogsContext";
 import { MinimizedDialogsBar } from "@/components/ui/MinimizedDialogsBar";
 import { PermissionsProvider } from "@/contexts/PermissionsContext";
+import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionGuard } from "@/components/auth/PermissionGuard";
 import { DynamicRouteHandler } from "@/components/routing/DynamicRouteHandler";
@@ -50,6 +51,7 @@ const App = () => (
             <MinimizedDialogsProvider>
             <MinimizedDialogsBar />
             <PermissionsProvider>
+            <WorkspaceProvider>
               <CommandBar />
                <Routes>
               <Route path="/auth" element={<Auth />} />
@@ -94,6 +96,7 @@ const App = () => (
                 </ProtectedRoute>
               } />
               </Routes>
+            </WorkspaceProvider>
             </PermissionsProvider>
             </MinimizedDialogsProvider>
           </AuthProvider>

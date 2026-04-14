@@ -21,6 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useNavigationUsage } from "@/hooks/useNavigationUsage";
 import { useAttentionLayer, type AttentionLevel } from "@/hooks/useAttentionLayer";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { cn } from "@/lib/utils";
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
@@ -269,7 +270,7 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const { trackVisit, getTopPaths } = useNavigationUsage();
   const { alerts, totalActions, getGroupBadge, getItemBadge } = useAttentionLayer();
-
+  const { isGroupVisible } = useWorkspace();
   // Profile type
   const [profileTypeName, setProfileTypeName] = useState<string | null>(null);
   useEffect(() => {
@@ -327,8 +328,10 @@ export function AppSidebar() {
   }, [userLevel]);
 
   const visibleGroups = useMemo(() =>
-    menuGroups.filter(g => !g.profiles || g.profiles.length === 0 || g.profiles.includes(currentProfile)),
-    [currentProfile]
+    menuGroups
+      .filter(g => !g.profiles || g.profiles.length === 0 || g.profiles.includes(currentProfile))
+      .filter(g => isGroupVisible(g.label)),
+    [currentProfile, isGroupVisible]
   );
 
   const quickShortcuts = useMemo(() => {
