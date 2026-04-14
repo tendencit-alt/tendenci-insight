@@ -1105,7 +1105,7 @@ export default function HomeLauncher() {
         </div>
         )}
 
-        {!executiveMode && (
+        {!executiveMode && !actionLayer.rapidMode && (
         <>
         {/* ── Favorites ── */}
         <div className="space-y-3">
