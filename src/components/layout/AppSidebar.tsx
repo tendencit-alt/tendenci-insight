@@ -3,12 +3,12 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Home, ShoppingCart, Factory, Wallet, BookOpen, Target,
   Database, BarChart3, Settings, Building2, ChevronDown,
-  Users, FileText, Briefcase, DollarSign, HardHat,
+  Users, FileText, Briefcase, DollarSign,
   Package, Layers, CreditCard, ArrowLeftRight, BarChart,
   TrendingUp, Calculator, History, Zap, Shield,
   LineChart, PieChart, UserCog, Link2,
   Landmark, ClipboardList, FolderOpen, Wrench,
-  Star, AlertTriangle, UserCheck, Clock
+  Star, AlertTriangle, UserCheck, Clock, Calendar, Play
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -109,10 +109,12 @@ const menuGroups: MenuGroup[] = [
     label: "Operações",
     icon: Factory,
     items: [
-      { title: "Produção", url: "/producao", icon: Factory },
-      { title: "Ordens de Produção", url: "/ordens-producao", icon: ClipboardList, comingSoon: true },
-      { title: "Execução / Obras", url: "/execucao-obras", icon: HardHat, comingSoon: true },
-      { title: "Projetos", url: "/projetos-operacionais", icon: Briefcase, comingSoon: true },
+      { title: "Produção (legado)", url: "/producao", icon: Factory },
+      { title: "Ordens", url: "/producao-operacoes", icon: ClipboardList },
+      { title: "Planejamento", url: "/producao-operacoes", icon: Calendar },
+      { title: "Execução", url: "/producao-operacoes", icon: Play },
+      { title: "Custos Operacionais", url: "/producao-operacoes", icon: DollarSign },
+      { title: "Analytics Operacional", url: "/producao-operacoes", icon: BarChart3 },
     ],
   },
   {

@@ -8074,6 +8074,428 @@ export type Database = {
           },
         ]
       }
+      ops_activities: {
+        Row: {
+          activity_type: string
+          created_at: string | null
+          description: string | null
+          employee_id: string | null
+          end_time: string | null
+          hourly_cost: number | null
+          hours_spent: number | null
+          id: string
+          notes: string | null
+          ops_order_id: string
+          start_time: string | null
+          status: string | null
+          team_id: string | null
+          tenant_id: string | null
+          total_cost: number | null
+        }
+        Insert: {
+          activity_type?: string
+          created_at?: string | null
+          description?: string | null
+          employee_id?: string | null
+          end_time?: string | null
+          hourly_cost?: number | null
+          hours_spent?: number | null
+          id?: string
+          notes?: string | null
+          ops_order_id: string
+          start_time?: string | null
+          status?: string | null
+          team_id?: string | null
+          tenant_id?: string | null
+          total_cost?: number | null
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string | null
+          description?: string | null
+          employee_id?: string | null
+          end_time?: string | null
+          hourly_cost?: number | null
+          hours_spent?: number | null
+          id?: string
+          notes?: string | null
+          ops_order_id?: string
+          start_time?: string | null
+          status?: string | null
+          team_id?: string | null
+          tenant_id?: string | null
+          total_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ops_activities_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ops_activities_ops_order_id_fkey"
+            columns: ["ops_order_id"]
+            isOneToOne: false
+            referencedRelation: "ops_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ops_activities_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "hr_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ops_activities_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ops_capacity: {
+        Row: {
+          allocated_hours: number | null
+          available_hours: number
+          created_at: string | null
+          id: string
+          notes: string | null
+          period_end: string
+          period_start: string
+          resource_name: string
+          resource_type: string
+          team_id: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          allocated_hours?: number | null
+          available_hours?: number
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          period_end: string
+          period_start: string
+          resource_name: string
+          resource_type?: string
+          team_id?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          allocated_hours?: number | null
+          available_hours?: number
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          resource_name?: string
+          resource_type?: string
+          team_id?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ops_capacity_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "hr_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ops_capacity_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ops_material_usage: {
+        Row: {
+          created_at: string | null
+          id: string
+          material_name: string
+          notes: string | null
+          ops_order_id: string
+          quantity: number
+          tenant_id: string | null
+          total_cost: number | null
+          unit: string | null
+          unit_cost: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          material_name: string
+          notes?: string | null
+          ops_order_id: string
+          quantity?: number
+          tenant_id?: string | null
+          total_cost?: number | null
+          unit?: string | null
+          unit_cost?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          material_name?: string
+          notes?: string | null
+          ops_order_id?: string
+          quantity?: number
+          tenant_id?: string | null
+          total_cost?: number | null
+          unit?: string | null
+          unit_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ops_material_usage_ops_order_id_fkey"
+            columns: ["ops_order_id"]
+            isOneToOne: false
+            referencedRelation: "ops_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ops_material_usage_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ops_occurrences: {
+        Row: {
+          created_at: string | null
+          description: string
+          id: string
+          occurrence_type: string
+          ops_order_id: string
+          reported_by: string | null
+          resolution: string | null
+          resolved_at: string | null
+          severity: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          id?: string
+          occurrence_type?: string
+          ops_order_id: string
+          reported_by?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          id?: string
+          occurrence_type?: string
+          ops_order_id?: string
+          reported_by?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ops_occurrences_ops_order_id_fkey"
+            columns: ["ops_order_id"]
+            isOneToOne: false
+            referencedRelation: "ops_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ops_occurrences_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ops_orders: {
+        Row: {
+          actual_cost: number | null
+          actual_end_date: string | null
+          actual_hours: number | null
+          client_id: string | null
+          cost_center_id: string | null
+          created_at: string | null
+          description: string | null
+          estimated_cost: number | null
+          estimated_hours: number | null
+          expected_end_date: string | null
+          id: string
+          labor_cost: number | null
+          material_cost: number | null
+          notes: string | null
+          order_number: number
+          order_type: string
+          priority: string | null
+          project_id: string | null
+          responsible_id: string | null
+          source_order_id: string | null
+          start_date: string | null
+          status: string
+          team_id: string | null
+          tenant_id: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          actual_cost?: number | null
+          actual_end_date?: string | null
+          actual_hours?: number | null
+          client_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          estimated_cost?: number | null
+          estimated_hours?: number | null
+          expected_end_date?: string | null
+          id?: string
+          labor_cost?: number | null
+          material_cost?: number | null
+          notes?: string | null
+          order_number?: number
+          order_type?: string
+          priority?: string | null
+          project_id?: string | null
+          responsible_id?: string | null
+          source_order_id?: string | null
+          start_date?: string | null
+          status?: string
+          team_id?: string | null
+          tenant_id?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          actual_cost?: number | null
+          actual_end_date?: string | null
+          actual_hours?: number | null
+          client_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          estimated_cost?: number | null
+          estimated_hours?: number | null
+          expected_end_date?: string | null
+          id?: string
+          labor_cost?: number | null
+          material_cost?: number | null
+          notes?: string | null
+          order_number?: number
+          order_type?: string
+          priority?: string | null
+          project_id?: string | null
+          responsible_id?: string | null
+          source_order_id?: string | null
+          start_date?: string | null
+          status?: string
+          team_id?: string | null
+          tenant_id?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ops_orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ops_orders_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ops_orders_source_order_id_fkey"
+            columns: ["source_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ops_orders_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "hr_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ops_orders_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ops_scheduling: {
+        Row: {
+          created_at: string | null
+          id: string
+          machine_or_resource: string | null
+          notes: string | null
+          ops_order_id: string
+          position: number
+          scheduled_end: string | null
+          scheduled_start: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          machine_or_resource?: string | null
+          notes?: string | null
+          ops_order_id: string
+          position?: number
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          machine_or_resource?: string | null
+          notes?: string | null
+          ops_order_id?: string
+          position?: number
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ops_scheduling_ops_order_id_fkey"
+            columns: ["ops_order_id"]
+            isOneToOne: false
+            referencedRelation: "ops_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ops_scheduling_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_history: {
         Row: {
           action_type: string
