@@ -26,37 +26,37 @@ const DEFAULT_WORKSPACES: WorkspaceDefinition[] = [
     id: "all",
     name: "Completo",
     icon: "🏢",
-    groups: [], // empty = show all
+    groups: [],
     description: "Visualização completa do sistema",
     isDefault: true,
+  },
+  {
+    id: "executivo",
+    name: "Executivo",
+    icon: "📊",
+    groups: ["Hoje", "Financeiro", "Vendas", "Estratégia", "Sistema"],
+    description: "Visão executiva: finanças, vendas, estratégia",
   },
   {
     id: "financeiro",
     name: "Financeiro",
     icon: "💰",
-    groups: ["Home", "Financeiro", "Controladoria", "Planejamento", "Relatórios & BI"],
-    description: "Contas, conciliação, fluxo de caixa, DRE",
+    groups: ["Hoje", "Financeiro", "Sistema"],
+    description: "Tesouraria, DRE, fluxo de caixa, metas",
   },
   {
     id: "comercial",
     name: "Comercial",
     icon: "🛒",
-    groups: ["Home", "Comercial", "Cadastros", "Relatórios & BI"],
-    description: "Pedidos, orçamentos, clientes, pipeline",
+    groups: ["Hoje", "Vendas", "Sistema"],
+    description: "CRM, pipeline, pedidos, clientes",
   },
   {
     id: "operacional",
     name: "Operacional",
     icon: "🏭",
-    groups: ["Home", "Operações", "Cadastros"],
-    description: "Produção, ordens, execução, projetos",
-  },
-  {
-    id: "estrategico",
-    name: "Estratégico",
-    icon: "📊",
-    groups: ["Home", "Controladoria", "Planejamento", "Relatórios & BI"],
-    description: "Resultado, metas, forecast, fluxo previsto",
+    groups: ["Hoje", "Operações", "Pessoas", "Sistema"],
+    description: "Projetos, produção, suprimentos, RH",
   },
 ];
 
@@ -65,21 +65,21 @@ export const TEMPORARY_TEMPLATES: Omit<WorkspaceDefinition, "id" | "createdAt">[
   {
     name: "Auditoria",
     icon: "🔍",
-    groups: ["Home", "Controladoria", "Financeiro", "Relatórios & BI"],
+    groups: ["Hoje", "Financeiro", "Estratégia"],
     description: "Workspace focado em auditoria e verificação",
     isTemporary: true,
   },
   {
     name: "Fechamento Mês",
     icon: "📅",
-    groups: ["Home", "Financeiro", "Controladoria", "Planejamento"],
+    groups: ["Hoje", "Financeiro"],
     description: "Workspace focado em fechamento mensal",
     isTemporary: true,
   },
   {
     name: "Implantação Cliente",
     icon: "🚀",
-    groups: ["Home", "Comercial", "Operações", "Cadastros"],
+    groups: ["Hoje", "Vendas", "Operações", "Pessoas"],
     description: "Workspace focado em onboarding de cliente",
     isTemporary: true,
   },
@@ -175,9 +175,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const isGroupVisible = useCallback((groupLabel: string): boolean => {
-    if (activeWorkspace.groups.length === 0) return true; // "all" shows everything
-    // Always show Config and Owner
-    if (groupLabel === "Configurações" || groupLabel === "Owner") return true;
+    if (activeWorkspace.groups.length === 0) return true;
+    // Always show Sistema and Owner
+    if (groupLabel === "Sistema" || groupLabel === "Configurações" || groupLabel === "Owner") return true;
     return activeWorkspace.groups.includes(groupLabel);
   }, [activeWorkspace]);
 

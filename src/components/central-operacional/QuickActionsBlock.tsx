@@ -3,16 +3,16 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import {
   Plus, CreditCard, FileText, ShoppingCart,
-  Factory, UserPlus, Zap
+  Factory, Zap
 } from "lucide-react";
 
 const ACTIONS = [
-  { label: "Novo Pedido", icon: ShoppingCart, path: "/pedidos", color: "text-blue-600" },
-  { label: "Novo Lançamento", icon: CreditCard, path: "/financeiro", color: "text-green-600" },
-  { label: "Novo Cliente", icon: UserPlus, path: "/pedidos", color: "text-purple-600" },
-  { label: "Novo Orçamento", icon: FileText, path: "/pedidos", color: "text-orange-600" },
-  { label: "Iniciar Produção", icon: Factory, path: "/producao", color: "text-amber-600" },
-  { label: "Conciliar Extrato", icon: Zap, path: "/financeiro", color: "text-teal-600" },
+  { label: "Lançar Receita", icon: Plus, path: "/financeiro", color: "text-green-600" },
+  { label: "Lançar Despesa", icon: CreditCard, path: "/financeiro", color: "text-red-500" },
+  { label: "Criar Proposta", icon: FileText, path: "/pedidos", color: "text-blue-600" },
+  { label: "Registrar Tarefa", icon: ShoppingCart, path: "/pedidos", color: "text-purple-600" },
+  { label: "Registrar Meta", icon: Factory, path: "/planning", color: "text-amber-600" },
+  { label: "Importar OFX", icon: Zap, path: "/financeiro", color: "text-teal-600" },
 ];
 
 export function QuickActionsBlock() {
