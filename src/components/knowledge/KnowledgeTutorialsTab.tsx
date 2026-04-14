@@ -10,7 +10,7 @@ export function KnowledgeTutorialsTab() {
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
 
-  const progressMap = new Map((progress || []).map((p: any) => [p.tutorial_id, p]));
+  const progressMap = new Map<string, any>((progress || []).map((p: any) => [p.tutorial_id, p]));
 
   return (
     <div className="space-y-4">
