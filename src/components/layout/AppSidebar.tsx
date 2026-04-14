@@ -4,9 +4,13 @@ import {
   LayoutDashboard, Users, ShoppingCart, Wallet, BarChart3,
   Target, PieChart, FolderOpen, Zap, Settings, Building2,
   ChevronDown, Factory, Package, BookOpen,
-  ListChecks, Bell, Shield,
+  ListChecks, Bell, Shield, Clock,
   History, UserCog, Layers,
-  GitBranch, Inbox, CheckSquare, LineChart
+  GitBranch, Inbox, CheckSquare, LineChart,
+  FileText, Truck, ClipboardList, DollarSign,
+  TrendingUp, Briefcase, Mail, Link2, Globe,
+  HardHat, Calculator, BarChart, Wrench,
+  Receipt, CreditCard, Landmark, ArrowLeftRight
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -22,6 +26,7 @@ import { cn } from "@/lib/utils";
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Badge } from "@/components/ui/badge";
 
 // ── Types ──
 
@@ -32,6 +37,7 @@ interface MenuItem {
   module?: string | null;
   masterOnly?: boolean;
   ownerOnly?: boolean;
+  comingSoon?: boolean;
 }
 
 interface MenuGroup {
@@ -39,13 +45,10 @@ interface MenuGroup {
   icon: any;
   items: MenuItem[];
   separator?: boolean;
-  /** Which profile types can see this group. Empty = all profiles. */
   profiles?: string[];
 }
 
 // ── Profile → Group visibility map ──
-// If a group has no `profiles` array, it's visible to all.
-// "system_owner" / "tenant_owner" / "tenant_admin" are resolved from userLevel.
 
 const P = {
   ALL_TENANT: ["tenant_owner", "tenant_admin", "financeiro", "comercial", "operacional", "producao", "contador", "auditor"],
@@ -75,6 +78,7 @@ const menuGroups: MenuGroup[] = [
       { title: "Minhas Tarefas", url: "/tarefas", icon: CheckSquare },
       { title: "Aprovações", url: "/aprovacoes", icon: GitBranch },
       { title: "Notificações", url: "/atividades", icon: Bell },
+      { title: "Pendências Executivas", url: "/pendencias", icon: ClipboardList, comingSoon: true },
     ],
   },
   {
@@ -83,6 +87,9 @@ const menuGroups: MenuGroup[] = [
     items: [
       { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, module: "pedidos" },
       { title: "Clientes", url: "/clientes", icon: Users },
+      { title: "Propostas", url: "/propostas", icon: FileText, comingSoon: true },
+      { title: "Contratos", url: "/contratos", icon: Briefcase, comingSoon: true },
+      { title: "Comissões", url: "/comissoes", icon: DollarSign, comingSoon: true },
       { title: "Documentos", url: "/documentos", icon: FolderOpen },
     ],
   },
@@ -92,6 +99,8 @@ const menuGroups: MenuGroup[] = [
     separator: true,
     items: [
       { title: "Produção", url: "/producao", icon: Factory, module: "producao" },
+      { title: "Projetos", url: "/projetos-operacionais", icon: HardHat, comingSoon: true },
+      { title: "Entregas", url: "/entregas", icon: Truck, comingSoon: true },
     ],
   },
   {
@@ -100,6 +109,10 @@ const menuGroups: MenuGroup[] = [
     items: [
       { title: "Fornecedores", url: "/fornecedores", icon: Package, module: "fornecedores" },
       { title: "Materiais", url: "/estoque", icon: Layers, module: "estoque" },
+      { title: "Solicitações de Compra", url: "/solicitacoes-compra", icon: ClipboardList, comingSoon: true },
+      { title: "Cotações", url: "/cotacoes-compra", icon: FileText, comingSoon: true },
+      { title: "Pedidos de Compra", url: "/pedidos-compra", icon: ShoppingCart, comingSoon: true },
+      { title: "Recebimento", url: "/recebimento", icon: Truck, comingSoon: true },
     ],
   },
   {
@@ -108,6 +121,10 @@ const menuGroups: MenuGroup[] = [
     separator: true,
     items: [
       { title: "Movimento", url: "/financeiro", icon: Wallet, module: "financeiro" },
+      { title: "Contas a Receber", url: "/contas-receber", icon: TrendingUp, comingSoon: true },
+      { title: "Contas a Pagar", url: "/contas-pagar", icon: CreditCard, comingSoon: true },
+      { title: "Conciliação", url: "/conciliacao", icon: ArrowLeftRight, comingSoon: true },
+      { title: "Fluxo de Caixa", url: "/fluxo-caixa", icon: BarChart, comingSoon: true },
     ],
   },
   {
@@ -115,6 +132,20 @@ const menuGroups: MenuGroup[] = [
     icon: BookOpen,
     items: [
       { title: "Plano de Contas", url: "/cadastros-financeiros", icon: BookOpen, module: "cadastros_financeiros" },
+      { title: "DRE", url: "/dre", icon: LineChart, comingSoon: true },
+      { title: "Margem Contribuição", url: "/margem-contribuicao", icon: Calculator, comingSoon: true },
+      { title: "EBITDA", url: "/ebitda", icon: TrendingUp, comingSoon: true },
+      { title: "Orçado vs Realizado", url: "/orcado-realizado", icon: BarChart3, comingSoon: true },
+    ],
+  },
+  {
+    label: "RH e Custos",
+    icon: HardHat,
+    items: [
+      { title: "Colaboradores", url: "/colaboradores", icon: Users, comingSoon: true },
+      { title: "Equipes", url: "/equipes", icon: Users, comingSoon: true },
+      { title: "Apontamento Horas", url: "/apontamento-horas", icon: Clock, comingSoon: true },
+      { title: "Custo Real Projeto", url: "/custo-real", icon: Calculator, comingSoon: true },
     ],
   },
   {
@@ -122,6 +153,8 @@ const menuGroups: MenuGroup[] = [
     icon: Target,
     items: [
       { title: "Metas", url: "/metas", icon: Target, module: "metas" },
+      { title: "Orçamento", url: "/orcamento", icon: DollarSign, comingSoon: true },
+      { title: "Forecast", url: "/forecast", icon: TrendingUp, comingSoon: true },
     ],
   },
   {
@@ -131,6 +164,19 @@ const menuGroups: MenuGroup[] = [
     items: [
       { title: "Análise BI", url: "/bi-dashboard", icon: PieChart, module: "dashboard" },
       { title: "Dashboards", url: "/dashboards", icon: BarChart3 },
+      { title: "Exportação BI", url: "/exportacao-bi", icon: FileText, comingSoon: true },
+    ],
+  },
+  {
+    label: "Integrações",
+    icon: Link2,
+    items: [
+      { title: "NF-e", url: "/nfe", icon: Receipt, comingSoon: true },
+      { title: "NFS-e", url: "/nfse", icon: Receipt, comingSoon: true },
+      { title: "Bancos / OFX", url: "/integracao-bancos", icon: Landmark, comingSoon: true },
+      { title: "WhatsApp", url: "/integracao-whatsapp", icon: Mail, comingSoon: true },
+      { title: "API Pública", url: "/api-publica", icon: Globe, comingSoon: true },
+      { title: "Webhooks", url: "/webhooks", icon: Zap, comingSoon: true },
     ],
   },
   {
@@ -140,6 +186,7 @@ const menuGroups: MenuGroup[] = [
     items: [
       { title: "Regras Automáticas", url: "/automacoes", icon: Zap },
       { title: "Auditoria", url: "/auditoria", icon: History },
+      { title: "SLA Operacional", url: "/sla", icon: Clock, comingSoon: true },
     ],
   },
   {
@@ -159,6 +206,7 @@ const menuGroups: MenuGroup[] = [
     ],
   },
 ];
+
 // ── Component ──
 
 export function AppSidebar() {
@@ -173,7 +221,6 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const isMaster = profile?.role === 'admin';
 
-  // Fetch profile type name for adaptive menu
   const [profileTypeName, setProfileTypeName] = useState<string | null>(null);
 
   useEffect(() => {
@@ -190,42 +237,30 @@ export function AppSidebar() {
     fetchProfileType();
   }, [user]);
 
-  // Resolve effective profile key for menu filtering
   const effectiveProfile = (): string => {
     if (userLevel === 'system_owner') return 'system_owner';
     if (userLevel === 'tenant_owner') return 'tenant_owner';
     if (userLevel === 'tenant_admin') return 'tenant_admin';
-    // Map profile_type name to our keys
     if (profileTypeName) {
       const normalized = profileTypeName.toLowerCase().replace(/\s+/g, '_');
       const knownProfiles = ['financeiro', 'comercial', 'operacional', 'producao', 'contador', 'auditor'];
-      // Try exact match
       if (knownProfiles.includes(normalized)) return normalized;
-      // Try partial match
       const match = knownProfiles.find(p => normalized.includes(p));
       if (match) return match;
     }
-    // Fallback: tenant_admin for admin role, otherwise show everything
     if (isMaster) return 'tenant_admin';
-    return 'tenant_admin'; // default: show all tenant items
+    return 'tenant_admin';
   };
 
   const currentProfile = effectiveProfile();
 
   const isGroupVisibleForProfile = (group: MenuGroup): boolean => {
-    // No profile restriction = visible to everyone
     if (!group.profiles || group.profiles.length === 0) return true;
     return group.profiles.includes(currentProfile);
   };
 
-  const isItemVisible = (item: MenuItem) => {
-    // Temporarily showing all items including "em breve" features
-    return true;
-  };
-
   const visibleGroups = menuGroups
     .filter(isGroupVisibleForProfile)
-    .map(group => ({ ...group, items: group.items }))
     .filter(group => group.items.length > 0);
 
   return (
@@ -261,83 +296,70 @@ export function AppSidebar() {
         <nav className="py-1.5">
           {visibleGroups.map((group) => {
             const isGroupActive = group.items.some(
-              item => currentPath === item.url || currentPath.startsWith(item.url + '/')
-            );
-            const isSingleItem = group.items.length === 1;
-
-            const content = isSingleItem ? (
-              <SidebarGroup key={group.label} className="py-0">
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild>
-                        <NavLink
-                          to={group.items[0].url}
-                          end={group.items[0].url === "/bi-dashboard"}
-                          className="flex items-center gap-3 px-3 py-2 mx-2 rounded-md transition-colors hover:bg-sidebar-accent/50 text-sidebar-foreground/75 hover:text-sidebar-foreground"
-                          activeClassName="bg-primary/15 text-primary font-medium"
-                        >
-                          <group.icon className="h-4 w-4 flex-shrink-0" />
-                          <span className="truncate text-[13px]">{group.label}</span>
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            ) : (
-              <Collapsible key={group.label} defaultOpen={isGroupActive}>
-                <SidebarGroup className="py-0">
-                  <CollapsibleTrigger className="w-full">
-                    <SidebarGroupLabel className="flex items-center justify-between w-full px-4 py-1.5 cursor-pointer hover:bg-sidebar-accent/20 rounded-md mx-1 transition-colors">
-                      <div className="flex items-center gap-2.5">
-                        <group.icon className={cn(
-                          "h-4 w-4 flex-shrink-0",
-                          isGroupActive ? "text-primary" : "text-sidebar-foreground/45"
-                        )} />
-                        {!isCollapsed && (
-                          <span className={cn(
-                            "text-[11px] font-semibold tracking-wide uppercase",
-                            isGroupActive ? "text-primary" : "text-sidebar-foreground/45"
-                          )}>
-                            {group.label}
-                          </span>
-                        )}
-                      </div>
-                      {!isCollapsed && (
-                        <ChevronDown className="h-3 w-3 text-sidebar-foreground/30 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                      )}
-                    </SidebarGroupLabel>
-                  </CollapsibleTrigger>
-
-                  <CollapsibleContent>
-                    <SidebarGroupContent>
-                      <SidebarMenu>
-                        {group.items.map((item) => (
-                          <SidebarMenuItem key={item.title + item.url}>
-                            <SidebarMenuButton asChild>
-                              <NavLink
-                                to={item.url}
-                                end
-                                className="flex items-center gap-2.5 px-3 py-1 ml-5 mr-2 rounded-md transition-colors hover:bg-sidebar-accent/30 text-sidebar-foreground/60 hover:text-sidebar-foreground text-[13px]"
-                                activeClassName="bg-primary/10 text-primary font-medium"
-                              >
-                                <item.icon className="h-3.5 w-3.5 flex-shrink-0" />
-                                <span className="truncate">{item.title}</span>
-                              </NavLink>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        ))}
-                      </SidebarMenu>
-                    </SidebarGroupContent>
-                  </CollapsibleContent>
-                </SidebarGroup>
-              </Collapsible>
+              item => !item.comingSoon && (currentPath === item.url || currentPath.startsWith(item.url + '/'))
             );
 
             return (
               <div key={group.label}>
-                {content}
+                <Collapsible defaultOpen={isGroupActive}>
+                  <SidebarGroup className="py-0">
+                    <CollapsibleTrigger className="w-full">
+                      <SidebarGroupLabel className="flex items-center justify-between w-full px-4 py-1.5 cursor-pointer hover:bg-sidebar-accent/20 rounded-md mx-1 transition-colors">
+                        <div className="flex items-center gap-2.5">
+                          <group.icon className={cn(
+                            "h-4 w-4 flex-shrink-0",
+                            isGroupActive ? "text-primary" : "text-sidebar-foreground/45"
+                          )} />
+                          {!isCollapsed && (
+                            <span className={cn(
+                              "text-[11px] font-semibold tracking-wide uppercase",
+                              isGroupActive ? "text-primary" : "text-sidebar-foreground/45"
+                            )}>
+                              {group.label}
+                            </span>
+                          )}
+                        </div>
+                        {!isCollapsed && (
+                          <ChevronDown className="h-3 w-3 text-sidebar-foreground/30 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                        )}
+                      </SidebarGroupLabel>
+                    </CollapsibleTrigger>
+
+                    <CollapsibleContent>
+                      <SidebarGroupContent>
+                        <SidebarMenu>
+                          {group.items.map((item) => (
+                            <SidebarMenuItem key={item.title + item.url}>
+                              <SidebarMenuButton asChild={!item.comingSoon}>
+                                {item.comingSoon ? (
+                                  <div className="flex items-center gap-2.5 px-3 py-1 ml-5 mr-2 rounded-md text-sidebar-foreground/30 text-[13px] cursor-default select-none">
+                                    <item.icon className="h-3.5 w-3.5 flex-shrink-0" />
+                                    <span className="truncate">{item.title}</span>
+                                    {!isCollapsed && (
+                                      <Badge variant="outline" className="ml-auto text-[9px] px-1.5 py-0 h-4 border-sidebar-foreground/15 text-sidebar-foreground/25 font-normal">
+                                        Em breve
+                                      </Badge>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <NavLink
+                                    to={item.url}
+                                    end
+                                    className="flex items-center gap-2.5 px-3 py-1 ml-5 mr-2 rounded-md transition-colors hover:bg-sidebar-accent/30 text-sidebar-foreground/60 hover:text-sidebar-foreground text-[13px]"
+                                    activeClassName="bg-primary/10 text-primary font-medium"
+                                  >
+                                    <item.icon className="h-3.5 w-3.5 flex-shrink-0" />
+                                    <span className="truncate">{item.title}</span>
+                                  </NavLink>
+                                )}
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          ))}
+                        </SidebarMenu>
+                      </SidebarGroupContent>
+                    </CollapsibleContent>
+                  </SidebarGroup>
+                </Collapsible>
                 {group.separator && !isCollapsed && (
                   <div className="mx-4 my-1.5 border-t border-sidebar-border/20" />
                 )}
