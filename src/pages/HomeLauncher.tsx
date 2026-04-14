@@ -51,6 +51,7 @@ import { MiniActivityFeed } from "@/components/activity/ActivityFeed";
 import { NotificationSummaryWidget } from "@/components/notifications/NotificationSummaryWidget";
 import { FlowWidget } from "@/components/flow/FlowPanel";
 import { DataIntegrityWidget } from "@/components/integrity/DataIntegrityWidget";
+import { AutomationEngineWidget } from "@/components/automation/AutomationEngineWidget";
 
 // ─── Module definitions ───
 const MODULES = [
@@ -1482,6 +1483,13 @@ export default function HomeLauncher() {
         {!executiveMode && !actionLayer.rapidMode && (
           <div className="mt-2">
             <DataIntegrityWidget />
+          </div>
+        )}
+
+        {/* ── Automation Engine Widget ── */}
+        {!executiveMode && !actionLayer.rapidMode && (
+          <div className="mt-2">
+            <AutomationEngineWidget />
           </div>
         )}
 
