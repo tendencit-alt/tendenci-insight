@@ -175,9 +175,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const isGroupVisible = useCallback((groupLabel: string): boolean => {
-    if (activeWorkspace.groups.length === 0) return true; // "all" shows everything
-    // Always show Config and Owner
-    if (groupLabel === "Configurações" || groupLabel === "Owner") return true;
+    if (activeWorkspace.groups.length === 0) return true;
+    // Always show Sistema and Owner
+    if (groupLabel === "Sistema" || groupLabel === "Configurações" || groupLabel === "Owner") return true;
     return activeWorkspace.groups.includes(groupLabel);
   }, [activeWorkspace]);
 

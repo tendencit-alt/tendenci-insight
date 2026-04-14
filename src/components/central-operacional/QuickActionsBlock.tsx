@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import {
   Plus, CreditCard, FileText, ShoppingCart,
-  Factory, UserPlus, Zap
+  Factory, Zap
 } from "lucide-react";
 
 const ACTIONS = [

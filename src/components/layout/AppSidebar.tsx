@@ -2,14 +2,14 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Home, ShoppingCart, Factory, Wallet, BookOpen, Target,
-  Database, BarChart3, Settings, Building2, ChevronDown,
+  Settings, Building2, ChevronDown,
   Users, FileText, Briefcase, DollarSign,
   Package, Layers, CreditCard, ArrowLeftRight, BarChart,
   TrendingUp, Calculator, History, Zap, Shield,
   LineChart, PieChart, UserCog, Link2,
-  Landmark, ClipboardList, FolderOpen, Wrench,
-  Star, AlertTriangle, UserCheck, Clock, Calendar, Play, Scale,
-  Brain, Telescope, GraduationCap, Activity, Heart
+  Landmark, Wrench,
+  Star, AlertTriangle, UserCheck,
+  Brain, Telescope, GraduationCap
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
