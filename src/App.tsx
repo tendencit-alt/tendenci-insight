@@ -40,6 +40,7 @@ import DashboardBI from "./pages/DashboardBI";
 import RecursosHumanos from "./pages/RecursosHumanos";
 import ProducaoOperacoes from "./pages/ProducaoOperacoes";
 import Projetos from "./pages/Projetos";
+import Suprimentos from "./pages/Suprimentos";
 
 const queryClient = new QueryClient();
 
@@ -81,6 +82,7 @@ const App = () => (
               <Route path="/rh" element={<ProtectedRoute><RecursosHumanos /></ProtectedRoute>} />
               <Route path="/producao-operacoes" element={<ProtectedRoute><ProducaoOperacoes /></ProtectedRoute>} />
               <Route path="/projetos" element={<ProtectedRoute><Projetos /></ProtectedRoute>} />
+              <Route path="/suprimentos" element={<ProtectedRoute><Suprimentos /></ProtectedRoute>} />
               <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
               <Route path="/atividades" element={<ProtectedRoute><ActivityCenter /></ProtectedRoute>} />
               <Route path="/system-errors" element={<Navigate to="/" replace />} />
@@ -94,7 +96,7 @@ const App = () => (
               <Route path="/metas" element={<Navigate to="/" replace />} />
               <Route path="/dashboards" element={<Navigate to="/" replace />} />
               <Route path="/ia-configuracao" element={<Navigate to="/" replace />} />
-              <Route path="/compras" element={<Navigate to="/financeiro" replace />} />
+              <Route path="/compras" element={<Navigate to="/suprimentos" replace />} />
               {/* Rotas dinâmicas */}
               <Route path="*" element={
                 <ProtectedRoute>
