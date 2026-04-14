@@ -48,6 +48,7 @@ import { useAutomationLayer } from "@/hooks/useAutomationLayer";
 import { useCollaborationLayer, type CollabFilter } from "@/hooks/useCollaborationLayer";
 import { useLearningLayer } from "@/hooks/useLearningLayer";
 import { MiniActivityFeed } from "@/components/activity/ActivityFeed";
+import { NotificationSummaryWidget } from "@/components/notifications/NotificationSummaryWidget";
 
 // ─── Module definitions ───
 const MODULES = [
