@@ -3022,6 +3022,101 @@ export type Database = {
           },
         ]
       }
+      feature_flag_overrides: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          flag_id: string
+          id: string
+          reason: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          flag_id: string
+          id?: string
+          reason?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          flag_id?: string
+          id?: string
+          reason?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feature_flag_overrides_flag_id_fkey"
+            columns: ["flag_id"]
+            isOneToOne: false
+            referencedRelation: "feature_flags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feature_flag_overrides_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feature_flags: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          metadata: Json | null
+          module: string | null
+          name: string
+          pilot_tenant_ids: string[] | null
+          release_id: string | null
+          rollout_percentage: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          metadata?: Json | null
+          module?: string | null
+          name: string
+          pilot_tenant_ids?: string[] | null
+          release_id?: string | null
+          rollout_percentage?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          metadata?: Json | null
+          module?: string | null
+          name?: string
+          pilot_tenant_ids?: string[] | null
+          release_id?: string | null
+          rollout_percentage?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feature_flags_release_id_fkey"
+            columns: ["release_id"]
+            isOneToOne: false
+            referencedRelation: "system_releases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fee_supplier_configs: {
         Row: {
           created_at: string | null
@@ -11186,6 +11281,47 @@ export type Database = {
           },
         ]
       }
+      system_changelog: {
+        Row: {
+          change_type: string
+          created_at: string
+          description: string | null
+          id: string
+          impact: string | null
+          module: string | null
+          release_id: string
+          title: string
+        }
+        Insert: {
+          change_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          impact?: string | null
+          module?: string | null
+          release_id: string
+          title: string
+        }
+        Update: {
+          change_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          impact?: string | null
+          module?: string | null
+          release_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_changelog_release_id_fkey"
+            columns: ["release_id"]
+            isOneToOne: false
+            referencedRelation: "system_releases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_errors: {
         Row: {
           created_at: string
@@ -11263,6 +11399,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_releases: {
+        Row: {
+          breaking_changes: Json | null
+          created_at: string
+          description: string | null
+          fixes: Json | null
+          id: string
+          improvements: Json | null
+          released_at: string | null
+          released_by: string | null
+          status: string
+          title: string
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          breaking_changes?: Json | null
+          created_at?: string
+          description?: string | null
+          fixes?: Json | null
+          id?: string
+          improvements?: Json | null
+          released_at?: string | null
+          released_by?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          version: string
+        }
+        Update: {
+          breaking_changes?: Json | null
+          created_at?: string
+          description?: string | null
+          fixes?: Json | null
+          id?: string
+          improvements?: Json | null
+          released_at?: string | null
+          released_by?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          version?: string
+        }
+        Relationships: []
       }
       temp_phone_fixes: {
         Row: {
