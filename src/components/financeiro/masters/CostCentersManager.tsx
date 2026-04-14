@@ -10,9 +10,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Pencil, Building2, Loader2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Plus, Pencil, Building2, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { numericCodeSort } from "@/lib/numericCodeSort";
+
 export function CostCentersManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
@@ -46,11 +48,7 @@ export function CostCentersManager() {
 
   const handleNew = () => {
     setEditing(null);
-    setForm({
-      name: "",
-      code: "",
-      active: true,
-    });
+    setForm({ name: "", code: "", active: true });
     setDialogOpen(true);
   };
 
@@ -94,6 +92,8 @@ export function CostCentersManager() {
 
   const sortedCenters = useMemo(() => numericCodeSort(centers || [], 'code'), [centers]);
 
+  const isSystemDefault = editing?.is_system_default === true;
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -127,7 +127,17 @@ export function CostCentersManager() {
               {sortedCenters.map((center) => (
                 <TableRow key={center.id}>
                   <TableCell className="font-medium">{center.code || "-"}</TableCell>
-                  <TableCell>{center.name}</TableCell>
+                  <TableCell className="flex items-center gap-2">
+                    {center.name}
+                    {(center as any).is_system_default && (
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                        </TooltipTrigger>
+                        <TooltipContent>Padrão do sistema — não pode ser desativado</TooltipContent>
+                      </Tooltip>
+                    )}
+                  </TableCell>
                   <TableCell>
                     {center.active ? (
                       <Badge className="bg-green-600">Ativo</Badge>
@@ -160,6 +170,13 @@ export function CostCentersManager() {
             <DialogTitle>{editing ? "Editar Centro de Custo" : "Novo Centro de Custo"}</DialogTitle>
           </DialogHeader>
 
+          {isSystemDefault && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 text-sm">
+              <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+              <span>Este centro de custo é padrão do sistema e não pode ser desativado.</span>
+            </div>
+          )}
+
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Código</Label>
@@ -183,6 +200,7 @@ export function CostCentersManager() {
               <Switch
                 checked={form.active}
                 onCheckedChange={(checked) => setForm({ ...form, active: checked })}
+                disabled={isSystemDefault}
               />
               <Label>Centro de custo ativo</Label>
             </div>

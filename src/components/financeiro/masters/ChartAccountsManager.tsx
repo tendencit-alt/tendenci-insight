@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, FileSpreadsheet, Loader2, Trash2, X, ChevronRight, ChevronDown, ChevronsUpDown, GripVertical, RefreshCw } from "lucide-react";
+import { Plus, Pencil, FileSpreadsheet, Loader2, Trash2, X, ChevronRight, ChevronDown, ChevronsUpDown, GripVertical, RefreshCw, ShieldCheck } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -240,6 +241,7 @@ function DraggableAccountRow({
       <TableCell>
         <span
           className={cn(
+            "inline-flex items-center gap-1.5",
             account.depth === 0 && "font-bold",
             account.depth === 1 && "font-semibold",
             account.depth >= 2 && "text-muted-foreground",
@@ -247,6 +249,14 @@ function DraggableAccountRow({
           )}
         >
           {account.name}
+          {account.is_core && (
+            <Tooltip>
+              <TooltipTrigger>
+                <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+              </TooltipTrigger>
+              <TooltipContent>Estrutura core do sistema — protegida</TooltipContent>
+            </Tooltip>
+          )}
         </span>
       </TableCell>
       <TableCell>{getNatureBadge(account.nature)}</TableCell>
@@ -285,14 +295,16 @@ function DraggableAccountRow({
             <Button variant="ghost" size="sm" onClick={() => onEdit(account)}>
               <Pencil className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onDelete(account)}
-              className="text-destructive hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {!account.is_core && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onDelete(account)}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         )}
       </TableCell>
