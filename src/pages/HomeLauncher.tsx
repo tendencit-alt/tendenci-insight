@@ -222,6 +222,9 @@ export default function HomeLauncher() {
   const { data: timeline = [] } = useOperationalTimeline();
   const [fabOpen, setFabOpen] = useState(false);
   const [executiveMode, setExecutiveMode] = useState(false);
+  const { data: predictive, isLoading: loadingPredictive } = usePredictiveLayer();
+  const simulator = useSimulator();
+  const [showSimulator, setShowSimulator] = useState(false);
 
   const showOnboarding = onboardingDone.length < ONBOARDING_STEPS.length;
 
