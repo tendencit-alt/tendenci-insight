@@ -239,16 +239,13 @@ export function AppSidebar() {
   };
 
   const isItemVisible = (item: MenuItem) => {
-    if (loading) return !(item as any).ownerOnly;
-    if (item.ownerOnly && !isOwner) return false;
-    if (item.masterOnly && !isMaster) return false;
-    if (item.module) return hasModuleAccess(item.module);
+    // Temporarily showing all items including "em breve" features
     return true;
   };
 
   const visibleGroups = menuGroups
     .filter(isGroupVisibleForProfile)
-    .map(group => ({ ...group, items: group.items.filter(isItemVisible) }))
+    .map(group => ({ ...group, items: group.items }))
     .filter(group => group.items.length > 0);
 
   return (
