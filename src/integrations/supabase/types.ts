@@ -1044,6 +1044,51 @@ export type Database = {
           },
         ]
       }
+      billing_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          invoice_id: string | null
+          metadata: Json | null
+          status: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          status?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          status?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_events_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       boleto_rates: {
         Row: {
           active: boolean | null
@@ -7551,6 +7596,75 @@ export type Database = {
           },
         ]
       }
+      invoices: {
+        Row: {
+          amount: number
+          created_at: string
+          due_date: string | null
+          id: string
+          invoice_number: number
+          line_items: Json | null
+          notes: string | null
+          paid_at: string | null
+          payment_attempts: number
+          status: string
+          subscription_id: string | null
+          tax: number
+          tenant_id: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: number
+          line_items?: Json | null
+          notes?: string | null
+          paid_at?: string | null
+          payment_attempts?: number
+          status?: string
+          subscription_id?: string | null
+          tax?: number
+          tenant_id: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: number
+          line_items?: Json | null
+          notes?: string | null
+          paid_at?: string | null
+          payment_attempts?: number
+          status?: string
+          subscription_id?: string | null
+          tax?: number
+          tenant_id?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       labor_types: {
         Row: {
           active: boolean | null
@@ -9659,6 +9773,41 @@ export type Database = {
           },
         ]
       }
+      plan_features: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          feature_key: string
+          feature_name: string
+          id: string
+          plan_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          feature_key: string
+          feature_name: string
+          id?: string
+          plan_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          feature_key?: string
+          feature_name?: string
+          id?: string
+          plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_features_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_goals: {
         Row: {
           achievement_pct: number | null
@@ -9740,6 +9889,41 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_limits: {
+        Row: {
+          created_at: string
+          id: string
+          limit_key: string
+          limit_name: string
+          limit_value: number
+          plan_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          limit_key: string
+          limit_name: string
+          limit_value?: number
+          plan_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          limit_key?: string
+          limit_name?: string
+          limit_value?: number
+          plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_limits_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_plans"
             referencedColumns: ["id"]
           },
         ]
@@ -12866,6 +13050,128 @@ export type Database = {
           },
         ]
       }
+      subscription_history: {
+        Row: {
+          created_at: string
+          event_type: string
+          from_plan_id: string | null
+          id: string
+          metadata: Json | null
+          subscription_id: string
+          tenant_id: string
+          to_plan_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          from_plan_id?: string | null
+          id?: string
+          metadata?: Json | null
+          subscription_id: string
+          tenant_id: string
+          to_plan_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          from_plan_id?: string | null
+          id?: string
+          metadata?: Json | null
+          subscription_id?: string
+          tenant_id?: string
+          to_plan_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_history_from_plan_id_fkey"
+            columns: ["from_plan_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_history_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_history_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_history_to_plan_id_fkey"
+            columns: ["to_plan_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          billing_cycle: string
+          cancelled_at: string | null
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          id: string
+          payment_method: string | null
+          plan_id: string
+          status: string
+          tenant_id: string
+          trial_ends_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          billing_cycle?: string
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          payment_method?: string | null
+          plan_id: string
+          status?: string
+          tenant_id: string
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          billing_cycle?: string
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          payment_method?: string | null
+          plan_id?: string
+          status?: string
+          tenant_id?: string
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sup_quotation_items: {
         Row: {
           created_at: string | null
@@ -13723,35 +14029,53 @@ export type Database = {
         Row: {
           active: boolean | null
           created_at: string
+          description: string | null
           extra_user_price: number | null
           features: Json | null
           id: string
+          max_companies: number | null
+          max_orders: number | null
+          max_projects: number | null
+          max_storage_mb: number | null
           max_users: number
           name: string
           price: number
           updated_at: string
+          yearly_price: number | null
         }
         Insert: {
           active?: boolean | null
           created_at?: string
+          description?: string | null
           extra_user_price?: number | null
           features?: Json | null
           id?: string
+          max_companies?: number | null
+          max_orders?: number | null
+          max_projects?: number | null
+          max_storage_mb?: number | null
           max_users?: number
           name: string
           price?: number
           updated_at?: string
+          yearly_price?: number | null
         }
         Update: {
           active?: boolean | null
           created_at?: string
+          description?: string | null
           extra_user_price?: number | null
           features?: Json | null
           id?: string
+          max_companies?: number | null
+          max_orders?: number | null
+          max_projects?: number | null
+          max_storage_mb?: number | null
           max_users?: number
           name?: string
           price?: number
           updated_at?: string
+          yearly_price?: number | null
         }
         Relationships: []
       }
@@ -15334,6 +15658,53 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usage_consumption: {
+        Row: {
+          current_value: number
+          id: string
+          limit_value: number
+          metric_key: string
+          metric_name: string
+          overage_unit_price: number | null
+          period_end: string
+          period_start: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          current_value?: number
+          id?: string
+          limit_value?: number
+          metric_key: string
+          metric_name: string
+          overage_unit_price?: number | null
+          period_end?: string
+          period_start?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          current_value?: number
+          id?: string
+          limit_value?: number
+          metric_key?: string
+          metric_name?: string
+          overage_unit_price?: number | null
+          period_end?: string
+          period_start?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_consumption_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
