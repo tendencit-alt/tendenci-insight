@@ -210,6 +210,8 @@ export default function HomeLauncher() {
   const userProfile = useUserProfile();
   const moduleOrder = getModuleOrder(userProfile);
   const { data: modulePreviews } = useModulePreviews();
+  const { data: companyStatus, isLoading: loadingStatus } = useCompanyStatus();
+  const [fabOpen, setFabOpen] = useState(false);
 
   const showOnboarding = onboardingDone.length < ONBOARDING_STEPS.length;
 
