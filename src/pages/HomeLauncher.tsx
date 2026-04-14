@@ -43,6 +43,7 @@ import { Slider } from "@/components/ui/slider";
 import { useExplainabilityLayer } from "@/hooks/useExplainabilityLayer";
 import { useTrustLayer } from "@/hooks/useTrustLayer";
 import { useActionLayer } from "@/hooks/useActionLayer";
+import { useAutomationLayer } from "@/hooks/useAutomationLayer";
 
 // ─── Module definitions ───
 const MODULES = [
@@ -234,6 +235,8 @@ export default function HomeLauncher() {
   const { data: trust, isLoading: loadingTrust } = useTrustLayer();
   const [showTrustDetail, setShowTrustDetail] = useState(false);
   const actionLayer = useActionLayer();
+  const { summary: autoSummary, suggestions: autoSuggestions, activeRules: autoRules, activateRule } = useAutomationLayer();
+  const [showAutoPanel, setShowAutoPanel] = useState(false);
 
   const showOnboarding = onboardingDone.length < ONBOARDING_STEPS.length;
 
@@ -1102,6 +1105,164 @@ export default function HomeLauncher() {
               </Button>
             ))}
           </div>
+        </div>
+        )}
+
+        {/* ── Automation Layer ── */}
+        {!executiveMode && !actionLayer.rapidMode && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
+              <Zap className="h-4 w-4 text-violet-500" /> Automações
+            </h2>
+            <div className="flex items-center gap-1.5">
+              <Badge variant="outline" className="text-[9px] h-5">
+                {autoSummary.executedToday} hoje
+              </Badge>
+              {autoSummary.failed > 0 && (
+                <Badge variant="destructive" className="text-[9px] h-5">
+                  {autoSummary.failed} falha(s)
+                </Badge>
+              )}
+              {autoSummary.paused > 0 && (
+                <Badge variant="secondary" className="text-[9px] h-5">
+                  {autoSummary.paused} pausada(s)
+                </Badge>
+              )}
+              <Button variant="outline" size="sm" className="h-6 text-[9px] gap-1 rounded-md" onClick={() => setShowAutoPanel((p) => !p)}>
+                {showAutoPanel ? <EyeOff className="h-2.5 w-2.5" /> : <Eye className="h-2.5 w-2.5" />}
+                {showAutoPanel ? "Ocultar" : "Detalhes"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Summary Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <Card className="border-violet-200/60 dark:border-violet-800/40">
+              <CardContent className="p-3 flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                  <Play className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold leading-none">{autoSummary.executedToday}</p>
+                  <p className="text-[9px] text-muted-foreground">Executadas hoje</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-amber-200/60 dark:border-amber-800/40">
+              <CardContent className="p-3 flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                  <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold leading-none">{autoSummary.pending}</p>
+                  <p className="text-[9px] text-muted-foreground">Pendentes</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-red-200/60 dark:border-red-800/40">
+              <CardContent className="p-3 flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-red-500/10 flex items-center justify-center">
+                  <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold leading-none">{autoSummary.failed}</p>
+                  <p className="text-[9px] text-muted-foreground">Falhas</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-muted">
+              <CardContent className="p-3 flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
+                  <Minus className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold leading-none">{autoSummary.paused}</p>
+                  <p className="text-[9px] text-muted-foreground">Pausadas</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Suggestions */}
+          {autoSuggestions.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Sugestões de Automação</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {autoSuggestions.slice(0, 4).map((s) => (
+                  <div key={s.id} className="rounded-xl border p-3 bg-card/50 hover:bg-muted/40 transition-all">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Badge variant="outline" className="text-[8px] h-4 px-1">
+                            {s.type === "financeiro" ? "Financeiro" : "Operacional"}
+                          </Badge>
+                        </div>
+                        <p className="text-xs font-semibold truncate">{s.label}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{s.description}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        className="h-6 text-[9px] gap-1 rounded-md shrink-0"
+                        onClick={async () => {
+                          const ok = await activateRule(s);
+                          if (ok) {
+                            // Refetch will remove it from suggestions
+                          }
+                        }}
+                      >
+                        <Zap className="h-2.5 w-2.5" /> Ativar
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Expanded Panel: Recent Executions */}
+          {showAutoPanel && (
+            <div className="space-y-2">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Execuções Recentes</p>
+              {autoSummary.recentExecutions.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Nenhuma execução hoje.</p>
+              ) : (
+                <div className="space-y-1">
+                  {autoSummary.recentExecutions.map((ex) => (
+                    <div key={ex.id} className="flex items-center gap-2 rounded-lg border p-2 text-xs">
+                      <div className={`h-2 w-2 rounded-full shrink-0 ${ex.status === "sucesso" || ex.status === "simulacao" ? "bg-emerald-500" : ex.status === "falha" ? "bg-red-500" : "bg-amber-500"}`} />
+                      <span className="font-medium flex-1 truncate">{ex.ruleName}</span>
+                      <Badge variant={ex.status === "falha" ? "destructive" : "outline"} className="text-[8px] h-4">
+                        {ex.status}
+                      </Badge>
+                      <span className="text-[9px] text-muted-foreground shrink-0">
+                        {new Date(ex.time).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Active Rules List */}
+              {autoRules.length > 0 && (
+                <>
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mt-3">Regras Ativas</p>
+                  <div className="space-y-1">
+                    {autoRules.filter((r: any) => r.active).slice(0, 6).map((r: any) => (
+                      <div key={r.id} className="flex items-center gap-2 rounded-lg border p-2 text-xs">
+                        <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                        <span className="font-medium flex-1 truncate">{r.name}</span>
+                        <span className="text-[9px] text-muted-foreground">{r.execution_count || 0}x</span>
+                        {(r.error_count || 0) > 0 && (
+                          <Badge variant="destructive" className="text-[8px] h-4">{r.error_count} erro(s)</Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
         )}
 
