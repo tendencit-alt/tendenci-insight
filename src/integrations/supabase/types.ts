@@ -3546,6 +3546,284 @@ export type Database = {
           },
         ]
       }
+      education_certifications: {
+        Row: {
+          certified_at: string
+          created_at: string
+          criteria_snapshot: Json | null
+          id: string
+          level: string
+          score: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          certified_at?: string
+          created_at?: string
+          criteria_snapshot?: Json | null
+          id?: string
+          level?: string
+          score?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          certified_at?: string
+          created_at?: string
+          criteria_snapshot?: Json | null
+          id?: string
+          level?: string
+          score?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "education_certifications_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      education_completion_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          module_id: string | null
+          tenant_id: string | null
+          track_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          module_id?: string | null
+          tenant_id?: string | null
+          track_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          module_id?: string | null
+          tenant_id?: string | null
+          track_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "education_completion_events_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "education_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "education_completion_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "education_completion_events_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "education_tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      education_modules: {
+        Row: {
+          active: boolean
+          content: string | null
+          created_at: string
+          id: string
+          lesson_type: string
+          position: number
+          screen_key: string | null
+          title: string
+          track_id: string
+        }
+        Insert: {
+          active?: boolean
+          content?: string | null
+          created_at?: string
+          id?: string
+          lesson_type?: string
+          position?: number
+          screen_key?: string | null
+          title: string
+          track_id: string
+        }
+        Update: {
+          active?: boolean
+          content?: string | null
+          created_at?: string
+          id?: string
+          lesson_type?: string
+          position?: number
+          screen_key?: string | null
+          title?: string
+          track_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "education_modules_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "education_tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      education_progress: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          current_module: number
+          id: string
+          started_at: string
+          tenant_id: string | null
+          track_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          current_module?: number
+          id?: string
+          started_at?: string
+          tenant_id?: string | null
+          track_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          current_module?: number
+          id?: string
+          started_at?: string
+          tenant_id?: string | null
+          track_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "education_progress_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "education_progress_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "education_tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      education_recommendations: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json | null
+          recommendation: string
+          related_track_id: string | null
+          screen_key: string | null
+          status: string
+          tenant_id: string
+          trigger_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          recommendation: string
+          related_track_id?: string | null
+          screen_key?: string | null
+          status?: string
+          tenant_id: string
+          trigger_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          recommendation?: string
+          related_track_id?: string | null
+          screen_key?: string | null
+          status?: string
+          tenant_id?: string
+          trigger_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "education_recommendations_related_track_id_fkey"
+            columns: ["related_track_id"]
+            isOneToOne: false
+            referencedRelation: "education_tracks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "education_recommendations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      education_tracks: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          description: string | null
+          difficulty: string
+          id: string
+          title: string
+          total_modules: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category: string
+          created_at?: string
+          description?: string | null
+          difficulty?: string
+          id?: string
+          title: string
+          total_modules?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          description?: string | null
+          difficulty?: string
+          id?: string
+          title?: string
+          total_modules?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       erp_document_rules: {
         Row: {
           active: boolean | null

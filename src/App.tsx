@@ -49,6 +49,7 @@ import Billing from "./pages/Billing";
 import CustomerLifecycle from "./pages/CustomerLifecycle";
 import CustomerSuccessOps from "./pages/CustomerSuccessOps";
 import SupportKnowledge from "./pages/SupportKnowledge";
+import InProductEducation from "./pages/InProductEducation";
 
 const queryClient = new QueryClient();
 
@@ -110,6 +111,7 @@ const App = () => (
               <Route path="/customer-lifecycle" element={<ProtectedRoute><CustomerLifecycle /></ProtectedRoute>} />
               <Route path="/customer-success" element={<ProtectedRoute><CustomerSuccessOps /></ProtectedRoute>} />
               <Route path="/support-knowledge" element={<ProtectedRoute><SupportKnowledge /></ProtectedRoute>} />
+              <Route path="/education" element={<ProtectedRoute><InProductEducation /></ProtectedRoute>} />
               <Route path="/dashboards" element={<Navigate to="/" replace />} />
               <Route path="/ia-configuracao" element={<Navigate to="/" replace />} />
               <Route path="/compras" element={<Navigate to="/suprimentos" replace />} />
