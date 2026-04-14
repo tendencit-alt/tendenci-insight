@@ -86,13 +86,11 @@ export function useExecResultadoMes() {
       const ms = format(startOfMonth(now), "yyyy-MM-dd");
       const me = format(endOfMonth(now), "yyyy-MM-dd");
 
-      const ledger = () => supabase.from("fin_ledger_entries").select("amount") as any;
-      const [revRes, costRes, goalRes, forecastRes] = await Promise.all([
-        ledger().eq("entry_type", "credit").gte("competence_date", ms).lte("competence_date", me),
-        ledger().eq("entry_type", "debit").gte("competence_date", ms).lte("competence_date", me),
-        supabase.from("plan_goals").select("target_value, current_value").eq("goal_type", "faturamento").gte("period_end", ms).lte("period_start", me).limit(1),
-        supabase.from("crm_revenue_forecast").select("gross_value, weighted_value").gte("reference_month", ms).lte("reference_month", me),
-      ]);
+      const q = (t: string) => (supabase as any).from(t);
+      const revRes = await q("fin_ledger_entries").select("amount").eq("entry_type", "credit").gte("competence_date", ms).lte("competence_date", me);
+      const costRes = await q("fin_ledger_entries").select("amount").eq("entry_type", "debit").gte("competence_date", ms).lte("competence_date", me);
+      const goalRes = await q("plan_goals").select("target_value, current_value").eq("goal_type", "faturamento").gte("period_end", ms).lte("period_start", me).limit(1);
+      const forecastRes = await q("crm_revenue_forecast").select("gross_value, weighted_value").gte("reference_month", ms).lte("reference_month", me);
 
       const fat = (revRes.data as any[])?.reduce((s: number, r: any) => s + Number(r.amount || 0), 0) || 0;
       const custos = (costRes.data as any[])?.reduce((s: number, r: any) => s + Number(r.amount || 0), 0) || 0;
