@@ -332,6 +332,59 @@ export default function HomeLauncher() {
           </div>
         </div>
 
+        {/* ── Company Status Cockpit ── */}
+        {companyStatus && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold flex items-center gap-2">
+                <HeartPulse className="h-4 w-4 text-primary" /> Status da Empresa
+              </h2>
+              <Badge
+                variant="outline"
+                className={`text-[10px] gap-1 ${
+                  companyStatus.health === "estavel"
+                    ? "border-emerald-300 text-emerald-700 dark:border-emerald-700 dark:text-emerald-400"
+                    : companyStatus.health === "atencao"
+                    ? "border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-400"
+                    : "border-red-300 text-red-700 dark:border-red-700 dark:text-red-400"
+                }`}
+              >
+                <div className={`h-1.5 w-1.5 rounded-full ${
+                  companyStatus.health === "estavel" ? "bg-emerald-500"
+                  : companyStatus.health === "atencao" ? "bg-amber-500" : "bg-red-500"
+                }`} />
+                {companyStatus.health === "estavel" ? "Estável" : companyStatus.health === "atencao" ? "Atenção" : "Risco"}
+                {` · ${companyStatus.healthScore}pts`}
+              </Badge>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+              {[companyStatus.cashBalance, companyStatus.monthlyResult, companyStatus.openOrders, companyStatus.overduePayables, companyStatus.goalProgress].map((kpi) => {
+                const TrendIcon = kpi.trend === "up" ? TrendingUp : kpi.trend === "down" ? TrendingDown : Minus;
+                const trendColor = kpi.trend === "up" ? "text-emerald-600 dark:text-emerald-400" : kpi.trend === "down" ? "text-red-500 dark:text-red-400" : "text-muted-foreground";
+                return (
+                  <Card key={kpi.label} className="border-border/60">
+                    <CardContent className="p-3">
+                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{kpi.label}</p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <p className="text-sm font-bold truncate">{kpi.formatted}</p>
+                        <TrendIcon className={`h-3 w-3 shrink-0 ${trendColor}`} />
+                      </div>
+                      {kpi.trendLabel && (
+                        <p className={`text-[9px] mt-0.5 ${trendColor}`}>{kpi.trendLabel}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        {loadingStatus && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+            {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
+          </div>
+        )}
+
         {/* ── Onboarding Guide ── */}
         {showOnboarding && (
           <Card className="border-primary/20 bg-primary/5 dark:bg-primary/10">
