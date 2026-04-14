@@ -1,8 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfMonth, endOfMonth, subMonths, addDays, addMonths } from "date-fns";
-
-const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
+import { format, startOfMonth, endOfMonth, subMonths, addMonths } from "date-fns";
 
 export interface ExecResultadoHoje {
   faturamentoHoje: number;
@@ -58,12 +56,13 @@ export function useExecResultadoHoje() {
     queryFn: async (): Promise<ExecResultadoHoje> => {
       const today = format(new Date(), "yyyy-MM-dd");
 
-      const [cashRes, recRes, expRes, recvRes, payRes] = await Promise.all([
-        supabase.from("fin_bank_accounts").select("opening_balance").eq("active", true),
-        supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "credit").eq("competence_date", today),
-        supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "debit").eq("competence_date", today),
-        supabase.from("fin_receivables").select("amount").eq("due_date", today).in("status", ["ABERTO"]),
-        supabase.from("fin_payables").select("amount").eq("due_date", today).in("status", ["ABERTO"]),
+      type AnyRes = { data: any[] | null };
+      const [cashRes, recRes, expRes, recvRes, payRes]: AnyRes[] = await Promise.all([
+        supabase.from("fin_bank_accounts").select("opening_balance").eq("active", true) as any,
+        supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "credit").eq("competence_date", today) as any,
+        supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "debit").eq("competence_date", today) as any,
+        supabase.from("fin_receivables").select("amount").eq("due_date", today).in("status", ["ABERTO"]) as any,
+        supabase.from("fin_payables").select("amount").eq("due_date", today).in("status", ["ABERTO"]) as any,
       ]);
 
       const saldoCaixa = (cashRes.data as any[])?.reduce((s, r) => s + Number(r.opening_balance || 0), 0) || 0;
@@ -186,8 +185,9 @@ export function useExecSaudeEmpresa() {
       const pme = format(endOfMonth(subMonths(now, 1)), "yyyy-MM-dd");
 
       const ledger = () => supabase.from("fin_ledger_entries").select("amount") as any;
-      const [cashRes, revRes, expRes, prevExpRes] = await Promise.all([
-        supabase.from("fin_bank_accounts").select("opening_balance").eq("active", true),
+      type AnyRes = { data: any[] | null };
+      const [cashRes, revRes, expRes, prevExpRes]: AnyRes[] = await Promise.all([
+        supabase.from("fin_bank_accounts").select("opening_balance").eq("active", true) as any,
         ledger().eq("entry_type", "credit").gte("competence_date", ms).lte("competence_date", me),
         ledger().eq("entry_type", "debit").gte("competence_date", ms).lte("competence_date", me),
         ledger().eq("entry_type", "debit").gte("competence_date", pm).lte("competence_date", pme),
