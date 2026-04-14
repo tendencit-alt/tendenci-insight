@@ -347,7 +347,7 @@ interface InlineEmptyStateProps {
   colSpan?: number;
 }
 
-export function InlineEmptyState({ moduleKey, message, colSpan }: InlineEmptyStateProps) {
+export function InlineEmptyState({ moduleKey, message }: InlineEmptyStateProps) {
   const navigate = useNavigate();
   const cfg = EMPTY_STATE_CONFIGS[moduleKey];
 
