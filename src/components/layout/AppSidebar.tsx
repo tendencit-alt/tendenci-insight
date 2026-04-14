@@ -247,6 +247,7 @@ const menuGroups: MenuGroup[] = [
       { title: "Customer Success", url: "/customer-success", icon: Star },
       { title: "Base de Conhecimento", url: "/support-knowledge", icon: BookOpen },
       { title: "Educação In-Product", url: "/education", icon: Target },
+      { title: "AI Decision Assistant", url: "/ai-decision", icon: BarChart3 },
     ],
   },
 ];
