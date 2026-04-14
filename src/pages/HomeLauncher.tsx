@@ -199,10 +199,6 @@ function getWorkspacePrefs(): WorkspacePrefs {
   return { order: [], hidden: [], pinned: [] };
 }
 
-function getOnboardingDone(): string[] {
-  try { const s = localStorage.getItem("erp-onboarding-done"); if (s) return JSON.parse(s); } catch {}
-  return [];
-}
 
 // ─── Severity helpers ───
 const SEVERITY_STYLES = {
@@ -265,7 +261,7 @@ export default function HomeLauncher() {
 
   useEffect(() => { localStorage.setItem("erp-home-favorites", JSON.stringify(favorites)); }, [favorites]);
   useEffect(() => { localStorage.setItem("erp-workspace-prefs", JSON.stringify(workspacePrefs)); }, [workspacePrefs]);
-  useEffect(() => { localStorage.setItem("erp-onboarding-done", JSON.stringify(onboardingDone)); }, [onboardingDone]);
+  
 
   const searchResults = useMemo(() => {
     if (!search.trim()) return [];
