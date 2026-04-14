@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useFlowLayer, type FlowInstance, type FlowStepState } from "@/hooks/useFlowLayer";
+import { useFlowLayer, type FlowStepState } from "@/hooks/useFlowLayer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,7 +66,6 @@ export function FlowWidget() {
               <div className="ml-8 mt-1 mb-2 space-y-0.5">
                 {flow.steps.map((step, i) => {
                   const style = STEP_STYLES[step.status];
-                  const Icon = style.icon;
                   return (
                     <div key={step.id} className="flex items-center gap-2 py-1">
                       {/* Connector */}
