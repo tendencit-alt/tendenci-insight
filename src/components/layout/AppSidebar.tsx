@@ -242,6 +242,7 @@ const menuGroups: MenuGroup[] = [
     profiles: ["system_owner"],
     items: [
       { title: "Painel Owner", url: "/super-admin", icon: Building2 },
+      { title: "Billing & Subscriptions", url: "/billing", icon: CreditCard },
     ],
   },
 ];
