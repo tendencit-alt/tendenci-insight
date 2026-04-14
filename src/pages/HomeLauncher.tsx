@@ -27,7 +27,7 @@ import {
   Sparkles, Calculator, MessageSquareText, BarChart,
   ShieldCheck, RefreshCw, Database,
   Undo2, ListChecks, Play, CheckSquare,
-  MessageCircle, UserCheck, Filter,
+  MessageCircle, UserCheck,
 } from "lucide-react";
 import {
   useActionItems,
@@ -240,7 +240,7 @@ export default function HomeLauncher() {
   const { summary: autoSummary, suggestions: autoSuggestions, activeRules: autoRules, activateRule } = useAutomationLayer();
   const [showAutoPanel, setShowAutoPanel] = useState(false);
   const [collabFilter, setCollabFilter] = useState<CollabFilter>("mine");
-  const { data: collab, isLoading: loadingCollab } = useCollaborationLayer(collabFilter);
+  const { data: collab } = useCollaborationLayer(collabFilter);
   const [showCollabTimeline, setShowCollabTimeline] = useState(false);
 
   const showOnboarding = onboardingDone.length < ONBOARDING_STEPS.length;
