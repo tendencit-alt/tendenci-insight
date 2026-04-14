@@ -126,9 +126,10 @@ export function useDecisionSuggestions() {
       }
 
       // 5. Revenue declining → suggest review expenses
-      type AmtRes = { data: { amount: number | null }[] | null };
-      const revRes: AmtRes = await (supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "credit") as any).gte("competence_date", monthStart).lte("competence_date", monthEnd);
-      const prevRevRes: AmtRes = await (supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "credit") as any).gte("competence_date", prevMonthStart).lte("competence_date", prevMonthEnd);
+      const ledgerQ = (et: string, d1: string, d2: string) =>
+        (supabase.from("fin_ledger_entries").select("amount") as any).eq("entry_type", et).gte("competence_date", d1).lte("competence_date", d2);
+      const revRes = await ledgerQ("credit", monthStart, monthEnd) as { data: { amount: number | null }[] | null };
+      const prevRevRes = await ledgerQ("credit", prevMonthStart, prevMonthEnd) as { data: { amount: number | null }[] | null };
 
       const revenue = revRes.data?.reduce((s, r) => s + Number(r.amount || 0), 0) || 0;
       const prevRevenue = prevRevRes.data?.reduce((s, r) => s + Number(r.amount || 0), 0) || 0;
