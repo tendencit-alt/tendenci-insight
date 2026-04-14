@@ -5,7 +5,7 @@ import NotFound from "@/pages/NotFound";
 
 // Mapeamento de módulos para rotas reais do sistema
 const MODULE_TO_ROUTE_MAP: Record<string, string> = {
-  dashboard: "/",
+  dashboard: "/bi-dashboard",
   leads: "/leads",
   crm: "/crm",
   projetos: "/projects",

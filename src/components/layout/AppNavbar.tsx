@@ -279,7 +279,7 @@ export function AppNavbar() {
         <div className="hidden xl:flex items-center gap-0.5 flex-1 ml-3">
           {(!loading && hasModuleAccess("dashboard" as any)) && (
             <NavLink
-              to="/"
+              to="/bi-dashboard"
               end
               className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md hover:bg-muted/50 font-medium transition-colors"
               activeClassName="bg-primary/10 text-primary font-semibold"
@@ -313,7 +313,7 @@ export function AppNavbar() {
                 {(!loading && hasModuleAccess("dashboard" as any)) && (
                   <div className="px-3 mb-1">
                     <NavLink
-                      to="/"
+                      to="/bi-dashboard"
                       end
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all hover:bg-muted"

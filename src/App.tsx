@@ -34,6 +34,7 @@ import Tarefas from "./pages/Tarefas";
 import Automacoes from "./pages/Automacoes";
 import Relatorios from "./pages/Relatorios";
 import HomeLauncher from "./pages/HomeLauncher";
+import DashboardBI from "./pages/DashboardBI";
 
 const queryClient = new QueryClient();
 
@@ -52,7 +53,8 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/catalogo" element={<Catalogo />} />
-              <Route path="/" element={<ProtectedRoute><HomeLauncher /></ProtectedRoute>} />
+              <Route path="/" element={<ProtectedRoute><Navigate to="/central-navegacao" replace /></ProtectedRoute>} />
+              <Route path="/central-navegacao" element={<ProtectedRoute><HomeLauncher /></ProtectedRoute>} />
                <Route path="/super-admin" element={<ProtectedRoute><SuperAdmin /></ProtectedRoute>} />
                <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
                <Route path="/auditoria" element={<ProtectedRoute><Auditoria /></ProtectedRoute>} />
@@ -60,7 +62,7 @@ const App = () => (
                <Route path="/documentos" element={<ProtectedRoute><Documentos /></ProtectedRoute>} />
                <Route path="/tarefas" element={<ProtectedRoute><Tarefas /></ProtectedRoute>} />
                <Route path="/automacoes" element={<ProtectedRoute><Automacoes /></ProtectedRoute>} />
-               <Route path="/bi-dashboard" element={<ProtectedRoute><HomeLauncher /></ProtectedRoute>} />
+               <Route path="/bi-dashboard" element={<ProtectedRoute><DashboardBI /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ProjectSettings /></PermissionGuard></ProtectedRoute>} />
               <Route path="/settings/users" element={<ProtectedRoute><PermissionGuard module="configuracoes"><UserManagement /></PermissionGuard></ProtectedRoute>} />
               <Route path="/producao" element={<ProtectedRoute><PermissionGuard module="producao"><Production /></PermissionGuard></ProtectedRoute>} />
