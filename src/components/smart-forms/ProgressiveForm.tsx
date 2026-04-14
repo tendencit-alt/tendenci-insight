@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
+
 import { ChevronLeft, ChevronRight, Check, Circle, CheckCircle2 } from "lucide-react";
 import { FormFieldRenderer } from "@/components/form-view/FormFieldRenderer";
 import type { FormViewField, FormValidationError } from "@/components/form-view/types";
