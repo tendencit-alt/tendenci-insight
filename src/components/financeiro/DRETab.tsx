@@ -976,7 +976,9 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-xs">Conta</TableHead>
+                  {showBudget && <TableHead className="w-[110px] text-right text-xs">Orçado</TableHead>}
                   <TableHead className="w-[120px] text-right text-xs">Realizado</TableHead>
+                  {showBudget && <TableHead className="w-[70px] text-right text-xs">Δ%</TableHead>}
                 </TableRow>
               </TableHeader>
             <TableBody>
