@@ -19,6 +19,9 @@ import PurchaseSuggestions from "@/components/inventory/PurchaseSuggestions";
 import InventoryAdvancedKPIs from "@/components/inventory/InventoryAdvancedKPIs";
 import ABCAnalysis from "@/components/inventory/ABCAnalysis";
 import MaterialRequestsTable from "@/components/inventory/MaterialRequestsTable";
+import InvReservationsTab from "@/components/inventory/InvReservationsTab";
+import InvCostsTab from "@/components/inventory/InvCostsTab";
+import InvAnalyticsTab from "@/components/inventory/InvAnalyticsTab";
 
 // Hook para debounce
 function useDebounce<T>(value: T, delay: number): T {
@@ -147,15 +150,16 @@ export default function Inventory() {
         <LowStockAlerts />
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="flex-wrap">
-            <TabsTrigger value="products">Itens</TabsTrigger>
+          <TabsList className="flex-wrap h-auto gap-1">
+            <TabsTrigger value="products">Cadastro Itens</TabsTrigger>
             <TabsTrigger value="movements">Movimentações</TabsTrigger>
+            <TabsTrigger value="reservations">Reservas</TabsTrigger>
+            <TabsTrigger value="costs">Custos Estoque</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="requests">Requisições</TabsTrigger>
             <TabsTrigger value="suggestions">Sugestão Compras</TabsTrigger>
             <TabsTrigger value="abc">Curva ABC</TabsTrigger>
-            <TabsTrigger value="advanced">KPIs Avançados</TabsTrigger>
             <TabsTrigger value="categories">Categorias</TabsTrigger>
-            <TabsTrigger value="cost-centers">Centros de Custo</TabsTrigger>
             <TabsTrigger value="locations">Locais</TabsTrigger>
           </TabsList>
 
@@ -176,6 +180,18 @@ export default function Inventory() {
             />
           </TabsContent>
 
+          <TabsContent value="reservations">
+            <InvReservationsTab />
+          </TabsContent>
+
+          <TabsContent value="costs">
+            <InvCostsTab />
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <InvAnalyticsTab />
+          </TabsContent>
+
           <TabsContent value="requests">
             <MaterialRequestsTable />
           </TabsContent>
@@ -188,16 +204,8 @@ export default function Inventory() {
             <ABCAnalysis />
           </TabsContent>
 
-          <TabsContent value="advanced">
-            <InventoryAdvancedKPIs />
-          </TabsContent>
-
           <TabsContent value="categories">
             <CategoriesManager />
-          </TabsContent>
-
-          <TabsContent value="cost-centers">
-            <CostCenterManager />
           </TabsContent>
 
           <TabsContent value="locations">
