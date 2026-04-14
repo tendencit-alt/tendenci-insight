@@ -43,6 +43,7 @@ import { Slider } from "@/components/ui/slider";
 import { useExplainabilityLayer } from "@/hooks/useExplainabilityLayer";
 import { useTrustLayer } from "@/hooks/useTrustLayer";
 import { useActionLayer } from "@/hooks/useActionLayer";
+import { useAutomationLayer } from "@/hooks/useAutomationLayer";
 
 // ─── Module definitions ───
 const MODULES = [
@@ -234,6 +235,8 @@ export default function HomeLauncher() {
   const { data: trust, isLoading: loadingTrust } = useTrustLayer();
   const [showTrustDetail, setShowTrustDetail] = useState(false);
   const actionLayer = useActionLayer();
+  const { summary: autoSummary, suggestions: autoSuggestions, activeRules: autoRules, isLoading: loadingAuto, activateRule } = useAutomationLayer();
+  const [showAutoPanel, setShowAutoPanel] = useState(false);
 
   const showOnboarding = onboardingDone.length < ONBOARDING_STEPS.length;
 
