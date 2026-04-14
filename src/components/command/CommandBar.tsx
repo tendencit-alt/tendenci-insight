@@ -219,6 +219,13 @@ export function CommandBar() {
                   <CommandItemRow key={item.id} item={item} />
                 ))}
               </Command.Group>
+
+              {/* Feed */}
+              <Command.Group heading="Feed de Atividades">
+                {commands.filter(c => c.group === "Feed").map(item => (
+                  <CommandItemRow key={item.id} item={item} />
+                ))}
+              </Command.Group>
             </Command.List>
 
             {/* Footer */}
