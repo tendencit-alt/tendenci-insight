@@ -38,26 +38,42 @@ export function useCompanyStatus() {
       const prevMonthStart = format(startOfMonth(subMonths(now, 1)), "yyyy-MM-dd");
       const prevMonthEnd = format(endOfMonth(subMonths(now, 1)), "yyyy-MM-dd");
 
-      const [
-        cashRes,
-        revenueRes,
-        expenseRes,
-        prevRevenueRes,
-        prevExpenseRes,
-        openOrdersRes,
-        overduePayRes,
-        overdueRecRes,
-      ] = await Promise.all([
-        supabase.from("fin_bank_accounts").select("opening_balance").eq("active", true),
-        supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "credit").gte("competence_date", monthStart).lte("competence_date", monthEnd),
-        supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "debit").gte("competence_date", monthStart).lte("competence_date", monthEnd),
-        supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "credit").gte("competence_date", prevMonthStart).lte("competence_date", prevMonthEnd),
-        supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "debit").gte("competence_date", prevMonthStart).lte("competence_date", prevMonthEnd),
-        supabase.from("orders").select("id", { count: "exact", head: true }).in("status", ["rascunho", "pendente_aprovacao", "aprovado", "liberado_producao", "em_producao"]),
-        supabase.from("fin_payables").select("id, amount", { count: "exact" }).in("status", ["ABERTO", "VENCIDO"]).lt("due_date", today),
-        supabase.from("fin_receivables").select("id", { count: "exact", head: true }).in("status", ["ABERTO", "VENCIDO"]).lt("due_date", today),
-      ]);
+      // Individual queries to avoid TS deep instantiation error
+      const cashRes = await supabase
+        .from("fin_bank_accounts")
+        .select("opening_balance")
+        .eq("active", true);
 
+      const revenueQ = supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "credit");
+      const revenueRes = await revenueQ.gte("competence_date", monthStart).lte("competence_date", monthEnd);
+
+      const expenseQ = supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "debit");
+      const expenseRes = await expenseQ.gte("competence_date", monthStart).lte("competence_date", monthEnd);
+
+      const prevRevQ = supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "credit");
+      const prevRevenueRes = await prevRevQ.gte("competence_date", prevMonthStart).lte("competence_date", prevMonthEnd);
+
+      const prevExpQ = supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "debit");
+      const prevExpenseRes = await prevExpQ.gte("competence_date", prevMonthStart).lte("competence_date", prevMonthEnd);
+
+      const openOrdersRes = await supabase
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["rascunho", "pendente_aprovacao", "aprovado", "liberado_producao", "em_producao"]);
+
+      const overduePayRes = await supabase
+        .from("fin_payables")
+        .select("id, amount", { count: "exact" })
+        .in("status", ["ABERTO", "VENCIDO"])
+        .lt("due_date", today);
+
+      const overdueRecRes = await supabase
+        .from("fin_receivables")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["ABERTO", "VENCIDO"])
+        .lt("due_date", today);
+
+      // Calculate
       const cashBalance = cashRes.data?.reduce((s, r) => s + Number(r.opening_balance || 0), 0) || 0;
       const revenue = revenueRes.data?.reduce((s, r) => s + Number(r.amount || 0), 0) || 0;
       const expenses = expenseRes.data?.reduce((s, r) => s + Number(r.amount || 0), 0) || 0;
@@ -71,11 +87,10 @@ export function useCompanyStatus() {
       const overduePayAmount = overduePayRes.data?.reduce((s, r) => s + Number(r.amount || 0), 0) || 0;
       const overdueRecCount = overdueRecRes.count || 0;
 
-      const goalPct = revenue > 0 && prevRevenue > 0 ? (revenue / prevRevenue) * 100 : 0;
-
+      const goalPct = prevRevenue > 0 ? (revenue / prevRevenue) * 100 : 0;
       const resultTrend: TrendDirection = monthlyResult > prevResult ? "up" : monthlyResult < prevResult ? "down" : "stable";
 
-      // Health score
+      // Health score (0-100)
       let healthScore = 100;
       if (cashBalance < 0) healthScore -= 30;
       else if (cashBalance < 10000) healthScore -= 10;
@@ -85,42 +100,14 @@ export function useCompanyStatus() {
       if (overdueRecCount > 5) healthScore -= 15;
       else if (overdueRecCount > 0) healthScore -= 5;
       healthScore = Math.max(0, Math.min(100, healthScore));
-
       const health: HealthStatus = healthScore >= 70 ? "estavel" : healthScore >= 40 ? "atencao" : "risco";
 
       return {
-        cashBalance: {
-          label: "Saldo Caixa",
-          value: cashBalance,
-          formatted: fmt(cashBalance),
-          trend: cashBalance > 0 ? "up" : "down",
-        },
-        monthlyResult: {
-          label: "Resultado Mês",
-          value: monthlyResult,
-          formatted: fmt(monthlyResult),
-          trend: resultTrend,
-          trendLabel: resultTrend === "up" ? "acima do anterior" : resultTrend === "down" ? "abaixo do anterior" : "estável",
-        },
-        openOrders: {
-          label: "Pedidos Abertos",
-          value: openOrders,
-          formatted: String(openOrders),
-          trend: "stable",
-        },
-        overduePayables: {
-          label: "Contas Vencidas",
-          value: overduePayCount,
-          formatted: overduePayCount > 0 ? `${overduePayCount} (${fmt(overduePayAmount)})` : "0",
-          trend: overduePayCount > 0 ? "down" : "up",
-        },
-        goalProgress: {
-          label: "Meta vs Realizado",
-          value: goalPct,
-          formatted: `${goalPct.toFixed(0)}%`,
-          trend: goalPct >= 80 ? "up" : goalPct >= 50 ? "stable" : "down",
-          trendLabel: goalPct >= 100 ? "acima do mês anterior" : `${(100 - goalPct).toFixed(0)}% abaixo`,
-        },
+        cashBalance: { label: "Saldo Caixa", value: cashBalance, formatted: fmt(cashBalance), trend: cashBalance > 0 ? "up" as const : "down" as const },
+        monthlyResult: { label: "Resultado Mês", value: monthlyResult, formatted: fmt(monthlyResult), trend: resultTrend, trendLabel: resultTrend === "up" ? "acima do anterior" : resultTrend === "down" ? "abaixo do anterior" : "estável" },
+        openOrders: { label: "Pedidos Abertos", value: openOrders, formatted: String(openOrders), trend: "stable" as const },
+        overduePayables: { label: "Contas Vencidas", value: overduePayCount, formatted: overduePayCount > 0 ? `${overduePayCount} (${fmt(overduePayAmount)})` : "0", trend: overduePayCount > 0 ? "down" as const : "up" as const },
+        goalProgress: { label: "Meta vs Realizado", value: goalPct, formatted: `${goalPct.toFixed(0)}%`, trend: goalPct >= 80 ? "up" as const : goalPct >= 50 ? "stable" as const : "down" as const, trendLabel: goalPct >= 100 ? "acima do mês anterior" : `${(100 - goalPct).toFixed(0)}% abaixo` },
         health,
         healthScore,
       };
