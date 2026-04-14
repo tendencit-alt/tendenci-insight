@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMemo } from "react";
+// Activity feed types and queries
 
 // ── Types ──
 export type ActivitySector = "financeiro" | "comercial" | "operacoes" | "controladoria" | "sistema" | "all";
