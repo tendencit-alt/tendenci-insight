@@ -36,8 +36,6 @@ export function InlineAggregationRow<T>({
   hasCheckbox,
   hasActions,
 }: InlineAggregationsProps<T>) {
-  if (aggregations.length === 0) return null;
-
   const aggByColumn = useMemo(() => {
     const map: Record<string, { fn: string; value: number }[]> = {};
     for (const agg of aggregations) {
@@ -50,6 +48,8 @@ export function InlineAggregationRow<T>({
     }
     return map;
   }, [aggregations, computedValues]);
+
+  if (aggregations.length === 0) return null;
 
   return (
     <TableRow className="bg-muted/30 border-t-2 border-border/60 font-medium">

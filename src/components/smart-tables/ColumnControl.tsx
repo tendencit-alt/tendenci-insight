@@ -8,7 +8,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Columns3, Search, Pin, GripVertical, Eye, EyeOff } from "lucide-react";
+import { Columns3, Search, Pin, GripVertical } from "lucide-react";
 import type { SmartTableColumnState } from "@/hooks/useSmartTable";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +16,6 @@ interface ColumnControlProps {
   columnStates: SmartTableColumnState[];
   onToggle: (key: string) => void;
   onTogglePin: (key: string) => void;
-  onReorder: (from: number, to: number) => void;
   columnLabels: Record<string, string>;
   className?: string;
 }
@@ -25,7 +24,6 @@ export function ColumnControl({
   columnStates,
   onToggle,
   onTogglePin,
-  onReorder,
   columnLabels,
   className,
 }: ColumnControlProps) {
@@ -52,7 +50,6 @@ export function ColumnControl({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-72 p-0" align="end">
-        {/* Search */}
         <div className="p-2 border-b border-border/50">
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
@@ -65,9 +62,8 @@ export function ColumnControl({
           </div>
         </div>
 
-        {/* Column list */}
         <div className="max-h-64 overflow-y-auto p-1">
-          {filtered.map((col, idx) => (
+          {filtered.map((col) => (
             <div
               key={col.key}
               className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 transition-colors group"
@@ -97,7 +93,6 @@ export function ColumnControl({
           ))}
         </div>
 
-        {/* Footer stats */}
         <div className="p-2 border-t border-border/50 flex items-center justify-between">
           <span className="text-[10px] text-muted-foreground">
             {visibleCount} visíveis · {pinnedCount} fixas

@@ -1,20 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Bookmark, Plus, Trash2, Check, ChevronDown } from "lucide-react";
+import { Bookmark, Plus, Trash2, Check } from "lucide-react";
 import type { SmartTableView } from "@/hooks/useSmartTable";
 import { cn } from "@/lib/utils";
 
@@ -47,7 +39,6 @@ export function SavedViewsBar({
 
   return (
     <div className={cn("flex items-center gap-1.5 flex-wrap", className)}>
-      {/* View tabs */}
       {views.map((view) => (
         <div key={view.id} className="flex items-center">
           <Button
@@ -71,7 +62,6 @@ export function SavedViewsBar({
         </div>
       ))}
 
-      {/* Create new view */}
       <Popover open={createOpen} onOpenChange={setCreateOpen}>
         <PopoverTrigger asChild>
           <Button variant="ghost" size="sm" className="h-7 text-[10px] gap-1">

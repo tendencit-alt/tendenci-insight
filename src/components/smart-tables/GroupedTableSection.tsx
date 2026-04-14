@@ -1,7 +1,5 @@
 import { useMemo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { ListViewColumn } from "@/components/list-view/types";
@@ -48,7 +46,6 @@ export function GroupedTableSection<T extends { id: string }>({
 
   return (
     <div className="space-y-0">
-      {/* Group header */}
       <button
         onClick={onToggleCollapse}
         className="w-full flex items-center gap-2 px-4 py-2 bg-muted/40 hover:bg-muted/60 transition-colors text-left border-b border-border/40"
@@ -73,7 +70,6 @@ export function GroupedTableSection<T extends { id: string }>({
         )}
       </button>
 
-      {/* Group rows */}
       {!collapsed && (
         <Table>
           <TableBody>

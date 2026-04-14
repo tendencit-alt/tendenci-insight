@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
-import type { ListViewColumn, SortState, SavedView } from "@/components/list-view/types";
+import type { ListViewColumn, SortState } from "@/components/list-view/types";
 
 // ── Types ──
 export interface SmartTableColumnState {
