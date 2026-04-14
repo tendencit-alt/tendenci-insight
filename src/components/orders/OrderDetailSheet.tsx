@@ -170,7 +170,8 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
       }
       const { error } = await supabase.from('orders').update(updates).eq('id', orderId);
       if (error) throw error;
-      toast.success(`Status alterado para ${STATUS_CONFIG[newStatus]?.label}`);
+      const def = getStatusDef('orders', newStatus);
+      toast.success(`Status alterado para ${def?.label || newStatus}`);
       refetch();
       onUpdate();
     } catch (error: any) {
@@ -258,7 +259,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
   };
 
   // Derived data
-  const statusConfig = STATUS_CONFIG[order?.status || 'rascunho'] || STATUS_CONFIG.rascunho;
+  const statusDef = getStatusDef('orders', order?.status || 'rascunho');
   const canEdit = order ? ['rascunho', 'em_negociacao'].includes(order.status) : false;
   const nextAction = order ? getNextAction(order.status) : null;
 
@@ -294,13 +295,15 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
 
   // Stepper
   const currentStepIdx = STATUS_ORDER.indexOf(order?.status || 'rascunho');
-  const steps = STATUS_STEPS.map(s => {
-    const stepIdx = STATUS_ORDER.indexOf(s.key);
+  const stepperStatuses = ORDERS_STATUS.stepperKeys || [];
+  const steps = stepperStatuses.map(key => {
+    const def = getStatusDef('orders', key);
+    const stepIdx = STATUS_ORDER.indexOf(key);
     return {
-      key: s.key,
-      label: s.label,
+      key,
+      label: def?.label || key,
       completed: currentStepIdx > stepIdx,
-      active: order?.status === s.key || (s.key === 'em_producao' && ['liberado_producao', 'em_producao', 'producao_concluida'].includes(order?.status || '')),
+      active: order?.status === key || (key === 'em_producao' && ['liberado_producao', 'em_producao', 'producao_concluida'].includes(order?.status || '')),
     };
   });
 
