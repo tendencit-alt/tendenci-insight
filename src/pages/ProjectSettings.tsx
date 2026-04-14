@@ -17,7 +17,7 @@ const ProjectSettings = () => {
     <DashboardLayout>
       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/bi-dashboard")} className="gap-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="gap-2">
             <ArrowLeft className="w-4 h-4" />
             Voltar
           </Button>

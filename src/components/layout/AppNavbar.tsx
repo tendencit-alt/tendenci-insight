@@ -280,7 +280,8 @@ export function AppNavbar() {
           {/* Dashboard Executivo - direct link */}
           {(!loading && hasModuleAccess("dashboard" as any)) && (
             <NavLink
-              to="/bi-dashboard"
+              to="/"
+              end
               className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md hover:bg-muted/50 font-medium transition-colors"
               activeClassName="bg-primary/10 text-primary font-semibold"
             >
@@ -288,34 +289,12 @@ export function AppNavbar() {
               <span className="whitespace-nowrap">Dashboard</span>
             </NavLink>
           )}
-
-          {/* Module dropdowns */}
-          {visibleModules.map(renderModuleDropdown)}
-        </div>
-
-        {/* Mobile Menu */}
-        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-          <SheetTrigger asChild className="xl:hidden">
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-72 p-0">
-            <div className="flex flex-col h-full">
-              <div className="p-4 border-b border-border/50">
-                {companyLogo ? (
-                  <img src={companyLogo} alt={companyName} className="h-12 w-auto" />
-                ) : (
-                  <span className="font-bold text-lg">{companyName}</span>
-                )}
-                <p className="text-xs text-muted-foreground font-semibold tracking-wider uppercase mt-2">ERP</p>
-              </div>
-              <div className="flex-1 overflow-y-auto py-2">
-                {/* Dashboard direct */}
+...
                 {(!loading && hasModuleAccess("dashboard" as any)) && (
                   <div className="px-3 mb-1">
                     <NavLink
-                      to="/bi-dashboard"
+                      to="/"
+                      end
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all hover:bg-muted"
                       activeClassName="bg-primary text-primary-foreground font-semibold"

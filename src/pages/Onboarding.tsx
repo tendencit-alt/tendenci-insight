@@ -148,7 +148,7 @@ export default function Onboarding() {
 
       queryClient.invalidateQueries({ queryKey: ["company-settings"] });
       toast({ title: "🎉 Onboarding concluído!", description: "Seu ERP está pronto para uso." });
-      navigate("/bi-dashboard");
+      navigate("/");
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
@@ -187,7 +187,7 @@ export default function Onboarding() {
               <Badge variant="outline" className="text-xs">
                 {completedCount}/{STEPS.length} etapas
               </Badge>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/bi-dashboard")}>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
                 Pular tudo e ir ao Dashboard
               </Button>
             </div>

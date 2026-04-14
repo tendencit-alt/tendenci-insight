@@ -61,7 +61,7 @@ const App = () => (
                <Route path="/documentos" element={<ProtectedRoute><Documentos /></ProtectedRoute>} />
                <Route path="/tarefas" element={<ProtectedRoute><Tarefas /></ProtectedRoute>} />
                <Route path="/automacoes" element={<ProtectedRoute><Automacoes /></ProtectedRoute>} />
-               <Route path="/bi-dashboard" element={<ProtectedRoute><PermissionGuard module="dashboard"><DashboardBI /></PermissionGuard></ProtectedRoute>} />
+               <Route path="/bi-dashboard" element={<ProtectedRoute><HomeLauncher /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ProjectSettings /></PermissionGuard></ProtectedRoute>} />
               <Route path="/settings/users" element={<ProtectedRoute><PermissionGuard module="configuracoes"><UserManagement /></PermissionGuard></ProtectedRoute>} />
               <Route path="/producao" element={<ProtectedRoute><PermissionGuard module="producao"><Production /></PermissionGuard></ProtectedRoute>} />
@@ -72,17 +72,17 @@ const App = () => (
               <Route path="/cadastros-financeiros" element={<ProtectedRoute><PermissionGuard module="cadastros_financeiros"><CadastrosFinanceiros /></PermissionGuard></ProtectedRoute>} />
               <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
               <Route path="/atividades" element={<ProtectedRoute><ActivityCenter /></ProtectedRoute>} />
-              <Route path="/system-errors" element={<Navigate to="/bi-dashboard" replace />} />
-              <Route path="/excluidos" element={<Navigate to="/bi-dashboard" replace />} />
+              <Route path="/system-errors" element={<Navigate to="/" replace />} />
+              <Route path="/excluidos" element={<Navigate to="/" replace />} />
               {/* Redirects para rotas removidas */}
-              <Route path="/leads" element={<Navigate to="/bi-dashboard" replace />} />
-              <Route path="/kanban" element={<Navigate to="/bi-dashboard" replace />} />
-              <Route path="/crm" element={<Navigate to="/bi-dashboard" replace />} />
-              <Route path="/projects" element={<Navigate to="/bi-dashboard" replace />} />
-              <Route path="/prospeccao" element={<Navigate to="/bi-dashboard" replace />} />
-              <Route path="/metas" element={<Navigate to="/bi-dashboard" replace />} />
-              <Route path="/dashboards" element={<Navigate to="/bi-dashboard" replace />} />
-              <Route path="/ia-configuracao" element={<Navigate to="/bi-dashboard" replace />} />
+              <Route path="/leads" element={<Navigate to="/" replace />} />
+              <Route path="/kanban" element={<Navigate to="/" replace />} />
+              <Route path="/crm" element={<Navigate to="/" replace />} />
+              <Route path="/projects" element={<Navigate to="/" replace />} />
+              <Route path="/prospeccao" element={<Navigate to="/" replace />} />
+              <Route path="/metas" element={<Navigate to="/" replace />} />
+              <Route path="/dashboards" element={<Navigate to="/" replace />} />
+              <Route path="/ia-configuracao" element={<Navigate to="/" replace />} />
               <Route path="/compras" element={<Navigate to="/financeiro" replace />} />
               {/* Rotas dinâmicas */}
               <Route path="*" element={
