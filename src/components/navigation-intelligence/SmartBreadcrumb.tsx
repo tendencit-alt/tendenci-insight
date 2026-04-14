@@ -46,7 +46,6 @@ export function SmartBreadcrumb() {
   if (pathname === "/" || pathname === "/central-navegacao") return null;
 
   const segments = pathname.split("/").filter(Boolean);
-  const lastSegment = segments[segments.length - 1];
   const hasActions = breadcrumbActions.length > 0 || nextActions.length > 0;
 
   return (
