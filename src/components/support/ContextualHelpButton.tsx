@@ -1,9 +1,7 @@
-import { useState } from 'react';
 import { HelpCircle, AlertTriangle, CheckCircle2, Headphones } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Badge } from '@/components/ui/badge';
 
 interface HelpEntry {
   question: string;

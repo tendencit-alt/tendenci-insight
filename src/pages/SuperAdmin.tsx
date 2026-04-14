@@ -7,7 +7,7 @@ import { TenantsManager } from '@/components/superadmin/TenantsManager';
 import { PlansManager } from '@/components/superadmin/PlansManager';
 import { SuperAdminDashboard } from '@/components/superadmin/SuperAdminDashboard';
 import { OwnerTechnicalPanel } from '@/components/superadmin/OwnerTechnicalPanel';
-import { SupportAccessPanel } from '@/components/superadmin/SupportAccessPanel';
+import { SupportDashboard } from '@/components/superadmin/SupportDashboard';
 import { ObservabilityDashboard } from '@/components/superadmin/ObservabilityDashboard';
 
 const SuperAdmin = () => {
@@ -72,7 +72,7 @@ const SuperAdmin = () => {
           </TabsContent>
 
           <TabsContent value="support" className="space-y-6 pt-6">
-            <SupportAccessPanel />
+            <SupportDashboard />
           </TabsContent>
 
           <TabsContent value="technical" className="space-y-6 pt-6">

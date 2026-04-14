@@ -89,7 +89,7 @@ export function useSupportLayer() {
         .order('created_at', { ascending: false })
         .limit(100);
       if (error) throw error;
-      return data || [];
+      return (data || []) as (typeof data extends (infer T)[] ? T & { event_message?: string } : never)[];
     },
   });
 
@@ -153,7 +153,7 @@ export function useSupportLayer() {
   recentErrors?.forEach(e => {
     diagnostics.push({
       type: 'system_error',
-      message: e.event_message || `Erro em ${e.table_name}`,
+      message: (e as any).event_message || `Erro em ${e.table_name}`,
       module: e.table_name || 'Sistema',
       tenant_name: (e as any).tenant?.name || 'Desconhecido',
       tenant_id: e.tenant_id || '',
