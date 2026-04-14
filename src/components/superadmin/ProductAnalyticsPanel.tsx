@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   BarChart3, Building2, Clock, Eye, MousePointerClick,
-  TrendingUp, AlertTriangle, Layers, Users, Zap, RefreshCw,
+  AlertTriangle, Layers, Users, Zap, RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
