@@ -155,12 +155,11 @@ export function useAttentionLayer(): AttentionData {
         });
       }
 
-      // 7. Lançamentos não conciliados (financial_ledger)
+      // 7. Lançamentos não conciliados
       const { count: unconciled } = await supabase
-        .from("financial_ledger")
+        .from("fin_ledger_entries")
         .select("id", { count: "exact", head: true })
-        .eq("reconciled", false)
-        .not("status", "eq", "cancelado");
+        .eq("reconciled", false);
 
       if (unconciled && unconciled > 0) {
         alerts.push({
