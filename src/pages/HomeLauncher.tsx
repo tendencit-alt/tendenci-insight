@@ -321,15 +321,36 @@ export default function HomeLauncher() {
               <LayoutGrid className="h-5 w-5 text-primary-foreground" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight">Central de Navegação</h1>
-            <Button
-              variant={executiveMode ? "default" : "outline"}
-              size="sm"
-              className="ml-3 h-7 text-[10px] gap-1 rounded-lg"
-              onClick={() => setExecutiveMode((p) => !p)}
-            >
-              <Monitor className="h-3 w-3" />
-              {executiveMode ? "Modo Completo" : "Modo Executivo"}
-            </Button>
+            <div className="flex items-center gap-1.5 ml-3">
+              <Button
+                variant={executiveMode ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-[10px] gap-1 rounded-lg"
+                onClick={() => setExecutiveMode((p) => !p)}
+              >
+                <Monitor className="h-3 w-3" />
+                {executiveMode ? "Modo Completo" : "Modo Executivo"}
+              </Button>
+              <Button
+                variant={actionLayer.rapidMode ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-[10px] gap-1 rounded-lg"
+                onClick={() => actionLayer.setRapidMode((p) => !p)}
+              >
+                <Play className="h-3 w-3" />
+                {actionLayer.rapidMode ? "Sair Execução" : "Execução Rápida"}
+              </Button>
+              {actionLayer.canUndo && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-[10px] gap-1 rounded-lg"
+                  onClick={actionLayer.undoLast}
+                >
+                  <Undo2 className="h-3 w-3" /> Desfazer
+                </Button>
+              )}
+            </div>
           </div>
           <div className="relative max-w-lg mx-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
