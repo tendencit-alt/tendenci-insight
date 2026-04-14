@@ -1,7 +1,7 @@
 import { useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import {
-  LayoutDashboard, Users, ShoppingCart, Wallet, BarChart3,
+  LayoutDashboard, Users, ShoppingCart, Wallet, BarChart3, Home,
   Target, PieChart, FolderOpen, Zap, Settings, Building2,
   ChevronDown, Factory, Package, BookOpen,
   ListChecks, Bell, Shield, Clock,
@@ -64,9 +64,10 @@ const P = {
 
 const menuGroups: MenuGroup[] = [
   {
-    label: "Dashboard",
-    icon: LayoutDashboard,
+    label: "Início",
+    icon: Home,
     items: [
+      { title: "Home", url: "/", icon: Home },
       { title: "Visão Geral", url: "/bi-dashboard", icon: LayoutDashboard, module: "dashboard" },
     ],
   },
