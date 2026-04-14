@@ -569,7 +569,10 @@ export default function HomeLauncher() {
             ))}
           </div>
         </div>
+        )}
 
+        {!executiveMode && (
+        <>
         {/* ── Favorites ── */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
