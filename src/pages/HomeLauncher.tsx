@@ -20,7 +20,7 @@ import {
   Package, Tags, FolderTree, Briefcase,
   LayoutGrid, AlertTriangle, Plus, CreditCard,
   UserPlus, Zap, PlayCircle, GripVertical,
-  Eye, EyeOff, Command, Rocket, CheckCircle2,
+  Eye, EyeOff, Rocket, CheckCircle2,
 } from "lucide-react";
 import {
   useActionItems,
@@ -340,7 +340,7 @@ export default function HomeLauncher() {
                 </Badge>
               </div>
               <div className="flex flex-wrap gap-2">
-                {ONBOARDING_STEPS.map((step, i) => {
+                {ONBOARDING_STEPS.map((step) => {
                   const done = onboardingDone.includes(step.key);
                   return (
                     <Button
