@@ -63,7 +63,6 @@ const menuGroups: MenuGroup[] = [
   {
     label: "Dashboard",
     icon: LayoutDashboard,
-    profiles: [...P.EXEC, "financeiro", "comercial", "contador"],
     items: [
       { title: "Visão Geral", url: "/bi-dashboard", icon: LayoutDashboard, module: "dashboard" },
     ],
@@ -72,34 +71,32 @@ const menuGroups: MenuGroup[] = [
     label: "Central Operacional",
     icon: Inbox,
     separator: true,
-    // visible to all tenant profiles
     items: [
       { title: "Minhas Tarefas", url: "/tarefas", icon: CheckSquare },
       { title: "Aprovações", url: "/aprovacoes", icon: GitBranch },
-      { title: "Notificações", url: "/atividades", icon: Bell, module: null, masterOnly: true },
+      { title: "Notificações", url: "/atividades", icon: Bell },
     ],
   },
   {
     label: "Comercial",
     icon: ShoppingCart,
-    profiles: [...P.COM, "operacional", "producao"],
     items: [
       { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, module: "pedidos" },
+      { title: "Clientes", url: "/clientes", icon: Users },
       { title: "Documentos", url: "/documentos", icon: FolderOpen },
     ],
   },
   {
     label: "Operações",
     icon: Factory,
-    profiles: P.OPS,
+    separator: true,
     items: [
       { title: "Produção", url: "/producao", icon: Factory, module: "producao" },
     ],
   },
   {
-    label: "Compras",
+    label: "Compras e Estoque",
     icon: Package,
-    profiles: [...P.EXEC, "financeiro", "operacional"],
     items: [
       { title: "Fornecedores", url: "/fornecedores", icon: Package, module: "fornecedores" },
       { title: "Materiais", url: "/estoque", icon: Layers, module: "estoque" },
@@ -109,23 +106,20 @@ const menuGroups: MenuGroup[] = [
     label: "Financeiro",
     icon: Wallet,
     separator: true,
-    profiles: P.FIN,
     items: [
       { title: "Movimento", url: "/financeiro", icon: Wallet, module: "financeiro" },
     ],
   },
   {
-    label: "Resultados e Análises",
-    icon: LineChart,
-    profiles: [...P.FIN, "auditor"],
+    label: "Controladoria",
+    icon: BookOpen,
     items: [
-      { title: "Controladoria", url: "/cadastros-financeiros", icon: BookOpen, module: "cadastros_financeiros" },
+      { title: "Plano de Contas", url: "/cadastros-financeiros", icon: BookOpen, module: "cadastros_financeiros" },
     ],
   },
   {
     label: "Planejamento",
     icon: Target,
-    profiles: P.EXEC,
     items: [
       { title: "Metas", url: "/metas", icon: Target, module: "metas" },
     ],
@@ -134,36 +128,23 @@ const menuGroups: MenuGroup[] = [
     label: "BI e Indicadores",
     icon: PieChart,
     separator: true,
-    profiles: [...P.EXEC, "contador", "auditor"],
     items: [
       { title: "Análise BI", url: "/bi-dashboard", icon: PieChart, module: "dashboard" },
-      { title: "Dashboards", url: "/dashboards", icon: BarChart3, module: null, masterOnly: true },
-    ],
-  },
-  {
-    label: "Cadastros",
-    icon: Users,
-    profiles: [...P.EXEC, "comercial", "financeiro"],
-    items: [
-      { title: "Clientes", url: "/pedidos", icon: Users, module: "pedidos" },
-      { title: "Fornecedores", url: "/fornecedores", icon: Package, module: "fornecedores" },
-      { title: "Materiais", url: "/estoque", icon: Layers, module: "estoque" },
+      { title: "Dashboards", url: "/dashboards", icon: BarChart3 },
     ],
   },
   {
     label: "Regras e Auditoria",
     icon: Shield,
     separator: true,
-    profiles: [...P.ADM, "auditor"],
     items: [
-      { title: "Regras Automáticas", url: "/automacoes", icon: Zap, module: null, masterOnly: true },
+      { title: "Regras Automáticas", url: "/automacoes", icon: Zap },
       { title: "Auditoria", url: "/auditoria", icon: History },
     ],
   },
   {
     label: "Sistema",
     icon: Settings,
-    profiles: P.ADM,
     items: [
       { title: "Configurações", url: "/settings", icon: Settings, module: "configuracoes" },
       { title: "Usuários", url: "/settings/users", icon: UserCog, module: "configuracoes" },
@@ -174,11 +155,10 @@ const menuGroups: MenuGroup[] = [
     icon: Building2,
     profiles: ["system_owner"],
     items: [
-      { title: "Painel Owner", url: "/super-admin", icon: Building2, module: null, ownerOnly: true },
+      { title: "Painel Owner", url: "/super-admin", icon: Building2, ownerOnly: true },
     ],
   },
 ];
-
 // ── Component ──
 
 export function AppSidebar() {
