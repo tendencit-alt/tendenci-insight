@@ -229,7 +229,7 @@ const menuGroups: MenuGroup[] = [
     items: [
       { title: "Geral", url: "/settings", icon: Settings },
       { title: "Usuários", url: "/settings/users", icon: UserCog },
-      { title: "Permissões", url: "/settings/permissoes", icon: Shield, comingSoon: true },
+      { title: "Access Governance", url: "/governanca", icon: Shield },
       { title: "Integrações", url: "/settings/integracoes", icon: Link2, comingSoon: true },
       { title: "Preferências do Sistema", url: "/settings/preferencias", icon: Wrench, comingSoon: true },
       { title: "Parâmetros Financeiros", url: "/settings/parametros-financeiros", icon: Calculator, comingSoon: true },
