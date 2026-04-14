@@ -3,9 +3,9 @@ import { useAutomationLayer, type AutomationSuggestion } from "@/hooks/useAutoma
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+
 import {
-  Zap, ChevronDown, ChevronUp, Play, CheckCircle2,
+  Zap, ChevronDown, ChevronUp, CheckCircle2,
   XCircle, Clock, AlertTriangle, Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
