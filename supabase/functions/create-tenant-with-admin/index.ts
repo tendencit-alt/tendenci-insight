@@ -6,6 +6,75 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// ── Universal Core Template defaults ──
+const SYSTEM_DEFAULT_COST_CENTERS = [
+  { name: "Comercial", code: "CC-COM" },
+  { name: "Produção", code: "CC-PRD" },
+  { name: "Administrativo", code: "CC-ADM" },
+  { name: "Financeiro", code: "CC-FIN" },
+  { name: "Marketing", code: "CC-MKT" },
+  { name: "Estrutura", code: "CC-EST" },
+  { name: "Projetos", code: "CC-PRJ" },
+  { name: "Planejados", code: "CC-PLA" },
+];
+
+const SYSTEM_DEFAULT_AUTOMATIONS = [
+  {
+    name: "Pedido aprovado → Gerar Contas a Receber",
+    event_module: "financeiro",
+    event_type: "pedido.aprovado",
+    actions: [{ type: "gerar_contas_receber" }, { type: "gerar_projeto_financeiro" }],
+    is_system: true,
+    active: true,
+    priority: 1,
+  },
+  {
+    name: "Pedido aprovado → Gerar Comissão Vendedor",
+    event_module: "financeiro",
+    event_type: "pedido.aprovado",
+    actions: [{ type: "gerar_comissao_vendedor" }],
+    is_system: true,
+    active: true,
+    priority: 2,
+  },
+  {
+    name: "Pedido aprovado → Vincular Centro de Custo",
+    event_module: "pedidos",
+    event_type: "pedido.aprovado",
+    actions: [{ type: "vincular_centro_custo" }],
+    is_system: true,
+    active: true,
+    priority: 3,
+  },
+  {
+    name: "Pedido aprovado → Vincular Projeto",
+    event_module: "pedidos",
+    event_type: "pedido.aprovado",
+    actions: [{ type: "vincular_projeto" }],
+    is_system: true,
+    active: true,
+    priority: 4,
+  },
+  {
+    name: "Pagamento recebido → Atualizar Fluxo de Caixa",
+    event_module: "financeiro",
+    event_type: "financeiro.pago_recebido",
+    actions: [{ type: "atualizar_fluxo_caixa" }],
+    is_system: true,
+    active: true,
+    priority: 5,
+  },
+  {
+    name: "Produção concluída → Liberar Faturamento",
+    event_module: "pedidos",
+    event_type: "producao.concluida",
+    actions: [{ type: "liberar_faturamento" }],
+    is_system: true,
+    active: true,
+    priority: 6,
+  },
+];
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -108,6 +177,38 @@ serve(async (req) => {
       await supabaseAdmin.from('menu_items').insert(
         defaultMenuItems.map(item => ({ ...item, visible: true, tenant_id: newTenant.id }))
       );
+
+      // 6. Seed Universal Core Template — Cost Centers
+      await supabaseAdmin.from('fin_cost_centers').insert(
+        SYSTEM_DEFAULT_COST_CENTERS.map(cc => ({
+          ...cc,
+          active: true,
+          is_system_default: true,
+          tenant_id: newTenant.id,
+        }))
+      );
+
+      // 7. Seed Universal Core Template — Automation Rules
+      await supabaseAdmin.from('automation_rules').insert(
+        SYSTEM_DEFAULT_AUTOMATIONS.map(rule => ({
+          ...rule,
+          tenant_id: newTenant.id,
+        }))
+      );
+
+      // 8. Seed default tenant_customizations with universal KPIs
+      await supabaseAdmin.from('tenant_customizations').insert({
+        tenant_id: newTenant.id,
+        module_aliases: {},
+        dre_aliases: {},
+        sidebar_config: { order: [], hidden: [] },
+        launcher_shortcuts: [],
+        kpi_priorities: [
+          'margem_contribuicao', 'ebitda', 'resultado_economico',
+          'fluxo_caixa_futuro', 'meta_vs_realizado',
+        ],
+        workflow_config: {},
+      });
     }
 
     return new Response(
