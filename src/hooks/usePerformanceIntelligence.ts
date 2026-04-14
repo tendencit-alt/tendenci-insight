@@ -94,7 +94,7 @@ export function usePerformanceIntelligence() {
       const prevRev = sum(prevRevR);
       const prevExp = sum(prevExpR);
       const prev2Rev = sum(prev2RevR);
-      const prev2Exp = sum(prev2ExpR);
+      const _prev2Exp = sum(prev2ExpR);
       const currentCash = sumB(cashRes);
       const overdueRec = sum(overdueRecRes as any);
       const overdueRecCount = overdueRecRes.data?.length || 0;

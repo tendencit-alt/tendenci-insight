@@ -53,6 +53,7 @@ import { FlowWidget } from "@/components/flow/FlowPanel";
 import { DataIntegrityWidget } from "@/components/integrity/DataIntegrityWidget";
 import { AutomationEngineWidget } from "@/components/automation/AutomationEngineWidget";
 import { ScenarioForecastWidget } from "@/components/forecast/ScenarioForecastWidget";
+import { PerformanceIntelligenceWidget } from "@/components/performance/PerformanceIntelligenceWidget";
 
 // ─── Module definitions ───
 const MODULES = [

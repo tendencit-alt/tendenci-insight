@@ -3,9 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Progress } from "@/components/ui/progress";
 import {
-  Brain, ChevronDown, ChevronUp, TrendingUp, TrendingDown,
+  Brain, ChevronDown, ChevronUp, TrendingUp,
   AlertTriangle, CheckCircle2, Lightbulb, BarChart3,
   DollarSign, Activity, ShieldAlert, ArrowUpRight,
 } from "lucide-react";
