@@ -16,13 +16,13 @@ import { OrderExportDialog } from './OrderExportDialog';
 import { CancelOrderDialog } from './CancelOrderDialog';
 import { DeleteOrderDialog } from './DeleteOrderDialog';
 import { StatusBanner } from '@/components/ui/StatusBanner';
+import { ORDERS_STATUS, getStatusDef } from '@/lib/status-registry';
 import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { parseDateOnly } from '@/utils/timezone';
 import {
-  Phone, Mail, Calendar,
-  Truck, FileText, Clock, CheckCircle, AlertCircle, Factory,
+  Phone, Mail, Calendar, CheckCircle,
   Edit, Copy, Download, MessageSquare, ExternalLink, Trash2,
   Wallet, BarChart3, MapPin
 } from 'lucide-react';
@@ -36,44 +36,9 @@ interface OrderDetailSheetProps {
   onUpdate: () => void;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any; bannerColor: "gray" | "blue" | "yellow" | "green" | "red" | "orange" | "purple" }> = {
-  rascunho: { label: 'Rascunho', color: 'bg-gray-500', icon: FileText, bannerColor: 'gray' },
-  em_negociacao: { label: 'Em Negociação', color: 'bg-amber-500', icon: Clock, bannerColor: 'yellow' },
-  aprovado: { label: 'Aprovado', color: 'bg-green-500', icon: CheckCircle, bannerColor: 'green' },
-  liberado_producao: { label: 'Lib. Produção', color: 'bg-cyan-500', icon: Factory, bannerColor: 'blue' },
-  em_producao: { label: 'Em Produção', color: 'bg-blue-500', icon: Factory, bannerColor: 'blue' },
-  producao_concluida: { label: 'Prod. Concluída', color: 'bg-indigo-500', icon: CheckCircle, bannerColor: 'blue' },
-  liberado_faturamento: { label: 'Lib. Faturamento', color: 'bg-purple-500', icon: FileText, bannerColor: 'purple' },
-  faturado: { label: 'Faturado', color: 'bg-violet-500', icon: FileText, bannerColor: 'purple' },
-  entregue: { label: 'Entregue', color: 'bg-teal-500', icon: Truck, bannerColor: 'green' },
-  encerrado: { label: 'Encerrado', color: 'bg-slate-500', icon: CheckCircle, bannerColor: 'gray' },
-  cancelado: { label: 'Cancelado', color: 'bg-red-500', icon: AlertCircle, bannerColor: 'red' },
-};
+const STATUS_ORDER = ORDERS_STATUS.statuses.map(s => s.key).filter(k => k !== 'cancelado');
 
-const _VALID_TRANSITIONS: Record<string, string[]> = {
-  rascunho: ['em_negociacao', 'aprovado', 'cancelado'],
-  em_negociacao: ['aprovado', 'rascunho', 'cancelado'],
-  aprovado: ['liberado_producao', 'em_producao', 'cancelado'],
-  liberado_producao: ['em_producao', 'cancelado'],
-  em_producao: ['producao_concluida'],
-  producao_concluida: ['liberado_faturamento', 'faturado'],
-  liberado_faturamento: ['faturado'],
-  faturado: ['entregue'],
-  entregue: ['encerrado'],
-  encerrado: [],
-  cancelado: ['rascunho'],
-};
-
-const STATUS_STEPS = [
-  { key: 'rascunho', label: 'Rascunho' },
-  { key: 'aprovado', label: 'Aprovado' },
-  { key: 'em_producao', label: 'Produção' },
-  { key: 'faturado', label: 'Faturado' },
-  { key: 'entregue', label: 'Entregue' },
-  { key: 'encerrado', label: 'Encerrado' },
-];
-
-const STATUS_ORDER = ['rascunho', 'em_negociacao', 'aprovado', 'liberado_producao', 'em_producao', 'producao_concluida', 'liberado_faturamento', 'faturado', 'entregue', 'encerrado'];
+// Stepper keys are derived from ORDERS_STATUS.stepperKeys
 
 function getNextAction(status: string): { label: string; nextStatus: string } | null {
   const map: Record<string, { label: string; nextStatus: string }> = {
@@ -204,7 +169,8 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
       }
       const { error } = await supabase.from('orders').update(updates).eq('id', orderId);
       if (error) throw error;
-      toast.success(`Status alterado para ${STATUS_CONFIG[newStatus]?.label}`);
+      const def = getStatusDef('orders', newStatus);
+      toast.success(`Status alterado para ${def?.label || newStatus}`);
       refetch();
       onUpdate();
     } catch (error: any) {
@@ -292,7 +258,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
   };
 
   // Derived data
-  const statusConfig = STATUS_CONFIG[order?.status || 'rascunho'] || STATUS_CONFIG.rascunho;
+  const _statusDef = getStatusDef('orders', order?.status || 'rascunho');
   const canEdit = order ? ['rascunho', 'em_negociacao'].includes(order.status) : false;
   const nextAction = order ? getNextAction(order.status) : null;
 
@@ -328,13 +294,15 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
 
   // Stepper
   const currentStepIdx = STATUS_ORDER.indexOf(order?.status || 'rascunho');
-  const steps = STATUS_STEPS.map(s => {
-    const stepIdx = STATUS_ORDER.indexOf(s.key);
+  const stepperStatuses = ORDERS_STATUS.stepperKeys || [];
+  const steps = stepperStatuses.map(key => {
+    const def = getStatusDef('orders', key);
+    const stepIdx = STATUS_ORDER.indexOf(key);
     return {
-      key: s.key,
-      label: s.label,
+      key,
+      label: def?.label || key,
       completed: currentStepIdx > stepIdx,
-      active: order?.status === s.key || (s.key === 'em_producao' && ['liberado_producao', 'em_producao', 'producao_concluida'].includes(order?.status || '')),
+      active: order?.status === key || (key === 'em_producao' && ['liberado_producao', 'em_producao', 'producao_concluida'].includes(order?.status || '')),
     };
   });
 
@@ -347,9 +315,8 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
           {/* ═══ STATUS BANNER ═══ */}
           <div className="px-4 pt-4">
             <StatusBanner
+              module="orders"
               status={order.status}
-              statusLabel={statusConfig.label}
-              statusColor={statusConfig.bannerColor}
               steps={steps}
               primaryAction={nextAction ? {
                 label: nextAction.label,
