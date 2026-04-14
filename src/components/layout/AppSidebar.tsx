@@ -67,8 +67,8 @@ const menuGroups: MenuGroup[] = [
     label: "Início",
     icon: Home,
     items: [
-      { title: "Home", url: "/", icon: Home },
-      { title: "Visão Geral", url: "/bi-dashboard", icon: LayoutDashboard, module: "dashboard" },
+      { title: "Central de Navegação", url: "/central-navegacao", icon: Home },
+      { title: "BI Dashboard", url: "/bi-dashboard", icon: LayoutDashboard, module: "dashboard" },
     ],
   },
   {
