@@ -169,6 +169,13 @@ export function CommandBar() {
       { id: "md-clientes", label: "Cadastro Clientes", keywords: ["clientes", "cadastro", "mestre"], icon: Users, action: () => go("/clientes"), group: "Dados Mestres" },
       { id: "md-duplicados", label: "Detecção Duplicados", keywords: ["duplicados", "duplicidade", "unificação", "merge"], icon: Database, action: () => go("/central-navegacao"), group: "Dados Mestres" },
       { id: "md-centros-custo", label: "Centros de Custo", keywords: ["centros", "custo", "departamento", "setor"], icon: Database, action: () => go("/cadastros-financeiros"), group: "Dados Mestres" },
+
+      // Integrações
+      { id: "int-ofx", label: "Importar OFX", keywords: ["ofx", "extrato", "bancário", "importar", "banco"], icon: Database, action: () => go("/financeiro"), group: "Integrações" },
+      { id: "int-nfe", label: "NF-e Emitidas", keywords: ["nfe", "nota", "fiscal", "emitida"], icon: Database, action: () => go("/financeiro"), group: "Integrações" },
+      { id: "int-xml", label: "XML Fornecedores", keywords: ["xml", "fornecedor", "entrada", "nota"], icon: Database, action: () => go("/financeiro"), group: "Integrações" },
+      { id: "int-webhook", label: "Webhook n8n", keywords: ["webhook", "n8n", "automação", "integração"], icon: Database, action: () => go("/configuracoes"), group: "Integrações" },
+      { id: "int-api", label: "API Pública ERP", keywords: ["api", "rest", "endpoint", "externo"], icon: Database, action: () => go("/central-navegacao"), group: "Integrações" },
     ];
 
     // Apply role-based priority

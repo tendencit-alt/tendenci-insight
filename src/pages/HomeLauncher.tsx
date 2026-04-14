@@ -56,6 +56,7 @@ import { ScenarioForecastWidget } from "@/components/forecast/ScenarioForecastWi
 import { PerformanceIntelligenceWidget } from "@/components/performance/PerformanceIntelligenceWidget";
 import { GovernanceWidget } from "@/components/governance/GovernanceWidget";
 import { MasterDataWidget } from "@/components/masterdata/MasterDataWidget";
+import { IntegrationLayerWidget } from "@/components/integration/IntegrationLayerWidget";
 
 // ─── Module definitions ───
 const MODULES = [
@@ -1518,6 +1519,12 @@ export default function HomeLauncher() {
         {!executiveMode && !actionLayer.rapidMode && (
           <div className="mt-2">
             <MasterDataWidget />
+          </div>
+        )}
+
+        {!executiveMode && !actionLayer.rapidMode && (
+          <div className="mt-2">
+            <IntegrationLayerWidget />
           </div>
         )}
 

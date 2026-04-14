@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { RefreshCw, Upload, CheckCircle, AlertTriangle, Clock, XCircle } from "l
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { parseOFX } from "@/lib/ofx-parser";
 
 interface ReconciliationTabProps {
   filters: FinanceiroFiltersState;
@@ -18,7 +19,7 @@ interface ReconciliationTabProps {
 
 export function ReconciliationTab({ filters }: ReconciliationTabProps) {
   const [importing, setImporting] = useState(false);
-
+  const queryClient = useQueryClient();
   const { data: transactions, isLoading, refetch } = useQuery({
     queryKey: ["fin-bank-transactions", filters],
     queryFn: async () => {
@@ -101,8 +102,56 @@ export function ReconciliationTab({ filters }: ReconciliationTabProps) {
 
     setImporting(true);
     try {
-      // TODO: Implement OFX parsing via edge function
-      toast.info("Funcionalidade de importação OFX em desenvolvimento");
+      const text = await file.text();
+      const result = parseOFX(text);
+      
+      if (result.transactions.length === 0) {
+        toast.warning("Nenhuma transação encontrada no arquivo OFX");
+        return;
+      }
+
+      // Get first bank account for import (user can reassign later)
+      const { data: bankAccounts } = await supabase
+        .from("fin_bank_accounts" as any)
+        .select("id")
+        .eq("active", true)
+        .limit(1);
+
+      const bankAccountId = filters.bankAccountId || (bankAccounts as any)?.[0]?.id;
+      if (!bankAccountId) {
+        toast.error("Configure uma conta bancária antes de importar");
+        return;
+      }
+
+      // Insert transactions with auto-classification attempt
+      const rows = result.transactions.map(tx => ({
+        bank_account_id: bankAccountId,
+        date: tx.date,
+        amount: tx.amount,
+        direction: tx.type === "CREDIT" ? "IN" : "OUT",
+        bank_memo: tx.description,
+        fitid: tx.fitid || tx.id,
+        status: "PENDENTE",
+      }));
+
+      const { error, data: inserted } = await (supabase.from("fin_bank_transactions" as any) as any).upsert(rows, { onConflict: "fitid,bank_account_id" }).select();
+
+      if (error) throw error;
+
+      // Log the import
+      await supabase.from("audit_import_logs").insert({
+        file_name: file.name,
+        file_type: "ofx",
+        record_count: result.transactions.length,
+        success_count: (inserted as any[])?.length || result.transactions.length,
+        error_count: 0,
+        status: "completed",
+        metadata: { bankId: result.bankId, accountId: result.accountId, dateRange: `${result.startDate} - ${result.endDate}` },
+      });
+
+      toast.success(`${result.transactions.length} transações importadas com sucesso`);
+      queryClient.invalidateQueries({ queryKey: ["fin-bank-transactions"] });
+      refetch();
     } catch (error: any) {
       toast.error("Erro ao importar arquivo: " + error.message);
     } finally {
