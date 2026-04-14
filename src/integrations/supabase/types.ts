@@ -4916,7 +4916,7 @@ export type Database = {
           cancelado_em: string | null
           cancelado_por: string | null
           chart_account_id: string | null
-          competence_date: string | null
+          competence_date: string
           conciliado_em: string | null
           conciliado_por: string | null
           cost_center_id: string | null
@@ -4948,7 +4948,7 @@ export type Database = {
           cancelado_em?: string | null
           cancelado_por?: string | null
           chart_account_id?: string | null
-          competence_date?: string | null
+          competence_date?: string
           conciliado_em?: string | null
           conciliado_por?: string | null
           cost_center_id?: string | null
@@ -4980,7 +4980,7 @@ export type Database = {
           cancelado_em?: string | null
           cancelado_por?: string | null
           chart_account_id?: string | null
-          competence_date?: string | null
+          competence_date?: string
           conciliado_em?: string | null
           conciliado_por?: string | null
           cost_center_id?: string | null
@@ -5287,7 +5287,7 @@ export type Database = {
           cancelado_em: string | null
           cancelado_por: string | null
           chart_account_id: string | null
-          competence_date: string | null
+          competence_date: string
           conciliado_em: string | null
           conciliado_por: string | null
           cost_center_id: string | null
@@ -5320,7 +5320,7 @@ export type Database = {
           cancelado_em?: string | null
           cancelado_por?: string | null
           chart_account_id?: string | null
-          competence_date?: string | null
+          competence_date?: string
           conciliado_em?: string | null
           conciliado_por?: string | null
           cost_center_id?: string | null
@@ -5353,7 +5353,7 @@ export type Database = {
           cancelado_em?: string | null
           cancelado_por?: string | null
           chart_account_id?: string | null
-          competence_date?: string | null
+          competence_date?: string
           conciliado_em?: string | null
           conciliado_por?: string | null
           cost_center_id?: string | null
@@ -12801,6 +12801,7 @@ export type Database = {
         }[]
       }
       mark_inactive_architects: { Args: never; Returns: undefined }
+      mark_overdue_entries: { Args: never; Returns: Json }
       orders_metrics:
         | {
             Args: {
