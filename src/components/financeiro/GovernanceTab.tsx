@@ -7,14 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import {
   Lock, Unlock, ShieldCheck, AlertTriangle, Clock, FileText,
-  Activity, TrendingUp, CheckCircle, XCircle, Eye, History,
+  Activity, TrendingUp, CheckCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -27,7 +26,7 @@ interface Props {
 
 const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
-export function GovernanceTab({ filters }: Props) {
+export function GovernanceTab({ filters: _filters }: Props) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const { can } = useFinancePermissions();
@@ -69,26 +68,26 @@ export function GovernanceTab({ filters }: Props) {
       // Total ledger entries
       const { count: totalEntries } = await supabase
         .from("fin_ledger_entries")
-        .select("id", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true } as any)
         .neq("status", "CANCELADO");
 
       // Reconciled entries
       const { count: reconciledEntries } = await supabase
         .from("fin_ledger_entries")
-        .select("id", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true } as any)
         .eq("reconciliation_status", "conciliado");
 
       // Auto entries (have source_id)
       const { count: autoEntries } = await supabase
         .from("fin_ledger_entries")
-        .select("id", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true } as any)
         .neq("status", "CANCELADO")
         .not("source_id", "is", null);
 
       // Closed periods this year
       const { count: closedPeriods } = await supabase
         .from("fin_period_closings")
-        .select("id", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true } as any)
         .eq("year", currentYear)
         .eq("status", "closed");
 
