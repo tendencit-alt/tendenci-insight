@@ -490,6 +490,161 @@ export default function HomeLauncher() {
           </div>
         )}
 
+        {/* ── Predictive Layer ── */}
+        {predictive && (
+          <div className="space-y-4">
+            {/* Projections */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" /> Previsões
+                </h2>
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant="outline"
+                    className={`text-[9px] gap-1 ${
+                      predictive.riskLevel === "baixo"
+                        ? "border-emerald-300 text-emerald-700 dark:border-emerald-700 dark:text-emerald-400"
+                        : predictive.riskLevel === "moderado"
+                        ? "border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-400"
+                        : "border-red-300 text-red-700 dark:border-red-700 dark:text-red-400"
+                    }`}
+                  >
+                    <ShieldAlert className="h-2.5 w-2.5" />
+                    Risco {predictive.riskLevel}
+                  </Badge>
+                  <Badge variant="outline" className="text-[9px] gap-1">
+                    <Gauge className="h-2.5 w-2.5" />
+                    Saúde {predictive.healthScore}pts
+                  </Badge>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                {[predictive.projections.cash7d, predictive.projections.cash30d, predictive.projections.monthResult, predictive.projections.goalPct].map((p) => (
+                  <Card key={p.label} className={`border-border/60 ${p.isNegative ? "border-destructive/30 bg-destructive/5 dark:bg-destructive/10" : ""}`}>
+                    <CardContent className="p-3">
+                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{p.label}</p>
+                      <p className={`text-sm font-bold mt-1 ${p.isNegative ? "text-destructive" : ""}`}>{p.formatted}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Trends */}
+            {predictive.trends.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <Activity className="h-3.5 w-3.5" /> Tendências Detectadas
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {predictive.trends.map((t, i) => {
+                    const signalIcon = t.signal === "acelerando" ? ArrowUpRight
+                      : t.signal === "desacelerando" ? ArrowDownRight
+                      : t.signal === "comprimindo" ? TrendingDown : Minus;
+                    const SignalIcon = signalIcon;
+                    const signalColor = t.signal === "acelerando" ? "text-emerald-600 dark:text-emerald-400"
+                      : t.signal === "desacelerando" || t.signal === "comprimindo" ? "text-destructive" : "text-muted-foreground";
+                    return (
+                      <Tooltip key={i}>
+                        <TooltipTrigger asChild>
+                          <Badge variant="outline" className={`text-[10px] gap-1 cursor-help ${signalColor}`}>
+                            <SignalIcon className="h-3 w-3" />
+                            {t.metric}: {t.signal}
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent className="text-xs">{t.description}</TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Predictive Alerts */}
+            {predictive.alerts.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Alertas Antecipados
+                </h3>
+                <div className="space-y-1.5">
+                  {predictive.alerts.map((a) => (
+                    <div
+                      key={a.id}
+                      className={`rounded-lg border p-2.5 flex items-start gap-2.5 ${
+                        a.severity === "danger"
+                          ? "border-destructive/40 bg-destructive/5 dark:bg-destructive/10"
+                          : "border-amber-300/60 bg-amber-50/50 dark:border-amber-700/40 dark:bg-amber-950/20"
+                      }`}
+                    >
+                      <AlertTriangle className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${a.severity === "danger" ? "text-destructive" : "text-amber-600 dark:text-amber-400"}`} />
+                      <div>
+                        <p className="text-xs font-semibold">{a.title}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{a.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Quick Simulator */}
+            <div className="space-y-2">
+              <button
+                onClick={() => setShowSimulator((p) => !p)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Calculator className="h-3.5 w-3.5" />
+                Simulador Rápido
+                <ChevronRight className={`h-3 w-3 transition-transform ${showSimulator ? "rotate-90" : ""}`} />
+              </button>
+              {showSimulator && (
+                <Card className="border-border/60">
+                  <CardContent className="p-4 space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] text-muted-foreground font-medium">Receita: {simulator.revenueChange > 0 ? "+" : ""}{simulator.revenueChange}%</label>
+                        <Button variant="ghost" size="sm" className="h-5 text-[9px] px-1.5" onClick={() => simulator.setRevenueChange(0)}>Reset</Button>
+                      </div>
+                      <Slider value={[simulator.revenueChange]} onValueChange={([v]) => simulator.setRevenueChange(v)} min={-30} max={30} step={5} className="w-full" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] text-muted-foreground font-medium">Despesas: {simulator.expenseChange > 0 ? "+" : ""}{simulator.expenseChange}%</label>
+                        <Button variant="ghost" size="sm" className="h-5 text-[9px] px-1.5" onClick={() => simulator.setExpenseChange(0)}>Reset</Button>
+                      </div>
+                      <Slider value={[simulator.expenseChange]} onValueChange={([v]) => simulator.setExpenseChange(v)} min={-30} max={30} step={5} className="w-full" />
+                    </div>
+                    {(() => {
+                      const curRev = predictive.projections.monthResult.value > 0
+                        ? predictive.projections.monthResult.value * 2
+                        : 100000;
+                      const curExp = curRev - predictive.projections.monthResult.value;
+                      const sim = simulator.simulate(curRev, curExp);
+                      return (
+                        <div className="flex items-center justify-between pt-2 border-t border-border/40">
+                          <div>
+                            <p className="text-[10px] text-muted-foreground">Resultado Simulado</p>
+                            <p className={`text-sm font-bold ${sim.simulatedResult < 0 ? "text-destructive" : ""}`}>{sim.formatted}</p>
+                          </div>
+                          <Badge variant="outline" className={`text-[10px] ${sim.delta > 0 ? "text-emerald-600 dark:text-emerald-400" : sim.delta < 0 ? "text-destructive" : ""}`}>
+                            {sim.delta > 0 ? "+" : ""}{sim.delta.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                          </Badge>
+                        </div>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+        )}
+        {loadingPredictive && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+            {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
+          </div>
+        )}
+
         {/* ── Onboarding Guide ── */}
         {showOnboarding && (
           <Card className="border-primary/20 bg-primary/5 dark:bg-primary/10">
