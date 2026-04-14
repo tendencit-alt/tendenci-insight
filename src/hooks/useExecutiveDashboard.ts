@@ -154,12 +154,10 @@ export function useExecRiscoOperacional() {
     queryFn: async (): Promise<ExecRiscoOperacional> => {
       const today = format(new Date(), "yyyy-MM-dd");
 
-      const [ordensRes, projRes, purchRes, stockRes] = await Promise.all([
-        supabase.from("ops_orders").select("id", { count: "exact", head: true }).in("status", ["em_producao", "planejada"]).lt("planned_end", today),
-        supabase.from("prj_projects").select("id", { count: "exact", head: true }).in("status", ["em_andamento"]).lt("planned_end_date", today),
-        supabase.from("purchase_orders").select("id, priority", { count: "exact" }).eq("priority", "urgente").in("status", ["aprovado", "pendente"]),
-        supabase.from("products").select("id, quantity, min_stock").not("min_stock", "is", null),
-      ]);
+        const ordensRes = await (supabase.from("ops_orders").select("id", { count: "exact", head: true }).in("status", ["em_producao", "planejada"]).lt("planned_end", today) as any);
+        const projRes = await (supabase.from("prj_projects").select("id", { count: "exact", head: true }).in("status", ["em_andamento"]).lt("planned_end_date", today) as any);
+        const purchRes = await (supabase.from("purchase_orders").select("id, priority", { count: "exact" }).eq("priority", "urgente").in("status", ["aprovado", "pendente"]) as any);
+        const stockRes = await (supabase.from("products").select("id, quantity, min_stock").not("min_stock", "is", null) as any);
 
       const rupturaEstoque = (stockRes.data as any[])?.filter((p: any) => (p.quantity || 0) < (p.min_stock || 0)).length || 0;
 
