@@ -3680,6 +3680,7 @@ export type Database = {
           id: string
           in_cashflow: boolean | null
           in_dre: boolean | null
+          is_core: boolean
           name: string
           nature: string | null
           parent_id: string | null
@@ -3694,6 +3695,7 @@ export type Database = {
           id?: string
           in_cashflow?: boolean | null
           in_dre?: boolean | null
+          is_core?: boolean
           name: string
           nature?: string | null
           parent_id?: string | null
@@ -3708,6 +3710,7 @@ export type Database = {
           id?: string
           in_cashflow?: boolean | null
           in_dre?: boolean | null
+          is_core?: boolean
           name?: string
           nature?: string | null
           parent_id?: string | null
@@ -3941,6 +3944,7 @@ export type Database = {
           code: string | null
           created_at: string | null
           id: string
+          is_system_default: boolean
           name: string
           owner_id: string | null
           tenant_id: string | null
@@ -3950,6 +3954,7 @@ export type Database = {
           code?: string | null
           created_at?: string | null
           id?: string
+          is_system_default?: boolean
           name: string
           owner_id?: string | null
           tenant_id?: string | null
@@ -3959,6 +3964,7 @@ export type Database = {
           code?: string | null
           created_at?: string | null
           id?: string
+          is_system_default?: boolean
           name?: string
           owner_id?: string | null
           tenant_id?: string | null
