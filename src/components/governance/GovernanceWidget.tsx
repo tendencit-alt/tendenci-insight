@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Shield, ChevronDown, ChevronUp, Lock, Unlock,
   History, CheckCircle2, AlertTriangle, UserCheck,
-  Eye, FileText, ShieldCheck, Clock,
+  FileText, ShieldCheck, Clock,
 } from "lucide-react";
 import {
   useGovernanceLayer,
