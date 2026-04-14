@@ -235,7 +235,7 @@ export default function HomeLauncher() {
   const { data: trust, isLoading: loadingTrust } = useTrustLayer();
   const [showTrustDetail, setShowTrustDetail] = useState(false);
   const actionLayer = useActionLayer();
-  const { summary: autoSummary, suggestions: autoSuggestions, activeRules: autoRules, isLoading: loadingAuto, activateRule } = useAutomationLayer();
+  const { summary: autoSummary, suggestions: autoSuggestions, activeRules: autoRules, activateRule } = useAutomationLayer();
   const [showAutoPanel, setShowAutoPanel] = useState(false);
 
   const showOnboarding = onboardingDone.length < ONBOARDING_STEPS.length;
