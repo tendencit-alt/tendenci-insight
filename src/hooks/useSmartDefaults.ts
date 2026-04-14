@@ -60,12 +60,12 @@ export function useSmartDefaults(moduleKey: string) {
     const now = new Date();
     return {
       userId: user?.id,
-      tenantId: tenantId ?? undefined,
+      tenantId: undefined,
       today: now.toISOString().split("T")[0],
       currentMonth: String(now.getMonth() + 1).padStart(2, "0"),
       currentYear: String(now.getFullYear()),
     };
-  }, [user?.id, tenantId]);
+  }, [user?.id]);
 
   const getDefaults = useCallback((): Record<string, any> => {
     const rules = MODULE_DEFAULTS[moduleKey] || [];
