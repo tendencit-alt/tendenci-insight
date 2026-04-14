@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
 import { FinanceiroKPIs } from "./FinanceiroKPIs";
+import { ExecutiveKPIPanel } from "./ExecutiveKPIPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -478,7 +479,10 @@ export function DashboardBI({ filters }: DashboardBIProps) {
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        {/* New unified KPIs */}
+        {/* Executive KPI Panel */}
+        <ExecutiveKPIPanel filters={filters} />
+
+        {/* Existing KPIs */}
         <FinanceiroKPIs
           metrics={metrics}
           isLoading={false}
