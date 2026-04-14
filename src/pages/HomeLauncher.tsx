@@ -25,6 +25,7 @@ import {
   Lightbulb, Calendar, DollarSign, Monitor,
   Gauge, ShieldAlert, ArrowUpRight, ArrowDownRight,
   Sparkles, Calculator, MessageSquareText, BarChart,
+  ShieldCheck, RefreshCw, Database,
 } from "lucide-react";
 import {
   useActionItems,
@@ -39,6 +40,7 @@ import { format as fmtDate } from "date-fns";
 import { usePredictiveLayer, useSimulator } from "@/hooks/usePredictiveLayer";
 import { Slider } from "@/components/ui/slider";
 import { useExplainabilityLayer } from "@/hooks/useExplainabilityLayer";
+import { useTrustLayer } from "@/hooks/useTrustLayer";
 
 // ─── Module definitions ───
 const MODULES = [
@@ -227,6 +229,8 @@ export default function HomeLauncher() {
   const simulator = useSimulator();
   const [showSimulator, setShowSimulator] = useState(false);
   const { data: explainability, isLoading: loadingExplain, showBreakdown, setShowBreakdown } = useExplainabilityLayer();
+  const { data: trust, isLoading: loadingTrust } = useTrustLayer();
+  const [showTrustDetail, setShowTrustDetail] = useState(false);
 
   const showOnboarding = onboardingDone.length < ONBOARDING_STEPS.length;
 
@@ -817,6 +821,116 @@ export default function HomeLauncher() {
         {loadingExplain && (
           <Skeleton className="h-16 rounded-xl" />
         )}
+
+        {/* ── Trust Layer ── */}
+        {trust && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-primary" /> Confiabilidade dos Dados
+              </h2>
+              <Badge variant="outline" className={`text-[9px] gap-1 ${
+                trust.overallScore >= 80 ? "border-emerald-300 text-emerald-700 dark:border-emerald-700 dark:text-emerald-400"
+                : trust.overallScore >= 50 ? "border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-400"
+                : "border-red-300 text-red-700 dark:border-red-700 dark:text-red-400"
+              }`}>
+                {trust.overallScore}% confiável
+              </Badge>
+            </div>
+
+            {/* 4 Trust Metrics */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+              {[trust.reconciliation, trust.classification, trust.cadastralQuality, trust.forecastCoverage].map((m) => (
+                <Card key={m.label} className="border-border/60">
+                  <CardContent className="p-2.5">
+                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{m.label}</p>
+                    <div className="flex items-end justify-between mt-1">
+                      <p className="text-sm font-bold">{m.value}%</p>
+                      <Badge variant="outline" className={`text-[8px] px-1 ${
+                        m.level === "alta" ? "text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700"
+                        : m.level === "média" ? "text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700"
+                        : "text-destructive border-destructive/30"
+                      }`}>{m.level}</Badge>
+                    </div>
+                    <div className="h-1.5 bg-muted rounded-full mt-1.5 overflow-hidden">
+                      <div className={`h-full rounded-full transition-all ${
+                        m.level === "alta" ? "bg-emerald-500" : m.level === "média" ? "bg-amber-500" : "bg-destructive"
+                      }`} style={{ width: `${m.value}%` }} />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Expandable details */}
+            <button
+              onClick={() => setShowTrustDetail((p) => !p)}
+              className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Database className="h-3.5 w-3.5" />
+              Detalhes de Confiabilidade
+              <ChevronRight className={`h-3 w-3 transition-transform ${showTrustDetail ? "rotate-90" : ""}`} />
+            </button>
+
+            {showTrustDetail && (
+              <Card className="border-border/60">
+                <CardContent className="p-3 space-y-4">
+                  {/* Maturity */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Maturidade Operacional</p>
+                      <p className="text-xs font-semibold mt-0.5 capitalize">{trust.maturity.level}</p>
+                    </div>
+                    <Badge variant="outline" className={`text-[9px] ${
+                      trust.maturity.level === "avançado" ? "text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700"
+                      : trust.maturity.level === "intermediário" ? "text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700"
+                      : "text-muted-foreground"
+                    }`}>{trust.maturity.score}pts</Badge>
+                  </div>
+
+                  {/* Data Freshness */}
+                  <div>
+                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-2 flex items-center gap-1">
+                      <RefreshCw className="h-3 w-3" /> Atualização dos Dados
+                    </p>
+                    <div className="space-y-1.5">
+                      {trust.freshness.map((f, i) => (
+                        <div key={i} className="flex items-center justify-between text-[11px]">
+                          <span className="text-muted-foreground">{f.label}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`font-medium ${f.fresh ? "text-foreground" : "text-destructive"}`}>{f.ageLabel}</span>
+                            <div className={`h-1.5 w-1.5 rounded-full ${f.fresh ? "bg-emerald-500" : "bg-destructive"}`} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* KPI Confidence */}
+                  <div>
+                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-2">Confiança por KPI</p>
+                    <div className="space-y-1.5">
+                      {trust.kpiConfidence.map((k, i) => (
+                        <div key={i} className="flex items-center justify-between text-[11px]">
+                          <div className="flex-1 min-w-0">
+                            <span className="font-medium">{k.kpi}</span>
+                            <p className="text-[9px] text-muted-foreground truncate">{k.reason}</p>
+                          </div>
+                          <Badge variant="outline" className={`text-[8px] px-1 ml-2 shrink-0 ${
+                            k.level === "alta" ? "text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700"
+                            : k.level === "média" ? "text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700"
+                            : "text-destructive border-destructive/30"
+                          }`}>{k.level}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+        {loadingTrust && <Skeleton className="h-28 rounded-xl" />}
 
         {/* ── Onboarding Guide ── */}
         {showOnboarding && (
