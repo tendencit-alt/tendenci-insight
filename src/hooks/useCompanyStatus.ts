@@ -44,13 +44,11 @@ export function useCompanyStatus() {
         .eq("active", true) as unknown as { data: { opening_balance: number | null }[] | null };
 
       type AmtRes = { data: { amount: number | null }[] | null };
-      const revenueRes = await supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "credit").gte("competence_date", monthStart).lte("competence_date", monthEnd) as unknown as AmtRes;
-
-      const expenseRes = await supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "debit").gte("competence_date", monthStart).lte("competence_date", monthEnd) as unknown as AmtRes;
-
-      const prevRevenueRes = await supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "credit").gte("competence_date", prevMonthStart).lte("competence_date", prevMonthEnd) as unknown as AmtRes;
-
-      const prevExpenseRes = await supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "debit").gte("competence_date", prevMonthStart).lte("competence_date", prevMonthEnd) as unknown as AmtRes;
+      const ledger = () => supabase.from("fin_ledger_entries").select("amount") as any;
+      const revenueRes: AmtRes = await ledger().eq("entry_type", "credit").gte("competence_date", monthStart).lte("competence_date", monthEnd);
+      const expenseRes: AmtRes = await ledger().eq("entry_type", "debit").gte("competence_date", monthStart).lte("competence_date", monthEnd);
+      const prevRevenueRes: AmtRes = await ledger().eq("entry_type", "credit").gte("competence_date", prevMonthStart).lte("competence_date", prevMonthEnd);
+      const prevExpenseRes: AmtRes = await ledger().eq("entry_type", "debit").gte("competence_date", prevMonthStart).lte("competence_date", prevMonthEnd);
 
       const openOrdersRes = await supabase
         .from("orders")
