@@ -94,6 +94,16 @@ const menuGroups: MenuGroup[] = [
     ],
   },
   {
+    label: "CRM",
+    icon: Target,
+    items: [
+      { title: "Pipeline", url: "/crm-comercial", icon: Target },
+      { title: "Propostas", url: "/crm-comercial", icon: FileText },
+      { title: "Forecast Receita", url: "/crm-comercial", icon: TrendingUp },
+      { title: "Analytics Comercial", url: "/crm-comercial", icon: BarChart3 },
+    ],
+  },
+  {
     label: "Comercial",
     icon: ShoppingCart,
     separator: true,
