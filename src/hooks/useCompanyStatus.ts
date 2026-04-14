@@ -43,17 +43,14 @@ export function useCompanyStatus() {
         .select("opening_balance")
         .eq("active", true) as unknown as { data: { opening_balance: number | null }[] | null };
 
-      const revenueQ = supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "credit");
-      const revenueRes = await revenueQ.gte("competence_date", monthStart).lte("competence_date", monthEnd);
+      type AmtRes = { data: { amount: number | null }[] | null };
+      const revenueRes = await supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "credit").gte("competence_date", monthStart).lte("competence_date", monthEnd) as unknown as AmtRes;
 
-      const expenseQ = supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "debit");
-      const expenseRes = await expenseQ.gte("competence_date", monthStart).lte("competence_date", monthEnd);
+      const expenseRes = await supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "debit").gte("competence_date", monthStart).lte("competence_date", monthEnd) as unknown as AmtRes;
 
-      const prevRevQ = supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "credit");
-      const prevRevenueRes = await prevRevQ.gte("competence_date", prevMonthStart).lte("competence_date", prevMonthEnd);
+      const prevRevenueRes = await supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "credit").gte("competence_date", prevMonthStart).lte("competence_date", prevMonthEnd) as unknown as AmtRes;
 
-      const prevExpQ = supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "debit");
-      const prevExpenseRes = await prevExpQ.gte("competence_date", prevMonthStart).lte("competence_date", prevMonthEnd);
+      const prevExpenseRes = await supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "debit").gte("competence_date", prevMonthStart).lte("competence_date", prevMonthEnd) as unknown as AmtRes;
 
       const openOrdersRes = await supabase
         .from("orders")
