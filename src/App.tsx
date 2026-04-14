@@ -45,6 +45,7 @@ import CRMCommercial from "./pages/CRMCommercial";
 import Planning from "./pages/Planning";
 import ExecutiveCenter from "./pages/ExecutiveCenter";
 import AccessGovernance from "./pages/AccessGovernance";
+import Billing from "./pages/Billing";
 
 const queryClient = new QueryClient();
 
