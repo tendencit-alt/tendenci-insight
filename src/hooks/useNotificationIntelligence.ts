@@ -104,9 +104,9 @@ const SILENCE_THRESHOLD = 5; // If ignored N+ times in same category, reduce
 // ── Hook ──
 export function useNotificationIntelligence() {
   const { user } = useAuth();
-  const { accessLevel } = usePermissions();
+  const { userLevel } = usePermissions();
   const queryClient = useQueryClient();
-  const role = resolveRole(accessLevel);
+  const role = resolveRole(userLevel);
 
   // Fetch notifications
   const { data: rawNotifications, isLoading, refetch } = useQuery({
