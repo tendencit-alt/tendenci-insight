@@ -9,7 +9,10 @@ export type BusinessEventType =
   | "order_created"
   | "order_cancelled"
   | "order_delivered"
+  | "purchase_approved"
+  | "purchase_cancelled"
   | "payment_received"
+  | "payment_made"
   | "payable_created"
   | "supplier_paid"
   | "recurring_generate"
@@ -19,6 +22,7 @@ export type BusinessEventType =
   | "asset_purchased"
   | "depreciation_post"
   | "reconciliation"
+  | "anticipation_registered"
   | "goal_created"
   | "production_started"
   | "production_completed"
@@ -156,6 +160,39 @@ export function useBusinessEvent() {
     event_data: { period_date: periodDate },
   });
 
+  const processOrderCancelled = (orderId: string) => fireEvent({
+    event_type: "order_cancelled",
+    source_table: "orders",
+    source_id: orderId,
+    event_data: { order_id: orderId },
+  });
+
+  const processPurchaseApproved = (purchaseOrderId: string) => fireEvent({
+    event_type: "purchase_approved",
+    source_table: "purchase_orders",
+    source_id: purchaseOrderId,
+    event_data: { purchase_order_id: purchaseOrderId },
+  });
+
+  const processPurchaseCancelled = (purchaseOrderId: string) => fireEvent({
+    event_type: "purchase_cancelled",
+    source_table: "purchase_orders",
+    source_id: purchaseOrderId,
+    event_data: { purchase_order_id: purchaseOrderId },
+  });
+
+  const processAnticipation = (data: {
+    type: string;
+    amount: number;
+    order_id?: string;
+    description?: string;
+  }) => fireEvent({
+    event_type: "anticipation_registered",
+    source_table: "fin_ledger_entries",
+    source_id: crypto.randomUUID(),
+    event_data: data,
+  });
+
   return {
     processing,
     fireEvent,
@@ -166,5 +203,28 @@ export function useBusinessEvent() {
     processAssetPurchased,
     processRecurringGenerate,
     processDepreciationPost,
+    processOrderCancelled,
+    processPurchaseApproved,
+    processPurchaseCancelled,
+    processAnticipation,
   };
 }
+
+/**
+ * Event descriptions for UI display.
+ */
+export const BUSINESS_EVENT_LABELS: Record<string, string> = {
+  order_approved: "Pedido aprovado → Gerar financeiro",
+  order_cancelled: "Pedido cancelado → Cancelar financeiro",
+  purchase_approved: "Compra aprovada → Gerar contas a pagar",
+  purchase_cancelled: "Compra cancelada → Cancelar contas",
+  payment_received: "Pagamento recebido → Baixa no caixa",
+  payment_made: "Pagamento efetuado → Baixa no caixa",
+  payroll: "Folha lançada → Despesas operacionais",
+  recurring_generate: "Recorrente vencendo → Gerar parcela",
+  loan_contracted: "Empréstimo contratado → Parcelas",
+  loan_installment_paid: "Parcela empréstimo paga → Separar juros",
+  asset_purchased: "Ativo adquirido → Depreciação",
+  depreciation_post: "Depreciação mensal → Lançamento DRE",
+  anticipation_registered: "Antecipação → Despesa sobre venda",
+};
