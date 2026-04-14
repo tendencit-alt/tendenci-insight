@@ -6729,6 +6729,375 @@ export type Database = {
           },
         ]
       }
+      hr_departments: {
+        Row: {
+          active: boolean | null
+          cost_center_id: string | null
+          created_at: string | null
+          id: string
+          manager_id: string | null
+          name: string
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          id?: string
+          manager_id?: string | null
+          name: string
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          id?: string
+          manager_id?: string | null
+          name?: string
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_departments_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_departments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_employees: {
+        Row: {
+          admission_date: string | null
+          base_salary: number
+          benefits_percent: number
+          cpf: string | null
+          created_at: string | null
+          department_id: string | null
+          hourly_cost: number | null
+          id: string
+          manager_id: string | null
+          monthly_cost: number | null
+          monthly_hours: number
+          name: string
+          position_id: string | null
+          registration_number: string | null
+          status: string
+          team_id: string | null
+          tenant_id: string | null
+          termination_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admission_date?: string | null
+          base_salary?: number
+          benefits_percent?: number
+          cpf?: string | null
+          created_at?: string | null
+          department_id?: string | null
+          hourly_cost?: number | null
+          id?: string
+          manager_id?: string | null
+          monthly_cost?: number | null
+          monthly_hours?: number
+          name: string
+          position_id?: string | null
+          registration_number?: string | null
+          status?: string
+          team_id?: string | null
+          tenant_id?: string | null
+          termination_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admission_date?: string | null
+          base_salary?: number
+          benefits_percent?: number
+          cpf?: string | null
+          created_at?: string | null
+          department_id?: string | null
+          hourly_cost?: number | null
+          id?: string
+          manager_id?: string | null
+          monthly_cost?: number | null
+          monthly_hours?: number
+          name?: string
+          position_id?: string | null
+          registration_number?: string | null
+          status?: string
+          team_id?: string | null
+          tenant_id?: string | null
+          termination_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_employees_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "hr_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_employees_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_employees_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "hr_positions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_employees_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "hr_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_employees_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_labor_allocations: {
+        Row: {
+          allocated_cost: number
+          allocated_hours: number
+          cost_center_id: string | null
+          created_at: string | null
+          employee_id: string
+          id: string
+          production_order_id: string | null
+          project_id: string | null
+          reference_month: string
+          tenant_id: string | null
+        }
+        Insert: {
+          allocated_cost?: number
+          allocated_hours?: number
+          cost_center_id?: string | null
+          created_at?: string | null
+          employee_id: string
+          id?: string
+          production_order_id?: string | null
+          project_id?: string | null
+          reference_month: string
+          tenant_id?: string | null
+        }
+        Update: {
+          allocated_cost?: number
+          allocated_hours?: number
+          cost_center_id?: string | null
+          created_at?: string | null
+          employee_id?: string
+          id?: string
+          production_order_id?: string | null
+          project_id?: string | null
+          reference_month?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_labor_allocations_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_labor_allocations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_labor_allocations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_positions: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          id: string
+          max_salary: number | null
+          min_salary: number | null
+          tenant_id: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          max_salary?: number | null
+          min_salary?: number | null
+          tenant_id?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          max_salary?: number | null
+          min_salary?: number | null
+          tenant_id?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_positions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_teams: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          department_id: string | null
+          id: string
+          leader_id: string | null
+          name: string
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          department_id?: string | null
+          id?: string
+          leader_id?: string | null
+          name: string
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          department_id?: string | null
+          id?: string
+          leader_id?: string | null
+          name?: string
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_teams_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "hr_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_teams_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_timesheets: {
+        Row: {
+          absence_hours: number | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          employee_id: string
+          id: string
+          late_minutes: number | null
+          notes: string | null
+          overtime_hours: number | null
+          planned_hours: number | null
+          status: string | null
+          tenant_id: string | null
+          updated_at: string | null
+          work_date: string
+          worked_hours: number | null
+        }
+        Insert: {
+          absence_hours?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          employee_id: string
+          id?: string
+          late_minutes?: number | null
+          notes?: string | null
+          overtime_hours?: number | null
+          planned_hours?: number | null
+          status?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+          work_date: string
+          worked_hours?: number | null
+        }
+        Update: {
+          absence_hours?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          employee_id?: string
+          id?: string
+          late_minutes?: number | null
+          notes?: string | null
+          overtime_hours?: number | null
+          planned_hours?: number | null
+          status?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+          work_date?: string
+          worked_hours?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_timesheets_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_timesheets_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ia_client_memory: {
         Row: {
           client_name: string | null
