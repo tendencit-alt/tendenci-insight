@@ -171,14 +171,6 @@ const ICON_MAP: Record<string, any> = {
   Package, Tags, FolderTree, Briefcase,
 };
 
-// ─── Onboarding steps ───
-const ONBOARDING_STEPS = [
-  { key: "empresa", label: "Cadastrar Empresa", route: "/settings", icon: Building2 },
-  { key: "cliente", label: "Cadastrar Cliente", route: "/pedidos", icon: Users },
-  { key: "pedido", label: "Criar Pedido", route: "/pedidos", icon: ShoppingCart },
-  { key: "conciliar", label: "Conciliar Banco", route: "/financeiro", icon: ArrowLeftRight },
-  { key: "dre", label: "Visualizar DRE", route: "/bi-dashboard", icon: BarChart3 },
-];
 
 // ─── Storage helpers ───
 function getFavoritesFromStorage(): typeof DEFAULT_FAVORITES {
@@ -230,7 +222,7 @@ export default function HomeLauncher() {
   const [workspaceDialog, setWorkspaceDialog] = useState(false);
   const [tempFavorites, setTempFavorites] = useState<typeof DEFAULT_FAVORITES>([]);
   const [workspacePrefs, setWorkspacePrefs] = useState(getWorkspacePrefs);
-  const [onboardingDone, setOnboardingDone] = useState(getOnboardingDone);
+  
 
   const { data: actionItems = [], isLoading: loadingActions } = useActionItems();
   const continueItems = useContinueItems();
