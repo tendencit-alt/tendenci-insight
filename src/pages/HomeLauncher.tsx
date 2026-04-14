@@ -12,7 +12,7 @@ import {
   Search, ChevronRight, Plus,
   LayoutGrid, AlertTriangle,
   Lightbulb, Calendar, DollarSign,
-  Monitor, Sparkles, Calculator,
+  Sparkles, Calculator,
   ShieldAlert, Gauge, BarChart,
   MessageSquareText, ShieldCheck, RefreshCw, Database,
   Undo2, ListChecks, Play, CheckSquare,
@@ -20,12 +20,10 @@ import {
   Activity, Zap, Clock, CheckCircle2,
   Brain, Repeat, ArrowRight,
   Users, UserCheck, MessageCircle, Eye, EyeOff,
-  Star,
 } from "lucide-react";
 import {
   useActionItems,
   useContinueItems,
-  useUserProfile,
 } from "@/hooks/useSmartLauncher";
 import { useCompanyStatus } from "@/hooks/useCompanyStatus";
 import { useDecisionSuggestions, useOperationalTimeline } from "@/hooks/useDecisionLayer";
