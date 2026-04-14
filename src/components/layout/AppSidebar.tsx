@@ -270,7 +270,7 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const { trackVisit, getTopPaths } = useNavigationUsage();
   const { alerts, totalActions, getGroupBadge, getItemBadge } = useAttentionLayer();
-  const { isGroupVisible, activeWorkspace } = useWorkspace();
+  const { isGroupVisible } = useWorkspace();
   // Profile type
   const [profileTypeName, setProfileTypeName] = useState<string | null>(null);
   useEffect(() => {
