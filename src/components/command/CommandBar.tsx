@@ -152,6 +152,11 @@ export function CommandBar() {
       { id: "forecast-cenarios", label: "Cenários Financeiros", keywords: ["cenários", "conservador", "agressivo", "realista", "simulação"], icon: BarChart3, action: () => go("/central-navegacao"), group: "Forecast" },
       { id: "forecast-simulador", label: "Simulador de Custos", keywords: ["simulador", "custos", "comissão", "frete", "matéria-prima", "margem"], icon: Calculator, action: () => go("/central-navegacao"), group: "Forecast" },
       { id: "forecast-emprestimo", label: "Simulador Empréstimo", keywords: ["empréstimo", "financiamento", "juros", "parcela"], icon: Landmark, action: () => go("/central-navegacao"), group: "Forecast" },
+
+      // Performance Intelligence
+      { id: "perf-diagnostico", label: "Diagnóstico Performance", keywords: ["diagnóstico", "performance", "margem", "caixa", "crescimento"], icon: BarChart3, action: () => go("/central-navegacao"), group: "Performance" },
+      { id: "perf-custos", label: "Ranking de Custos", keywords: ["ranking", "custos", "top", "maiores", "despesas"], icon: BarChart, action: () => go("/central-navegacao"), group: "Performance" },
+      { id: "perf-recomendacoes", label: "Recomendações Gerenciais", keywords: ["recomendações", "sugestões", "melhoria", "gerencial"], icon: TrendingUp, action: () => go("/central-navegacao"), group: "Performance" },
     ];
 
     // Apply role-based priority
