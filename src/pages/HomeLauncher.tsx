@@ -215,7 +215,7 @@ export default function HomeLauncher() {
   const { data: modulePreviews } = useModulePreviews();
   const { data: companyStatus, isLoading: loadingStatus } = useCompanyStatus();
   const { data: suggestions = [], isLoading: loadingSuggestions } = useDecisionSuggestions();
-  const { data: timeline = [], isLoading: loadingTimeline } = useOperationalTimeline();
+  const { data: timeline = [] } = useOperationalTimeline();
   const [fabOpen, setFabOpen] = useState(false);
   const [executiveMode, setExecutiveMode] = useState(false);
 
