@@ -16,14 +16,13 @@ import { OrderExportDialog } from './OrderExportDialog';
 import { CancelOrderDialog } from './CancelOrderDialog';
 import { DeleteOrderDialog } from './DeleteOrderDialog';
 import { StatusBanner } from '@/components/ui/StatusBanner';
-import { ORDERS_STATUS, getStatusDef, getStatusLabel } from '@/lib/status-registry';
+import { ORDERS_STATUS, getStatusDef } from '@/lib/status-registry';
 import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { parseDateOnly } from '@/utils/timezone';
 import {
-  Phone, Mail, Calendar,
-  Truck, FileText, Clock, CheckCircle, AlertCircle, Factory,
+  Phone, Mail, Calendar, CheckCircle,
   Edit, Copy, Download, MessageSquare, ExternalLink, Trash2,
   Wallet, BarChart3, MapPin
 } from 'lucide-react';
@@ -39,7 +38,7 @@ interface OrderDetailSheetProps {
 
 const STATUS_ORDER = ORDERS_STATUS.statuses.map(s => s.key).filter(k => k !== 'cancelado');
 
-const STEPPER_KEYS = ORDERS_STATUS.stepperKeys || ['rascunho', 'aprovado', 'em_producao', 'faturado', 'entregue', 'encerrado'];
+// Stepper keys are derived from ORDERS_STATUS.stepperKeys
 
 function getNextAction(status: string): { label: string; nextStatus: string } | null {
   const map: Record<string, { label: string; nextStatus: string }> = {
@@ -316,9 +315,8 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
           {/* ═══ STATUS BANNER ═══ */}
           <div className="px-4 pt-4">
             <StatusBanner
+              module="orders"
               status={order.status}
-              statusLabel={statusConfig.label}
-              statusColor={statusConfig.bannerColor}
               steps={steps}
               primaryAction={nextAction ? {
                 label: nextAction.label,
