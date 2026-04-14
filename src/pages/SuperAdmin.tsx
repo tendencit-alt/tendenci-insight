@@ -1,7 +1,7 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, CreditCard, ArrowLeft, Wrench, LayoutDashboard, Shield, Activity, Rocket, BarChart3 } from 'lucide-react';
+import { Building2, CreditCard, ArrowLeft, Wrench, LayoutDashboard, Shield, Activity, Rocket, BarChart3, GitBranch } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TenantsManager } from '@/components/superadmin/TenantsManager';
 import { PlansManager } from '@/components/superadmin/PlansManager';
@@ -11,6 +11,7 @@ import { SupportDashboard } from '@/components/superadmin/SupportDashboard';
 import { ObservabilityDashboard } from '@/components/superadmin/ObservabilityDashboard';
 import { OwnerActivationPanel } from '@/components/superadmin/OwnerActivationPanel';
 import { ProductAnalyticsPanel } from '@/components/superadmin/ProductAnalyticsPanel';
+import { ReleaseManagementPanel } from '@/components/superadmin/ReleaseManagementPanel';
 
 const SuperAdmin = () => {
   const navigate = useNavigate();
@@ -34,7 +35,7 @@ const SuperAdmin = () => {
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="flex flex-wrap gap-1">
             <TabsTrigger value="dashboard" className="flex items-center gap-1.5">
               <LayoutDashboard className="h-4 w-4" />
               Visão Geral
@@ -46,6 +47,10 @@ const SuperAdmin = () => {
             <TabsTrigger value="analytics" className="flex items-center gap-1.5">
               <BarChart3 className="h-4 w-4" />
               Analytics
+            </TabsTrigger>
+            <TabsTrigger value="releases" className="flex items-center gap-1.5">
+              <GitBranch className="h-4 w-4" />
+              Releases
             </TabsTrigger>
             <TabsTrigger value="tenants" className="flex items-center gap-1.5">
               <Building2 className="h-4 w-4" />
@@ -95,6 +100,10 @@ const SuperAdmin = () => {
 
           <TabsContent value="analytics" className="space-y-6 pt-6">
             <ProductAnalyticsPanel />
+          </TabsContent>
+
+          <TabsContent value="releases" className="space-y-6 pt-6">
+            <ReleaseManagementPanel />
           </TabsContent>
 
           <TabsContent value="observability" className="space-y-6 pt-6">
