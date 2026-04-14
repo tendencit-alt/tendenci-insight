@@ -4084,6 +4084,62 @@ export type Database = {
           },
         ]
       }
+      fin_executive_kpi_snapshots: {
+        Row: {
+          created_at: string
+          id: string
+          kpi_group: string
+          kpi_name: string
+          notes: string | null
+          snapshot_date: string
+          tenant_id: string | null
+          tendencia: string | null
+          updated_at: string
+          valor_atual: number
+          valor_forecast: number | null
+          valor_meta: number | null
+          variacao_percentual: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kpi_group?: string
+          kpi_name: string
+          notes?: string | null
+          snapshot_date?: string
+          tenant_id?: string | null
+          tendencia?: string | null
+          updated_at?: string
+          valor_atual?: number
+          valor_forecast?: number | null
+          valor_meta?: number | null
+          variacao_percentual?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kpi_group?: string
+          kpi_name?: string
+          notes?: string | null
+          snapshot_date?: string
+          tenant_id?: string | null
+          tendencia?: string | null
+          updated_at?: string
+          valor_atual?: number
+          valor_forecast?: number | null
+          valor_meta?: number | null
+          variacao_percentual?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_executive_kpi_snapshots_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fin_financial_goals: {
         Row: {
           client_id: string | null
