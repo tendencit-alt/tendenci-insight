@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Search, Star, Clock, ChevronRight, Pencil,
@@ -381,7 +381,7 @@ export default function HomeLauncher() {
                         >
                           <Checkbox
                             checked={checked}
-                            onCheckedChange={() => toggleFavorite(item)}
+                            onCheckedChange={() => toggleFavorite({ ...item, module: mod.label })}
                             disabled={!checked && tempFavorites.length >= 8}
                           />
                           <item.icon className="h-3.5 w-3.5 text-muted-foreground" />
