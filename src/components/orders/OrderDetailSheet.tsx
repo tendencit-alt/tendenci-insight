@@ -612,7 +612,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
                                   <div>
                                     <p className="text-xs font-medium truncate max-w-[200px]">{entry.description || 'Parcela'}</p>
                                     <p className="text-[10px] text-muted-foreground">
-                                      Venc: {entry.due_date ? format(parseDateOnly(entry.due_date)!, 'dd/MM/yyyy') : '—'}
+                                      Comp: {entry.competence_date ? format(parseDateOnly(entry.competence_date)!, 'dd/MM/yyyy') : '—'}
                                       {entry.cash_date && ` • Pago: ${format(parseDateOnly(entry.cash_date)!, 'dd/MM/yyyy')}`}
                                     </p>
                                   </div>
