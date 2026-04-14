@@ -25,10 +25,98 @@ export interface AutomationSuggestion {
 }
 
 const STANDARD_SUGGESTIONS: AutomationSuggestion[] = [
+  // ── Pedido Aprovado (full cascade) ──
+  {
+    id: "auto-order-approved-receivables",
+    label: "Pedido aprovado → Contas a Receber",
+    description: "Gera automaticamente contas a receber quando pedido é aprovado",
+    type: "operacional",
+    ruleTemplate: {
+      name: "Pedido aprovado gera contas a receber",
+      event_type: "order_approved",
+      event_module: "operacoes",
+      conditions: [{ field: "status", operator: "eq", value: "aprovado" }],
+      actions: [{ type: "criar_contas_receber", params: {} }],
+    },
+  },
+  {
+    id: "auto-order-approved-commission",
+    label: "Pedido aprovado → Comissão Vendedor",
+    description: "Gera automaticamente comissão do vendedor ao aprovar pedido",
+    type: "operacional",
+    ruleTemplate: {
+      name: "Pedido aprovado gera comissão vendedor",
+      event_type: "order_approved",
+      event_module: "operacoes",
+      conditions: [{ field: "comissao_vendedor_valor", operator: "gt", value: 0 }],
+      actions: [{ type: "gerar_comissao", params: { tipo: "vendedor" } }],
+    },
+  },
+  {
+    id: "auto-order-approved-assembly",
+    label: "Pedido aprovado → Custo Montagem",
+    description: "Gera automaticamente custo de montagem ao aprovar pedido",
+    type: "operacional",
+    ruleTemplate: {
+      name: "Pedido aprovado gera custo montagem",
+      event_type: "order_approved",
+      event_module: "operacoes",
+      conditions: [],
+      actions: [{ type: "gerar_custo_montagem", params: {} }],
+    },
+  },
+  {
+    id: "auto-order-approved-costcenter",
+    label: "Pedido aprovado → Vincular Centro Custo",
+    description: "Vincula automaticamente centro de custo e projeto ao pedido aprovado",
+    type: "operacional",
+    ruleTemplate: {
+      name: "Pedido aprovado vincula centro custo e projeto",
+      event_type: "order_approved",
+      event_module: "operacoes",
+      conditions: [],
+      actions: [
+        { type: "vincular_centro_custo", params: {} },
+        { type: "vincular_projeto", params: {} },
+      ],
+    },
+  },
+
+  // ── Classificação automática despesa produção ──
+  {
+    id: "auto-classify-production",
+    label: "Despesa produção → Centro custo Produção",
+    description: "Atribui automaticamente centro de custo 'Produção' para despesas da categoria produção",
+    type: "financeiro",
+    ruleTemplate: {
+      name: "Classificação automática despesa produção",
+      event_type: "ledger_entry_created",
+      event_module: "financeiro",
+      conditions: [{ field: "category_name", operator: "contains", value: "produção" }],
+      actions: [{ type: "atribuir_centro_custo", params: { centro_custo: "Produção" } }],
+    },
+  },
+
+  // ── Antecipação cartão ──
+  {
+    id: "auto-card-anticipation",
+    label: "Cartão antecipado → Custo variável venda",
+    description: "Classifica automaticamente custo de antecipação de cartão como custo variável de venda",
+    type: "financeiro",
+    ruleTemplate: {
+      name: "Antecipação cartão classificação automática",
+      event_type: "ledger_entry_created",
+      event_module: "financeiro",
+      conditions: [{ field: "description", operator: "contains", value: "antecipação" }],
+      actions: [{ type: "classificar_categoria", params: { categoria: "Antecipação de Recebíveis" } }],
+    },
+  },
+
+  // ── Classificação recorrente ──
   {
     id: "auto-classify-recurring",
     label: "Classificar despesas recorrentes",
-    description: "Categoriza automaticamente lançamentos com descrições repetidas",
+    description: "Categoriza automaticamente lançamentos com descrições repetidas de fornecedores recorrentes",
     type: "financeiro",
     ruleTemplate: {
       name: "Classificação automática despesas recorrentes",
@@ -38,32 +126,74 @@ const STANDARD_SUGGESTIONS: AutomationSuggestion[] = [
       actions: [{ type: "classificar_automatico", params: {} }],
     },
   },
+
+  // ── Fechamento mensal checklist ──
   {
-    id: "auto-payable-order",
-    label: "Gerar contas a pagar do pedido",
-    description: "Cria automaticamente contas a pagar quando pedido é aprovado",
-    type: "operacional",
+    id: "auto-monthly-closing-check",
+    label: "Verificação automática fechamento mensal",
+    description: "Executa checklist de integridade: conciliação, órfãos, centro custo, projeto ausente",
+    type: "financeiro",
     ruleTemplate: {
-      name: "Pedido aprovado gera contas a pagar",
-      event_type: "order_approved",
-      event_module: "operacoes",
-      conditions: [{ field: "status", operator: "eq", value: "approved" }],
-      actions: [{ type: "criar_contas_pagar", params: {} }],
-    },
-  },
-  {
-    id: "auto-receivable-invoice",
-    label: "Gerar contas a receber no faturamento",
-    description: "Cria automaticamente recebíveis quando pedido é faturado",
-    type: "operacional",
-    ruleTemplate: {
-      name: "Pedido faturado gera contas a receber",
-      event_type: "order_invoiced",
-      event_module: "operacoes",
+      name: "Checklist fechamento mensal",
+      event_type: "monthly_closing_triggered",
+      event_module: "controladoria",
       conditions: [],
-      actions: [{ type: "criar_contas_receber", params: {} }],
+      actions: [
+        { type: "verificar_conciliacao_pendente", params: {} },
+        { type: "verificar_lancamentos_orfaos", params: {} },
+        { type: "verificar_centro_custo_ausente", params: {} },
+        { type: "verificar_projeto_ausente", params: {} },
+        { type: "gerar_relatorio_inconsistencias", params: {} },
+      ],
     },
   },
+
+  // ── Atraso financeiro ──
+  {
+    id: "alert-overdue",
+    label: "Alerta contas vencidas",
+    description: "Alerta automático quando contas ultrapassam vencimento configurado",
+    type: "financeiro",
+    ruleTemplate: {
+      name: "Alerta contas vencidas",
+      event_type: "payable_overdue",
+      event_module: "financeiro",
+      conditions: [{ field: "status", operator: "in", value: ["ABERTO", "VENCIDO"] }],
+      actions: [{ type: "enviar_alerta", params: { destinatario: "gestor" } }],
+    },
+  },
+
+  // ── Classificação automática fornecedor ──
+  {
+    id: "auto-supplier-classify",
+    label: "Fornecedor recorrente → Sugestão categoria",
+    description: "Sugere categoria financeira automaticamente para fornecedores recorrentes",
+    type: "financeiro",
+    ruleTemplate: {
+      name: "Classificação automática fornecedor recorrente",
+      event_type: "ledger_entry_created",
+      event_module: "financeiro",
+      conditions: [{ field: "supplier_match_count", operator: "gte", value: 3 }],
+      actions: [{ type: "sugerir_categoria_fornecedor", params: {} }],
+    },
+  },
+
+  // ── Desvio orçamento ──
+  {
+    id: "alert-budget-deviation",
+    label: "Alerta desvio orçamento",
+    description: "Notifica quando despesa ultrapassa meta orçamentária do período",
+    type: "financeiro",
+    ruleTemplate: {
+      name: "Alerta desvio orçamento",
+      event_type: "goal_check",
+      event_module: "planejamento",
+      conditions: [{ field: "achievement_pct", operator: "gt", value: 100 }],
+      actions: [{ type: "enviar_alerta", params: { message: "Despesa acima da meta orçamentária" } }],
+    },
+  },
+
+  // ── Fluxo negativo ──
   {
     id: "alert-negative-flow",
     label: "Alerta fluxo negativo previsto",
@@ -77,19 +207,8 @@ const STANDARD_SUGGESTIONS: AutomationSuggestion[] = [
       actions: [{ type: "enviar_alerta", params: { message: "Fluxo de caixa negativo previsto" } }],
     },
   },
-  {
-    id: "alert-overdue",
-    label: "Alerta contas vencidas",
-    description: "Alerta automático quando contas ultrapassam vencimento",
-    type: "financeiro",
-    ruleTemplate: {
-      name: "Alerta contas vencidas",
-      event_type: "payable_overdue",
-      event_module: "financeiro",
-      conditions: [{ field: "status", operator: "in", value: ["ABERTO", "VENCIDO"] }],
-      actions: [{ type: "enviar_alerta", params: {} }],
-    },
-  },
+
+  // ── Meta não atingida ──
   {
     id: "alert-goal-miss",
     label: "Alerta meta não atingida",
@@ -103,6 +222,8 @@ const STANDARD_SUGGESTIONS: AutomationSuggestion[] = [
       actions: [{ type: "enviar_alerta", params: { message: "Meta mensal abaixo de 80%" } }],
     },
   },
+
+  // ── Pagamento → fluxo ──
   {
     id: "auto-payment-cashflow",
     label: "Pagamento confirmado atualiza fluxo",
@@ -116,6 +237,8 @@ const STANDARD_SUGGESTIONS: AutomationSuggestion[] = [
       actions: [{ type: "atualizar_fluxo", params: {} }],
     },
   },
+
+  // ── Cliente inadimplente ──
   {
     id: "alert-client-overdue",
     label: "Cliente atrasado gera alerta",
