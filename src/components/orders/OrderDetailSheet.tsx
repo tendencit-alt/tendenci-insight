@@ -16,7 +16,7 @@ import { OrderExportDialog } from './OrderExportDialog';
 import { CancelOrderDialog } from './CancelOrderDialog';
 import { DeleteOrderDialog } from './DeleteOrderDialog';
 import { StatusBanner } from '@/components/ui/StatusBanner';
-import { ORDERS_STATUS, getStatusDef } from '@/lib/status-registry';
+import { ORDERS_STATUS, getStatusDef, getStatusLabel } from '@/lib/status-registry';
 import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -37,44 +37,9 @@ interface OrderDetailSheetProps {
   onUpdate: () => void;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any; bannerColor: "gray" | "blue" | "yellow" | "green" | "red" | "orange" | "purple" }> = {
-  rascunho: { label: 'Rascunho', color: 'bg-gray-500', icon: FileText, bannerColor: 'gray' },
-  em_negociacao: { label: 'Em Negociação', color: 'bg-amber-500', icon: Clock, bannerColor: 'yellow' },
-  aprovado: { label: 'Aprovado', color: 'bg-green-500', icon: CheckCircle, bannerColor: 'green' },
-  liberado_producao: { label: 'Lib. Produção', color: 'bg-cyan-500', icon: Factory, bannerColor: 'blue' },
-  em_producao: { label: 'Em Produção', color: 'bg-blue-500', icon: Factory, bannerColor: 'blue' },
-  producao_concluida: { label: 'Prod. Concluída', color: 'bg-indigo-500', icon: CheckCircle, bannerColor: 'blue' },
-  liberado_faturamento: { label: 'Lib. Faturamento', color: 'bg-purple-500', icon: FileText, bannerColor: 'purple' },
-  faturado: { label: 'Faturado', color: 'bg-violet-500', icon: FileText, bannerColor: 'purple' },
-  entregue: { label: 'Entregue', color: 'bg-teal-500', icon: Truck, bannerColor: 'green' },
-  encerrado: { label: 'Encerrado', color: 'bg-slate-500', icon: CheckCircle, bannerColor: 'gray' },
-  cancelado: { label: 'Cancelado', color: 'bg-red-500', icon: AlertCircle, bannerColor: 'red' },
-};
+const STATUS_ORDER = ORDERS_STATUS.statuses.map(s => s.key).filter(k => k !== 'cancelado');
 
-const _VALID_TRANSITIONS: Record<string, string[]> = {
-  rascunho: ['em_negociacao', 'aprovado', 'cancelado'],
-  em_negociacao: ['aprovado', 'rascunho', 'cancelado'],
-  aprovado: ['liberado_producao', 'em_producao', 'cancelado'],
-  liberado_producao: ['em_producao', 'cancelado'],
-  em_producao: ['producao_concluida'],
-  producao_concluida: ['liberado_faturamento', 'faturado'],
-  liberado_faturamento: ['faturado'],
-  faturado: ['entregue'],
-  entregue: ['encerrado'],
-  encerrado: [],
-  cancelado: ['rascunho'],
-};
-
-const STATUS_STEPS = [
-  { key: 'rascunho', label: 'Rascunho' },
-  { key: 'aprovado', label: 'Aprovado' },
-  { key: 'em_producao', label: 'Produção' },
-  { key: 'faturado', label: 'Faturado' },
-  { key: 'entregue', label: 'Entregue' },
-  { key: 'encerrado', label: 'Encerrado' },
-];
-
-const STATUS_ORDER = ['rascunho', 'em_negociacao', 'aprovado', 'liberado_producao', 'em_producao', 'producao_concluida', 'liberado_faturamento', 'faturado', 'entregue', 'encerrado'];
+const STEPPER_KEYS = ORDERS_STATUS.stepperKeys || ['rascunho', 'aprovado', 'em_producao', 'faturado', 'entregue', 'encerrado'];
 
 function getNextAction(status: string): { label: string; nextStatus: string } | null {
   const map: Record<string, { label: string; nextStatus: string }> = {
