@@ -57,6 +57,7 @@ import { PerformanceIntelligenceWidget } from "@/components/performance/Performa
 import { GovernanceWidget } from "@/components/governance/GovernanceWidget";
 import { MasterDataWidget } from "@/components/masterdata/MasterDataWidget";
 import { IntegrationLayerWidget } from "@/components/integration/IntegrationLayerWidget";
+import { OnboardingActivationWidget } from "@/components/onboarding/OnboardingActivationWidget";
 
 // ─── Module definitions ───
 const MODULES = [
