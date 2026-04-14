@@ -1,14 +1,14 @@
 import { useLocation } from "react-router-dom";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Home, ShoppingCart, Factory, Wallet, BookOpen, Target,
   Database, BarChart3, Settings, Building2, ChevronDown,
-  Users, FileText, Briefcase, DollarSign, HardHat, Truck,
+  Users, FileText, Briefcase, DollarSign, HardHat,
   Package, Layers, CreditCard, ArrowLeftRight, BarChart,
-  TrendingUp, Calculator, Clock, History, Zap, Shield,
-  LineChart, PieChart, UserCog, Link2, Globe, Receipt,
-  Landmark, ClipboardList, FolderOpen, Wrench, Bell,
-  CheckSquare, GitBranch, Inbox, Mail
+  TrendingUp, Calculator, History, Zap, Shield,
+  LineChart, PieChart, UserCog, Link2,
+  Landmark, ClipboardList, FolderOpen, Wrench,
+  Star
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -19,6 +19,7 @@ import {
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { useNavigationUsage } from "@/hooks/useNavigationUsage";
 import { cn } from "@/lib/utils";
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
@@ -31,6 +32,7 @@ interface MenuItem {
   url: string;
   icon: any;
   comingSoon?: boolean;
+  highlight?: boolean; // role-based highlight
 }
 
 interface MenuGroup {
@@ -43,11 +45,49 @@ interface MenuGroup {
 
 // ── Storage keys ──
 const STORAGE_KEY_GROUP = "erp_sidebar_last_group";
-const STORAGE_KEY_PATH = "erp_sidebar_last_path";
 
-// ── Menu definition (nova hierarquia) ──
+// ── Role-based configuration ──
+type RoleKey = "owner" | "financeiro" | "comercial" | "operacional" | "admin";
+
+interface RoleConfig {
+  /** Groups to auto-expand (first match wins on initial load) */
+  autoExpandGroups: string[];
+  /** Item URLs to visually highlight */
+  highlightItems: string[];
+  /** Groups with reduced visual priority */
+  dimGroups: string[];
+}
+
+const ROLE_CONFIGS: Record<RoleKey, RoleConfig> = {
+  owner: {
+    autoExpandGroups: ["Controladoria", "Planejamento", "Relatórios & BI"],
+    highlightItems: [],
+    dimGroups: ["Cadastros", "Operações"],
+  },
+  financeiro: {
+    autoExpandGroups: ["Financeiro", "Controladoria", "Planejamento"],
+    highlightItems: ["/conciliacao", "/fluxo-caixa", "/dre"],
+    dimGroups: ["Operações", "Cadastros"],
+  },
+  comercial: {
+    autoExpandGroups: ["Comercial", "Financeiro"],
+    highlightItems: ["/pedidos", "/propostas", "/clientes"],
+    dimGroups: ["Operações", "Controladoria"],
+  },
+  operacional: {
+    autoExpandGroups: ["Operações"],
+    highlightItems: ["/producao", "/ordens-producao", "/execucao-obras"],
+    dimGroups: ["Controladoria", "Planejamento"],
+  },
+  admin: {
+    autoExpandGroups: ["Home"],
+    highlightItems: [],
+    dimGroups: [],
+  },
+};
+
+// ── Menu definition ──
 const menuGroups: MenuGroup[] = [
-  // 1. HOME
   {
     label: "Home",
     icon: Home,
@@ -55,8 +95,6 @@ const menuGroups: MenuGroup[] = [
       { title: "Central de Navegação", url: "/central-navegacao", icon: Home },
     ],
   },
-
-  // 2. COMERCIAL
   {
     label: "Comercial",
     icon: ShoppingCart,
@@ -69,8 +107,6 @@ const menuGroups: MenuGroup[] = [
       { title: "Comissões", url: "/comissoes", icon: DollarSign, comingSoon: true },
     ],
   },
-
-  // 3. OPERAÇÕES
   {
     label: "Operações",
     icon: Factory,
@@ -81,8 +117,6 @@ const menuGroups: MenuGroup[] = [
       { title: "Projetos", url: "/projetos-operacionais", icon: Briefcase, comingSoon: true },
     ],
   },
-
-  // 4. FINANCEIRO (Execução Financeira)
   {
     label: "Financeiro",
     icon: Wallet,
@@ -94,8 +128,6 @@ const menuGroups: MenuGroup[] = [
       { title: "Conciliação Bancária", url: "/conciliacao", icon: ArrowLeftRight, comingSoon: true },
     ],
   },
-
-  // 5. CONTROLADORIA (Inteligência Financeira)
   {
     label: "Controladoria",
     icon: BookOpen,
@@ -112,8 +144,6 @@ const menuGroups: MenuGroup[] = [
       { title: "Auditoria", url: "/auditoria", icon: History },
     ],
   },
-
-  // 6. PLANEJAMENTO
   {
     label: "Planejamento",
     icon: Target,
@@ -124,8 +154,6 @@ const menuGroups: MenuGroup[] = [
       { title: "Forecast", url: "/forecast", icon: TrendingUp, comingSoon: true },
     ],
   },
-
-  // 7. CADASTROS
   {
     label: "Cadastros",
     icon: Database,
@@ -137,8 +165,6 @@ const menuGroups: MenuGroup[] = [
       { title: "Estrutura Organizacional", url: "/estrutura-organizacional", icon: Building2, comingSoon: true },
     ],
   },
-
-  // 8. RELATÓRIOS & BI
   {
     label: "Relatórios & BI",
     icon: BarChart3,
@@ -150,8 +176,6 @@ const menuGroups: MenuGroup[] = [
       { title: "Exportações Inteligentes", url: "/exportacao-bi", icon: FileText, comingSoon: true },
     ],
   },
-
-  // 9. CONFIGURAÇÕES
   {
     label: "Configurações",
     icon: Settings,
@@ -165,8 +189,6 @@ const menuGroups: MenuGroup[] = [
       { title: "Logs do Sistema", url: "/settings/logs", icon: History, comingSoon: true },
     ],
   },
-
-  // 10. OWNER
   {
     label: "Owner",
     icon: Building2,
@@ -177,13 +199,40 @@ const menuGroups: MenuGroup[] = [
   },
 ];
 
-// ── Helper: find group index by current path ──
+// ── Helpers ──
 function findActiveGroupIndex(path: string): number | null {
   for (let i = 0; i < menuGroups.length; i++) {
-    const group = menuGroups[i];
-    if (group.items.some(item => !item.comingSoon && (path === item.url || path.startsWith(item.url + '/')))) {
+    if (menuGroups[i].items.some(item => !item.comingSoon && (path === item.url || path.startsWith(item.url + '/')))) {
       return i;
     }
+  }
+  return null;
+}
+
+function findGroupIndexByLabel(label: string): number | null {
+  const idx = menuGroups.findIndex(g => g.label === label);
+  return idx >= 0 ? idx : null;
+}
+
+function resolveRoleKey(userLevel: string, profileTypeName: string | null): RoleKey {
+  if (userLevel === 'system_owner') return 'owner';
+  if (userLevel === 'tenant_owner') return 'owner';
+  if (profileTypeName) {
+    const n = profileTypeName.toLowerCase();
+    if (n.includes('financ')) return 'financeiro';
+    if (n.includes('comerc')) return 'comercial';
+    if (n.includes('operac') || n.includes('produc')) return 'operacional';
+    if (n.includes('contador')) return 'financeiro';
+    if (n.includes('auditor')) return 'financeiro';
+  }
+  return 'admin';
+}
+
+// ── Quick-access item lookup from menu ──
+function findMenuItem(url: string): MenuItem | null {
+  for (const g of menuGroups) {
+    const found = g.items.find(i => i.url === url);
+    if (found) return found;
   }
   return null;
 }
@@ -193,35 +242,58 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
   const { userLevel } = usePermissions();
-  const { profile, user } = useAuth();
+  const { user } = useAuth();
   const { data: companySettings } = useCompanySettings();
   const companyLogo = companySettings?.logo_url;
   const companyName = companySettings?.trade_name || companySettings?.company_name || 'Tendenci';
   const location = useLocation();
   const currentPath = location.pathname;
+  const { trackVisit, getTopPaths } = useNavigationUsage();
 
-  // ── Accordion: only one group open at a time ──
+  // Fetch profile type name for role detection
+  const [profileTypeName, setProfileTypeName] = useState<string | null>(null);
+  useEffect(() => {
+    if (!user) { setProfileTypeName(null); return; }
+    import("@/integrations/supabase/client").then(({ supabase }) => {
+      supabase.from('profiles').select('profile_type_id, profile_types(name)')
+        .eq('id', user.id).single()
+        .then(({ data }) => {
+          setProfileTypeName((data as any)?.profile_types?.name as string | null ?? null);
+        });
+    });
+  }, [user]);
+
+  const roleKey = resolveRoleKey(userLevel, profileTypeName);
+  const roleConfig = ROLE_CONFIGS[roleKey];
+
+  // ── Accordion state ──
   const [openGroupIndex, setOpenGroupIndex] = useState<number | null>(() => {
-    // Restore from localStorage or detect from current path
     const saved = localStorage.getItem(STORAGE_KEY_GROUP);
     if (saved !== null) {
       const idx = parseInt(saved, 10);
       if (!isNaN(idx) && idx >= 0 && idx < menuGroups.length) return idx;
     }
+    // Role-based default expand
+    for (const gl of roleConfig.autoExpandGroups) {
+      const idx = findGroupIndexByLabel(gl);
+      if (idx !== null) return idx;
+    }
     return findActiveGroupIndex(currentPath) ?? 0;
   });
 
-  // Auto-expand group when route changes
+  // Auto-expand on route change + track usage
   useEffect(() => {
     const activeIdx = findActiveGroupIndex(currentPath);
     if (activeIdx !== null && activeIdx !== openGroupIndex) {
       setOpenGroupIndex(activeIdx);
     }
-    // Save last path
-    localStorage.setItem(STORAGE_KEY_PATH, currentPath);
+    // Track navigation
+    if (activeIdx !== null) {
+      trackVisit(currentPath, menuGroups[activeIdx].label);
+    }
   }, [currentPath]);
 
-  // Persist open group
+  // Persist
   useEffect(() => {
     if (openGroupIndex !== null) {
       localStorage.setItem(STORAGE_KEY_GROUP, String(openGroupIndex));
@@ -233,19 +305,28 @@ export function AppSidebar() {
   }, []);
 
   // Profile-based visibility
-  const effectiveProfile = (): string => {
+  const currentProfile = useMemo(() => {
     if (userLevel === 'system_owner') return 'system_owner';
     if (userLevel === 'tenant_owner') return 'tenant_owner';
-    if (userLevel === 'tenant_admin') return 'tenant_admin';
     return 'tenant_admin';
-  };
+  }, [userLevel]);
 
-  const currentProfile = effectiveProfile();
+  const visibleGroups = useMemo(() =>
+    menuGroups.filter(g => !g.profiles || g.profiles.length === 0 || g.profiles.includes(currentProfile)),
+    [currentProfile]
+  );
 
-  const visibleGroups = menuGroups.filter(group => {
-    if (!group.profiles || group.profiles.length === 0) return true;
-    return group.profiles.includes(currentProfile);
-  });
+  // ── Quick shortcuts (top 3 most used paths) ──
+  const quickShortcuts = useMemo(() => {
+    const topPaths = getTopPaths(3);
+    return topPaths
+      .map(p => findMenuItem(p))
+      .filter((m): m is MenuItem => m !== null && !m.comingSoon);
+  }, [getTopPaths]);
+
+  // ── Highlight set from role config ──
+  const highlightSet = useMemo(() => new Set(roleConfig.highlightItems), [roleConfig]);
+  const dimSet = useMemo(() => new Set(roleConfig.dimGroups), [roleConfig]);
 
   return (
     <Sidebar
@@ -276,6 +357,29 @@ export function AppSidebar() {
           )}
         </div>
 
+        {/* Quick Shortcuts */}
+        {!isCollapsed && quickShortcuts.length > 0 && (
+          <div className="px-3 py-2 border-b border-sidebar-border/20">
+            <p className="text-[10px] text-sidebar-foreground/35 font-semibold tracking-widest uppercase mb-1.5 flex items-center gap-1.5">
+              <Star className="h-3 w-3" /> Acesso rápido
+            </p>
+            <div className="space-y-0.5">
+              {quickShortcuts.map(item => (
+                <NavLink
+                  key={item.url}
+                  to={item.url}
+                  end
+                  className="flex items-center gap-2 px-2.5 py-1 rounded-md transition-colors hover:bg-sidebar-accent/30 text-sidebar-foreground/55 hover:text-sidebar-foreground text-[12px]"
+                  activeClassName="bg-primary/10 text-primary font-medium"
+                >
+                  <item.icon className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">{item.title}</span>
+                </NavLink>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Menu */}
         <nav className="py-1.5">
           {visibleGroups.map((group) => {
@@ -284,6 +388,7 @@ export function AppSidebar() {
             const isGroupActive = group.items.some(
               item => !item.comingSoon && (currentPath === item.url || currentPath.startsWith(item.url + '/'))
             );
+            const isDimmed = dimSet.has(group.label);
 
             return (
               <div key={group.label}>
@@ -293,13 +398,13 @@ export function AppSidebar() {
                       <SidebarGroupLabel className="flex items-center justify-between w-full px-4 py-1.5 cursor-pointer hover:bg-sidebar-accent/20 rounded-md mx-1 transition-colors">
                         <div className="flex items-center gap-2.5">
                           <group.icon className={cn(
-                            "h-4 w-4 flex-shrink-0",
-                            isGroupActive ? "text-primary" : "text-sidebar-foreground/45"
+                            "h-4 w-4 flex-shrink-0 transition-colors",
+                            isGroupActive ? "text-primary" : isDimmed ? "text-sidebar-foreground/25" : "text-sidebar-foreground/45"
                           )} />
                           {!isCollapsed && (
                             <span className={cn(
-                              "text-[11px] font-semibold tracking-wide uppercase",
-                              isGroupActive ? "text-primary" : "text-sidebar-foreground/45"
+                              "text-[11px] font-semibold tracking-wide uppercase transition-colors",
+                              isGroupActive ? "text-primary" : isDimmed ? "text-sidebar-foreground/25" : "text-sidebar-foreground/45"
                             )}>
                               {group.label}
                             </span>
@@ -317,33 +422,42 @@ export function AppSidebar() {
                     <CollapsibleContent>
                       <SidebarGroupContent>
                         <SidebarMenu>
-                          {group.items.map((item) => (
-                            <SidebarMenuItem key={item.title + item.url}>
-                              <SidebarMenuButton asChild={!item.comingSoon}>
-                                {item.comingSoon ? (
-                                  <div className="flex items-center gap-2.5 px-3 py-1 ml-5 mr-2 rounded-md text-sidebar-foreground/30 text-[13px] cursor-default select-none">
-                                    <item.icon className="h-3.5 w-3.5 flex-shrink-0" />
-                                    <span className="truncate">{item.title}</span>
-                                    {!isCollapsed && (
-                                      <Badge variant="outline" className="ml-auto text-[9px] px-1.5 py-0 h-4 border-sidebar-foreground/15 text-sidebar-foreground/25 font-normal">
-                                        Em breve
-                                      </Badge>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <NavLink
-                                    to={item.url}
-                                    end
-                                    className="flex items-center gap-2.5 px-3 py-1 ml-5 mr-2 rounded-md transition-colors hover:bg-sidebar-accent/30 text-sidebar-foreground/60 hover:text-sidebar-foreground text-[13px]"
-                                    activeClassName="bg-primary/10 text-primary font-medium"
-                                  >
-                                    <item.icon className="h-3.5 w-3.5 flex-shrink-0" />
-                                    <span className="truncate">{item.title}</span>
-                                  </NavLink>
-                                )}
-                              </SidebarMenuButton>
-                            </SidebarMenuItem>
-                          ))}
+                          {group.items.map((item) => {
+                            const isHighlighted = highlightSet.has(item.url);
+                            return (
+                              <SidebarMenuItem key={item.title + item.url}>
+                                <SidebarMenuButton asChild={!item.comingSoon}>
+                                  {item.comingSoon ? (
+                                    <div className="flex items-center gap-2.5 px-3 py-1 ml-5 mr-2 rounded-md text-sidebar-foreground/30 text-[13px] cursor-default select-none">
+                                      <item.icon className={cn("h-3.5 w-3.5 flex-shrink-0", isHighlighted && "text-primary/40")} />
+                                      <span className={cn("truncate", isHighlighted && "text-primary/40")}>{item.title}</span>
+                                      {!isCollapsed && (
+                                        <Badge variant="outline" className="ml-auto text-[9px] px-1.5 py-0 h-4 border-sidebar-foreground/15 text-sidebar-foreground/25 font-normal">
+                                          Em breve
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <NavLink
+                                      to={item.url}
+                                      end
+                                      className={cn(
+                                        "flex items-center gap-2.5 px-3 py-1 ml-5 mr-2 rounded-md transition-colors hover:bg-sidebar-accent/30 text-sidebar-foreground/60 hover:text-sidebar-foreground text-[13px]",
+                                        isHighlighted && "text-sidebar-foreground/80 font-medium"
+                                      )}
+                                      activeClassName="bg-primary/10 text-primary font-medium"
+                                    >
+                                      <item.icon className={cn("h-3.5 w-3.5 flex-shrink-0", isHighlighted && "text-primary/60")} />
+                                      <span className="truncate">{item.title}</span>
+                                      {isHighlighted && !isCollapsed && (
+                                        <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary/50 flex-shrink-0" />
+                                      )}
+                                    </NavLink>
+                                  )}
+                                </SidebarMenuButton>
+                              </SidebarMenuItem>
+                            );
+                          })}
                         </SidebarMenu>
                       </SidebarGroupContent>
                     </CollapsibleContent>
