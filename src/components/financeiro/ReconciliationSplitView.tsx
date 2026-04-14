@@ -11,7 +11,6 @@ import { UniversalStatusBadge } from "@/components/ui/UniversalStatusBadge";
 import { useReconciliation } from "@/hooks/useReconciliation";
 import {
   Landmark, ArrowRight, Check, X, Undo2, Link2,
-  ArrowUpCircle, ArrowDownCircle, AlertTriangle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";

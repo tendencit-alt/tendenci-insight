@@ -48,6 +48,7 @@ import { FinanceiroAlerts } from "./FinanceiroAlerts";
 import { toast } from "sonner";
 import { parseOFX, OFXTransaction } from "@/lib/ofx-parser";
 import { BankAccountExtractTab } from "./BankAccountExtractTab";
+import { ReconciliationSplitView } from "./ReconciliationSplitView";
 import { ClassificationSuggestionBadge } from "./ClassificationSuggestionBadge";
 import { useClassifyEntry } from "@/hooks/useClassifyEntry";
 import {
