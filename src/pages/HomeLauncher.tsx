@@ -706,6 +706,8 @@ export default function HomeLauncher() {
             })}
           </div>
         </div>
+        </>
+        )}
       </div>
 
       {/* ── FAB + Create Menu ── */}
