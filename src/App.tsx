@@ -34,6 +34,7 @@ import Documentos from "./pages/Documentos";
 import Tarefas from "./pages/Tarefas";
 import Automacoes from "./pages/Automacoes";
 import Relatorios from "./pages/Relatorios";
+import HomeLauncher from "./pages/HomeLauncher";
 
 const queryClient = new QueryClient();
 
@@ -52,7 +53,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/catalogo" element={<Catalogo />} />
-              <Route path="/" element={<Navigate to="/bi-dashboard" replace />} />
+              <Route path="/" element={<ProtectedRoute><HomeLauncher /></ProtectedRoute>} />
                <Route path="/super-admin" element={<ProtectedRoute><SuperAdmin /></ProtectedRoute>} />
                <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
                <Route path="/auditoria" element={<ProtectedRoute><Auditoria /></ProtectedRoute>} />
