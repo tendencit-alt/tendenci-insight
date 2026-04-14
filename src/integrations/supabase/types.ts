@@ -11559,6 +11559,7 @@ export type Database = {
       purchase_orders: {
         Row: {
           approved_by: string | null
+          cost_center_id: string | null
           created_at: string | null
           created_by: string | null
           discount_value: number | null
@@ -11566,9 +11567,12 @@ export type Database = {
           id: string
           issue_date: string | null
           notes: string | null
+          ops_order_id: string | null
           order_number: number
           payment_terms: string | null
+          project_id: string | null
           received_date: string | null
+          request_id: string | null
           shipping_cost: number | null
           status: string | null
           subtotal: number | null
@@ -11579,6 +11583,7 @@ export type Database = {
         }
         Insert: {
           approved_by?: string | null
+          cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
           discount_value?: number | null
@@ -11586,9 +11591,12 @@ export type Database = {
           id?: string
           issue_date?: string | null
           notes?: string | null
+          ops_order_id?: string | null
           order_number?: number
           payment_terms?: string | null
+          project_id?: string | null
           received_date?: string | null
+          request_id?: string | null
           shipping_cost?: number | null
           status?: string | null
           subtotal?: number | null
@@ -11599,6 +11607,7 @@ export type Database = {
         }
         Update: {
           approved_by?: string | null
+          cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
           discount_value?: number | null
@@ -11606,9 +11615,12 @@ export type Database = {
           id?: string
           issue_date?: string | null
           notes?: string | null
+          ops_order_id?: string | null
           order_number?: number
           payment_terms?: string | null
+          project_id?: string | null
           received_date?: string | null
+          request_id?: string | null
           shipping_cost?: number | null
           status?: string | null
           subtotal?: number | null
@@ -11626,10 +11638,38 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "purchase_orders_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "purchase_orders_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_ops_order_id_fkey"
+            columns: ["ops_order_id"]
+            isOneToOne: false
+            referencedRelation: "ops_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "prj_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "sup_requests"
             referencedColumns: ["id"]
           },
           {
@@ -12326,6 +12366,296 @@ export type Database = {
           },
           {
             foreignKeyName: "stock_movements_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sup_quotation_items: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          product_id: string | null
+          quantity: number | null
+          quotation_id: string
+          tenant_id: string | null
+          total: number | null
+          unit_price: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          product_id?: string | null
+          quantity?: number | null
+          quotation_id: string
+          tenant_id?: string | null
+          total?: number | null
+          unit_price?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          product_id?: string | null
+          quantity?: number | null
+          quotation_id?: string
+          tenant_id?: string | null
+          total?: number | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sup_quotation_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sup_quotation_items_quotation_id_fkey"
+            columns: ["quotation_id"]
+            isOneToOne: false
+            referencedRelation: "sup_quotations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sup_quotation_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sup_quotations: {
+        Row: {
+          created_at: string | null
+          delivery_days: number | null
+          id: string
+          notes: string | null
+          payment_terms: string | null
+          quotation_number: number
+          request_id: string | null
+          selected: boolean | null
+          shipping_cost: number | null
+          status: string | null
+          supplier_id: string | null
+          tenant_id: string | null
+          total: number | null
+          valid_until: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          delivery_days?: number | null
+          id?: string
+          notes?: string | null
+          payment_terms?: string | null
+          quotation_number?: number
+          request_id?: string | null
+          selected?: boolean | null
+          shipping_cost?: number | null
+          status?: string | null
+          supplier_id?: string | null
+          tenant_id?: string | null
+          total?: number | null
+          valid_until?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          delivery_days?: number | null
+          id?: string
+          notes?: string | null
+          payment_terms?: string | null
+          quotation_number?: number
+          request_id?: string | null
+          selected?: boolean | null
+          shipping_cost?: number | null
+          status?: string | null
+          supplier_id?: string | null
+          tenant_id?: string | null
+          total?: number | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sup_quotations_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "sup_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sup_quotations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sup_quotations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sup_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          cost_center_id: string | null
+          created_at: string | null
+          description: string | null
+          estimated_value: number | null
+          id: string
+          needed_by: string | null
+          notes: string | null
+          ops_order_id: string | null
+          origin: string | null
+          priority: string | null
+          project_id: string | null
+          request_number: number
+          requester_id: string | null
+          status: string | null
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          estimated_value?: number | null
+          id?: string
+          needed_by?: string | null
+          notes?: string | null
+          ops_order_id?: string | null
+          origin?: string | null
+          priority?: string | null
+          project_id?: string | null
+          request_number?: number
+          requester_id?: string | null
+          status?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          estimated_value?: number | null
+          id?: string
+          needed_by?: string | null
+          notes?: string | null
+          ops_order_id?: string | null
+          origin?: string | null
+          priority?: string | null
+          project_id?: string | null
+          request_number?: number
+          requester_id?: string | null
+          status?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sup_requests_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sup_requests_ops_order_id_fkey"
+            columns: ["ops_order_id"]
+            isOneToOne: false
+            referencedRelation: "ops_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sup_requests_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "prj_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sup_requests_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sup_supplier_evaluations: {
+        Row: {
+          communication_score: number | null
+          created_at: string | null
+          delivery_score: number | null
+          evaluated_by: string | null
+          id: string
+          notes: string | null
+          overall_score: number | null
+          price_score: number | null
+          purchase_order_id: string | null
+          quality_score: number | null
+          supplier_id: string
+          tenant_id: string | null
+        }
+        Insert: {
+          communication_score?: number | null
+          created_at?: string | null
+          delivery_score?: number | null
+          evaluated_by?: string | null
+          id?: string
+          notes?: string | null
+          overall_score?: number | null
+          price_score?: number | null
+          purchase_order_id?: string | null
+          quality_score?: number | null
+          supplier_id: string
+          tenant_id?: string | null
+        }
+        Update: {
+          communication_score?: number | null
+          created_at?: string | null
+          delivery_score?: number | null
+          evaluated_by?: string | null
+          id?: string
+          notes?: string | null
+          overall_score?: number | null
+          price_score?: number | null
+          purchase_order_id?: string | null
+          quality_score?: number | null
+          supplier_id?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sup_supplier_evaluations_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sup_supplier_evaluations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sup_supplier_evaluations_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
