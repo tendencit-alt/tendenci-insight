@@ -606,6 +606,33 @@ export default function HomeLauncher() {
         </div>
       </div>
 
+      {/* ── FAB + Create Menu ── */}
+      <div className="fixed bottom-6 right-6 z-40">
+        {fabOpen && (
+          <div className="absolute bottom-14 right-0 mb-2 space-y-1.5 animate-in slide-in-from-bottom-2 fade-in duration-200">
+            {QUICK_ACTIONS.map((action) => (
+              <Button
+                key={action.label}
+                size="sm"
+                variant="secondary"
+                className="w-full justify-start gap-2 text-xs shadow-md rounded-lg h-9"
+                onClick={() => { setFabOpen(false); handleNavigate(action.label, action.route); }}
+              >
+                <action.icon className={`h-3.5 w-3.5 ${action.color}`} />
+                {action.label}
+              </Button>
+            ))}
+          </div>
+        )}
+        <Button
+          size="lg"
+          className="h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-all p-0"
+          onClick={() => setFabOpen((p) => !p)}
+        >
+          <Plus className={`h-5 w-5 transition-transform duration-200 ${fabOpen ? "rotate-45" : ""}`} />
+        </Button>
+      </div>
+
       {/* ── Edit Favorites Dialog ── */}
       <Dialog open={editFavDialog} onOpenChange={setEditFavDialog}>
         <DialogContent className="max-w-md">
