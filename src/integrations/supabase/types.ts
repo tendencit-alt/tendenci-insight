@@ -3043,6 +3043,60 @@ export type Database = {
           },
         ]
       }
+      customer_interventions: {
+        Row: {
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          description: string | null
+          id: string
+          intervention_type: string
+          metadata: Json | null
+          playbook_id: string | null
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          intervention_type: string
+          metadata?: Json | null
+          playbook_id?: string | null
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          intervention_type?: string
+          metadata?: Json | null
+          playbook_id?: string | null
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_interventions_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "success_playbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_interventions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_onboarding: {
         Row: {
           created_at: string
@@ -3695,6 +3749,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "erp_tasks_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expansion_signals: {
+        Row: {
+          created_at: string
+          current_value: number | null
+          description: string | null
+          id: string
+          limit_value: number | null
+          metadata: Json | null
+          recommended_action: string | null
+          signal_type: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_value?: number | null
+          description?: string | null
+          id?: string
+          limit_value?: number | null
+          metadata?: Json | null
+          recommended_action?: string | null
+          signal_type: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_value?: number | null
+          description?: string | null
+          id?: string
+          limit_value?: number | null
+          metadata?: Json | null
+          recommended_action?: string | null
+          signal_type?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expansion_signals_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -13466,6 +13570,104 @@ export type Database = {
           },
         ]
       }
+      success_alerts: {
+        Row: {
+          acknowledged: boolean
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_type: string
+          created_at: string
+          description: string | null
+          id: string
+          metadata: Json | null
+          severity: string
+          source_module: string | null
+          tenant_id: string
+          title: string
+        }
+        Insert: {
+          acknowledged?: boolean
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          severity?: string
+          source_module?: string | null
+          tenant_id: string
+          title: string
+        }
+        Update: {
+          acknowledged?: boolean
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          severity?: string
+          source_module?: string | null
+          tenant_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "success_alerts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      success_playbooks: {
+        Row: {
+          actions: Json | null
+          active: boolean
+          created_at: string
+          description: string | null
+          execution_count: number
+          id: string
+          last_executed_at: string | null
+          name: string
+          priority: number
+          trigger_condition: Json | null
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          actions?: Json | null
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          execution_count?: number
+          id?: string
+          last_executed_at?: string | null
+          name: string
+          priority?: number
+          trigger_condition?: Json | null
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          actions?: Json | null
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          execution_count?: number
+          id?: string
+          last_executed_at?: string | null
+          name?: string
+          priority?: number
+          trigger_condition?: Json | null
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sup_quotation_items: {
         Row: {
           created_at: string | null
@@ -13936,6 +14138,8 @@ export type Database = {
           recurrence_count: number | null
           reported_by: string | null
           resolution: string | null
+          resolution_notes: string | null
+          resolution_time_hours: number | null
           resolved_at: string | null
           root_cause: string | null
           status: string
@@ -13953,6 +14157,8 @@ export type Database = {
           recurrence_count?: number | null
           reported_by?: string | null
           resolution?: string | null
+          resolution_notes?: string | null
+          resolution_time_hours?: number | null
           resolved_at?: string | null
           root_cause?: string | null
           status?: string
@@ -13970,6 +14176,8 @@ export type Database = {
           recurrence_count?: number | null
           reported_by?: string | null
           resolution?: string | null
+          resolution_notes?: string | null
+          resolution_time_hours?: number | null
           resolved_at?: string | null
           root_cause?: string | null
           status?: string
