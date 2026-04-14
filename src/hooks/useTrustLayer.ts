@@ -73,13 +73,13 @@ export function useTrustLayer() {
 
       // 3. Cadastral quality - categories, cost centers, projects filled
       const [catCountR, ccCountR, projCountR] = await Promise.all([
-        supabase.from("fin_categories").select("id", { count: "exact", head: true }).eq("active", true) as any,
         supabase.from("cost_center_tags").select("id", { count: "exact", head: true }).eq("active", true),
-        supabase.from("operational_projects").select("id", { count: "exact", head: true }) as any,
+        supabase.from("cost_center_tags").select("id", { count: "exact", head: true }),
+        supabase.from("contracts").select("id", { count: "exact", head: true }),
       ]);
-      const catCount = (catCountR as any).count || 0;
+      const catCount = catCountR.count || 0;
       const ccCount = ccCountR.count || 0;
-      const projCount = (projCountR as any).count || 0;
+      const projCount = projCountR.count || 0;
       // Score: 33% for having categories, 33% for cost centers, 33% for projects
       let cadastralScore = 0;
       if (catCount >= 5) cadastralScore += 34;
