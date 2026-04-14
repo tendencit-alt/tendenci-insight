@@ -65,31 +65,27 @@ export function GovernanceTab({ filters: _filters }: Props) {
   const { data: reliability } = useQuery({
     queryKey: ["fin-reliability"],
     queryFn: async () => {
-      // Total ledger entries
-      const { count: totalEntries } = await supabase
-        .from("fin_ledger_entries")
-        .select("id", { count: "exact", head: true } as any)
-        .neq("status", "CANCELADO");
+      const countQuery = async (table: string, filters: Record<string, any> = {}, notFilters: Record<string, any> = {}) => {
+        let q = (supabase.from(table) as any).select("id", { count: "exact", head: true });
+        Object.entries(filters).forEach(([k, v]) => { q = q.eq(k, v); });
+        Object.entries(notFilters).forEach(([k, v]) => {
+          if (v === null) q = q.not(k, "is", null);
+          else q = q.neq(k, v);
+        });
+        const { count } = await q;
+        return count || 0;
+      };
 
-      // Reconciled entries
-      const { count: reconciledEntries } = await supabase
-        .from("fin_ledger_entries")
-        .select("id", { count: "exact", head: true } as any)
-        .eq("reconciliation_status", "conciliado");
-
-      // Auto entries (have source_id)
-      const { count: autoEntries } = await supabase
-        .from("fin_ledger_entries")
-        .select("id", { count: "exact", head: true } as any)
+      const totalEntries = await countQuery("fin_ledger_entries", {}, { status: "CANCELADO" });
+      const reconciledEntries = await countQuery("fin_ledger_entries", { reconciliation_status: "conciliado" });
+      
+      const { count: autoCount } = await (supabase.from("fin_ledger_entries") as any)
+        .select("id", { count: "exact", head: true })
         .neq("status", "CANCELADO")
         .not("source_id", "is", null);
+      const autoEntries = autoCount || 0;
 
-      // Closed periods this year
-      const { count: closedPeriods } = await supabase
-        .from("fin_period_closings")
-        .select("id", { count: "exact", head: true } as any)
-        .eq("year", currentYear)
-        .eq("status", "closed");
+      const closedPeriods = await countQuery("fin_period_closings", { year: currentYear, status: "closed" });
 
       const total = totalEntries || 0;
       const reconciled = reconciledEntries || 0;
