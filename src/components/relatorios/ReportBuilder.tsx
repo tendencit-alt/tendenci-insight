@@ -18,7 +18,7 @@ import {
   Filter, Loader2,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
-import { cn } from "@/lib/utils";
+
 import { useToast } from "@/hooks/use-toast";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -54,7 +54,7 @@ const REPORT_SOURCES: ReportDataSource[] = [
   { key: "receivables_due", label: "Contas a Receber por Vencimento", group: "analitico", table: "fin_payables", defaultMetrics: ["amount", "count"], availableGroupings: ["month", "category", "client", "cost_center"],
     buildQuery: (f) => (supabase as any).from("fin_payables").select("id, description, amount, due_date, status, client_name, cost_center_id, created_at").gte("due_date", f.dateFrom).lte("due_date", f.dateTo).eq("type", "receivable").neq("status", "CANCELADO") },
   { key: "reconciliation_pending", label: "Conciliação Pendente", group: "analitico", table: "fin_ledger_entries", defaultMetrics: ["amount", "count"], availableGroupings: ["month", "category"],
-    buildQuery: (f) => (supabase as any).from("fin_ledger_entries").select("id, description, amount, competence_date, status, reconciliation_status, created_at").neq("status", "CANCELADO").or("reconciliation_status.is.null,reconciliation_status.eq.nao_conciliado") },
+    buildQuery: (_f: ReportFilters) => (supabase as any).from("fin_ledger_entries").select("id, description, amount, competence_date, status, reconciliation_status, created_at").neq("status", "CANCELADO").or("reconciliation_status.is.null,reconciliation_status.eq.nao_conciliado") },
   { key: "cashflow_projected", label: "Fluxo Previsto", group: "executivo", table: "fin_ledger_entries", defaultMetrics: ["amount"], availableGroupings: ["month", "category", "cost_center"],
     buildQuery: (f) => (supabase as any).from("fin_ledger_entries").select("id, description, amount, type, due_date, status, chart_account_id, cost_center_id").neq("status", "CANCELADO").gte("due_date", f.dateFrom).lte("due_date", f.dateTo) },
   { key: "cashflow_realized", label: "Fluxo Realizado", group: "executivo", table: "fin_ledger_entries", defaultMetrics: ["amount"], availableGroupings: ["month", "category", "cost_center"],
@@ -65,7 +65,7 @@ const REPORT_SOURCES: ReportDataSource[] = [
   { key: "dre_cost_center", label: "DRE por Centro de Custo", group: "analitico", table: "fin_ledger_entries", defaultMetrics: ["amount"], availableGroupings: ["cost_center", "month", "category"],
     buildQuery: (f) => (supabase as any).from("fin_ledger_entries").select("id, description, amount, type, competence_date, chart_account_id, cost_center_id").neq("status", "CANCELADO").not("competence_date", "is", null).gte("competence_date", f.dateFrom).lte("competence_date", f.dateTo) },
   { key: "budget_vs_actual", label: "Orçamento vs Realizado", group: "executivo", table: "fin_budgets", defaultMetrics: ["amount"], availableGroupings: ["month", "category"],
-    buildQuery: (f) => (supabase as any).from("fin_budgets").select("id, chart_account_id, amount, year, month, budget_type, version_label") },
+    buildQuery: (_f: ReportFilters) => (supabase as any).from("fin_budgets").select("id, chart_account_id, amount, year, month, budget_type, version_label") },
   // Comerciais
   { key: "orders_approved", label: "Pedidos Aprovados", group: "operacional", table: "orders", defaultMetrics: ["total_amount", "count"], availableGroupings: ["month", "client", "seller"],
     buildQuery: (f) => (supabase as any).from("orders").select("id, order_number, total_amount, status, created_at, client_id, vendedor_id").eq("status", "aprovado").gte("created_at", f.dateFrom).lte("created_at", f.dateTo) },
@@ -77,7 +77,7 @@ const REPORT_SOURCES: ReportDataSource[] = [
   { key: "manual_entries", label: "Lançamentos Manuais", group: "auditoria", table: "fin_ledger_entries", defaultMetrics: ["amount", "count"], availableGroupings: ["month", "category"],
     buildQuery: (f) => (supabase as any).from("fin_ledger_entries").select("id, description, amount, competence_date, type, created_at").neq("status", "CANCELADO").is("source_id", null).gte("created_at", f.dateFrom).lte("created_at", f.dateTo) },
   { key: "unreconciled", label: "Movimentos Sem Conciliação", group: "auditoria", table: "fin_ledger_entries", defaultMetrics: ["amount", "count"], availableGroupings: ["month"],
-    buildQuery: (f) => (supabase as any).from("fin_ledger_entries").select("id, description, amount, type, cash_date, reconciliation_status, created_at").neq("status", "CANCELADO").not("cash_date", "is", null).or("reconciliation_status.is.null,reconciliation_status.eq.nao_conciliado") },
+    buildQuery: (_f: ReportFilters) => (supabase as any).from("fin_ledger_entries").select("id, description, amount, type, cash_date, reconciliation_status, created_at").neq("status", "CANCELADO").not("cash_date", "is", null).or("reconciliation_status.is.null,reconciliation_status.eq.nao_conciliado") },
 ];
 
 const VIZ_OPTIONS = [
