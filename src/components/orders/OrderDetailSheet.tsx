@@ -21,10 +21,10 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { parseDateOnly } from '@/utils/timezone';
 import {
-  User, Phone, Mail, Calendar, DollarSign,
-  Truck, FileText, Clock, CheckCircle, AlertCircle, Loader2, Factory,
+  Phone, Mail, Calendar,
+  Truck, FileText, Clock, CheckCircle, AlertCircle, Factory,
   Edit, Copy, Download, MessageSquare, ExternalLink, Trash2,
-  TrendingUp, Wallet, BarChart3, MapPin
+  Wallet, BarChart3, MapPin
 } from 'lucide-react';
 import { useMinimizedDialogs } from '@/contexts/MinimizedDialogsContext';
 import { MinimizeButton } from '@/components/ui/MinimizeButton';
@@ -50,7 +50,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any; b
   cancelado: { label: 'Cancelado', color: 'bg-red-500', icon: AlertCircle, bannerColor: 'red' },
 };
 
-const VALID_TRANSITIONS: Record<string, string[]> = {
+const _VALID_TRANSITIONS: Record<string, string[]> = {
   rascunho: ['em_negociacao', 'aprovado', 'cancelado'],
   em_negociacao: ['aprovado', 'rascunho', 'cancelado'],
   aprovado: ['liberado_producao', 'em_producao', 'cancelado'],
