@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useMemo } from "react";
-import { format, addDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { format, addDays, startOfMonth, endOfMonth } from "date-fns";
 
 // ─── Types ───
 export type ScenarioType = "conservador" | "realista" | "agressivo";
