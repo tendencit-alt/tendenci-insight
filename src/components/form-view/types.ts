@@ -79,6 +79,15 @@ export interface FormValidationError {
   message: string;
 }
 
+// ── Side Panel Tab ──
+export interface FormViewSidePanelTab {
+  key: string;
+  label: string;
+  icon?: any;
+  content: ReactNode;
+  badge?: string | number;
+}
+
 // ── Main Props ──
 export interface FormViewProps {
   // Header
