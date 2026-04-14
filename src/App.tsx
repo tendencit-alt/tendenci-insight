@@ -42,6 +42,7 @@ import ProducaoOperacoes from "./pages/ProducaoOperacoes";
 import Projetos from "./pages/Projetos";
 import Suprimentos from "./pages/Suprimentos";
 import CRMCommercial from "./pages/CRMCommercial";
+import Planning from "./pages/Planning";
 
 const queryClient = new QueryClient();
 
