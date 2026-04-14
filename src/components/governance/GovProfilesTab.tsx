@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { useProfileTypes, useProfileTypePermissions, useUpdateProfilePermission } from "@/hooks/useGovernanceData";
 import { Shield, Users } from "lucide-react";
 
@@ -19,7 +19,7 @@ const ACTIONS = [
 ];
 
 export default function GovProfilesTab() {
-  const { data: profiles = [], isLoading } = useProfileTypes();
+  const { data: profiles = [] } = useProfileTypes();
   const [selectedProfile, setSelectedProfile] = useState<string>("");
   const { data: perms = [] } = useProfileTypePermissions(selectedProfile || undefined);
   const updateMut = useUpdateProfilePermission();
