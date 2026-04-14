@@ -116,12 +116,11 @@ export function useExecReceitaPrevista() {
       const me = format(endOfMonth(now), "yyyy-MM-dd");
       const qe = format(endOfMonth(addMonths(now, 2)), "yyyy-MM-dd");
 
-      const [dealsRes, leadsRes, forecastMRes, forecastQRes] = await Promise.all([
-        supabase.from("crm_deals").select("value, status, crm_stages(probability_percent)").eq("status", "open").limit(500),
-        supabase.from("leads").select("id, status").limit(500),
-        supabase.from("crm_revenue_forecast").select("gross_value, weighted_value").gte("reference_month", ms).lte("reference_month", me),
-        supabase.from("crm_revenue_forecast").select("gross_value, weighted_value").gte("reference_month", ms).lte("reference_month", qe),
-      ]);
+      const q = (t: string) => (supabase as any).from(t);
+      const dealsRes = await q("crm_deals").select("value, status, crm_stages(probability_percent)").eq("status", "open").limit(500);
+      const leadsRes = await q("leads").select("id, status").limit(500);
+      const forecastMRes = await q("crm_revenue_forecast").select("gross_value, weighted_value").gte("reference_month", ms).lte("reference_month", me);
+      const forecastQRes = await q("crm_revenue_forecast").select("gross_value, weighted_value").gte("reference_month", ms).lte("reference_month", qe);
 
       const deals = (dealsRes.data as any[]) || [];
       const pipelineBruto = deals.reduce((s, d) => s + Number(d.value || 0), 0);
