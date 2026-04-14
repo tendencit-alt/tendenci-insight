@@ -225,9 +225,9 @@ async function checkOrderFinancialDivergence(): Promise<IntegrityIssue[]> {
   try {
     const { data: orders } = await supabase
       .from("orders")
-      .select("id, total_value")
+      .select("id, valor_total")
       .in("status", ["aprovado", "em_producao", "faturado"])
-      .not("total_value", "is", null)
+      .not("valor_total", "is", null)
       .limit(200);
 
     if (!orders?.length) return [];
@@ -248,7 +248,7 @@ async function checkOrderFinancialDivergence(): Promise<IntegrityIssue[]> {
     let divergent = 0;
     for (const order of orders) {
       const finTotal = sums[order.id] || 0;
-      const orderVal = Number(order.total_value) || 0;
+      const orderVal = Number(order.valor_total) || 0;
       if (orderVal > 0 && Math.abs(finTotal - orderVal) > orderVal * 0.01) {
         divergent++;
       }
