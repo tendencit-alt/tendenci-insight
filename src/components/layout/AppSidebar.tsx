@@ -1,4 +1,4 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Home, ShoppingCart, Factory, Wallet, BookOpen, Target,
@@ -8,7 +8,7 @@ import {
   TrendingUp, Calculator, History, Zap, Shield,
   LineChart, PieChart, UserCog, Link2,
   Landmark, ClipboardList, FolderOpen, Wrench,
-  Star
+  Star, AlertTriangle
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -20,6 +20,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useNavigationUsage } from "@/hooks/useNavigationUsage";
+import { useAttentionLayer, type AttentionLevel } from "@/hooks/useAttentionLayer";
 import { cn } from "@/lib/utils";
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
@@ -32,7 +33,6 @@ interface MenuItem {
   url: string;
   icon: any;
   comingSoon?: boolean;
-  highlight?: boolean; // role-based highlight
 }
 
 interface MenuGroup {
@@ -46,15 +46,12 @@ interface MenuGroup {
 // ── Storage keys ──
 const STORAGE_KEY_GROUP = "erp_sidebar_last_group";
 
-// ── Role-based configuration ──
+// ── Role config ──
 type RoleKey = "owner" | "financeiro" | "comercial" | "operacional" | "admin";
 
 interface RoleConfig {
-  /** Groups to auto-expand (first match wins on initial load) */
   autoExpandGroups: string[];
-  /** Item URLs to visually highlight */
   highlightItems: string[];
-  /** Groups with reduced visual priority */
   dimGroups: string[];
 }
 
@@ -228,7 +225,6 @@ function resolveRoleKey(userLevel: string, profileTypeName: string | null): Role
   return 'admin';
 }
 
-// ── Quick-access item lookup from menu ──
 function findMenuItem(url: string): MenuItem | null {
   for (const g of menuGroups) {
     const found = g.items.find(i => i.url === url);
@@ -236,6 +232,28 @@ function findMenuItem(url: string): MenuItem | null {
   }
   return null;
 }
+
+// ── Attention level styling ──
+const LEVEL_COLORS: Record<AttentionLevel, string> = {
+  normal: "bg-muted text-muted-foreground",
+  atencao: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+  urgente: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+  bloqueante: "bg-red-500/25 text-red-400 border-red-500/40",
+};
+
+const LEVEL_DOT: Record<AttentionLevel, string> = {
+  normal: "bg-muted-foreground/40",
+  atencao: "bg-yellow-400",
+  urgente: "bg-orange-400 animate-pulse",
+  bloqueante: "bg-red-500 animate-pulse",
+};
+
+const LEVEL_GROUP_BORDER: Record<AttentionLevel, string> = {
+  normal: "",
+  atencao: "border-l-2 border-l-yellow-500/40",
+  urgente: "border-l-2 border-l-orange-500/50",
+  bloqueante: "border-l-2 border-l-red-500/60",
+};
 
 // ── Component ──
 export function AppSidebar() {
@@ -247,10 +265,12 @@ export function AppSidebar() {
   const companyLogo = companySettings?.logo_url;
   const companyName = companySettings?.trade_name || companySettings?.company_name || 'Tendenci';
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPath = location.pathname;
   const { trackVisit, getTopPaths } = useNavigationUsage();
+  const { alerts, totalActions, getGroupBadge, getItemBadge } = useAttentionLayer();
 
-  // Fetch profile type name for role detection
+  // Profile type
   const [profileTypeName, setProfileTypeName] = useState<string | null>(null);
   useEffect(() => {
     if (!user) { setProfileTypeName(null); return; }
@@ -266,14 +286,13 @@ export function AppSidebar() {
   const roleKey = resolveRoleKey(userLevel, profileTypeName);
   const roleConfig = ROLE_CONFIGS[roleKey];
 
-  // ── Accordion state ──
+  // Accordion
   const [openGroupIndex, setOpenGroupIndex] = useState<number | null>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_GROUP);
     if (saved !== null) {
       const idx = parseInt(saved, 10);
       if (!isNaN(idx) && idx >= 0 && idx < menuGroups.length) return idx;
     }
-    // Role-based default expand
     for (const gl of roleConfig.autoExpandGroups) {
       const idx = findGroupIndexByLabel(gl);
       if (idx !== null) return idx;
@@ -281,19 +300,16 @@ export function AppSidebar() {
     return findActiveGroupIndex(currentPath) ?? 0;
   });
 
-  // Auto-expand on route change + track usage
   useEffect(() => {
     const activeIdx = findActiveGroupIndex(currentPath);
     if (activeIdx !== null && activeIdx !== openGroupIndex) {
       setOpenGroupIndex(activeIdx);
     }
-    // Track navigation
     if (activeIdx !== null) {
       trackVisit(currentPath, menuGroups[activeIdx].label);
     }
   }, [currentPath]);
 
-  // Persist
   useEffect(() => {
     if (openGroupIndex !== null) {
       localStorage.setItem(STORAGE_KEY_GROUP, String(openGroupIndex));
@@ -304,7 +320,6 @@ export function AppSidebar() {
     setOpenGroupIndex(prev => prev === idx ? null : idx);
   }, []);
 
-  // Profile-based visibility
   const currentProfile = useMemo(() => {
     if (userLevel === 'system_owner') return 'system_owner';
     if (userLevel === 'tenant_owner') return 'tenant_owner';
@@ -316,7 +331,6 @@ export function AppSidebar() {
     [currentProfile]
   );
 
-  // ── Quick shortcuts (top 3 most used paths) ──
   const quickShortcuts = useMemo(() => {
     const topPaths = getTopPaths(3);
     return topPaths
@@ -324,9 +338,14 @@ export function AppSidebar() {
       .filter((m): m is MenuItem => m !== null && !m.comingSoon);
   }, [getTopPaths]);
 
-  // ── Highlight set from role config ──
   const highlightSet = useMemo(() => new Set(roleConfig.highlightItems), [roleConfig]);
   const dimSet = useMemo(() => new Set(roleConfig.dimGroups), [roleConfig]);
+
+  // Urgent alerts for "Precisa agir hoje" block
+  const urgentAlerts = useMemo(() =>
+    alerts.filter(a => a.level === "urgente" || a.level === "bloqueante" || a.level === "atencao"),
+    [alerts]
+  );
 
   return (
     <Sidebar
@@ -356,6 +375,45 @@ export function AppSidebar() {
             </div>
           )}
         </div>
+
+        {/* ═══ PRECISA AGIR HOJE ═══ */}
+        {!isCollapsed && urgentAlerts.length > 0 && (
+          <div className="px-3 py-2.5 border-b border-red-500/15 bg-red-500/5">
+            <p className="text-[10px] text-red-400/80 font-semibold tracking-widest uppercase mb-2 flex items-center gap-1.5">
+              <AlertTriangle className="h-3 w-3" /> Precisa agir hoje
+            </p>
+            <div className="space-y-1">
+              {urgentAlerts.slice(0, 4).map(alert => (
+                <button
+                  key={alert.id}
+                  onClick={() => navigate(alert.route)}
+                  className="flex items-center gap-2 w-full px-2 py-1 rounded-md transition-colors hover:bg-sidebar-accent/20 text-[11px] text-left"
+                >
+                  <span className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", LEVEL_DOT[alert.level])} />
+                  <span className="truncate text-sidebar-foreground/70">{alert.label}</span>
+                  <span className={cn(
+                    "ml-auto text-[10px] font-mono font-semibold px-1.5 py-0 rounded-full border",
+                    LEVEL_COLORS[alert.level]
+                  )}>
+                    {alert.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Collapsed: show total action dot */}
+        {isCollapsed && totalActions > 0 && (
+          <div className="flex justify-center py-2 border-b border-sidebar-border/20">
+            <div className="relative">
+              <AlertTriangle className="h-4 w-4 text-orange-400/70" />
+              <span className="absolute -top-1 -right-1.5 text-[8px] font-bold bg-red-500 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                {totalActions > 9 ? "9+" : totalActions}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Quick Shortcuts */}
         {!isCollapsed && quickShortcuts.length > 0 && (
@@ -389,11 +447,12 @@ export function AppSidebar() {
               item => !item.comingSoon && (currentPath === item.url || currentPath.startsWith(item.url + '/'))
             );
             const isDimmed = dimSet.has(group.label);
+            const groupBadge = getGroupBadge(group.label);
 
             return (
               <div key={group.label}>
                 <Collapsible open={isOpen} onOpenChange={() => handleToggleGroup(globalIdx)}>
-                  <SidebarGroup className="py-0">
+                  <SidebarGroup className={cn("py-0", groupBadge && LEVEL_GROUP_BORDER[groupBadge.level])}>
                     <CollapsibleTrigger className="w-full">
                       <SidebarGroupLabel className="flex items-center justify-between w-full px-4 py-1.5 cursor-pointer hover:bg-sidebar-accent/20 rounded-md mx-1 transition-colors">
                         <div className="flex items-center gap-2.5">
@@ -410,12 +469,23 @@ export function AppSidebar() {
                             </span>
                           )}
                         </div>
-                        {!isCollapsed && (
-                          <ChevronDown className={cn(
-                            "h-3 w-3 text-sidebar-foreground/30 transition-transform duration-200",
-                            isOpen && "rotate-180"
-                          )} />
-                        )}
+                        <div className="flex items-center gap-1.5">
+                          {/* Group attention badge */}
+                          {groupBadge && groupBadge.count > 0 && (
+                            <span className={cn(
+                              "text-[9px] font-mono font-semibold px-1.5 py-0 rounded-full border leading-tight",
+                              LEVEL_COLORS[groupBadge.level]
+                            )}>
+                              {groupBadge.count}
+                            </span>
+                          )}
+                          {!isCollapsed && (
+                            <ChevronDown className={cn(
+                              "h-3 w-3 text-sidebar-foreground/30 transition-transform duration-200",
+                              isOpen && "rotate-180"
+                            )} />
+                          )}
+                        </div>
                       </SidebarGroupLabel>
                     </CollapsibleTrigger>
 
@@ -424,6 +494,8 @@ export function AppSidebar() {
                         <SidebarMenu>
                           {group.items.map((item) => {
                             const isHighlighted = highlightSet.has(item.url);
+                            const itemBadge = getItemBadge(item.url);
+
                             return (
                               <SidebarMenuItem key={item.title + item.url}>
                                 <SidebarMenuButton asChild={!item.comingSoon}>
@@ -431,7 +503,16 @@ export function AppSidebar() {
                                     <div className="flex items-center gap-2.5 px-3 py-1 ml-5 mr-2 rounded-md text-sidebar-foreground/30 text-[13px] cursor-default select-none">
                                       <item.icon className={cn("h-3.5 w-3.5 flex-shrink-0", isHighlighted && "text-primary/40")} />
                                       <span className={cn("truncate", isHighlighted && "text-primary/40")}>{item.title}</span>
-                                      {!isCollapsed && (
+                                      {/* Item attention badge (even on coming soon) */}
+                                      {itemBadge && itemBadge.count > 0 && !isCollapsed && (
+                                        <span className={cn(
+                                          "ml-auto text-[9px] font-mono font-semibold px-1.5 py-0 rounded-full border leading-tight",
+                                          LEVEL_COLORS[itemBadge.level]
+                                        )}>
+                                          {itemBadge.count}
+                                        </span>
+                                      )}
+                                      {!itemBadge && !isCollapsed && (
                                         <Badge variant="outline" className="ml-auto text-[9px] px-1.5 py-0 h-4 border-sidebar-foreground/15 text-sidebar-foreground/25 font-normal">
                                           Em breve
                                         </Badge>
@@ -449,7 +530,16 @@ export function AppSidebar() {
                                     >
                                       <item.icon className={cn("h-3.5 w-3.5 flex-shrink-0", isHighlighted && "text-primary/60")} />
                                       <span className="truncate">{item.title}</span>
-                                      {isHighlighted && !isCollapsed && (
+                                      {/* Item attention badge */}
+                                      {itemBadge && itemBadge.count > 0 && !isCollapsed && (
+                                        <span className={cn(
+                                          "ml-auto text-[9px] font-mono font-semibold px-1.5 py-0 rounded-full border leading-tight",
+                                          LEVEL_COLORS[itemBadge.level]
+                                        )}>
+                                          {itemBadge.count}
+                                        </span>
+                                      )}
+                                      {isHighlighted && !itemBadge && !isCollapsed && (
                                         <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary/50 flex-shrink-0" />
                                       )}
                                     </NavLink>
