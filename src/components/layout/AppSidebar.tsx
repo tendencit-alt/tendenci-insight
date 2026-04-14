@@ -8,7 +8,7 @@ import {
   TrendingUp, Calculator, History, Zap, Shield,
   LineChart, PieChart, UserCog, Link2,
   Landmark, ClipboardList, FolderOpen, Wrench,
-  Star, AlertTriangle, UserCheck, Clock, Calendar, Play
+  Star, AlertTriangle, UserCheck, Clock, Calendar, Play, Scale
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -165,6 +165,17 @@ const menuGroups: MenuGroup[] = [
       { title: "Execução", url: "/projetos", icon: Play },
       { title: "Custos", url: "/projetos", icon: DollarSign },
       { title: "Analytics", url: "/projetos", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Suprimentos",
+    icon: Package,
+    items: [
+      { title: "Solicitações", url: "/suprimentos", icon: ClipboardList },
+      { title: "Cotações", url: "/suprimentos", icon: Scale },
+      { title: "Pedidos de Compra", url: "/suprimentos", icon: ShoppingCart },
+      { title: "Recebimentos", url: "/suprimentos", icon: Package },
+      { title: "Analytics Compras", url: "/suprimentos", icon: BarChart3 },
     ],
   },
   {
