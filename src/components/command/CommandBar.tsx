@@ -118,6 +118,12 @@ export function CommandBar() {
       { id: "op-contas-receber", label: "Contas a Receber", keywords: ["contas", "receber", "recebíveis", "receitas"], icon: TrendingUp, action: () => go("/contas-receber"), group: "Operacional" },
       { id: "op-conciliacao", label: "Conciliação Bancária", keywords: ["conciliação", "conciliar", "banco", "ofx"], icon: ArrowLeftRight, action: () => go("/conciliacao"), group: "Operacional" },
       { id: "op-ordens-prod", label: "Ordens de Produção", keywords: ["ordens", "produção", "op", "fabricação"], icon: ClipboardList, action: () => go("/ordens-producao"), group: "Operacional" },
+
+      // Activity feed commands
+      { id: "feed-hoje", label: "Atividade Hoje", keywords: ["atividade", "hoje", "feed", "recente"], icon: Clock, action: () => go("/atividades"), group: "Feed" },
+      { id: "feed-financeiro", label: "Atividade Financeiro", keywords: ["atividade", "financeiro", "feed"], icon: Play, action: () => go("/atividades?sector=financeiro"), group: "Feed" },
+      { id: "feed-comercial", label: "Atividade Comercial", keywords: ["atividade", "comercial", "feed"], icon: Play, action: () => go("/atividades?sector=comercial"), group: "Feed" },
+      { id: "feed-operacoes", label: "Atividade Operações", keywords: ["atividade", "operações", "produção", "feed"], icon: Play, action: () => go("/atividades?sector=operacoes"), group: "Feed" },
     ];
 
     // Apply role-based priority
