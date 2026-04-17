@@ -76,6 +76,7 @@ import OwnerSelfHealing from "./pages/OwnerSelfHealing";
 import OwnerArchitectureBoard from "./pages/OwnerArchitectureBoard";
 import OwnerExecutionPriority from "./pages/OwnerExecutionPriority";
 import OwnerStabilityGates from "./pages/OwnerStabilityGates";
+import OwnerAutonomousRecovery from "./pages/OwnerAutonomousRecovery";
 
 const queryClient = new QueryClient();
 
@@ -163,6 +164,7 @@ const App = () => (
               <Route path="/owner/architecture-board" element={<ProtectedRoute><OwnerArchitectureBoard /></ProtectedRoute>} />
               <Route path="/owner/execution-priority" element={<ProtectedRoute><OwnerExecutionPriority /></ProtectedRoute>} />
               <Route path="/owner/stability-gates" element={<ProtectedRoute><OwnerStabilityGates /></ProtectedRoute>} />
+              <Route path="/owner/autonomous-recovery" element={<ProtectedRoute><OwnerAutonomousRecovery /></ProtectedRoute>} />
               <Route path="/multi-company" element={<ProtectedRoute><MultiCompanyIntelligence /></ProtectedRoute>} />
               <Route path="/dashboards" element={<Navigate to="/" replace />} />
               <Route path="/ia-configuracao" element={<Navigate to="/" replace />} />
