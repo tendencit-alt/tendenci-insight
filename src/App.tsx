@@ -64,6 +64,7 @@ import TenantLifecycle from "./pages/TenantLifecycle";
 import MultiCompanyIntelligence from "./pages/MultiCompanyIntelligence";
 import OwnerControlTower from "./pages/OwnerControlTower";
 import AutomationCenter from "./pages/AutomationCenter";
+import OwnerEntitlementsCenter from "./pages/OwnerEntitlementsCenter";
 
 const queryClient = new QueryClient();
 
@@ -139,6 +140,7 @@ const App = () => (
               <Route path="/owner/lifecycle" element={<ProtectedRoute><TenantLifecycle /></ProtectedRoute>} />
               <Route path="/owner/control-tower" element={<ProtectedRoute><OwnerControlTower /></ProtectedRoute>} />
               <Route path="/owner/automation-center" element={<ProtectedRoute><AutomationCenter /></ProtectedRoute>} />
+              <Route path="/owner/entitlements" element={<ProtectedRoute><OwnerEntitlementsCenter /></ProtectedRoute>} />
               <Route path="/multi-company" element={<ProtectedRoute><MultiCompanyIntelligence /></ProtectedRoute>} />
               <Route path="/dashboards" element={<Navigate to="/" replace />} />
               <Route path="/ia-configuracao" element={<Navigate to="/" replace />} />
