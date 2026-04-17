@@ -2412,6 +2412,114 @@ export type Database = {
         }
         Relationships: []
       }
+      capacity_preventive_actions: {
+        Row: {
+          action_code: string
+          created_at: string
+          execution_mode: string
+          id: string
+          metadata: Json | null
+          reason: string | null
+          result: string
+          target_code: string
+          target_type: string
+          triggered_by: string | null
+        }
+        Insert: {
+          action_code: string
+          created_at?: string
+          execution_mode?: string
+          id?: string
+          metadata?: Json | null
+          reason?: string | null
+          result?: string
+          target_code: string
+          target_type: string
+          triggered_by?: string | null
+        }
+        Update: {
+          action_code?: string
+          created_at?: string
+          execution_mode?: string
+          id?: string
+          metadata?: Json | null
+          reason?: string | null
+          result?: string
+          target_code?: string
+          target_type?: string
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
+      capacity_risk_scores: {
+        Row: {
+          capacity_risk_score: number
+          contributing_factors: Json | null
+          id: string
+          recommended_action: string | null
+          severity_band: string
+          target_code: string
+          target_type: string
+          updated_at: string
+        }
+        Insert: {
+          capacity_risk_score?: number
+          contributing_factors?: Json | null
+          id?: string
+          recommended_action?: string | null
+          severity_band?: string
+          target_code: string
+          target_type: string
+          updated_at?: string
+        }
+        Update: {
+          capacity_risk_score?: number
+          contributing_factors?: Json | null
+          id?: string
+          recommended_action?: string | null
+          severity_band?: string
+          target_code?: string
+          target_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      capacity_risk_signals: {
+        Row: {
+          baseline_value: number
+          created_at: string
+          deviation_percent: number
+          id: string
+          metadata: Json | null
+          signal_type: string
+          signal_value: number
+          target_code: string
+          target_type: string
+        }
+        Insert: {
+          baseline_value?: number
+          created_at?: string
+          deviation_percent?: number
+          id?: string
+          metadata?: Json | null
+          signal_type: string
+          signal_value?: number
+          target_code: string
+          target_type: string
+        }
+        Update: {
+          baseline_value?: number
+          created_at?: string
+          deviation_percent?: number
+          id?: string
+          metadata?: Json | null
+          signal_type?: string
+          signal_value?: number
+          target_code?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           attachment_name: string | null
@@ -10195,6 +10303,39 @@ export type Database = {
           },
         ]
       }
+      job_saturation_snapshots: {
+        Row: {
+          avg_duration_ms: number
+          captured_at: string
+          failure_rate: number
+          id: string
+          job_code: string
+          metadata: Json | null
+          p95_duration_ms: number
+          run_frequency: number
+        }
+        Insert: {
+          avg_duration_ms?: number
+          captured_at?: string
+          failure_rate?: number
+          id?: string
+          job_code: string
+          metadata?: Json | null
+          p95_duration_ms?: number
+          run_frequency?: number
+        }
+        Update: {
+          avg_duration_ms?: number
+          captured_at?: string
+          failure_rate?: number
+          id?: string
+          job_code?: string
+          metadata?: Json | null
+          p95_duration_ms?: number
+          run_frequency?: number
+        }
+        Relationships: []
+      }
       knowledge_articles: {
         Row: {
           active: boolean
@@ -15550,6 +15691,39 @@ export type Database = {
           },
         ]
       }
+      queue_pressure_snapshots: {
+        Row: {
+          captured_at: string
+          failure_rate: number
+          id: string
+          metadata: Json | null
+          oldest_job_age_minutes: number
+          processing_rate: number
+          queue_code: string
+          queue_depth: number
+        }
+        Insert: {
+          captured_at?: string
+          failure_rate?: number
+          id?: string
+          metadata?: Json | null
+          oldest_job_age_minutes?: number
+          processing_rate?: number
+          queue_code: string
+          queue_depth?: number
+        }
+        Update: {
+          captured_at?: string
+          failure_rate?: number
+          id?: string
+          metadata?: Json | null
+          oldest_job_age_minutes?: number
+          processing_rate?: number
+          queue_code?: string
+          queue_depth?: number
+        }
+        Relationships: []
+      }
       quote_items: {
         Row: {
           cost_center: string | null
@@ -18918,6 +19092,42 @@ export type Database = {
           },
         ]
       }
+      tenant_load_distribution: {
+        Row: {
+          automation_count: number
+          captured_at: string
+          id: string
+          job_count: number
+          load_share_percent: number
+          retry_count: number
+          snapshot_count: number
+          tenant_id: string | null
+          tenant_label: string | null
+        }
+        Insert: {
+          automation_count?: number
+          captured_at?: string
+          id?: string
+          job_count?: number
+          load_share_percent?: number
+          retry_count?: number
+          snapshot_count?: number
+          tenant_id?: string | null
+          tenant_label?: string | null
+        }
+        Update: {
+          automation_count?: number
+          captured_at?: string
+          id?: string
+          job_count?: number
+          load_share_percent?: number
+          retry_count?: number
+          snapshot_count?: number
+          tenant_id?: string | null
+          tenant_label?: string | null
+        }
+        Relationships: []
+      }
       tenant_plans: {
         Row: {
           active: boolean | null
@@ -21054,6 +21264,19 @@ export type Database = {
       can_delete_master_idea:
         | { Args: never; Returns: boolean }
         | { Args: { p_master_idea_id: string }; Returns: boolean }
+      capacity_layer_summary: { Args: never; Returns: Json }
+      capacity_top_risks: {
+        Args: { p_limit?: number }
+        Returns: {
+          capacity_risk_score: number
+          contributing_factors: Json
+          recommended_action: string
+          severity_band: string
+          target_code: string
+          target_type: string
+          updated_at: string
+        }[]
+      }
       check_and_expire_goals: { Args: never; Returns: undefined }
       check_and_move_inactive_architects: { Args: never; Returns: undefined }
       check_and_update_inactive_architects: { Args: never; Returns: undefined }
@@ -21111,6 +21334,7 @@ export type Database = {
         Returns: Json
       }
       compute_all_tenants_lifecycle: { Args: never; Returns: number }
+      compute_capacity_risk_scores: { Args: never; Returns: number }
       compute_failure_probability: { Args: never; Returns: number }
       compute_predictive_drift: { Args: never; Returns: number }
       compute_tenant_lifecycle: { Args: { _tenant_id: string }; Returns: Json }
@@ -21212,6 +21436,7 @@ export type Database = {
         Returns: Json
       }
       detect_billing_dunning: { Args: never; Returns: number }
+      detect_capacity_signals: { Args: never; Returns: number }
       detect_predictive_anomalies: { Args: never; Returns: number }
       detect_predictive_signals: { Args: never; Returns: number }
       detect_upgrade_signals: { Args: never; Returns: number }
@@ -21242,6 +21467,15 @@ export type Database = {
         Returns: Json
       }
       evaluate_stability_gates: { Args: never; Returns: Json }
+      execute_capacity_action: {
+        Args: {
+          p_action_code: string
+          p_mode?: string
+          p_target_code: string
+          p_target_type: string
+        }
+        Returns: Json
+      }
       execute_preventive_action: {
         Args: { p_action_code: string; p_mode?: string; p_target_code: string }
         Returns: Json
@@ -22017,12 +22251,16 @@ export type Database = {
         Returns: undefined
       }
       run_autonomous_recovery_sweep: { Args: never; Returns: Json }
+      run_capacity_sweep: { Args: never; Returns: Json }
       run_inactive_architects_check: { Args: never; Returns: Json }
       run_predictive_sweep: { Args: never; Returns: Json }
       should_show_upgrade_nudge: {
         Args: { _signal_id: string; _tenant_id: string }
         Returns: boolean
       }
+      snapshot_job_saturation: { Args: never; Returns: number }
+      snapshot_queue_pressure: { Args: never; Returns: number }
+      snapshot_tenant_load: { Args: never; Returns: number }
       stability_can_release: { Args: { p_release_id?: string }; Returns: Json }
       stability_gates_summary: { Args: never; Returns: Json }
       start_runbook_execution: {
