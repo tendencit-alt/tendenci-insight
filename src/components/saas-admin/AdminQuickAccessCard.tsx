@@ -26,7 +26,7 @@ export function AdminQuickAccessCard() {
             <p className="text-xs text-muted-foreground">Empresas</p>
           </div>
           <div>
-            <p className="text-2xl font-bold text-green-600 flex items-center justify-center gap-1">
+            <p className="text-2xl font-bold text-primary flex items-center justify-center gap-1">
               <ShieldCheck className="h-4 w-4" />{data?.tenants_healthy ?? "—"}
             </p>
             <p className="text-xs text-muted-foreground">Saudáveis</p>
