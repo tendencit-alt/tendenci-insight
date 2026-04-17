@@ -44,6 +44,29 @@ const onDemandDetect = inngest.createFunction(
   },
 );
 
-const handler = serve({ client: inngest, functions: [detectPatternsCron, onDemandDetect] });
+const reconcileIntegrationHealthCron = inngest.createFunction(
+  { id: "reconcile-integration-health-cron" },
+  { cron: "*/15 * * * *" }, // a cada 15 minutos
+  async ({ step }) => {
+    const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/reconcile-integration-health`;
+    const result = await step.run("invoke-reconcile", async () => {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({}),
+      });
+      return await res.json();
+    });
+    return result;
+  },
+);
+
+const handler = serve({
+  client: inngest,
+  functions: [detectPatternsCron, onDemandDetect, reconcileIntegrationHealthCron],
+});
 
 Deno.serve((req) => handler(req));

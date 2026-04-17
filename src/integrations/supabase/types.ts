@@ -9383,6 +9383,90 @@ export type Database = {
         }
         Relationships: []
       }
+      integration_health_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          message: string | null
+          metadata: Json | null
+          source_module_code: string
+          status: string
+          target_module_code: string
+          tenant_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          source_module_code: string
+          status: string
+          target_module_code: string
+          tenant_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          source_module_code?: string
+          status?: string
+          target_module_code?: string
+          tenant_id?: string | null
+        }
+        Relationships: []
+      }
+      integration_health_snapshots: {
+        Row: {
+          current_status: string
+          delay_minutes: number | null
+          errors_24h: number
+          events_24h: number
+          health_score: number
+          id: string
+          last_error_at: string | null
+          last_event_at: string | null
+          last_success_at: string | null
+          metadata: Json | null
+          source_module_code: string
+          target_module_code: string
+          updated_at: string
+        }
+        Insert: {
+          current_status?: string
+          delay_minutes?: number | null
+          errors_24h?: number
+          events_24h?: number
+          health_score?: number
+          id?: string
+          last_error_at?: string | null
+          last_event_at?: string | null
+          last_success_at?: string | null
+          metadata?: Json | null
+          source_module_code: string
+          target_module_code: string
+          updated_at?: string
+        }
+        Update: {
+          current_status?: string
+          delay_minutes?: number | null
+          errors_24h?: number
+          events_24h?: number
+          health_score?: number
+          id?: string
+          last_error_at?: string | null
+          last_event_at?: string | null
+          last_success_at?: string | null
+          metadata?: Json | null
+          source_module_code?: string
+          target_module_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inv_stock_reservations: {
         Row: {
           consumed_quantity: number | null
@@ -16657,6 +16741,93 @@ export type Database = {
         }
         Relationships: []
       }
+      system_module_integrations: {
+        Row: {
+          created_at: string
+          criticality: string
+          description: string | null
+          expected_interval_minutes: number
+          id: string
+          integration_type: string
+          is_required: boolean
+          source_module_code: string
+          target_module_code: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          criticality?: string
+          description?: string | null
+          expected_interval_minutes?: number
+          id?: string
+          integration_type?: string
+          is_required?: boolean
+          source_module_code: string
+          target_module_code: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          criticality?: string
+          description?: string | null
+          expected_interval_minutes?: number
+          id?: string
+          integration_type?: string
+          is_required?: boolean
+          source_module_code?: string
+          target_module_code?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_module_integrations_source_module_code_fkey"
+            columns: ["source_module_code"]
+            isOneToOne: false
+            referencedRelation: "system_modules"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "system_module_integrations_target_module_code_fkey"
+            columns: ["target_module_code"]
+            isOneToOne: false
+            referencedRelation: "system_modules"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      system_modules: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          module_group: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          module_group: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          module_group?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       system_releases: {
         Row: {
           breaking_changes: Json | null
@@ -19467,6 +19638,11 @@ export type Database = {
       get_ia_config:
         | { Args: never; Returns: Json }
         | { Args: { config_key_param: string }; Returns: string }
+      get_integration_map_overview: { Args: never; Returns: Json }
+      get_module_integration_detail: {
+        Args: { p_module_code: string }
+        Returns: Json
+      }
       get_monthly_goal_records: {
         Args: { p_month?: string; p_vendedor_id?: string }
         Returns: {
@@ -19909,6 +20085,19 @@ export type Database = {
       purchases_metrics: { Args: never; Returns: Json }
       reactivate_lost_deals_to_followup: { Args: never; Returns: Json }
       recalculate_all_goal_progress: { Args: never; Returns: undefined }
+      reconcile_integration_health: { Args: never; Returns: Json }
+      record_integration_event: {
+        Args: {
+          p_event_type: string
+          p_message?: string
+          p_metadata?: Json
+          p_source: string
+          p_status: string
+          p_target: string
+          p_tenant_id?: string
+        }
+        Returns: string
+      }
       record_offer_event: {
         Args: {
           _channel: string
