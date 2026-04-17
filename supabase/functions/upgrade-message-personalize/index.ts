@@ -1,5 +1,5 @@
 // Edge function: enriquece a mensagem de um upgrade signal usando Lovable AI
-import { corsHeaders } from '@supabase/supabase-js/cors';
+import { corsHeaders } from 'npm:@supabase/supabase-js@2.95.0/cors';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
