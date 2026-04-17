@@ -107,3 +107,9 @@ verify_jwt = false
 
 [functions.process-orphan-messages]
 verify_jwt = false
+
+[functions.inngest]
+verify_jwt = false
+
+[functions.detect-automation-patterns]
+verify_jwt = false
