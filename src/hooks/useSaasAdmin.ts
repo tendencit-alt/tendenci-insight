@@ -119,22 +119,26 @@ export function useFeatureFlagsWithOverrides(tenantId?: string) {
   return useQuery({
     queryKey: ["saas-admin", "feature-flags", tenantId],
     queryFn: async () => {
-      const { data: flags, error } = await supabase
+      const { data: flags, error } = await (supabase as any)
         .from("feature_flags")
-        .select("id, flag_key, flag_name, description, default_enabled, category");
+        .select("id, key, name, description, status, module");
       if (error) throw error;
       let overrides: Array<{ flag_id: string; enabled: boolean }> = [];
       if (tenantId) {
-        const { data: ovs } = await supabase
+        const { data: ovs } = await (supabase as any)
           .from("feature_flag_overrides")
           .select("flag_id, enabled")
           .eq("tenant_id", tenantId);
         overrides = ovs ?? [];
       }
-      return (flags ?? []).map((f) => ({
+      return (flags ?? []).map((f: any) => ({
         ...f,
+        flag_key: f.key,
+        flag_name: f.name,
+        category: f.module,
+        default_enabled: f.status === 'active',
         override_enabled: overrides.find((o) => o.flag_id === f.id)?.enabled ?? null,
-        effective_enabled: overrides.find((o) => o.flag_id === f.id)?.enabled ?? f.default_enabled,
+        effective_enabled: overrides.find((o) => o.flag_id === f.id)?.enabled ?? (f.status === 'active'),
       }));
     },
   });
