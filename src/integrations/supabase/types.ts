@@ -3586,7 +3586,10 @@ export type Database = {
       }
       customer_onboarding: {
         Row: {
+          chart_template: string | null
+          completed_at: string | null
           created_at: string
+          financial_maturity: string | null
           first_dashboard: boolean
           first_dashboard_at: string | null
           first_dre: boolean
@@ -3596,14 +3599,21 @@ export type Database = {
           first_reconciliation: boolean
           first_reconciliation_at: string | null
           id: string
+          primary_goal: string | null
           progress_pct: number | null
+          segment: string | null
           setup_completed: boolean
           setup_completed_at: string | null
+          started_at: string | null
+          team_size: string | null
           tenant_id: string
           updated_at: string
         }
         Insert: {
+          chart_template?: string | null
+          completed_at?: string | null
           created_at?: string
+          financial_maturity?: string | null
           first_dashboard?: boolean
           first_dashboard_at?: string | null
           first_dre?: boolean
@@ -3613,14 +3623,21 @@ export type Database = {
           first_reconciliation?: boolean
           first_reconciliation_at?: string | null
           id?: string
+          primary_goal?: string | null
           progress_pct?: number | null
+          segment?: string | null
           setup_completed?: boolean
           setup_completed_at?: string | null
+          started_at?: string | null
+          team_size?: string | null
           tenant_id: string
           updated_at?: string
         }
         Update: {
+          chart_template?: string | null
+          completed_at?: string | null
           created_at?: string
+          financial_maturity?: string | null
           first_dashboard?: boolean
           first_dashboard_at?: string | null
           first_dre?: boolean
@@ -3630,9 +3647,13 @@ export type Database = {
           first_reconciliation?: boolean
           first_reconciliation_at?: string | null
           id?: string
+          primary_goal?: string | null
           progress_pct?: number | null
+          segment?: string | null
           setup_completed?: boolean
           setup_completed_at?: string | null
+          started_at?: string | null
+          team_size?: string | null
           tenant_id?: string
           updated_at?: string
         }
@@ -9675,6 +9696,47 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_analytics: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          step_key: string
+          tenant_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          step_key: string
+          tenant_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          step_key?: string
+          tenant_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_analytics_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
