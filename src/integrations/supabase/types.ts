@@ -1201,6 +1201,53 @@ export type Database = {
           },
         ]
       }
+      auto_recovery_rules: {
+        Row: {
+          backoff_strategy: string
+          conditions: Json | null
+          cooldown_minutes: number
+          created_at: string
+          failure_code: string
+          id: string
+          is_enabled: boolean
+          max_attempts: number
+          recovery_code: string
+          trigger_mode: string
+        }
+        Insert: {
+          backoff_strategy?: string
+          conditions?: Json | null
+          cooldown_minutes?: number
+          created_at?: string
+          failure_code: string
+          id?: string
+          is_enabled?: boolean
+          max_attempts?: number
+          recovery_code: string
+          trigger_mode?: string
+        }
+        Update: {
+          backoff_strategy?: string
+          conditions?: Json | null
+          cooldown_minutes?: number
+          created_at?: string
+          failure_code?: string
+          id?: string
+          is_enabled?: boolean
+          max_attempts?: number
+          recovery_code?: string
+          trigger_mode?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auto_recovery_rules_recovery_code_fkey"
+            columns: ["recovery_code"]
+            isOneToOne: false
+            referencedRelation: "recovery_catalog"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       automation_execution_logs: {
         Row: {
           actions_executed: Json | null
@@ -15504,6 +15551,132 @@ export type Database = {
           },
         ]
       }
+      recovery_catalog: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          description: string | null
+          estimated_duration_seconds: number | null
+          handler_kind: string
+          handler_target: string | null
+          id: string
+          is_retriable: boolean
+          is_safe_auto: boolean
+          max_retry_attempts: number
+          name: string
+          recovery_type: string
+          requires_owner_confirmation: boolean
+          risk_level: string
+          target_module: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          description?: string | null
+          estimated_duration_seconds?: number | null
+          handler_kind?: string
+          handler_target?: string | null
+          id?: string
+          is_retriable?: boolean
+          is_safe_auto?: boolean
+          max_retry_attempts?: number
+          name: string
+          recovery_type?: string
+          requires_owner_confirmation?: boolean
+          risk_level?: string
+          target_module: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          description?: string | null
+          estimated_duration_seconds?: number | null
+          handler_kind?: string
+          handler_target?: string | null
+          id?: string
+          is_retriable?: boolean
+          is_safe_auto?: boolean
+          max_retry_attempts?: number
+          name?: string
+          recovery_type?: string
+          requires_owner_confirmation?: boolean
+          risk_level?: string
+          target_module?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      recovery_execution_logs: {
+        Row: {
+          attempt_number: number
+          created_at: string
+          duration_ms: number | null
+          executed_by: string | null
+          execution_mode: string
+          failure_code: string
+          finished_at: string | null
+          id: string
+          idempotency_key: string | null
+          incident_group_id: string | null
+          message: string | null
+          payload: Json | null
+          recovery_code: string
+          related_event_id: string | null
+          response: Json | null
+          result: string
+          source_module: string | null
+          started_at: string
+          target_module: string | null
+        }
+        Insert: {
+          attempt_number?: number
+          created_at?: string
+          duration_ms?: number | null
+          executed_by?: string | null
+          execution_mode?: string
+          failure_code: string
+          finished_at?: string | null
+          id?: string
+          idempotency_key?: string | null
+          incident_group_id?: string | null
+          message?: string | null
+          payload?: Json | null
+          recovery_code: string
+          related_event_id?: string | null
+          response?: Json | null
+          result?: string
+          source_module?: string | null
+          started_at?: string
+          target_module?: string | null
+        }
+        Update: {
+          attempt_number?: number
+          created_at?: string
+          duration_ms?: number | null
+          executed_by?: string | null
+          execution_mode?: string
+          failure_code?: string
+          finished_at?: string | null
+          id?: string
+          idempotency_key?: string | null
+          incident_group_id?: string | null
+          message?: string | null
+          payload?: Json | null
+          recovery_code?: string
+          related_event_id?: string | null
+          response?: Json | null
+          result?: string
+          source_module?: string | null
+          started_at?: string
+          target_module?: string | null
+        }
+        Relationships: []
+      }
       reminders: {
         Row: {
           created_at: string | null
@@ -19656,6 +19829,17 @@ export type Database = {
         Returns: string
       }
       expire_entitlement_grants: { Args: never; Returns: number }
+      find_pending_auto_recoveries: {
+        Args: never
+        Returns: {
+          attempts_so_far: number
+          cooldown_minutes: number
+          failure_code: string
+          max_attempts: number
+          recovery_code: string
+          target_module: string
+        }[]
+      }
       generate_permission_recommendations: {
         Args: { _since_days?: number }
         Returns: number
@@ -19983,6 +20167,7 @@ export type Database = {
               whatsapp_valido: boolean
             }[]
           }
+      get_recovery_overview: { Args: never; Returns: Json }
       get_saas_admin_analytics: { Args: never; Returns: Json }
       get_saas_company_overview: {
         Args: { _tenant_id?: string }
@@ -20332,6 +20517,17 @@ export type Database = {
           p_target_entity?: string
           p_target_entity_id?: string
           p_target_module: string
+        }
+        Returns: string
+      }
+      register_recovery_execution: {
+        Args: {
+          p_execution_mode?: string
+          p_failure_code: string
+          p_idempotency_key?: string
+          p_incident_group_id?: string
+          p_recovery_code: string
+          p_target_module?: string
         }
         Returns: string
       }
