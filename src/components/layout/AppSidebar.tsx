@@ -11,7 +11,7 @@ import {
   Star, AlertTriangle, UserCheck,
   Brain, Telescope, GraduationCap,
   Network, GitBranch, LifeBuoy, Clock, ListChecks, ShieldCheck,
-  Bug, Sparkles, Tag, Rocket
+  Bug, Sparkles, Tag, Rocket, LayoutGrid
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -211,6 +211,7 @@ const menuGroups: MenuGroup[] = [
       { title: "Incident Timeline", url: "/owner/incident-timeline", icon: Clock },
       { title: "Runbooks", url: "/owner/runbooks", icon: ListChecks },
       { title: "Self-Healing Policies", url: "/owner/self-healing", icon: Shield },
+      { title: "Architecture Board", url: "/owner/architecture-board", icon: LayoutGrid },
       { title: "Billing & Subscriptions", url: "/billing", icon: CreditCard },
       { title: "Customer Lifecycle", url: "/customer-lifecycle", icon: Users },
       { title: "Customer Success", url: "/customer-success", icon: Star },
