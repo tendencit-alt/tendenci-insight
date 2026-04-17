@@ -9,7 +9,9 @@ import {
   LineChart, PieChart, UserCog, Link2,
   Landmark, Wrench,
   Star, AlertTriangle, UserCheck,
-  Brain, Telescope, GraduationCap
+  Brain, Telescope, GraduationCap,
+  Network, GitBranch, LifeBuoy, Clock, ListChecks, ShieldCheck,
+  Bug, Sparkles, Tag, Rocket
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -187,13 +189,28 @@ const menuGroups: MenuGroup[] = [
       { title: "Logs do Sistema", url: "/settings/logs", icon: History, comingSoon: true },
     ],
   },
-  // ── OWNER (system_owner only) ──
+  // ── OWNER PANEL (system_owner only) ──
   {
     label: "Owner",
     icon: Building2,
     profiles: ["system_owner"],
     items: [
       { title: "Painel Owner", url: "/super-admin", icon: Building2 },
+      { title: "Control Tower", url: "/owner/control-tower", icon: Landmark },
+      { title: "Smart Admin", url: "/owner/admin", icon: ShieldCheck },
+      { title: "Billing Ops", url: "/owner/billing-ops", icon: CreditCard },
+      { title: "Lifecycle", url: "/owner/lifecycle", icon: Users },
+      { title: "Permission Debug", url: "/owner/permission-debug", icon: Bug },
+      { title: "Automation Center", url: "/owner/automation-center", icon: Sparkles },
+      { title: "Entitlements", url: "/owner/entitlements", icon: Tag },
+      { title: "Upgrade Center", url: "/owner/upgrade-center", icon: Rocket },
+      { title: "Offer Center", url: "/owner/offer-center", icon: Star },
+      { title: "Integration Map", url: "/owner/integration-map", icon: Network },
+      { title: "Dependency Impact", url: "/owner/dependency-impact", icon: GitBranch },
+      { title: "Recovery Actions", url: "/owner/recovery-actions", icon: LifeBuoy },
+      { title: "Incident Timeline", url: "/owner/incident-timeline", icon: Clock },
+      { title: "Runbooks", url: "/owner/runbooks", icon: ListChecks },
+      { title: "Self-Healing Policies", url: "/owner/self-healing", icon: Shield },
       { title: "Billing & Subscriptions", url: "/billing", icon: CreditCard },
       { title: "Customer Lifecycle", url: "/customer-lifecycle", icon: Users },
       { title: "Customer Success", url: "/customer-success", icon: Star },
