@@ -70,6 +70,7 @@ import OwnerOfferCenter from "./pages/OwnerOfferCenter";
 import OwnerIntegrationMap from "./pages/OwnerIntegrationMap";
 import OwnerDependencyImpact from "./pages/OwnerDependencyImpact";
 import OwnerRecoveryActions from "./pages/OwnerRecoveryActions";
+import OwnerIncidentTimeline from "./pages/OwnerIncidentTimeline";
 
 const queryClient = new QueryClient();
 
