@@ -4080,6 +4080,159 @@ export type Database = {
           },
         ]
       }
+      decision_engine_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          processed: boolean
+          processed_at: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+          processed?: boolean
+          processed_at?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          processed?: boolean
+          processed_at?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: []
+      }
+      decision_engine_executions: {
+        Row: {
+          action_payload: Json | null
+          action_type: string
+          confidence_band: string | null
+          confidence_score: number | null
+          error_message: string | null
+          event_id: string | null
+          event_type: string
+          executed_at: string
+          id: string
+          result: Json | null
+          rule_id: string | null
+          rule_name: string | null
+          status: string
+          tenant_id: string | null
+        }
+        Insert: {
+          action_payload?: Json | null
+          action_type: string
+          confidence_band?: string | null
+          confidence_score?: number | null
+          error_message?: string | null
+          event_id?: string | null
+          event_type: string
+          executed_at?: string
+          id?: string
+          result?: Json | null
+          rule_id?: string | null
+          rule_name?: string | null
+          status?: string
+          tenant_id?: string | null
+        }
+        Update: {
+          action_payload?: Json | null
+          action_type?: string
+          confidence_band?: string | null
+          confidence_score?: number | null
+          error_message?: string | null
+          event_id?: string | null
+          event_type?: string
+          executed_at?: string
+          id?: string
+          result?: Json | null
+          rule_id?: string | null
+          rule_name?: string | null
+          status?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decision_engine_executions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "decision_engine_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decision_engine_executions_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "decision_engine_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decision_engine_rules: {
+        Row: {
+          action: Json
+          active: boolean
+          condition: Json
+          confidence_band: string
+          confidence_score: number
+          created_at: string
+          created_by: string | null
+          description: string | null
+          event_type: string
+          execution_count: number
+          id: string
+          is_system: boolean
+          last_executed_at: string | null
+          name: string
+          priority: number
+          updated_at: string
+        }
+        Insert: {
+          action?: Json
+          active?: boolean
+          condition?: Json
+          confidence_band?: string
+          confidence_score?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          event_type: string
+          execution_count?: number
+          id?: string
+          is_system?: boolean
+          last_executed_at?: string | null
+          name: string
+          priority?: number
+          updated_at?: string
+        }
+        Update: {
+          action?: Json
+          active?: boolean
+          condition?: Json
+          confidence_band?: string
+          confidence_score?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          event_type?: string
+          execution_count?: number
+          id?: string
+          is_system?: boolean
+          last_executed_at?: string | null
+          name?: string
+          priority?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       deleted_records: {
         Row: {
           created_at: string | null
@@ -18553,6 +18706,10 @@ export type Database = {
           module: string
           permission_key: string
         }[]
+      }
+      emit_decision_event: {
+        Args: { p_event_type: string; p_payload?: Json; p_tenant_id: string }
+        Returns: string
       }
       generate_permission_recommendations: {
         Args: { _since_days?: number }
