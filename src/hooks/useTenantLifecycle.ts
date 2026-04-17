@@ -89,13 +89,13 @@ export function useTrackSessionEvent() {
       const { data: profile } = await supabase
         .from("profiles").select("tenant_id").eq("id", userId).maybeSingle();
       if (!profile?.tenant_id) return null;
-      await supabase.from("tenant_session_events").insert({
+      await supabase.from("tenant_session_events").insert([{
         tenant_id: profile.tenant_id,
         user_id: userId,
         event_type: input.event_type,
-        module: input.module ?? null,
-        metadata: input.metadata ?? {},
-      });
+        module: input.module ?? undefined,
+        metadata: (input.metadata ?? {}) as never,
+      }]);
       return true;
     },
   });
