@@ -1,5 +1,7 @@
 import { type ReactNode, useEffect } from "react";
 import { useEntitlement } from "@/hooks/useEntitlements";
+import { useRecordPremiumAttempt } from "@/hooks/useUpgradeSignals";
+import { UpgradeNudge } from "@/components/upgrade/UpgradeNudge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Lock, Sparkles, Clock } from "lucide-react";
@@ -11,22 +13,23 @@ import { cn } from "@/lib/utils";
 interface Props {
   code: string;
   children: ReactNode;
-  fallback?: "hide" | "message" | "inline" | ReactNode;
+  fallback?: "hide" | "message" | "inline" | "nudge" | ReactNode;
   className?: string;
   onUpgradeClick?: () => void;
 }
 
 /**
  * Bloqueia acesso comercial (entitlement do plano) — distinto do RBAC.
- * Mensagem foca em "upgrade do plano", não em "permissão negada".
+ * Quando bloqueado, registra tentativa de feature premium e exibe upgrade UI.
  */
 export function EntitlementGate({ code, children, fallback = "message", className, onUpgradeClick }: Props) {
   const ent = useEntitlement(code);
+  const recordAttempt = useRecordPremiumAttempt();
   const { user, profile } = useAuth() as any;
 
   useEffect(() => {
     if (!ent.isLoading && !ent.allowed && user) {
-      // log de tentativa bloqueada (analytics)
+      // log analytics + signal de premium attempt
       (supabase as any).from("entitlement_access_log").insert({
         tenant_id: profile?.tenant_id ?? null,
         user_id: user.id,
@@ -34,9 +37,11 @@ export function EntitlementGate({ code, children, fallback = "message", classNam
         allowed: false,
         reason: ent.source,
       });
+      if (ent.isPremium) recordAttempt.mutate(code);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ent.isLoading, ent.allowed, code]);
+
 
   if (ent.isLoading) return null;
   if (ent.allowed) return <>{children}</>;
@@ -49,6 +54,9 @@ export function EntitlementGate({ code, children, fallback = "message", classNam
         Recurso indisponível no plano atual
       </span>
     );
+  }
+  if (fallback === "nudge") {
+    return <UpgradeNudge entitlementCode={code} surface="entitlement_gate" className={className} />;
   }
   if (fallback !== "message") return <>{fallback}</>;
 
