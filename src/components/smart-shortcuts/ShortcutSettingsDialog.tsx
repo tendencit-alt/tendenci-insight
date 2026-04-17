@@ -261,7 +261,7 @@ function ShortcutRow({
       <Button
         variant="ghost"
         size="icon"
-        className={cn("h-7 w-7", inPersonal && "text-amber-500")}
+        className={cn("h-7 w-7", inPersonal && "text-primary")}
         onClick={onTogglePersonal}
         aria-label={inPersonal ? "Remover dos favoritos" : "Adicionar aos favoritos"}
       >
