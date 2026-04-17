@@ -71,6 +71,7 @@ import OwnerIntegrationMap from "./pages/OwnerIntegrationMap";
 import OwnerDependencyImpact from "./pages/OwnerDependencyImpact";
 import OwnerRecoveryActions from "./pages/OwnerRecoveryActions";
 import OwnerIncidentTimeline from "./pages/OwnerIncidentTimeline";
+import OwnerRunbooks from "./pages/OwnerRunbooks";
 
 const queryClient = new QueryClient();
 
