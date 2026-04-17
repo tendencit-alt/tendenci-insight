@@ -14589,6 +14589,56 @@ export type Database = {
         }
         Relationships: []
       }
+      saas_admin_action_log: {
+        Row: {
+          action_category: string
+          action_type: string
+          actor_id: string
+          after_state: Json | null
+          before_state: Json | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          reason: string
+          target_tenant_id: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action_category?: string
+          action_type: string
+          actor_id: string
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          reason: string
+          target_tenant_id?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action_category?: string
+          action_type?: string
+          actor_id?: string
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          reason?: string
+          target_tenant_id?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saas_admin_action_log_target_tenant_id_fkey"
+            columns: ["target_tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       self_service_events: {
         Row: {
           created_at: string
@@ -18203,6 +18253,40 @@ export type Database = {
               whatsapp_valido: boolean
             }[]
           }
+      get_saas_admin_analytics: { Args: never; Returns: Json }
+      get_saas_company_overview: {
+        Args: { _tenant_id?: string }
+        Returns: {
+          active: boolean
+          active_modules: number
+          active_users: number
+          created_at: string
+          current_period_end: string
+          health_classification: string
+          health_score: number
+          last_user_login: string
+          max_users: number
+          overdue_invoices: number
+          plan_id: string
+          plan_name: string
+          plan_price: number
+          subscription_status: string
+          tenant_id: string
+          tenant_name: string
+          tenant_slug: string
+          trial_ends_at: string
+        }[]
+      }
+      get_saas_tenant_limits: {
+        Args: { _tenant_id: string }
+        Returns: {
+          current_usage: number
+          limit_key: string
+          limit_name: string
+          limit_value: number
+          pct_used: number
+        }[]
+      }
       get_seller_goal_stats: { Args: { p_vendedor_id: string }; Returns: Json }
       get_seller_performance_by_goal: {
         Args: { p_seller_goal_id: string }
