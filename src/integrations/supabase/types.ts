@@ -15929,6 +15929,323 @@ export type Database = {
         }
         Relationships: []
       }
+      runbook_catalog: {
+        Row: {
+          auto_start_allowed: boolean
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          incident_type: string
+          is_active: boolean
+          is_fallback: boolean
+          metadata: Json | null
+          name: string
+          owner_confirmation_required: boolean
+          severity_scope: string[] | null
+          target_module: string
+          updated_at: string
+        }
+        Insert: {
+          auto_start_allowed?: boolean
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          incident_type: string
+          is_active?: boolean
+          is_fallback?: boolean
+          metadata?: Json | null
+          name: string
+          owner_confirmation_required?: boolean
+          severity_scope?: string[] | null
+          target_module: string
+          updated_at?: string
+        }
+        Update: {
+          auto_start_allowed?: boolean
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          incident_type?: string
+          is_active?: boolean
+          is_fallback?: boolean
+          metadata?: Json | null
+          name?: string
+          owner_confirmation_required?: boolean
+          severity_scope?: string[] | null
+          target_module?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      runbook_escalation_rules: {
+        Row: {
+          condition_type: string
+          created_at: string
+          escalation_action: string
+          id: string
+          metadata: Json | null
+          requires_owner: boolean
+          runbook_code: string
+          threshold: number | null
+        }
+        Insert: {
+          condition_type: string
+          created_at?: string
+          escalation_action: string
+          id?: string
+          metadata?: Json | null
+          requires_owner?: boolean
+          runbook_code: string
+          threshold?: number | null
+        }
+        Update: {
+          condition_type?: string
+          created_at?: string
+          escalation_action?: string
+          id?: string
+          metadata?: Json | null
+          requires_owner?: boolean
+          runbook_code?: string
+          threshold?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "runbook_escalation_rules_runbook_code_fkey"
+            columns: ["runbook_code"]
+            isOneToOne: false
+            referencedRelation: "runbook_catalog"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      runbook_executions: {
+        Row: {
+          created_at: string
+          current_step_order: number | null
+          duration_seconds: number | null
+          failed_steps: number | null
+          finished_at: string | null
+          id: string
+          incident_id: string | null
+          metadata: Json | null
+          result_summary: string | null
+          runbook_code: string
+          started_at: string
+          status: string
+          succeeded_steps: number | null
+          total_steps: number | null
+          triggered_by: string
+          triggered_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          current_step_order?: number | null
+          duration_seconds?: number | null
+          failed_steps?: number | null
+          finished_at?: string | null
+          id?: string
+          incident_id?: string | null
+          metadata?: Json | null
+          result_summary?: string | null
+          runbook_code: string
+          started_at?: string
+          status?: string
+          succeeded_steps?: number | null
+          total_steps?: number | null
+          triggered_by: string
+          triggered_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          current_step_order?: number | null
+          duration_seconds?: number | null
+          failed_steps?: number | null
+          finished_at?: string | null
+          id?: string
+          incident_id?: string | null
+          metadata?: Json | null
+          result_summary?: string | null
+          runbook_code?: string
+          started_at?: string
+          status?: string
+          succeeded_steps?: number | null
+          total_steps?: number | null
+          triggered_by?: string
+          triggered_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "runbook_executions_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "system_incidents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "runbook_executions_runbook_code_fkey"
+            columns: ["runbook_code"]
+            isOneToOne: false
+            referencedRelation: "runbook_catalog"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      runbook_step_executions: {
+        Row: {
+          action_code: string
+          attempt_number: number
+          created_at: string
+          duration_ms: number | null
+          execution_id: string
+          finished_at: string | null
+          id: string
+          message: string | null
+          recovery_log_id: string | null
+          started_at: string | null
+          status: string
+          step_order: number
+          validation_result: Json | null
+        }
+        Insert: {
+          action_code: string
+          attempt_number?: number
+          created_at?: string
+          duration_ms?: number | null
+          execution_id: string
+          finished_at?: string | null
+          id?: string
+          message?: string | null
+          recovery_log_id?: string | null
+          started_at?: string | null
+          status?: string
+          step_order: number
+          validation_result?: Json | null
+        }
+        Update: {
+          action_code?: string
+          attempt_number?: number
+          created_at?: string
+          duration_ms?: number | null
+          execution_id?: string
+          finished_at?: string | null
+          id?: string
+          message?: string | null
+          recovery_log_id?: string | null
+          started_at?: string | null
+          status?: string
+          step_order?: number
+          validation_result?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "runbook_step_executions_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "runbook_executions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      runbook_steps: {
+        Row: {
+          action_code: string
+          created_at: string
+          execution_mode: string
+          id: string
+          is_critical: boolean
+          metadata: Json | null
+          retry_policy: Json | null
+          rollback_action: string | null
+          runbook_code: string
+          step_name: string
+          step_order: number
+          timeout_seconds: number
+        }
+        Insert: {
+          action_code: string
+          created_at?: string
+          execution_mode?: string
+          id?: string
+          is_critical?: boolean
+          metadata?: Json | null
+          retry_policy?: Json | null
+          rollback_action?: string | null
+          runbook_code: string
+          step_name: string
+          step_order: number
+          timeout_seconds?: number
+        }
+        Update: {
+          action_code?: string
+          created_at?: string
+          execution_mode?: string
+          id?: string
+          is_critical?: boolean
+          metadata?: Json | null
+          retry_policy?: Json | null
+          rollback_action?: string | null
+          runbook_code?: string
+          step_name?: string
+          step_order?: number
+          timeout_seconds?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "runbook_steps_runbook_code_fkey"
+            columns: ["runbook_code"]
+            isOneToOne: false
+            referencedRelation: "runbook_catalog"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      runbook_validation_rules: {
+        Row: {
+          created_at: string
+          expected_result: Json | null
+          id: string
+          metadata: Json | null
+          on_failure_action: string
+          runbook_code: string
+          step_order: number
+          validation_query: string | null
+          validation_type: string
+        }
+        Insert: {
+          created_at?: string
+          expected_result?: Json | null
+          id?: string
+          metadata?: Json | null
+          on_failure_action?: string
+          runbook_code: string
+          step_order: number
+          validation_query?: string | null
+          validation_type: string
+        }
+        Update: {
+          created_at?: string
+          expected_result?: Json | null
+          id?: string
+          metadata?: Json | null
+          on_failure_action?: string
+          runbook_code?: string
+          step_order?: number
+          validation_query?: string | null
+          validation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "runbook_validation_rules_runbook_code_fkey"
+            columns: ["runbook_code"]
+            isOneToOne: false
+            referencedRelation: "runbook_catalog"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       saas_admin_action_log: {
         Row: {
           action_category: string
@@ -19937,6 +20254,17 @@ export type Database = {
         Returns: Json
       }
       cleanup_old_pending_messages: { Args: never; Returns: undefined }
+      complete_runbook_step: {
+        Args: {
+          p_execution_id: string
+          p_message?: string
+          p_recovery_log_id?: string
+          p_status: string
+          p_step_order: number
+          p_validation_result?: Json
+        }
+        Returns: Json
+      }
       compute_all_tenants_lifecycle: { Args: never; Returns: number }
       compute_tenant_lifecycle: { Args: { _tenant_id: string }; Returns: Json }
       create_daily_architect_goals: { Args: never; Returns: undefined }
@@ -20054,6 +20382,13 @@ export type Database = {
           max_attempts: number
           recovery_code: string
           target_module: string
+        }[]
+      }
+      find_pending_runbook_incidents: {
+        Args: never
+        Returns: {
+          incident_id: string
+          runbook_code: string
         }[]
       }
       generate_permission_recommendations: {
@@ -20386,6 +20721,7 @@ export type Database = {
             }[]
           }
       get_recovery_overview: { Args: never; Returns: Json }
+      get_runbook_overview: { Args: never; Returns: Json }
       get_saas_admin_analytics: { Args: never; Returns: Json }
       get_saas_company_overview: {
         Args: { _tenant_id?: string }
@@ -20544,6 +20880,10 @@ export type Database = {
       }
       mark_inactive_architects: { Args: never; Returns: undefined }
       mark_overdue_entries: { Args: never; Returns: Json }
+      match_runbook_for_incident: {
+        Args: { p_incident_id: string }
+        Returns: string
+      }
       orders_metrics:
         | {
             Args: {
@@ -20777,6 +21117,14 @@ export type Database = {
       should_show_upgrade_nudge: {
         Args: { _signal_id: string; _tenant_id: string }
         Returns: boolean
+      }
+      start_runbook_execution: {
+        Args: {
+          p_incident_id?: string
+          p_runbook_code: string
+          p_triggered_by?: string
+        }
+        Returns: string
       }
       stock_abc_analysis: {
         Args: never
