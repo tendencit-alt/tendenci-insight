@@ -1335,6 +1335,125 @@ export type Database = {
           },
         ]
       }
+      automation_suggestion_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          suggestion_id: string | null
+          tenant_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          suggestion_id?: string | null
+          tenant_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          suggestion_id?: string | null
+          tenant_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_suggestion_events_suggestion_id_fkey"
+            columns: ["suggestion_id"]
+            isOneToOne: false
+            referencedRelation: "automation_suggestions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_suggestion_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_suggestions: {
+        Row: {
+          applied_resource_id: string | null
+          applied_resource_type: string | null
+          confidence: number | null
+          created_at: string
+          description: string | null
+          evidence: Json | null
+          expires_at: string | null
+          id: string
+          impact_preview: Json | null
+          module: string | null
+          occurrences: number | null
+          proposed_action: Json | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          suggestion_type: string
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          applied_resource_id?: string | null
+          applied_resource_type?: string | null
+          confidence?: number | null
+          created_at?: string
+          description?: string | null
+          evidence?: Json | null
+          expires_at?: string | null
+          id?: string
+          impact_preview?: Json | null
+          module?: string | null
+          occurrences?: number | null
+          proposed_action?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggestion_type: string
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          applied_resource_id?: string | null
+          applied_resource_type?: string | null
+          confidence?: number | null
+          created_at?: string
+          description?: string | null
+          evidence?: Json | null
+          expires_at?: string | null
+          id?: string
+          impact_preview?: Json | null
+          module?: string | null
+          occurrences?: number | null
+          proposed_action?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggestion_type?: string
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_suggestions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       benchmark_clusters: {
         Row: {
           active: boolean
