@@ -14013,6 +14013,77 @@ export type Database = {
           },
         ]
       }
+      rbac_permission_catalog: {
+        Row: {
+          created_at: string
+          default_blocked_message: string | null
+          description: string | null
+          id: string
+          is_critical: boolean
+          label: string
+          module: string
+          permission_key: string
+        }
+        Insert: {
+          created_at?: string
+          default_blocked_message?: string | null
+          description?: string | null
+          id?: string
+          is_critical?: boolean
+          label: string
+          module: string
+          permission_key: string
+        }
+        Update: {
+          created_at?: string
+          default_blocked_message?: string | null
+          description?: string | null
+          id?: string
+          is_critical?: boolean
+          label?: string
+          module?: string
+          permission_key?: string
+        }
+        Relationships: []
+      }
+      rbac_permission_denials: {
+        Row: {
+          attempted_at: string
+          context: Json | null
+          id: string
+          module: string | null
+          permission_key: string
+          tenant_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attempted_at?: string
+          context?: Json | null
+          id?: string
+          module?: string | null
+          permission_key: string
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attempted_at?: string
+          context?: Json | null
+          id?: string
+          module?: string | null
+          permission_key?: string
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbac_permission_denials_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rbac_scope_restrictions: {
         Row: {
           allowed_ids: string[] | null
@@ -17926,6 +17997,10 @@ export type Database = {
           p_table: string
           p_type: string
         }
+        Returns: string
+      }
+      log_permission_denial: {
+        Args: { _context?: Json; _module?: string; _permission_key: string }
         Returns: string
       }
       low_stock_products: {

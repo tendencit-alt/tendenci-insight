@@ -5,6 +5,7 @@ import { RecentNavigationBar } from "@/components/navigation-intelligence/Recent
 import { ContextualShortcutsBar } from "@/components/navigation-intelligence/ContextualShortcutsBar";
 import { NextActionSuggestion } from "@/components/navigation-intelligence/NextActionSuggestion";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
+import { PermissionSimulatorTrigger } from "@/components/smart-permissions/PermissionSimulator";
 import { useProductAnalytics } from "@/hooks/useProductAnalytics";
 
 interface DashboardLayoutProps {
@@ -25,6 +26,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <SmartBreadcrumb />
         <ContextualShortcutsBar />
         <NextActionSuggestion />
+        <div className="flex justify-end mb-2"><PermissionSimulatorTrigger /></div>
         {children}
       </main>
     </div>
