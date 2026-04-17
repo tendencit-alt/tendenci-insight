@@ -1650,6 +1650,127 @@ export type Database = {
           },
         ]
       }
+      billing_discounts: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          discount_type: string
+          ends_at: string | null
+          id: string
+          reason: string | null
+          starts_at: string
+          subscription_id: string | null
+          tenant_id: string
+          value: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          discount_type: string
+          ends_at?: string | null
+          id?: string
+          reason?: string | null
+          starts_at?: string
+          subscription_id?: string | null
+          tenant_id: string
+          value: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          discount_type?: string
+          ends_at?: string | null
+          id?: string
+          reason?: string | null
+          starts_at?: string
+          subscription_id?: string | null
+          tenant_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_discounts_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_discounts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_dunning_steps: {
+        Row: {
+          created_at: string
+          executed_at: string | null
+          id: string
+          invoice_id: string | null
+          metadata: Json | null
+          reason: string | null
+          status: string
+          step_level: string
+          subscription_id: string | null
+          tenant_id: string
+          triggered_at: string
+        }
+        Insert: {
+          created_at?: string
+          executed_at?: string | null
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          reason?: string | null
+          status?: string
+          step_level: string
+          subscription_id?: string | null
+          tenant_id: string
+          triggered_at?: string
+        }
+        Update: {
+          created_at?: string
+          executed_at?: string | null
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          reason?: string | null
+          status?: string
+          step_level?: string
+          subscription_id?: string | null
+          tenant_id?: string
+          triggered_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_dunning_steps_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_dunning_steps_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_dunning_steps_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_events: {
         Row: {
           created_at: string
@@ -11574,6 +11695,44 @@ export type Database = {
           },
         ]
       }
+      plan_versions: {
+        Row: {
+          changelog: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          plan_id: string
+          snapshot: Json
+          version_number: number
+        }
+        Insert: {
+          changelog?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          plan_id: string
+          snapshot: Json
+          version_number: number
+        }
+        Update: {
+          changelog?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          plan_id?: string
+          snapshot?: Json
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_versions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prj_execution_logs: {
         Row: {
           cost: number | null
@@ -14862,6 +15021,57 @@ export type Database = {
           },
         ]
       }
+      subscription_actions_log: {
+        Row: {
+          action_type: string
+          after_state: Json | null
+          before_state: Json | null
+          created_at: string
+          id: string
+          performed_by: string | null
+          reason: string
+          subscription_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          action_type: string
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string
+          id?: string
+          performed_by?: string | null
+          reason: string
+          subscription_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          action_type?: string
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string
+          id?: string
+          performed_by?: string | null
+          reason?: string
+          subscription_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_actions_log_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_actions_log_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_history: {
         Row: {
           created_at: string
@@ -15955,8 +16165,10 @@ export type Database = {
           max_storage_mb: number | null
           max_users: number
           name: string
+          parent_plan_id: string | null
           price: number
           updated_at: string
+          version_current: number
           yearly_price: number | null
         }
         Insert: {
@@ -15972,8 +16184,10 @@ export type Database = {
           max_storage_mb?: number | null
           max_users?: number
           name: string
+          parent_plan_id?: string | null
           price?: number
           updated_at?: string
+          version_current?: number
           yearly_price?: number | null
         }
         Update: {
@@ -15989,11 +16203,21 @@ export type Database = {
           max_storage_mb?: number | null
           max_users?: number
           name?: string
+          parent_plan_id?: string | null
           price?: number
           updated_at?: string
+          version_current?: number
           yearly_price?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tenant_plans_parent_plan_id_fkey"
+            columns: ["parent_plan_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tenants: {
         Row: {
@@ -17629,6 +17853,85 @@ export type Database = {
           },
         ]
       }
+      upgrade_signals: {
+        Row: {
+          ai_generated_at: string | null
+          ai_pitch: string | null
+          created_at: string
+          current_plan_id: string | null
+          current_usage: number | null
+          evidence: Json | null
+          id: string
+          limit_value: number | null
+          metric_key: string
+          priority: number
+          signal_type: string
+          status: string
+          suggested_plan_id: string | null
+          tenant_id: string
+          updated_at: string
+          usage_percent: number | null
+        }
+        Insert: {
+          ai_generated_at?: string | null
+          ai_pitch?: string | null
+          created_at?: string
+          current_plan_id?: string | null
+          current_usage?: number | null
+          evidence?: Json | null
+          id?: string
+          limit_value?: number | null
+          metric_key: string
+          priority?: number
+          signal_type: string
+          status?: string
+          suggested_plan_id?: string | null
+          tenant_id: string
+          updated_at?: string
+          usage_percent?: number | null
+        }
+        Update: {
+          ai_generated_at?: string | null
+          ai_pitch?: string | null
+          created_at?: string
+          current_plan_id?: string | null
+          current_usage?: number | null
+          evidence?: Json | null
+          id?: string
+          limit_value?: number | null
+          metric_key?: string
+          priority?: number
+          signal_type?: string
+          status?: string
+          suggested_plan_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+          usage_percent?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upgrade_signals_current_plan_id_fkey"
+            columns: ["current_plan_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upgrade_signals_suggested_plan_id_fkey"
+            columns: ["suggested_plan_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upgrade_signals_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       usage_consumption: {
         Row: {
           current_value: number
@@ -17971,6 +18274,8 @@ export type Database = {
         Args: { p_architect_id: string }
         Returns: Json
       }
+      detect_billing_dunning: { Args: never; Returns: number }
+      detect_upgrade_signals: { Args: never; Returns: number }
       diff_profile_critical_permissions: {
         Args: { _profile_a: string; _profile_b: string }
         Returns: {
@@ -18001,6 +18306,24 @@ export type Database = {
           quantidade_projetos: number
           ticket_medio: number
           valor_total: number
+        }[]
+      }
+      get_billing_analytics_kpis: { Args: never; Returns: Json }
+      get_billing_ops_overview: {
+        Args: never
+        Returns: {
+          active_discounts: number
+          churn_risk: string
+          last_invoice_date: string
+          monthly_value: number
+          next_invoice_date: string
+          open_dunning_steps: number
+          open_upgrade_signals: number
+          payment_status: string
+          plan_name: string
+          subscription_status: string
+          tenant_id: string
+          tenant_name: string
         }[]
       }
       get_campaign_evolution:

@@ -59,6 +59,7 @@ import AIDecisionAssistant from "./pages/AIDecisionAssistant";
 import ControlTower from "./pages/ControlTower";
 import PermissionDebug from "./pages/PermissionDebug";
 import SmartAdmin from "./pages/SmartAdmin";
+import BillingOps from "./pages/BillingOps";
 import MultiCompanyIntelligence from "./pages/MultiCompanyIntelligence";
 
 const queryClient = new QueryClient();
@@ -131,6 +132,7 @@ const App = () => (
               <Route path="/control-tower" element={<ProtectedRoute><ControlTower /></ProtectedRoute>} />
               <Route path="/owner/permission-debug" element={<ProtectedRoute><PermissionDebug /></ProtectedRoute>} />
               <Route path="/owner/admin" element={<ProtectedRoute><SmartAdmin /></ProtectedRoute>} />
+              <Route path="/owner/billing-ops" element={<ProtectedRoute><BillingOps /></ProtectedRoute>} />
               <Route path="/multi-company" element={<ProtectedRoute><MultiCompanyIntelligence /></ProtectedRoute>} />
               <Route path="/dashboards" element={<Navigate to="/" replace />} />
               <Route path="/ia-configuracao" element={<Navigate to="/" replace />} />
