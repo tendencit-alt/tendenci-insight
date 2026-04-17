@@ -43,9 +43,9 @@ export default function OwnerOfferCenter() {
 
       <div className="grid gap-3 md:grid-cols-4">
         <KpiCard label="Exibições (90d)" value={totals.shown ?? 0} />
-        <KpiCard label="Conversões" value={totals.converted ?? 0} icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />} />
-        <KpiCard label="Taxa de conversão" value={`${conversionRate}%`} icon={<TrendingUp className="h-4 w-4 text-primary" />} />
-        <KpiCard label="Suprimidas" value={totals.suppressed ?? 0} icon={<XCircle className="h-4 w-4 text-amber-500" />} />
+          <KpiCard label="Conversões" value={totals.converted ?? 0} icon={<CheckCircle2 className="h-4 w-4 text-primary" />} />
+          <KpiCard label="Taxa de conversão" value={`${conversionRate}%`} icon={<TrendingUp className="h-4 w-4 text-primary" />} />
+          <KpiCard label="Suprimidas" value={totals.suppressed ?? 0} icon={<XCircle className="h-4 w-4 text-muted-foreground" />} />
       </div>
 
       <Tabs defaultValue="catalog">
@@ -151,7 +151,7 @@ export default function OwnerOfferCenter() {
             </Card>
             <Card className="p-4">
               <h3 className="mb-3 text-sm font-semibold flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-amber-500" /> Mais ignoradas
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" /> Mais ignoradas
               </h3>
               <div className="space-y-2">
                 {(analytics?.top_ignored ?? []).map((o: any) => (
