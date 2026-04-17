@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { WIDGET_REGISTRY, DEFAULT_LAYOUTS } from "./widgetRegistry";
-import type { DashboardProfile, WidgetInstance, WidgetSize, SavedDashboard } from "./types";
+import { WIDGET_REGISTRY, DEFAULT_LAYOUTS } from "@/components/smart-dashboards/widgetRegistry";
+import type { DashboardProfile, WidgetInstance, WidgetSize, SavedDashboard } from "@/components/smart-dashboards/types";
 
 const LAYOUT_KEY = (userId: string, profile: DashboardProfile) =>
   `tendenci.dashboard.layout.${userId}.${profile}`;
