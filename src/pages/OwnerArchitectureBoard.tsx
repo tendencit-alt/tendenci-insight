@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import AppLayout from "@/components/layout/AppLayout";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -75,8 +75,7 @@ export default function OwnerArchitectureBoard() {
   const selectedDeps = deps.filter((d) => d.layer_code === selected);
 
   return (
-    <AppLayout>
-      <div className="container mx-auto space-y-6 p-6">
+    <div className="container mx-auto space-y-6 p-6">
         <div className="flex items-center gap-3">
           <LayoutGrid className="h-6 w-6 text-primary" />
           <div>
@@ -282,8 +281,7 @@ export default function OwnerArchitectureBoard() {
               </>
             )}
           </SheetContent>
-        </Sheet>
-      </div>
-    </AppLayout>
+      </Sheet>
+    </div>
   );
 }
