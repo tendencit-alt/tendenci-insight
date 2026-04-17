@@ -55,6 +55,9 @@ export function EntitlementGate({ code, children, fallback = "message", classNam
       </span>
     );
   }
+  if (fallback === "nudge") {
+    return <UpgradeNudge entitlementCode={code} surface="entitlement_gate" className={className} />;
+  }
   if (fallback !== "message") return <>{fallback}</>;
 
   const isBilling = ent.source === "billing_blocked";
