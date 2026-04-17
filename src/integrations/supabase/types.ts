@@ -4749,6 +4749,93 @@ export type Database = {
         }
         Relationships: []
       }
+      entitlement_access_log: {
+        Row: {
+          allowed: boolean
+          context: Json | null
+          created_at: string
+          entitlement_code: string
+          id: string
+          reason: string | null
+          tenant_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          allowed: boolean
+          context?: Json | null
+          created_at?: string
+          entitlement_code: string
+          id?: string
+          reason?: string | null
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          allowed?: boolean
+          context?: Json | null
+          created_at?: string
+          entitlement_code?: string
+          id?: string
+          reason?: string | null
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      entitlement_catalog: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          default_limit: number | null
+          description: string | null
+          entitlement_group: string
+          id: string
+          is_core: boolean
+          is_limit_based: boolean
+          is_premium: boolean
+          metadata: Json
+          name: string
+          type: string
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          default_limit?: number | null
+          description?: string | null
+          entitlement_group?: string
+          id?: string
+          is_core?: boolean
+          is_limit_based?: boolean
+          is_premium?: boolean
+          metadata?: Json
+          name: string
+          type?: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          default_limit?: number | null
+          description?: string | null
+          entitlement_group?: string
+          id?: string
+          is_core?: boolean
+          is_limit_based?: boolean
+          is_premium?: boolean
+          metadata?: Json
+          name?: string
+          type?: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       erp_document_rules: {
         Row: {
           active: boolean | null
@@ -11721,6 +11808,54 @@ export type Database = {
           },
         ]
       }
+      plan_entitlements: {
+        Row: {
+          created_at: string
+          entitlement_code: string
+          id: string
+          included: boolean
+          limit_value: number | null
+          metadata: Json
+          plan_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entitlement_code: string
+          id?: string
+          included?: boolean
+          limit_value?: number | null
+          metadata?: Json
+          plan_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entitlement_code?: string
+          id?: string
+          included?: boolean
+          limit_value?: number | null
+          metadata?: Json
+          plan_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_entitlements_entitlement_code_fkey"
+            columns: ["entitlement_code"]
+            isOneToOne: false
+            referencedRelation: "entitlement_catalog"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "plan_entitlements_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_features: {
         Row: {
           created_at: string
@@ -16445,6 +16580,132 @@ export type Database = {
           },
         ]
       }
+      tenant_entitlement_grants: {
+        Row: {
+          created_at: string
+          duration_days: number | null
+          entitlement_code: string
+          expires_at: string
+          grant_type: string
+          granted_by: string | null
+          id: string
+          metadata: Json
+          reason: string | null
+          starts_at: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          duration_days?: number | null
+          entitlement_code: string
+          expires_at: string
+          grant_type: string
+          granted_by?: string | null
+          id?: string
+          metadata?: Json
+          reason?: string | null
+          starts_at?: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          duration_days?: number | null
+          entitlement_code?: string
+          expires_at?: string
+          grant_type?: string
+          granted_by?: string | null
+          id?: string
+          metadata?: Json
+          reason?: string | null
+          starts_at?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_entitlement_grants_entitlement_code_fkey"
+            columns: ["entitlement_code"]
+            isOneToOne: false
+            referencedRelation: "entitlement_catalog"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "tenant_entitlement_grants_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_entitlement_overrides: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          enabled: boolean
+          entitlement_code: string
+          expires_at: string | null
+          id: string
+          limit_value: number | null
+          reason: string | null
+          source: string
+          starts_at: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          entitlement_code: string
+          expires_at?: string | null
+          id?: string
+          limit_value?: number | null
+          reason?: string | null
+          source?: string
+          starts_at?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          entitlement_code?: string
+          expires_at?: string | null
+          id?: string
+          limit_value?: number | null
+          reason?: string | null
+          source?: string
+          starts_at?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_entitlement_overrides_entitlement_code_fkey"
+            columns: ["entitlement_code"]
+            isOneToOne: false
+            referencedRelation: "entitlement_catalog"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "tenant_entitlement_overrides_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_lifecycle_snapshots: {
         Row: {
           activation_score: number | null
@@ -18711,6 +18972,7 @@ export type Database = {
         Args: { p_event_type: string; p_payload?: Json; p_tenant_id: string }
         Returns: string
       }
+      expire_entitlement_grants: { Args: never; Returns: number }
       generate_permission_recommendations: {
         Args: { _since_days?: number }
         Returns: number
@@ -18889,6 +19151,7 @@ export type Database = {
       get_owner_activation_monitor: { Args: never; Returns: Json }
       get_owner_billing_radar: { Args: never; Returns: Json }
       get_owner_churn_radar: { Args: never; Returns: Json }
+      get_owner_entitlement_analytics: { Args: never; Returns: Json }
       get_owner_expansion_signals: { Args: never; Returns: Json }
       get_owner_lifecycle_heatmap: { Args: never; Returns: Json }
       get_owner_system_health_realtime: { Args: never; Returns: Json }
@@ -19053,6 +19316,24 @@ export type Database = {
         }
         Returns: string
       }
+      get_tenant_entitlement_limit: {
+        Args: { _code: string; _tenant_id: string }
+        Returns: number
+      }
+      get_tenant_entitlements_resolved: {
+        Args: { _tenant_id: string }
+        Returns: {
+          code: string
+          enabled: boolean
+          entitlement_group: string
+          expires_at: string
+          is_premium: boolean
+          limit_value: number
+          name: string
+          source: string
+          type: string
+        }[]
+      }
       get_tenant_lifecycle_overview: {
         Args: never
         Returns: {
@@ -19078,6 +19359,10 @@ export type Database = {
       get_weekly_architect_goal_progress: {
         Args: { p_vendedor_id: string }
         Returns: Json
+      }
+      has_entitlement: {
+        Args: { _code: string; _tenant_id: string }
+        Returns: boolean
       }
       has_module_permission: {
         Args: { _module: string; _user_id: string }
