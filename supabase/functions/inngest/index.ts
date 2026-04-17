@@ -1,6 +1,6 @@
 // Inngest serve endpoint: scheduled pattern detection
-import { Inngest } from "https://esm.sh/inngest@3.27.0";
-import { serve } from "https://esm.sh/inngest@3.27.0/deno";
+import { Inngest } from "npm:inngest@3.27.0";
+import { serve } from "npm:inngest@3.27.0/edge";
 
 const inngest = new Inngest({ id: "tendenci-erp" });
 
