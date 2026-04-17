@@ -62,6 +62,7 @@ import SmartAdmin from "./pages/SmartAdmin";
 import BillingOps from "./pages/BillingOps";
 import TenantLifecycle from "./pages/TenantLifecycle";
 import MultiCompanyIntelligence from "./pages/MultiCompanyIntelligence";
+import OwnerControlTower from "./pages/OwnerControlTower";
 
 const queryClient = new QueryClient();
 
@@ -135,6 +136,7 @@ const App = () => (
               <Route path="/owner/admin" element={<ProtectedRoute><SmartAdmin /></ProtectedRoute>} />
               <Route path="/owner/billing-ops" element={<ProtectedRoute><BillingOps /></ProtectedRoute>} />
               <Route path="/owner/lifecycle" element={<ProtectedRoute><TenantLifecycle /></ProtectedRoute>} />
+              <Route path="/owner/control-tower" element={<ProtectedRoute><OwnerControlTower /></ProtectedRoute>} />
               <Route path="/multi-company" element={<ProtectedRoute><MultiCompanyIntelligence /></ProtectedRoute>} />
               <Route path="/dashboards" element={<Navigate to="/" replace />} />
               <Route path="/ia-configuracao" element={<Navigate to="/" replace />} />
