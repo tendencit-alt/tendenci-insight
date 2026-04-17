@@ -11,7 +11,7 @@ import {
   useBillingRadar, useChurnRadar, useExpansionSignals, useSystemHealthRealtime
 } from '@/hooks/useOwnerControlTower';
 import {
-  Activity, TrendingUp, AlertTriangle, Zap, Heart, DollarSign,
+  Activity, TrendingUp, AlertTriangle, Heart, DollarSign,
   Users, Rocket, ShieldAlert, Server, Loader2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -114,7 +114,7 @@ export default function OwnerControlTower() {
                   { key: 'unclassified', label: 'Não classificado', color: 'bg-muted-foreground' },
                 ].map(s => {
                   const count = heatmap.data?.[s.key] ?? 0;
-                  const total = Object.values(heatmap.data ?? {}).reduce((a: number, b: any) => a + Number(b), 0);
+                  const total = Object.values(heatmap.data ?? {}).reduce<number>((a, b) => a + Number(b), 0);
                   const pct = total > 0 ? (count / total) * 100 : 0;
                   return (
                     <div key={s.key} className="space-y-1">
