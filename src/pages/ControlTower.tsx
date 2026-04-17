@@ -15,6 +15,7 @@ import { HerancaTab } from '@/components/permission-debug/HerancaTab';
 import { Tabs as InnerTabs, TabsContent as InnerTabsContent, TabsList as InnerTabsList, TabsTrigger as InnerTabsTrigger } from '@/components/ui/tabs';
 import { usePermissions } from '@/hooks/usePermissions';
 import { AdminQuickAccessCard } from '@/components/saas-admin/AdminQuickAccessCard';
+import { BillingOpsQuickAccessCard } from '@/components/billing-ops/BillingOpsQuickAccessCard';
 
 const ControlTower = () => {
   const { isOwner, isMaster } = usePermissions();
