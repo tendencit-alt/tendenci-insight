@@ -69,6 +69,7 @@ import OwnerUpgradeCenter from "./pages/OwnerUpgradeCenter";
 import OwnerOfferCenter from "./pages/OwnerOfferCenter";
 import OwnerIntegrationMap from "./pages/OwnerIntegrationMap";
 import OwnerDependencyImpact from "./pages/OwnerDependencyImpact";
+import OwnerRecoveryActions from "./pages/OwnerRecoveryActions";
 
 const queryClient = new QueryClient();
 
@@ -149,6 +150,7 @@ const App = () => (
               <Route path="/owner/offer-center" element={<ProtectedRoute><OwnerOfferCenter /></ProtectedRoute>} />
               <Route path="/owner/integration-map" element={<ProtectedRoute><OwnerIntegrationMap /></ProtectedRoute>} />
               <Route path="/owner/dependency-impact" element={<ProtectedRoute><OwnerDependencyImpact /></ProtectedRoute>} />
+              <Route path="/owner/recovery-actions" element={<ProtectedRoute><OwnerRecoveryActions /></ProtectedRoute>} />
               <Route path="/multi-company" element={<ProtectedRoute><MultiCompanyIntelligence /></ProtectedRoute>} />
               <Route path="/dashboards" element={<Navigate to="/" replace />} />
               <Route path="/ia-configuracao" element={<Navigate to="/" replace />} />
