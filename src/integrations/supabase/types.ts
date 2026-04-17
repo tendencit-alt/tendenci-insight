@@ -16010,6 +16010,53 @@ export type Database = {
         }
         Relationships: []
       }
+      recovery_execution_history: {
+        Row: {
+          duration_ms: number | null
+          executed_at: string
+          execution_logs: Json | null
+          execution_mode: string
+          execution_reason: string | null
+          execution_result: string
+          id: string
+          policy_code: string
+          target_layer: string | null
+          triggered_by: string | null
+        }
+        Insert: {
+          duration_ms?: number | null
+          executed_at?: string
+          execution_logs?: Json | null
+          execution_mode?: string
+          execution_reason?: string | null
+          execution_result: string
+          id?: string
+          policy_code: string
+          target_layer?: string | null
+          triggered_by?: string | null
+        }
+        Update: {
+          duration_ms?: number | null
+          executed_at?: string
+          execution_logs?: Json | null
+          execution_mode?: string
+          execution_reason?: string | null
+          execution_result?: string
+          id?: string
+          policy_code?: string
+          target_layer?: string | null
+          triggered_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recovery_execution_history_policy_code_fkey"
+            columns: ["policy_code"]
+            isOneToOne: false
+            referencedRelation: "recovery_policy_registry"
+            referencedColumns: ["policy_code"]
+          },
+        ]
+      }
       recovery_execution_logs: {
         Row: {
           attempt_number: number
@@ -16073,6 +16120,54 @@ export type Database = {
           source_module?: string | null
           started_at?: string
           target_module?: string | null
+        }
+        Relationships: []
+      }
+      recovery_policy_registry: {
+        Row: {
+          cooldown_minutes: number
+          created_at: string
+          id: string
+          is_auto_execute: boolean
+          is_enabled: boolean
+          last_executed_at: string | null
+          last_result: string | null
+          policy_code: string
+          policy_description: string | null
+          policy_name: string
+          policy_type: string
+          recovery_scope: string
+          requires_owner_approval: boolean
+        }
+        Insert: {
+          cooldown_minutes?: number
+          created_at?: string
+          id?: string
+          is_auto_execute?: boolean
+          is_enabled?: boolean
+          last_executed_at?: string | null
+          last_result?: string | null
+          policy_code: string
+          policy_description?: string | null
+          policy_name: string
+          policy_type: string
+          recovery_scope: string
+          requires_owner_approval?: boolean
+        }
+        Update: {
+          cooldown_minutes?: number
+          created_at?: string
+          id?: string
+          is_auto_execute?: boolean
+          is_enabled?: boolean
+          last_executed_at?: string | null
+          last_result?: string | null
+          policy_code?: string
+          policy_description?: string | null
+          policy_name?: string
+          policy_type?: string
+          recovery_scope?: string
+          requires_owner_approval?: boolean
         }
         Relationships: []
       }
@@ -20966,6 +21061,10 @@ export type Database = {
         Returns: Json
       }
       evaluate_stability_gates: { Args: never; Returns: Json }
+      execute_recovery_policy: {
+        Args: { p_mode?: string; p_policy_code: string }
+        Returns: Json
+      }
       execution_priority_summary: { Args: never; Returns: Json }
       expire_entitlement_grants: { Args: never; Returns: number }
       find_pending_auto_recoveries: {
@@ -21665,6 +21764,7 @@ export type Database = {
         Args: { _code: string; _tenant_id: string }
         Returns: undefined
       }
+      recovery_layer_summary: { Args: never; Returns: Json }
       refresh_dependency_impact_snapshots: { Args: never; Returns: undefined }
       register_cross_module_event: {
         Args: {
@@ -21718,6 +21818,7 @@ export type Database = {
         Args: { p_id: string; p_note?: string; p_status: string }
         Returns: undefined
       }
+      run_autonomous_recovery_sweep: { Args: never; Returns: Json }
       run_inactive_architects_check: { Args: never; Returns: Json }
       should_show_upgrade_nudge: {
         Args: { _signal_id: string; _tenant_id: string }
