@@ -1089,6 +1089,193 @@ export type Database = {
           },
         ]
       }
+      architecture_layer_data_sources: {
+        Row: {
+          created_at: string
+          id: string
+          is_connected: boolean
+          layer_code: string
+          notes: string | null
+          source_name: string
+          source_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_connected?: boolean
+          layer_code: string
+          notes?: string | null
+          source_name: string
+          source_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_connected?: boolean
+          layer_code?: string
+          notes?: string | null
+          source_name?: string
+          source_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "architecture_layer_data_sources_layer_code_fkey"
+            columns: ["layer_code"]
+            isOneToOne: false
+            referencedRelation: "architecture_layers_registry"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      architecture_layer_dependencies: {
+        Row: {
+          created_at: string
+          dependency_type: string
+          depends_on_layer_code: string
+          id: string
+          is_critical: boolean
+          layer_code: string
+          notes: string | null
+        }
+        Insert: {
+          created_at?: string
+          dependency_type?: string
+          depends_on_layer_code: string
+          id?: string
+          is_critical?: boolean
+          layer_code: string
+          notes?: string | null
+        }
+        Update: {
+          created_at?: string
+          dependency_type?: string
+          depends_on_layer_code?: string
+          id?: string
+          is_critical?: boolean
+          layer_code?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "architecture_layer_dependencies_depends_on_layer_code_fkey"
+            columns: ["depends_on_layer_code"]
+            isOneToOne: false
+            referencedRelation: "architecture_layers_registry"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "architecture_layer_dependencies_layer_code_fkey"
+            columns: ["layer_code"]
+            isOneToOne: false
+            referencedRelation: "architecture_layers_registry"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      architecture_layer_status: {
+        Row: {
+          actual_route: string | null
+          backend_exists: string
+          data_connected: string
+          expected_route: string | null
+          health_status: string
+          id: string
+          integration_connected: string
+          layer_code: string
+          menu_exists: string
+          menu_expected: boolean | null
+          menu_found: boolean | null
+          notes: string | null
+          route_exists: string
+          sidebar_present: boolean | null
+          ui_exists: string
+          updated_at: string
+        }
+        Insert: {
+          actual_route?: string | null
+          backend_exists?: string
+          data_connected?: string
+          expected_route?: string | null
+          health_status?: string
+          id?: string
+          integration_connected?: string
+          layer_code: string
+          menu_exists?: string
+          menu_expected?: boolean | null
+          menu_found?: boolean | null
+          notes?: string | null
+          route_exists?: string
+          sidebar_present?: boolean | null
+          ui_exists?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_route?: string | null
+          backend_exists?: string
+          data_connected?: string
+          expected_route?: string | null
+          health_status?: string
+          id?: string
+          integration_connected?: string
+          layer_code?: string
+          menu_exists?: string
+          menu_expected?: boolean | null
+          menu_found?: boolean | null
+          notes?: string | null
+          route_exists?: string
+          sidebar_present?: boolean | null
+          ui_exists?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "architecture_layer_status_layer_code_fkey"
+            columns: ["layer_code"]
+            isOneToOne: true
+            referencedRelation: "architecture_layers_registry"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      architecture_layers_registry: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          group: string
+          id: string
+          name: string
+          owner_area: string | null
+          priority: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          group: string
+          id?: string
+          name: string
+          owner_area?: string | null
+          priority?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          group?: string
+          id?: string
+          name?: string
+          owner_area?: string | null
+          priority?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_import_logs: {
         Row: {
           created_at: string
@@ -20401,6 +20588,7 @@ export type Database = {
         }[]
       }
       architects_aggregates: { Args: never; Returns: Json }
+      architecture_health_summary: { Args: never; Returns: Json }
       calc_owner_control_tower_kpis: { Args: never; Returns: string }
       calc_system_health_snapshot: { Args: never; Returns: string }
       calc_tenant_activation_score: {
