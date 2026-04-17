@@ -16820,6 +16820,95 @@ export type Database = {
           },
         ]
       }
+      stability_gate_evaluations: {
+        Row: {
+          blocking_count: number
+          blocking_detected: boolean
+          details: Json | null
+          evaluated_at: string
+          evaluation_reason: string | null
+          evaluation_result: string
+          gate_code: string
+          id: string
+          related_layer: string | null
+          related_release: string | null
+        }
+        Insert: {
+          blocking_count?: number
+          blocking_detected?: boolean
+          details?: Json | null
+          evaluated_at?: string
+          evaluation_reason?: string | null
+          evaluation_result: string
+          gate_code: string
+          id?: string
+          related_layer?: string | null
+          related_release?: string | null
+        }
+        Update: {
+          blocking_count?: number
+          blocking_detected?: boolean
+          details?: Json | null
+          evaluated_at?: string
+          evaluation_reason?: string | null
+          evaluation_result?: string
+          gate_code?: string
+          id?: string
+          related_layer?: string | null
+          related_release?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stability_gate_evaluations_gate_code_fkey"
+            columns: ["gate_code"]
+            isOneToOne: false
+            referencedRelation: "stability_gate_registry"
+            referencedColumns: ["gate_code"]
+          },
+        ]
+      }
+      stability_gate_registry: {
+        Row: {
+          created_at: string
+          gate_code: string
+          gate_description: string | null
+          gate_name: string
+          gate_status: string
+          gate_type: string
+          id: string
+          is_blocking: boolean
+          last_blocking_count: number
+          last_checked_at: string | null
+          last_reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          gate_code: string
+          gate_description?: string | null
+          gate_name: string
+          gate_status?: string
+          gate_type: string
+          id?: string
+          is_blocking?: boolean
+          last_blocking_count?: number
+          last_checked_at?: string | null
+          last_reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          gate_code?: string
+          gate_description?: string | null
+          gate_name?: string
+          gate_status?: string
+          gate_type?: string
+          id?: string
+          is_blocking?: boolean
+          last_blocking_count?: number
+          last_checked_at?: string | null
+          last_reason?: string | null
+        }
+        Relationships: []
+      }
       stock_alerts_config: {
         Row: {
           alert_high_stock: boolean | null
@@ -20876,6 +20965,7 @@ export type Database = {
         }
         Returns: Json
       }
+      evaluate_stability_gates: { Args: never; Returns: Json }
       execution_priority_summary: { Args: never; Returns: Json }
       expire_entitlement_grants: { Args: never; Returns: number }
       find_pending_auto_recoveries: {
@@ -21633,6 +21723,8 @@ export type Database = {
         Args: { _signal_id: string; _tenant_id: string }
         Returns: boolean
       }
+      stability_can_release: { Args: { p_release_id?: string }; Returns: Json }
+      stability_gates_summary: { Args: never; Returns: Json }
       start_runbook_execution: {
         Args: {
           p_incident_id?: string
