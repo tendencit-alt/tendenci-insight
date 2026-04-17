@@ -10204,6 +10204,237 @@ export type Database = {
           },
         ]
       }
+      offer_catalog: {
+        Row: {
+          created_at: string
+          cta_label: string | null
+          default_channel: string | null
+          description: string | null
+          duration_days: number | null
+          goal: string | null
+          id: string
+          message_template: string | null
+          metadata: Json | null
+          name: string
+          offer_code: string
+          offer_type: string
+          priority_base: number
+          status: string
+          target_entitlement_code: string | null
+          target_plan_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cta_label?: string | null
+          default_channel?: string | null
+          description?: string | null
+          duration_days?: number | null
+          goal?: string | null
+          id?: string
+          message_template?: string | null
+          metadata?: Json | null
+          name: string
+          offer_code: string
+          offer_type: string
+          priority_base?: number
+          status?: string
+          target_entitlement_code?: string | null
+          target_plan_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cta_label?: string | null
+          default_channel?: string | null
+          description?: string | null
+          duration_days?: number | null
+          goal?: string | null
+          id?: string
+          message_template?: string | null
+          metadata?: Json | null
+          name?: string
+          offer_code?: string
+          offer_type?: string
+          priority_base?: number
+          status?: string
+          target_entitlement_code?: string | null
+          target_plan_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_catalog_target_plan_id_fkey"
+            columns: ["target_plan_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_delivery_events: {
+        Row: {
+          ai_personalized: boolean | null
+          channel: string
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          offer_code: string
+          signal_id: string | null
+          tenant_id: string
+          user_id: string | null
+        }
+        Insert: {
+          ai_personalized?: boolean | null
+          channel: string
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          offer_code: string
+          signal_id?: string | null
+          tenant_id: string
+          user_id?: string | null
+        }
+        Update: {
+          ai_personalized?: boolean | null
+          channel?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          offer_code?: string
+          signal_id?: string | null
+          tenant_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_delivery_events_signal_id_fkey"
+            columns: ["signal_id"]
+            isOneToOne: false
+            referencedRelation: "upgrade_signals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_delivery_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_eligibility_rules: {
+        Row: {
+          active: boolean
+          block_message: string | null
+          created_at: string
+          id: string
+          offer_code: string
+          rule_expression: Json
+          rule_key: string
+        }
+        Insert: {
+          active?: boolean
+          block_message?: string | null
+          created_at?: string
+          id?: string
+          offer_code: string
+          rule_expression?: Json
+          rule_key: string
+        }
+        Update: {
+          active?: boolean
+          block_message?: string | null
+          created_at?: string
+          id?: string
+          offer_code?: string
+          rule_expression?: Json
+          rule_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_eligibility_rules_offer_code_fkey"
+            columns: ["offer_code"]
+            isOneToOne: false
+            referencedRelation: "offer_catalog"
+            referencedColumns: ["offer_code"]
+          },
+        ]
+      }
+      offer_priority_rules: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          notes: string | null
+          offer_type: string | null
+          priority_weight: number
+          rule_name: string
+          signal_category: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          notes?: string | null
+          offer_type?: string | null
+          priority_weight?: number
+          rule_name: string
+          signal_category: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          notes?: string | null
+          offer_type?: string | null
+          priority_weight?: number
+          rule_name?: string
+          signal_category?: string
+        }
+        Relationships: []
+      }
+      offer_suppression_log: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json | null
+          offer_code: string
+          reason: string
+          suppressed_until: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          offer_code: string
+          reason: string
+          suppressed_until?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          offer_code?: string
+          reason?: string
+          suppressed_until?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_suppression_log_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       onboarding_analytics: {
         Row: {
           created_at: string
@@ -18906,6 +19137,13 @@ export type Database = {
         Args: { p_user_id?: string }
         Returns: Json
       }
+      check_offer_eligibility: {
+        Args: { _offer_code: string; _tenant_id: string }
+        Returns: {
+          eligible: boolean
+          reason: string
+        }[]
+      }
       check_production_automations: {
         Args: { p_type_id?: string }
         Returns: {
@@ -19238,6 +19476,7 @@ export type Database = {
           realizado: number
         }[]
       }
+      get_offer_analytics: { Args: never; Returns: Json }
       get_owner_activation_monitor: { Args: never; Returns: Json }
       get_owner_billing_radar: { Args: never; Returns: Json }
       get_owner_churn_radar: { Args: never; Returns: Json }
@@ -19509,6 +19748,10 @@ export type Database = {
           name: string
         }[]
       }
+      map_signal_to_category: {
+        Args: { _signal_type: string }
+        Returns: string
+      }
       mark_inactive_architects: { Args: never; Returns: undefined }
       mark_overdue_entries: { Args: never; Returns: Json }
       orders_metrics:
@@ -19666,6 +19909,18 @@ export type Database = {
       purchases_metrics: { Args: never; Returns: Json }
       reactivate_lost_deals_to_followup: { Args: never; Returns: Json }
       recalculate_all_goal_progress: { Args: never; Returns: undefined }
+      record_offer_event: {
+        Args: {
+          _channel: string
+          _event_type: string
+          _metadata?: Json
+          _offer_code: string
+          _signal_id?: string
+          _tenant_id: string
+          _user_id?: string
+        }
+        Returns: string
+      }
       record_premium_feature_attempt: {
         Args: { _code: string; _tenant_id: string }
         Returns: undefined
@@ -19688,6 +19943,20 @@ export type Database = {
           _resource_type: Database["public"]["Enums"]["fin_strategic_resource_type"]
         }
         Returns: string
+      }
+      resolve_best_offer_for_tenant: {
+        Args: { _channel?: string; _tenant_id: string }
+        Returns: {
+          channel: string
+          cta_label: string
+          message: string
+          name: string
+          offer_code: string
+          offer_type: string
+          priority_score: number
+          reasoning: string
+          signal_id: string
+        }[]
       }
       run_inactive_architects_check: { Args: never; Returns: Json }
       should_show_upgrade_nudge: {
