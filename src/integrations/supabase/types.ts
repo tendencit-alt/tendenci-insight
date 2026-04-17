@@ -9556,6 +9556,156 @@ export type Database = {
         }
         Relationships: []
       }
+      incident_root_cause_summary: {
+        Row: {
+          ai_generated: boolean | null
+          confidence_score: number
+          created_at: string
+          diagnosis: string | null
+          id: string
+          incident_id: string
+          metadata: Json | null
+          root_event_id: string | null
+          root_module_code: string
+          suggested_action: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          confidence_score?: number
+          created_at?: string
+          diagnosis?: string | null
+          id?: string
+          incident_id: string
+          metadata?: Json | null
+          root_event_id?: string | null
+          root_module_code: string
+          suggested_action?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_generated?: boolean | null
+          confidence_score?: number
+          created_at?: string
+          diagnosis?: string | null
+          id?: string
+          incident_id?: string
+          metadata?: Json | null
+          root_event_id?: string | null
+          root_module_code?: string
+          suggested_action?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_root_cause_summary_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: true
+            referencedRelation: "system_incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incident_status_history: {
+        Row: {
+          change_reason: string | null
+          changed_by: string | null
+          created_at: string
+          from_status: string | null
+          id: string
+          incident_id: string
+          metadata: Json | null
+          to_status: string
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_by?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          incident_id: string
+          metadata?: Json | null
+          to_status: string
+        }
+        Update: {
+          change_reason?: string | null
+          changed_by?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          incident_id?: string
+          metadata?: Json | null
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_status_history_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "system_incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incident_timeline_events: {
+        Row: {
+          actor_id: string | null
+          actor_type: string | null
+          created_at: string
+          event_role: string | null
+          event_source: string
+          event_time: string
+          event_type: string
+          id: string
+          incident_id: string
+          message: string
+          metadata: Json | null
+          module_code: string
+          severity: string | null
+          source_record_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type?: string | null
+          created_at?: string
+          event_role?: string | null
+          event_source: string
+          event_time?: string
+          event_type: string
+          id?: string
+          incident_id: string
+          message: string
+          metadata?: Json | null
+          module_code: string
+          severity?: string | null
+          source_record_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: string | null
+          created_at?: string
+          event_role?: string | null
+          event_source?: string
+          event_time?: string
+          event_type?: string
+          id?: string
+          incident_id?: string
+          message?: string
+          metadata?: Json | null
+          module_code?: string
+          severity?: string | null
+          source_record_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_timeline_events_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "system_incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_health_events: {
         Row: {
           created_at: string
@@ -17076,6 +17226,72 @@ export type Database = {
         }
         Relationships: []
       }
+      system_incidents: {
+        Row: {
+          created_at: string
+          current_status: string
+          detection_lag_seconds: number | null
+          duration_seconds: number | null
+          id: string
+          impacted_modules: string[] | null
+          incident_code: string
+          metadata: Json | null
+          origin_module_code: string
+          recovery_attempts: number | null
+          recovery_success_count: number | null
+          resolved_at: string | null
+          root_cause_confidence: number | null
+          root_cause_module: string | null
+          severity: string
+          started_at: string
+          summary: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_status?: string
+          detection_lag_seconds?: number | null
+          duration_seconds?: number | null
+          id?: string
+          impacted_modules?: string[] | null
+          incident_code: string
+          metadata?: Json | null
+          origin_module_code: string
+          recovery_attempts?: number | null
+          recovery_success_count?: number | null
+          resolved_at?: string | null
+          root_cause_confidence?: number | null
+          root_cause_module?: string | null
+          severity?: string
+          started_at?: string
+          summary?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_status?: string
+          detection_lag_seconds?: number | null
+          duration_seconds?: number | null
+          id?: string
+          impacted_modules?: string[] | null
+          incident_code?: string
+          metadata?: Json | null
+          origin_module_code?: string
+          recovery_attempts?: number | null
+          recovery_success_count?: number | null
+          resolved_at?: string | null
+          root_cause_confidence?: number | null
+          root_cause_module?: string | null
+          severity?: string
+          started_at?: string
+          summary?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       system_module_dependencies: {
         Row: {
           created_at: string
@@ -20025,6 +20241,8 @@ export type Database = {
       get_ia_config:
         | { Args: never; Returns: Json }
         | { Args: { config_key_param: string }; Returns: string }
+      get_incident_overview: { Args: never; Returns: Json }
+      get_incident_timeline: { Args: { p_incident_id: string }; Returns: Json }
       get_integration_map_overview: { Args: never; Returns: Json }
       get_module_dependency_tree: {
         Args: { p_module_code: string }
@@ -20256,6 +20474,10 @@ export type Database = {
       get_user_tenant_id: { Args: never; Returns: string }
       get_weekly_architect_goal_progress: {
         Args: { p_vendedor_id: string }
+        Returns: Json
+      }
+      group_and_normalize_incidents: {
+        Args: { p_lookback_hours?: number; p_window_minutes?: number }
         Returns: Json
       }
       has_entitlement: {
