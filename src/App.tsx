@@ -59,6 +59,7 @@ import AIDecisionAssistant from "./pages/AIDecisionAssistant";
 import ControlTower from "./pages/ControlTower";
 import PermissionDebug from "./pages/PermissionDebug";
 import SmartAdmin from "./pages/SmartAdmin";
+import BillingOps from "./pages/BillingOps";
 import MultiCompanyIntelligence from "./pages/MultiCompanyIntelligence";
 
 const queryClient = new QueryClient();
