@@ -169,6 +169,8 @@ const App = () => (
               <Route path="/owner/autonomous-recovery" element={<ProtectedRoute><OwnerAutonomousRecovery /></ProtectedRoute>} />
               <Route path="/owner/predictive-failures" element={<ProtectedRoute><OwnerPredictiveFailures /></ProtectedRoute>} />
               <Route path="/owner/capacity-risk" element={<ProtectedRoute><OwnerCapacityRisk /></ProtectedRoute>} />
+              <Route path="/owner/capacity-load-risk" element={<Navigate to="/owner/capacity-risk" replace />} />
+              <Route path="/owner" element={<Navigate to="/owner/control-tower" replace />} />
               <Route path="/multi-company" element={<ProtectedRoute><MultiCompanyIntelligence /></ProtectedRoute>} />
               <Route path="/dashboards" element={<Navigate to="/" replace />} />
               <Route path="/ia-configuracao" element={<Navigate to="/" replace />} />
