@@ -14265,6 +14265,75 @@ export type Database = {
           },
         ]
       }
+      rbac_permission_recommendations: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          description: string | null
+          evidence: Json | null
+          id: string
+          module: string | null
+          permission_key: string | null
+          priority: number | null
+          profile_type_id: string | null
+          recommendation_type: string
+          source: string
+          status: string
+          tenant_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          description?: string | null
+          evidence?: Json | null
+          id?: string
+          module?: string | null
+          permission_key?: string | null
+          priority?: number | null
+          profile_type_id?: string | null
+          recommendation_type: string
+          source?: string
+          status?: string
+          tenant_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          description?: string | null
+          evidence?: Json | null
+          id?: string
+          module?: string | null
+          permission_key?: string | null
+          priority?: number | null
+          profile_type_id?: string | null
+          recommendation_type?: string
+          source?: string
+          status?: string
+          tenant_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbac_permission_recommendations_profile_type_id_fkey"
+            columns: ["profile_type_id"]
+            isOneToOne: false
+            referencedRelation: "profile_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbac_permission_recommendations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rbac_scope_restrictions: {
         Row: {
           allowed_ids: string[] | null
@@ -17851,6 +17920,20 @@ export type Database = {
       delete_architect_safely: {
         Args: { p_architect_id: string }
         Returns: Json
+      }
+      diff_profile_critical_permissions: {
+        Args: { _profile_a: string; _profile_b: string }
+        Returns: {
+          allowed_a: boolean
+          allowed_b: boolean
+          label: string
+          module: string
+          permission_key: string
+        }[]
+      }
+      generate_permission_recommendations: {
+        Args: { _since_days?: number }
+        Returns: number
       }
       generate_username_from_email: {
         Args: { email_input: string }
