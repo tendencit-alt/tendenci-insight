@@ -211,6 +211,7 @@ const menuGroups: MenuGroup[] = [
       { title: "Incident Timeline", url: "/owner/incident-timeline", icon: Clock },
       { title: "Runbooks", url: "/owner/runbooks", icon: ListChecks },
       { title: "Self-Healing Policies", url: "/owner/self-healing", icon: Shield },
+      { title: "Architecture Board", url: "/owner/architecture-board", icon: LayoutGrid },
       { title: "Billing & Subscriptions", url: "/billing", icon: CreditCard },
       { title: "Customer Lifecycle", url: "/customer-lifecycle", icon: Users },
       { title: "Customer Success", url: "/customer-success", icon: Star },
