@@ -84,9 +84,29 @@ const recoveryAutoSweepCron = inngest.createFunction(
   },
 );
 
+const incidentGrouperCron = inngest.createFunction(
+  { id: "incident-grouper-cron" },
+  { cron: "*/2 * * * *" }, // a cada 2 minutos
+  async ({ step }) => {
+    const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/incident-grouper-sweep`;
+    const result = await step.run("invoke-grouper", async () => {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({}),
+      });
+      return await res.json();
+    });
+    return result;
+  },
+);
+
 const handler = serve({
   client: inngest,
-  functions: [detectPatternsCron, onDemandDetect, reconcileIntegrationHealthCron, recoveryAutoSweepCron],
+  functions: [detectPatternsCron, onDemandDetect, reconcileIntegrationHealthCron, recoveryAutoSweepCron, incidentGrouperCron],
 });
 
 Deno.serve((req) => handler(req));
