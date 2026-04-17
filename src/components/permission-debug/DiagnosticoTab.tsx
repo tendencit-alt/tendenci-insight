@@ -137,8 +137,8 @@ export function DiagnosticoTab() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {result.decision === "allowed" ? (
-                <><ShieldCheck className="h-5 w-5 text-emerald-500" /> Permitido</>
+                {result.decision === "allowed" ? (
+                <><ShieldCheck className="h-5 w-5 text-primary" /> Permitido</>
               ) : (
                 <><ShieldX className="h-5 w-5 text-destructive" /> Negado</>
               )}
@@ -151,7 +151,7 @@ export function DiagnosticoTab() {
             <div className="space-y-2">
               {result.trace.map((t, i) => (
                 <div key={i} className="flex items-start gap-3 p-3 rounded-md border bg-card">
-                  {t.outcome === "pass" && <ShieldCheck className="h-4 w-4 text-emerald-500 mt-0.5" />}
+                  {t.outcome === "pass" && <ShieldCheck className="h-4 w-4 text-primary mt-0.5" />}
                   {t.outcome === "fail" && <ShieldX className="h-4 w-4 text-destructive mt-0.5" />}
                   {t.outcome === "info" && <Info className="h-4 w-4 text-muted-foreground mt-0.5" />}
                   <div className="flex-1">

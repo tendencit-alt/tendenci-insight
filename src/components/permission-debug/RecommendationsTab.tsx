@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Sparkles, Lightbulb } from "lucide-react";
 import { useAnalyzeFriction, usePermissionRecommendations } from "@/hooks/usePermissionDebug";
-import { ReactMarkdown } from "@/components/ai/MarkdownSafe";
 
 export function RecommendationsTab() {
   const { data: recs, isLoading } = usePermissionRecommendations();
@@ -28,8 +27,8 @@ export function RecommendationsTab() {
               <Sparkles className="h-4 w-4 text-primary" /> Insights da IA
             </CardTitle>
           </CardHeader>
-          <CardContent className="prose prose-sm dark:prose-invert max-w-none">
-            <ReactMarkdown>{analyze.data.ai_insights}</ReactMarkdown>
+          <CardContent>
+            <p className="text-sm whitespace-pre-line text-foreground">{analyze.data.ai_insights}</p>
           </CardContent>
         </Card>
       )}
@@ -47,7 +46,7 @@ export function RecommendationsTab() {
             <Card key={r.id}>
               <CardContent className="pt-4">
                 <div className="flex items-start gap-3">
-                  <Lightbulb className="h-5 w-5 text-amber-500 mt-0.5" />
+                  <Lightbulb className="h-5 w-5 text-primary mt-0.5" />
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-sm">{r.title}</p>

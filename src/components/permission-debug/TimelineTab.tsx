@@ -4,7 +4,7 @@ import { Loader2, AlertTriangle } from "lucide-react";
 import { useDenialAnalytics } from "@/hooks/usePermissionDenials";
 
 export function TimelineTab() {
-  const { isLoading, total, topPermissions, topModules, topUsers, raw } = useDenialAnalytics(30);
+  const { isLoading, total, topPermissions, topModules, raw } = useDenialAnalytics(30);
 
   if (isLoading) return <Loader2 className="h-6 w-6 animate-spin mx-auto" />;
 
