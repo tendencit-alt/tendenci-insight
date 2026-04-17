@@ -13001,6 +13001,183 @@ export type Database = {
           },
         ]
       }
+      predictive_anomalies: {
+        Row: {
+          anomaly_type: string
+          confidence_score: number
+          description: string | null
+          detected_at: string
+          id: string
+          metadata: Json | null
+          severity: string
+          target_code: string
+          target_type: string
+        }
+        Insert: {
+          anomaly_type: string
+          confidence_score?: number
+          description?: string | null
+          detected_at?: string
+          id?: string
+          metadata?: Json | null
+          severity?: string
+          target_code: string
+          target_type: string
+        }
+        Update: {
+          anomaly_type?: string
+          confidence_score?: number
+          description?: string | null
+          detected_at?: string
+          id?: string
+          metadata?: Json | null
+          severity?: string
+          target_code?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
+      predictive_drift_snapshots: {
+        Row: {
+          baseline_value: number | null
+          created_at: string
+          current_value: number | null
+          id: string
+          metadata: Json | null
+          metric_name: string
+          target_code: string
+          trend_direction: string
+          trend_strength: number
+          window_hours: number
+        }
+        Insert: {
+          baseline_value?: number | null
+          created_at?: string
+          current_value?: number | null
+          id?: string
+          metadata?: Json | null
+          metric_name: string
+          target_code: string
+          trend_direction: string
+          trend_strength?: number
+          window_hours?: number
+        }
+        Update: {
+          baseline_value?: number | null
+          created_at?: string
+          current_value?: number | null
+          id?: string
+          metadata?: Json | null
+          metric_name?: string
+          target_code?: string
+          trend_direction?: string
+          trend_strength?: number
+          window_hours?: number
+        }
+        Relationships: []
+      }
+      predictive_failure_scores: {
+        Row: {
+          contributing_factors: Json | null
+          failure_probability_score: number
+          id: string
+          recommended_preventive_action: string | null
+          severity_band: string
+          target_code: string
+          target_type: string
+          updated_at: string
+        }
+        Insert: {
+          contributing_factors?: Json | null
+          failure_probability_score?: number
+          id?: string
+          recommended_preventive_action?: string | null
+          severity_band?: string
+          target_code: string
+          target_type?: string
+          updated_at?: string
+        }
+        Update: {
+          contributing_factors?: Json | null
+          failure_probability_score?: number
+          id?: string
+          recommended_preventive_action?: string | null
+          severity_band?: string
+          target_code?: string
+          target_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      predictive_risk_signals: {
+        Row: {
+          baseline_value: number
+          created_at: string
+          deviation_percent: number
+          id: string
+          metadata: Json | null
+          module_code: string
+          signal_type: string
+          signal_value: number
+        }
+        Insert: {
+          baseline_value?: number
+          created_at?: string
+          deviation_percent?: number
+          id?: string
+          metadata?: Json | null
+          module_code: string
+          signal_type: string
+          signal_value?: number
+        }
+        Update: {
+          baseline_value?: number
+          created_at?: string
+          deviation_percent?: number
+          id?: string
+          metadata?: Json | null
+          module_code?: string
+          signal_type?: string
+          signal_value?: number
+        }
+        Relationships: []
+      }
+      preventive_action_logs: {
+        Row: {
+          action_code: string
+          created_at: string
+          execution_mode: string
+          id: string
+          metadata: Json | null
+          reason: string | null
+          result: string
+          target_code: string
+          triggered_by: string | null
+        }
+        Insert: {
+          action_code: string
+          created_at?: string
+          execution_mode?: string
+          id?: string
+          metadata?: Json | null
+          reason?: string | null
+          result?: string
+          target_code: string
+          triggered_by?: string | null
+        }
+        Update: {
+          action_code?: string
+          created_at?: string
+          execution_mode?: string
+          id?: string
+          metadata?: Json | null
+          reason?: string | null
+          result?: string
+          target_code?: string
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       prj_execution_logs: {
         Row: {
           cost: number | null
@@ -20934,6 +21111,8 @@ export type Database = {
         Returns: Json
       }
       compute_all_tenants_lifecycle: { Args: never; Returns: number }
+      compute_failure_probability: { Args: never; Returns: number }
+      compute_predictive_drift: { Args: never; Returns: number }
       compute_tenant_lifecycle: { Args: { _tenant_id: string }; Returns: Json }
       consume_retry_budget: {
         Args: {
@@ -21033,6 +21212,8 @@ export type Database = {
         Returns: Json
       }
       detect_billing_dunning: { Args: never; Returns: number }
+      detect_predictive_anomalies: { Args: never; Returns: number }
+      detect_predictive_signals: { Args: never; Returns: number }
       detect_upgrade_signals: { Args: never; Returns: number }
       diff_profile_critical_permissions: {
         Args: { _profile_a: string; _profile_b: string }
@@ -21061,6 +21242,10 @@ export type Database = {
         Returns: Json
       }
       evaluate_stability_gates: { Args: never; Returns: Json }
+      execute_preventive_action: {
+        Args: { p_action_code: string; p_mode?: string; p_target_code: string }
+        Returns: Json
+      }
       execute_recovery_policy: {
         Args: { p_mode?: string; p_policy_code: string }
         Returns: Json
@@ -21614,6 +21799,19 @@ export type Database = {
               valor_total: number
             }[]
           }
+      predictive_layer_summary: { Args: never; Returns: Json }
+      predictive_top_risks: {
+        Args: { p_limit?: number }
+        Returns: {
+          contributing_factors: Json
+          failure_probability_score: number
+          recommended_preventive_action: string
+          severity_band: string
+          target_code: string
+          target_type: string
+          updated_at: string
+        }[]
+      }
       production_metrics:
         | {
             Args: {
@@ -21820,6 +22018,7 @@ export type Database = {
       }
       run_autonomous_recovery_sweep: { Args: never; Returns: Json }
       run_inactive_architects_check: { Args: never; Returns: Json }
+      run_predictive_sweep: { Args: never; Returns: Json }
       should_show_upgrade_nudge: {
         Args: { _signal_id: string; _tenant_id: string }
         Returns: boolean

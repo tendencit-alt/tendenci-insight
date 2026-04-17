@@ -215,6 +215,7 @@ const menuGroups: MenuGroup[] = [
       { title: "Execution Priority", url: "/owner/execution-priority", icon: Target },
       { title: "Stability Gates", url: "/owner/stability-gates", icon: ShieldCheck },
       { title: "Autonomous Recovery", url: "/owner/autonomous-recovery", icon: Wrench },
+      { title: "Predictive Failures", url: "/owner/predictive-failures", icon: Brain },
       { title: "Billing & Subscriptions", url: "/billing", icon: CreditCard },
       { title: "Customer Lifecycle", url: "/customer-lifecycle", icon: Users },
       { title: "Customer Success", url: "/customer-success", icon: Star },
