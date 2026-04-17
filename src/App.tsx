@@ -72,6 +72,7 @@ import OwnerDependencyImpact from "./pages/OwnerDependencyImpact";
 import OwnerRecoveryActions from "./pages/OwnerRecoveryActions";
 import OwnerIncidentTimeline from "./pages/OwnerIncidentTimeline";
 import OwnerRunbooks from "./pages/OwnerRunbooks";
+import OwnerSelfHealing from "./pages/OwnerSelfHealing";
 
 const queryClient = new QueryClient();
 
@@ -155,6 +156,7 @@ const App = () => (
               <Route path="/owner/recovery-actions" element={<ProtectedRoute><OwnerRecoveryActions /></ProtectedRoute>} />
               <Route path="/owner/incident-timeline" element={<ProtectedRoute><OwnerIncidentTimeline /></ProtectedRoute>} />
               <Route path="/owner/runbooks" element={<ProtectedRoute><OwnerRunbooks /></ProtectedRoute>} />
+              <Route path="/owner/self-healing" element={<ProtectedRoute><OwnerSelfHealing /></ProtectedRoute>} />
               <Route path="/multi-company" element={<ProtectedRoute><MultiCompanyIntelligence /></ProtectedRoute>} />
               <Route path="/dashboards" element={<Navigate to="/" replace />} />
               <Route path="/ia-configuracao" element={<Navigate to="/" replace />} />

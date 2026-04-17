@@ -16296,6 +16296,240 @@ export type Database = {
           },
         ]
       }
+      self_healing_escalations: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          action_code: string | null
+          created_at: string
+          id: string
+          incident_id: string | null
+          metadata: Json | null
+          module_code: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          severity: string
+          status: string
+          trigger_reason: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          action_code?: string | null
+          created_at?: string
+          id?: string
+          incident_id?: string | null
+          metadata?: Json | null
+          module_code?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          trigger_reason: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          action_code?: string | null
+          created_at?: string
+          id?: string
+          incident_id?: string | null
+          metadata?: Json | null
+          module_code?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          trigger_reason?: string
+        }
+        Relationships: []
+      }
+      self_healing_guardrail_logs: {
+        Row: {
+          action_code: string
+          context: Json | null
+          decision: string
+          dependency_depth: number | null
+          evaluated_at: string
+          id: string
+          incident_id: string | null
+          module_code: string | null
+          policy_snapshot: Json | null
+          reason: string | null
+          retry_count: number | null
+          root_cause_confidence: number | null
+          severity: string | null
+        }
+        Insert: {
+          action_code: string
+          context?: Json | null
+          decision: string
+          dependency_depth?: number | null
+          evaluated_at?: string
+          id?: string
+          incident_id?: string | null
+          module_code?: string | null
+          policy_snapshot?: Json | null
+          reason?: string | null
+          retry_count?: number | null
+          root_cause_confidence?: number | null
+          severity?: string | null
+        }
+        Update: {
+          action_code?: string
+          context?: Json | null
+          decision?: string
+          dependency_depth?: number | null
+          evaluated_at?: string
+          id?: string
+          incident_id?: string | null
+          module_code?: string | null
+          policy_snapshot?: Json | null
+          reason?: string | null
+          retry_count?: number | null
+          root_cause_confidence?: number | null
+          severity?: string | null
+        }
+        Relationships: []
+      }
+      self_healing_policy_registry: {
+        Row: {
+          action_code: string
+          active: boolean
+          allowed_severity_scope: string[]
+          cooldown_seconds: number
+          created_at: string
+          id: string
+          max_auto_attempts: number
+          max_dependency_depth: number
+          module_code: string | null
+          notes: string | null
+          requires_dependency_stability: boolean
+          requires_owner_confirmation: boolean
+          requires_root_cause_confidence: number
+          retry_window_minutes: number
+          safety_level: string
+          updated_at: string
+        }
+        Insert: {
+          action_code: string
+          active?: boolean
+          allowed_severity_scope?: string[]
+          cooldown_seconds?: number
+          created_at?: string
+          id?: string
+          max_auto_attempts?: number
+          max_dependency_depth?: number
+          module_code?: string | null
+          notes?: string | null
+          requires_dependency_stability?: boolean
+          requires_owner_confirmation?: boolean
+          requires_root_cause_confidence?: number
+          retry_window_minutes?: number
+          safety_level?: string
+          updated_at?: string
+        }
+        Update: {
+          action_code?: string
+          active?: boolean
+          allowed_severity_scope?: string[]
+          cooldown_seconds?: number
+          created_at?: string
+          id?: string
+          max_auto_attempts?: number
+          max_dependency_depth?: number
+          module_code?: string | null
+          notes?: string | null
+          requires_dependency_stability?: boolean
+          requires_owner_confirmation?: boolean
+          requires_root_cause_confidence?: number
+          retry_window_minutes?: number
+          safety_level?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      self_healing_retry_budgets: {
+        Row: {
+          action_code: string
+          attempts_count: number
+          created_at: string
+          id: string
+          last_attempt_at: string | null
+          last_result: string | null
+          module_code: string | null
+          updated_at: string
+          window_started_at: string
+        }
+        Insert: {
+          action_code: string
+          attempts_count?: number
+          created_at?: string
+          id?: string
+          last_attempt_at?: string | null
+          last_result?: string | null
+          module_code?: string | null
+          updated_at?: string
+          window_started_at?: string
+        }
+        Update: {
+          action_code?: string
+          attempts_count?: number
+          created_at?: string
+          id?: string
+          last_attempt_at?: string | null
+          last_result?: string | null
+          module_code?: string | null
+          updated_at?: string
+          window_started_at?: string
+        }
+        Relationships: []
+      }
+      self_healing_stability_checks: {
+        Row: {
+          checked_at: string
+          dependency_stable: boolean | null
+          details: Json | null
+          duration_observed_seconds: number | null
+          id: string
+          incident_id: string | null
+          integration_health_ok: boolean | null
+          module_code: string | null
+          overall_stable: boolean | null
+          recovery_log_id: string | null
+          snapshot_fresh: boolean | null
+          timeline_clean: boolean | null
+        }
+        Insert: {
+          checked_at?: string
+          dependency_stable?: boolean | null
+          details?: Json | null
+          duration_observed_seconds?: number | null
+          id?: string
+          incident_id?: string | null
+          integration_health_ok?: boolean | null
+          module_code?: string | null
+          overall_stable?: boolean | null
+          recovery_log_id?: string | null
+          snapshot_fresh?: boolean | null
+          timeline_clean?: boolean | null
+        }
+        Update: {
+          checked_at?: string
+          dependency_stable?: boolean | null
+          details?: Json | null
+          duration_observed_seconds?: number | null
+          id?: string
+          incident_id?: string | null
+          integration_health_ok?: boolean | null
+          module_code?: string | null
+          overall_stable?: boolean | null
+          recovery_log_id?: string | null
+          snapshot_fresh?: boolean | null
+          timeline_clean?: boolean | null
+        }
+        Relationships: []
+      }
       self_service_events: {
         Row: {
           created_at: string
@@ -20267,6 +20501,14 @@ export type Database = {
       }
       compute_all_tenants_lifecycle: { Args: never; Returns: number }
       compute_tenant_lifecycle: { Args: { _tenant_id: string }; Returns: Json }
+      consume_retry_budget: {
+        Args: {
+          p_action_code: string
+          p_module_code?: string
+          p_result?: string
+        }
+        Returns: undefined
+      }
       create_daily_architect_goals: { Args: never; Returns: undefined }
       create_goal_reminder_notifications: { Args: never; Returns: undefined }
       crm_agg: {
@@ -20371,6 +20613,18 @@ export type Database = {
       emit_decision_event: {
         Args: { p_event_type: string; p_payload?: Json; p_tenant_id: string }
         Returns: string
+      }
+      evaluate_self_healing_guardrails: {
+        Args: {
+          p_action_code: string
+          p_context?: Json
+          p_dependency_depth?: number
+          p_incident_id?: string
+          p_module_code?: string
+          p_root_cause_confidence?: number
+          p_severity?: string
+        }
+        Returns: Json
       }
       expire_entitlement_grants: { Args: never; Returns: number }
       find_pending_auto_recoveries: {
@@ -20756,6 +21010,7 @@ export type Database = {
           pct_used: number
         }[]
       }
+      get_self_healing_overview: { Args: never; Returns: Json }
       get_seller_goal_stats: { Args: { p_vendedor_id: string }; Returns: Json }
       get_seller_performance_by_goal: {
         Args: { p_seller_goal_id: string }
@@ -21099,6 +21354,10 @@ export type Database = {
         }
         Returns: string
       }
+      reset_retry_budget: {
+        Args: { p_action_code: string; p_module_code?: string }
+        Returns: undefined
+      }
       resolve_best_offer_for_tenant: {
         Args: { _channel?: string; _tenant_id: string }
         Returns: {
@@ -21112,6 +21371,10 @@ export type Database = {
           reasoning: string
           signal_id: string
         }[]
+      }
+      resolve_self_healing_escalation: {
+        Args: { p_id: string; p_note?: string; p_status: string }
+        Returns: undefined
       }
       run_inactive_architects_check: { Args: never; Returns: Json }
       should_show_upgrade_nudge: {
@@ -21173,6 +21436,15 @@ export type Database = {
       user_has_role_check: {
         Args: { required_role: Database["public"]["Enums"]["user_role"] }
         Returns: boolean
+      }
+      verify_post_recovery_stability: {
+        Args: {
+          p_incident_id?: string
+          p_module_code?: string
+          p_observation_seconds?: number
+          p_recovery_log_id: string
+        }
+        Returns: Json
       }
     }
     Enums: {
