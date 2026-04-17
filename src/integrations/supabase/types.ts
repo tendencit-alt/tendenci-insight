@@ -11283,6 +11283,75 @@ export type Database = {
           },
         ]
       }
+      owner_control_tower_kpis: {
+        Row: {
+          active_tenants: number
+          arr_cents: number
+          avg_activation_score: number
+          avg_churn_risk: number
+          avg_engagement_score: number
+          avg_expansion_ready: number
+          avg_health_index: number
+          churn_rate_30d: number
+          created_at: string
+          delinquency_rate: number
+          delinquent_tenants: number
+          expansion_ready_count: number
+          high_churn_risk_count: number
+          id: string
+          metadata: Json | null
+          mrr_cents: number
+          paying_tenants: number
+          snapshot_date: string
+          total_tenants: number
+          trial_tenants: number
+        }
+        Insert: {
+          active_tenants?: number
+          arr_cents?: number
+          avg_activation_score?: number
+          avg_churn_risk?: number
+          avg_engagement_score?: number
+          avg_expansion_ready?: number
+          avg_health_index?: number
+          churn_rate_30d?: number
+          created_at?: string
+          delinquency_rate?: number
+          delinquent_tenants?: number
+          expansion_ready_count?: number
+          high_churn_risk_count?: number
+          id?: string
+          metadata?: Json | null
+          mrr_cents?: number
+          paying_tenants?: number
+          snapshot_date?: string
+          total_tenants?: number
+          trial_tenants?: number
+        }
+        Update: {
+          active_tenants?: number
+          arr_cents?: number
+          avg_activation_score?: number
+          avg_churn_risk?: number
+          avg_engagement_score?: number
+          avg_expansion_ready?: number
+          avg_health_index?: number
+          churn_rate_30d?: number
+          created_at?: string
+          delinquency_rate?: number
+          delinquent_tenants?: number
+          expansion_ready_count?: number
+          high_churn_risk_count?: number
+          id?: string
+          metadata?: Json | null
+          mrr_cents?: number
+          paying_tenants?: number
+          snapshot_date?: string
+          total_tenants?: number
+          trial_tenants?: number
+        }
+        Relationships: []
+      }
       payment_conditions: {
         Row: {
           ativo: boolean | null
@@ -16021,6 +16090,54 @@ export type Database = {
           },
         ]
       }
+      system_health_snapshots: {
+        Row: {
+          avg_query_latency_ms: number | null
+          created_at: string
+          critical_alerts: number
+          delayed_jobs: number
+          edge_function_failures_24h: number
+          errors_24h: number
+          failed_automations_24h: number
+          id: string
+          integration_failures_24h: number
+          metadata: Json | null
+          overall_health_score: number
+          snapshot_at: string
+          window_hours: number
+        }
+        Insert: {
+          avg_query_latency_ms?: number | null
+          created_at?: string
+          critical_alerts?: number
+          delayed_jobs?: number
+          edge_function_failures_24h?: number
+          errors_24h?: number
+          failed_automations_24h?: number
+          id?: string
+          integration_failures_24h?: number
+          metadata?: Json | null
+          overall_health_score?: number
+          snapshot_at?: string
+          window_hours?: number
+        }
+        Update: {
+          avg_query_latency_ms?: number | null
+          created_at?: string
+          critical_alerts?: number
+          delayed_jobs?: number
+          edge_function_failures_24h?: number
+          errors_24h?: number
+          failed_automations_24h?: number
+          id?: string
+          integration_failures_24h?: number
+          metadata?: Json | null
+          overall_health_score?: number
+          snapshot_at?: string
+          window_hours?: number
+        }
+        Relationships: []
+      }
       system_releases: {
         Row: {
           breaking_changes: Json | null
@@ -18254,6 +18371,8 @@ export type Database = {
         }[]
       }
       architects_aggregates: { Args: never; Returns: Json }
+      calc_owner_control_tower_kpis: { Args: never; Returns: string }
+      calc_system_health_snapshot: { Args: never; Returns: string }
       calc_tenant_activation_score: {
         Args: { _tenant_id: string }
         Returns: number
@@ -18610,6 +18729,12 @@ export type Database = {
           realizado: number
         }[]
       }
+      get_owner_activation_monitor: { Args: never; Returns: Json }
+      get_owner_billing_radar: { Args: never; Returns: Json }
+      get_owner_churn_radar: { Args: never; Returns: Json }
+      get_owner_expansion_signals: { Args: never; Returns: Json }
+      get_owner_lifecycle_heatmap: { Args: never; Returns: Json }
+      get_owner_system_health_realtime: { Args: never; Returns: Json }
       get_pending_automated_tasks: {
         Args: never
         Returns: {
