@@ -8,6 +8,9 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { MinimizedDialogsProvider } from "@/contexts/MinimizedDialogsContext";
 import { MinimizedDialogsBar } from "@/components/ui/MinimizedDialogsBar";
 import { PermissionsProvider } from "@/contexts/PermissionsContext";
+import { PermissionSimulationProvider } from "@/contexts/PermissionSimulationContext";
+import { SimulationBanner } from "@/components/smart-permissions/SimulationBanner";
+import PermissionAuditPage from "./pages/PermissionAuditPage";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionGuard } from "@/components/auth/PermissionGuard";
@@ -67,9 +70,12 @@ const App = () => (
             <MinimizedDialogsProvider>
             <MinimizedDialogsBar />
             <PermissionsProvider>
+            <PermissionSimulationProvider>
             <WorkspaceProvider>
+              <SimulationBanner />
               <CommandBar />
                <Routes>
+              <Route path="/auditoria-permissoes" element={<ProtectedRoute><PermissionAuditPage /></ProtectedRoute>} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/catalogo" element={<Catalogo />} />
@@ -129,6 +135,7 @@ const App = () => (
               } />
               </Routes>
             </WorkspaceProvider>
+            </PermissionSimulationProvider>
             </PermissionsProvider>
             </MinimizedDialogsProvider>
           </AuthProvider>
