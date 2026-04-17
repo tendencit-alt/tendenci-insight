@@ -14,6 +14,7 @@ import { RecommendationsTab } from '@/components/permission-debug/Recommendation
 import { HerancaTab } from '@/components/permission-debug/HerancaTab';
 import { Tabs as InnerTabs, TabsContent as InnerTabsContent, TabsList as InnerTabsList, TabsTrigger as InnerTabsTrigger } from '@/components/ui/tabs';
 import { usePermissions } from '@/hooks/usePermissions';
+import { AdminQuickAccessCard } from '@/components/saas-admin/AdminQuickAccessCard';
 
 const ControlTower = () => {
   const { isOwner, isMaster } = usePermissions();
@@ -28,6 +29,8 @@ const ControlTower = () => {
           </h1>
           <p className="text-muted-foreground text-lg">Cockpit executivo com visão integrada de finanças, operações, riscos e oportunidades</p>
         </div>
+
+        {showDebug && <AdminQuickAccessCard />}
 
         <Tabs defaultValue="financial" className="w-full">
           <TabsList className="flex flex-wrap gap-1">
