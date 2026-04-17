@@ -5469,6 +5469,68 @@ export type Database = {
           },
         ]
       }
+      execution_priority_registry: {
+        Row: {
+          completion_score: number
+          dependency_count: number
+          dependency_score: number
+          execution_priority_index: number
+          id: string
+          impact_score: number
+          impacted_count: number
+          incident_count: number
+          incident_score: number
+          integration_score: number
+          layer_code: string
+          priority_level: string
+          priority_reason: string | null
+          updated_at: string
+          visibility_score: number
+        }
+        Insert: {
+          completion_score?: number
+          dependency_count?: number
+          dependency_score?: number
+          execution_priority_index?: number
+          id?: string
+          impact_score?: number
+          impacted_count?: number
+          incident_count?: number
+          incident_score?: number
+          integration_score?: number
+          layer_code: string
+          priority_level?: string
+          priority_reason?: string | null
+          updated_at?: string
+          visibility_score?: number
+        }
+        Update: {
+          completion_score?: number
+          dependency_count?: number
+          dependency_score?: number
+          execution_priority_index?: number
+          id?: string
+          impact_score?: number
+          impacted_count?: number
+          incident_count?: number
+          incident_score?: number
+          integration_score?: number
+          layer_code?: string
+          priority_level?: string
+          priority_reason?: string | null
+          updated_at?: string
+          visibility_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "execution_priority_registry_layer_code_fkey"
+            columns: ["layer_code"]
+            isOneToOne: true
+            referencedRelation: "architecture_layers_registry"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       expansion_signals: {
         Row: {
           created_at: string
@@ -20814,6 +20876,7 @@ export type Database = {
         }
         Returns: Json
       }
+      execution_priority_summary: { Args: never; Returns: Json }
       expire_entitlement_grants: { Args: never; Returns: number }
       find_pending_auto_recoveries: {
         Args: never
@@ -21482,6 +21545,7 @@ export type Database = {
       purchases_metrics: { Args: never; Returns: Json }
       reactivate_lost_deals_to_followup: { Args: never; Returns: Json }
       recalculate_all_goal_progress: { Args: never; Returns: undefined }
+      recompute_execution_priorities: { Args: never; Returns: number }
       reconcile_integration_health: { Args: never; Returns: Json }
       record_integration_event: {
         Args: {
