@@ -3719,10 +3719,18 @@ export type Database = {
           access_score: number
           activation_score: number
           calculated_at: string
+          churn_risk_band: string | null
+          churn_risk_score: number | null
           classification: string | null
           created_at: string
           dre_score: number
+          engagement_band: string | null
+          engagement_score: number | null
+          expansion_ready_score: number | null
           id: string
+          lifecycle_health_index: number | null
+          lifecycle_updated_at: string | null
+          maturity_stage: string | null
           payment_score: number
           reconciliation_score: number
           support_score: number
@@ -3734,10 +3742,18 @@ export type Database = {
           access_score?: number
           activation_score?: number
           calculated_at?: string
+          churn_risk_band?: string | null
+          churn_risk_score?: number | null
           classification?: string | null
           created_at?: string
           dre_score?: number
+          engagement_band?: string | null
+          engagement_score?: number | null
+          expansion_ready_score?: number | null
           id?: string
+          lifecycle_health_index?: number | null
+          lifecycle_updated_at?: string | null
+          maturity_stage?: string | null
           payment_score?: number
           reconciliation_score?: number
           support_score?: number
@@ -3749,10 +3765,18 @@ export type Database = {
           access_score?: number
           activation_score?: number
           calculated_at?: string
+          churn_risk_band?: string | null
+          churn_risk_score?: number | null
           classification?: string | null
           created_at?: string
           dre_score?: number
+          engagement_band?: string | null
+          engagement_score?: number | null
+          expansion_ready_score?: number | null
           id?: string
+          lifecycle_health_index?: number | null
+          lifecycle_updated_at?: string | null
+          maturity_stage?: string | null
           payment_score?: number
           reconciliation_score?: number
           support_score?: number
@@ -16151,6 +16175,65 @@ export type Database = {
           },
         ]
       }
+      tenant_lifecycle_snapshots: {
+        Row: {
+          activation_score: number | null
+          ai_insight: string | null
+          churn_risk_band: string | null
+          churn_risk_score: number | null
+          created_at: string
+          engagement_band: string | null
+          engagement_score: number | null
+          expansion_ready_score: number | null
+          id: string
+          lifecycle_health_index: number | null
+          maturity_stage: string | null
+          signals: Json | null
+          snapshot_date: string
+          tenant_id: string
+        }
+        Insert: {
+          activation_score?: number | null
+          ai_insight?: string | null
+          churn_risk_band?: string | null
+          churn_risk_score?: number | null
+          created_at?: string
+          engagement_band?: string | null
+          engagement_score?: number | null
+          expansion_ready_score?: number | null
+          id?: string
+          lifecycle_health_index?: number | null
+          maturity_stage?: string | null
+          signals?: Json | null
+          snapshot_date?: string
+          tenant_id: string
+        }
+        Update: {
+          activation_score?: number | null
+          ai_insight?: string | null
+          churn_risk_band?: string | null
+          churn_risk_score?: number | null
+          created_at?: string
+          engagement_band?: string | null
+          engagement_score?: number | null
+          expansion_ready_score?: number | null
+          id?: string
+          lifecycle_health_index?: number | null
+          maturity_stage?: string | null
+          signals?: Json | null
+          snapshot_date?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_lifecycle_snapshots_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_plans: {
         Row: {
           active: boolean | null
@@ -16215,6 +16298,44 @@ export type Database = {
             columns: ["parent_plan_id"]
             isOneToOne: false
             referencedRelation: "tenant_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_session_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          module: string | null
+          tenant_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          module?: string | null
+          tenant_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          module?: string | null
+          tenant_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_session_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -18133,6 +18254,32 @@ export type Database = {
         }[]
       }
       architects_aggregates: { Args: never; Returns: Json }
+      calc_tenant_activation_score: {
+        Args: { _tenant_id: string }
+        Returns: number
+      }
+      calc_tenant_churn_risk: {
+        Args: { _tenant_id: string }
+        Returns: {
+          band: string
+          score: number
+        }[]
+      }
+      calc_tenant_engagement_score: {
+        Args: { _tenant_id: string }
+        Returns: {
+          band: string
+          score: number
+        }[]
+      }
+      calc_tenant_expansion_score: {
+        Args: { _tenant_id: string }
+        Returns: number
+      }
+      calc_tenant_maturity_stage: {
+        Args: { _tenant_id: string }
+        Returns: string
+      }
       calcular_previsao_atraso_producao: {
         Args: { p_order_id: string }
         Returns: Json
@@ -18185,6 +18332,8 @@ export type Database = {
         Returns: Json
       }
       cleanup_old_pending_messages: { Args: never; Returns: undefined }
+      compute_all_tenants_lifecycle: { Args: never; Returns: number }
+      compute_tenant_lifecycle: { Args: { _tenant_id: string }; Returns: Json }
       create_daily_architect_goals: { Args: never; Returns: undefined }
       create_goal_reminder_notifications: { Args: never; Returns: undefined }
       crm_agg: {
@@ -18621,6 +18770,22 @@ export type Database = {
           _resource_type: Database["public"]["Enums"]["fin_strategic_resource_type"]
         }
         Returns: string
+      }
+      get_tenant_lifecycle_overview: {
+        Args: never
+        Returns: {
+          activation_score: number
+          churn_risk_band: string
+          churn_risk_score: number
+          engagement_band: string
+          engagement_score: number
+          expansion_ready_score: number
+          lifecycle_health_index: number
+          maturity_stage: string
+          tenant_id: string
+          tenant_name: string
+          updated_at: string
+        }[]
       }
       get_user_especializacao: { Args: { user_uuid: string }; Returns: string }
       get_user_role: {
