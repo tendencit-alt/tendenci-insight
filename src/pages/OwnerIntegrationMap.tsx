@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Activity, AlertTriangle, CheckCircle2, Clock, RefreshCw, Network, TrendingUp, ShieldAlert,
+  AlertTriangle, Clock, RefreshCw, Network, TrendingUp, ShieldAlert,
 } from "lucide-react";
 import { useIntegrationMap, useReconcileIntegrationHealth } from "@/hooks/useIntegrationMap";
 import { IntegrationGraph } from "@/components/owner/IntegrationGraph";
@@ -56,7 +56,7 @@ export default function OwnerIntegrationMap() {
     try {
       const res = await reconcile.mutateAsync();
       toast.success(`Reconciliação: ${res?.result?.processed || 0} integrações atualizadas`);
-    } catch (e) {
+    } catch {
       toast.error("Falha ao reconciliar");
     }
   };
