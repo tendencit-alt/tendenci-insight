@@ -4293,6 +4293,132 @@ export type Database = {
           },
         ]
       }
+      dependency_impact_events: {
+        Row: {
+          cascade_depth: number
+          created_at: string
+          detected_at: string
+          failed_module_code: string
+          id: string
+          impact_level: string
+          impact_status: string
+          impacted_module_code: string
+          incident_group_id: string | null
+          metadata: Json | null
+          resolved_at: string | null
+          root_cause_candidate: boolean
+          source_event_type: string | null
+        }
+        Insert: {
+          cascade_depth?: number
+          created_at?: string
+          detected_at?: string
+          failed_module_code: string
+          id?: string
+          impact_level?: string
+          impact_status?: string
+          impacted_module_code: string
+          incident_group_id?: string | null
+          metadata?: Json | null
+          resolved_at?: string | null
+          root_cause_candidate?: boolean
+          source_event_type?: string | null
+        }
+        Update: {
+          cascade_depth?: number
+          created_at?: string
+          detected_at?: string
+          failed_module_code?: string
+          id?: string
+          impact_level?: string
+          impact_status?: string
+          impacted_module_code?: string
+          incident_group_id?: string | null
+          metadata?: Json | null
+          resolved_at?: string | null
+          root_cause_candidate?: boolean
+          source_event_type?: string | null
+        }
+        Relationships: []
+      }
+      dependency_impact_rules: {
+        Row: {
+          active: boolean
+          condition_type: string
+          created_at: string
+          id: string
+          impact_level: string
+          propagation_depth: number
+          source_module_code: string
+          target_module_code: string
+          threshold: Json | null
+        }
+        Insert: {
+          active?: boolean
+          condition_type?: string
+          created_at?: string
+          id?: string
+          impact_level?: string
+          propagation_depth?: number
+          source_module_code: string
+          target_module_code: string
+          threshold?: Json | null
+        }
+        Update: {
+          active?: boolean
+          condition_type?: string
+          created_at?: string
+          id?: string
+          impact_level?: string
+          propagation_depth?: number
+          source_module_code?: string
+          target_module_code?: string
+          threshold?: Json | null
+        }
+        Relationships: []
+      }
+      dependency_impact_snapshots: {
+        Row: {
+          active_incidents: number
+          cascade_depth_max: number
+          causing_count: number
+          current_impact_score: number
+          id: string
+          impacted_by_count: number
+          is_root_cause_active: boolean
+          metadata: Json | null
+          module_code: string
+          severity_class: string
+          updated_at: string
+        }
+        Insert: {
+          active_incidents?: number
+          cascade_depth_max?: number
+          causing_count?: number
+          current_impact_score?: number
+          id?: string
+          impacted_by_count?: number
+          is_root_cause_active?: boolean
+          metadata?: Json | null
+          module_code: string
+          severity_class?: string
+          updated_at?: string
+        }
+        Update: {
+          active_incidents?: number
+          cascade_depth_max?: number
+          causing_count?: number
+          current_impact_score?: number
+          id?: string
+          impacted_by_count?: number
+          is_root_cause_active?: boolean
+          metadata?: Json | null
+          module_code?: string
+          severity_class?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       diagnostic_rules: {
         Row: {
           active: boolean
@@ -15444,6 +15570,42 @@ export type Database = {
         }
         Relationships: []
       }
+      root_cause_analysis_events: {
+        Row: {
+          affected_modules: string[] | null
+          confidence_score: number
+          created_at: string
+          derived_from: string
+          id: string
+          incident_group_id: string
+          metadata: Json | null
+          reasoning: string | null
+          root_cause_module_code: string
+        }
+        Insert: {
+          affected_modules?: string[] | null
+          confidence_score?: number
+          created_at?: string
+          derived_from?: string
+          id?: string
+          incident_group_id: string
+          metadata?: Json | null
+          reasoning?: string | null
+          root_cause_module_code: string
+        }
+        Update: {
+          affected_modules?: string[] | null
+          confidence_score?: number
+          created_at?: string
+          derived_from?: string
+          id?: string
+          incident_group_id?: string
+          metadata?: Json | null
+          reasoning?: string | null
+          root_cause_module_code?: string
+        }
+        Relationships: []
+      }
       saas_admin_action_log: {
         Row: {
           action_category: string
@@ -16738,6 +16900,45 @@ export type Database = {
           overall_health_score?: number
           snapshot_at?: string
           window_hours?: number
+        }
+        Relationships: []
+      }
+      system_module_dependencies: {
+        Row: {
+          created_at: string
+          degradation_mode: string | null
+          dependency_strength: string
+          dependency_type: string
+          dependent_module_code: string
+          description: string | null
+          id: string
+          is_critical: boolean
+          source_module_code: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          degradation_mode?: string | null
+          dependency_strength?: string
+          dependency_type?: string
+          dependent_module_code: string
+          description?: string | null
+          id?: string
+          is_critical?: boolean
+          source_module_code: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          degradation_mode?: string | null
+          dependency_strength?: string
+          dependency_type?: string
+          dependent_module_code?: string
+          description?: string | null
+          id?: string
+          is_critical?: boolean
+          source_module_code?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -19205,6 +19406,7 @@ export type Database = {
         Args: { num_days: number; start_date: string }
         Returns: string
       }
+      analyze_dependency_impact: { Args: never; Returns: Json }
       architect_approved_value: {
         Args: never
         Returns: {
@@ -19631,6 +19833,7 @@ export type Database = {
           title: string
         }[]
       }
+      get_dependency_impact_overview: { Args: never; Returns: Json }
       get_effective_sla_dias_uteis: {
         Args: { p_phase_id: string }
         Returns: number
@@ -19639,6 +19842,10 @@ export type Database = {
         | { Args: never; Returns: Json }
         | { Args: { config_key_param: string }; Returns: string }
       get_integration_map_overview: { Args: never; Returns: Json }
+      get_module_dependency_tree: {
+        Args: { p_module_code: string }
+        Returns: Json
+      }
       get_module_integration_detail: {
         Args: { p_module_code: string }
         Returns: Json
@@ -20114,6 +20321,7 @@ export type Database = {
         Args: { _code: string; _tenant_id: string }
         Returns: undefined
       }
+      refresh_dependency_impact_snapshots: { Args: never; Returns: undefined }
       register_cross_module_event: {
         Args: {
           p_event_type: string
