@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import ReactFlow, { Background, Controls, Node, Edge, MarkerType } from '@xyflow/react';
+import { ReactFlow, Background, Controls, type Node, type Edge, MarkerType } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 interface Props {
@@ -41,7 +41,7 @@ export function DependencyCascadeMap({ events, rootCauseModule, onSelectModule }
     const nodes: Node[] = [];
     const colWidth = 280;
 
-    const placeColumn = (mods: string[], colIdx: number, color: string, label?: string) => {
+    const placeColumn = (mods: string[], colIdx: number, color: string) => {
       mods.forEach((code, i) => {
         const isRoot = code === rootCauseModule;
         nodes.push({

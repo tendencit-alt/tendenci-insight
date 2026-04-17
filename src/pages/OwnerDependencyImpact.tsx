@@ -32,7 +32,7 @@ const severityLabel: Record<string, string> = {
 };
 
 export default function OwnerDependencyImpact() {
-  const [selectedIncident, setSelectedIncident] = useState<string | null>(null);
+  const [, setSelectedIncident] = useState<string | null>(null);
   const overview = useDependencyImpactOverview();
   const snapshots = useDependencyImpactSnapshots();
   const events = useActiveImpactEvents();
