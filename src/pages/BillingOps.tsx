@@ -7,13 +7,13 @@ import { UsageTrackingTab } from "@/components/billing-ops/UsageTrackingTab";
 import { InadimplenciaTab } from "@/components/billing-ops/InadimplenciaTab";
 import { UpgradeSignalsTab } from "@/components/billing-ops/UpgradeSignalsTab";
 import { BillingAnalyticsAdvancedTab } from "@/components/billing-ops/BillingAnalyticsAdvancedTab";
-import { usePermissions } from "@/contexts/PermissionsContext";
+import { usePermissionsContext } from "@/contexts/PermissionsContext";
 import { Navigate } from "react-router-dom";
 
 export default function BillingOps() {
-  const { isOwner, isMaster, isLoading } = usePermissions();
-  if (isLoading) return null;
-  if (!isOwner && !isMaster) return <Navigate to="/" replace />;
+  const ctx = usePermissionsContext() as any;
+  if (ctx?.isLoading) return null;
+  if (!ctx?.isOwner && !ctx?.isMaster) return <Navigate to="/" replace />;
 
   return (
     <DashboardLayout>
