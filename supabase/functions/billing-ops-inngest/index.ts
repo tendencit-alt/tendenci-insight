@@ -1,5 +1,5 @@
-import { Inngest } from "https://esm.sh/inngest@3.27.0";
-import { serve } from "https://esm.sh/inngest@3.27.0/deno";
+import { Inngest } from "npm:inngest@3.27.0";
+import { serve } from "npm:inngest@3.27.0/deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const inngest = new Inngest({ id: "tendenci-billing-ops" });

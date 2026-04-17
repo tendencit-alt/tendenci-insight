@@ -159,7 +159,7 @@ export function ProjetosAtivosWidget() {
   const { data, isLoading } = useQuery({
     queryKey: ["dash:projetos-ativos"],
     queryFn: async () => {
-      const { count } = await supabase
+      const { count } = await (supabase as any)
         .from("projects")
         .select("id", { count: "exact", head: true })
         .eq("status", "active");

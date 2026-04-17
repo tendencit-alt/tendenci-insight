@@ -33,7 +33,7 @@ const STORAGE_KEY = "smart-permissions-simulation";
 export function PermissionSimulationProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { isMaster, userLevel } = usePermissions();
-  const isOwner = !!isMaster || userLevel === "master" || userLevel === "owner";
+  const isOwner = !!isMaster || userLevel === "system_owner" || userLevel === "tenant_owner";
 
   const [state, setState] = useState<SimulationState>(() => {
     try {
