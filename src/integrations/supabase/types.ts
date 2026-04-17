@@ -18508,15 +18508,22 @@ export type Database = {
       upgrade_signals: {
         Row: {
           ai_generated_at: string | null
+          ai_message: string | null
           ai_pitch: string | null
+          confidence_score: number
           created_at: string
           current_plan_id: string | null
           current_usage: number | null
+          detected_at: string
           evidence: Json | null
+          expires_at: string
           id: string
           limit_value: number | null
+          message_template: string | null
           metric_key: string
           priority: number
+          recommended_entitlement_code: string | null
+          recommended_plan_id: string | null
           signal_type: string
           status: string
           suggested_plan_id: string | null
@@ -18526,15 +18533,22 @@ export type Database = {
         }
         Insert: {
           ai_generated_at?: string | null
+          ai_message?: string | null
           ai_pitch?: string | null
+          confidence_score?: number
           created_at?: string
           current_plan_id?: string | null
           current_usage?: number | null
+          detected_at?: string
           evidence?: Json | null
+          expires_at?: string
           id?: string
           limit_value?: number | null
+          message_template?: string | null
           metric_key: string
           priority?: number
+          recommended_entitlement_code?: string | null
+          recommended_plan_id?: string | null
           signal_type: string
           status?: string
           suggested_plan_id?: string | null
@@ -18544,15 +18558,22 @@ export type Database = {
         }
         Update: {
           ai_generated_at?: string | null
+          ai_message?: string | null
           ai_pitch?: string | null
+          confidence_score?: number
           created_at?: string
           current_plan_id?: string | null
           current_usage?: number | null
+          detected_at?: string
           evidence?: Json | null
+          expires_at?: string
           id?: string
           limit_value?: number | null
+          message_template?: string | null
           metric_key?: string
           priority?: number
+          recommended_entitlement_code?: string | null
+          recommended_plan_id?: string | null
           signal_type?: string
           status?: string
           suggested_plan_id?: string | null
@@ -18569,6 +18590,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "upgrade_signals_recommended_plan_id_fkey"
+            columns: ["recommended_plan_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_plans"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "upgrade_signals_suggested_plan_id_fkey"
             columns: ["suggested_plan_id"]
             isOneToOne: false
@@ -18580,6 +18608,50 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upgrade_ui_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          signal_id: string | null
+          signal_type: string
+          surface: string | null
+          tenant_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          signal_id?: string | null
+          signal_type: string
+          surface?: string | null
+          tenant_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          signal_id?: string | null
+          signal_type?: string
+          surface?: string | null
+          tenant_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upgrade_ui_events_signal_id_fkey"
+            columns: ["signal_id"]
+            isOneToOne: false
+            referencedRelation: "upgrade_signals"
             referencedColumns: ["id"]
           },
         ]
@@ -18977,9 +19049,27 @@ export type Database = {
         Args: { _since_days?: number }
         Returns: number
       }
+      generate_upgrade_signals_batch: { Args: never; Returns: Json }
       generate_username_from_email: {
         Args: { email_input: string }
         Returns: string
+      }
+      get_active_upgrade_signals_for_tenant: {
+        Args: { _tenant_id: string }
+        Returns: {
+          ai_message: string
+          confidence_score: number
+          context: Json
+          detected_at: string
+          id: string
+          message_template: string
+          recommended_entitlement_code: string
+          recommended_plan_id: string
+          recommended_plan_name: string
+          severity: string
+          should_show: boolean
+          signal_type: string
+        }[]
       }
       get_architect_indication_stats: {
         Args: { p_architect_id: string }
@@ -19155,6 +19245,7 @@ export type Database = {
       get_owner_expansion_signals: { Args: never; Returns: Json }
       get_owner_lifecycle_heatmap: { Args: never; Returns: Json }
       get_owner_system_health_realtime: { Args: never; Returns: Json }
+      get_owner_upgrade_dashboard: { Args: never; Returns: Json }
       get_pending_automated_tasks: {
         Args: never
         Returns: {
@@ -19575,6 +19666,10 @@ export type Database = {
       purchases_metrics: { Args: never; Returns: Json }
       reactivate_lost_deals_to_followup: { Args: never; Returns: Json }
       recalculate_all_goal_progress: { Args: never; Returns: undefined }
+      record_premium_feature_attempt: {
+        Args: { _code: string; _tenant_id: string }
+        Returns: undefined
+      }
       register_cross_module_event: {
         Args: {
           p_event_type: string
@@ -19595,6 +19690,10 @@ export type Database = {
         Returns: string
       }
       run_inactive_architects_check: { Args: never; Returns: Json }
+      should_show_upgrade_nudge: {
+        Args: { _signal_id: string; _tenant_id: string }
+        Returns: boolean
+      }
       stock_abc_analysis: {
         Args: never
         Returns: {
