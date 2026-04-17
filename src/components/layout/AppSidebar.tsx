@@ -162,6 +162,7 @@ const menuGroups: MenuGroup[] = [
       { title: "RH & Colaboradores", url: "/rh", icon: UserCheck },
       { title: "Usuários", url: "/settings/users", icon: UserCog },
       { title: "Permissões", url: "/governanca", icon: Shield },
+      { title: "Smart Onboarding", url: "/smart-onboarding", icon: GraduationCap },
     ],
   },
   // ── ESTRATÉGIA ──
@@ -189,13 +190,12 @@ const menuGroups: MenuGroup[] = [
       { title: "Logs do Sistema", url: "/settings/logs", icon: History, comingSoon: true },
     ],
   },
-  // ── OWNER PANEL (system_owner only) ──
+  // ── OWNER PANEL (system_owner / tenant_owner) ──
   {
-    label: "Owner",
+    label: "Owner Panel",
     icon: Building2,
-    profiles: ["system_owner"],
+    profiles: ["system_owner", "tenant_owner"],
     items: [
-      { title: "Painel Owner", url: "/super-admin", icon: Building2 },
       { title: "Control Tower", url: "/owner/control-tower", icon: Landmark },
       { title: "Smart Admin", url: "/owner/admin", icon: ShieldCheck },
       { title: "Billing Ops", url: "/owner/billing-ops", icon: CreditCard },
@@ -212,11 +212,12 @@ const menuGroups: MenuGroup[] = [
       { title: "Runbooks", url: "/owner/runbooks", icon: ListChecks },
       { title: "Self-Healing Policies", url: "/owner/self-healing", icon: Shield },
       { title: "Architecture Board", url: "/owner/architecture-board", icon: LayoutGrid },
-      { title: "Execution Priority", url: "/owner/execution-priority", icon: Target },
+      { title: "Execution Priority Board", url: "/owner/execution-priority", icon: Target },
       { title: "Stability Gates", url: "/owner/stability-gates", icon: ShieldCheck },
       { title: "Autonomous Recovery", url: "/owner/autonomous-recovery", icon: Wrench },
       { title: "Predictive Failures", url: "/owner/predictive-failures", icon: Brain },
       { title: "Capacity & Load Risk", url: "/owner/capacity-risk", icon: Gauge },
+      { title: "Painel Owner (legado)", url: "/super-admin", icon: Building2 },
       { title: "Billing & Subscriptions", url: "/billing", icon: CreditCard },
       { title: "Customer Lifecycle", url: "/customer-lifecycle", icon: Users },
       { title: "Customer Success", url: "/customer-success", icon: Star },
