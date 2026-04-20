@@ -315,12 +315,21 @@ export function AppSidebar() {
 
   // Profile type
   const [profileTypeName, setProfileTypeName] = useState<string | null>(null);
+  const [profileRole, setProfileRole] = useState<string | null>(null);
+  const [profileIsOwner, setProfileIsOwner] = useState(false);
   useEffect(() => {
-    if (!user) { setProfileTypeName(null); return; }
+    if (!user) {
+      setProfileTypeName(null);
+      setProfileRole(null);
+      setProfileIsOwner(false);
+      return;
+    }
     import("@/integrations/supabase/client").then(({ supabase }) => {
-      supabase.from('profiles').select('profile_type_id, profile_types(name)')
+      supabase.from('profiles').select('role, is_owner, profile_type_id, profile_types(name)')
         .eq('id', user.id).single()
         .then(({ data }) => {
+          setProfileRole((data as any)?.role ?? null);
+          setProfileIsOwner((data as any)?.is_owner === true);
           setProfileTypeName((data as any)?.profile_types?.name as string | null ?? null);
         });
     });
@@ -364,10 +373,20 @@ export function AppSidebar() {
   }, []);
 
   const currentProfile = useMemo(() => {
-    if (userLevel === 'system_owner') return 'system_owner';
-    if (userLevel === 'tenant_owner') return 'tenant_owner';
+    const normalizedProfileType = profileTypeName?.toLowerCase().trim() ?? '';
+    const normalizedRole = profileRole?.toLowerCase().trim() ?? '';
+    const isOwnerProfile =
+      userLevel === 'system_owner' ||
+      userLevel === 'tenant_owner' ||
+      profileIsOwner ||
+      normalizedRole === 'owner' ||
+      normalizedRole === 'tenant_owner' ||
+      normalizedProfileType.includes('owner');
+
+    if (userLevel === 'system_owner' || profileIsOwner || normalizedRole === 'owner') return 'system_owner';
+    if (userLevel === 'tenant_owner' || normalizedRole === 'tenant_owner' || isOwnerProfile) return 'tenant_owner';
     return 'tenant_admin';
-  }, [userLevel]);
+  }, [userLevel, profileIsOwner, profileRole, profileTypeName]);
 
   const visibleGroups = useMemo(() =>
     menuGroups
