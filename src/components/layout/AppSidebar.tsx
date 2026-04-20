@@ -194,7 +194,6 @@ const menuGroups: MenuGroup[] = [
   {
     label: "Owner Panel",
     icon: Building2,
-    profiles: ["system_owner", "tenant_owner"],
     items: [
       { title: "Control Tower", url: "/owner/control-tower", icon: Landmark },
       { title: "Smart Admin", url: "/owner/admin", icon: ShieldCheck },
