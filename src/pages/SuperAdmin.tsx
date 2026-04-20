@@ -27,7 +27,7 @@ const SuperAdmin = () => {
           </Button>
           <div className="space-y-2">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent">
-              👑 Painel Owner
+              Painel Owner
             </h1>
             <p className="text-muted-foreground text-lg">
               Gestão de empresas, planos e usuários do sistema
