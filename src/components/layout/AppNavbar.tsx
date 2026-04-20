@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import * as LucideIcons from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -9,9 +9,21 @@ import { WorkspaceSelector } from "@/components/workspace/WorkspaceSelector";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
-  LogOut, User, Menu, ChevronDown, Sun, Moon, Building2,
-  ShoppingCart, Factory, Wallet, Scale, Target,
-  Database, BarChart3, Settings,
+  LogOut,
+  User,
+  Menu,
+  ChevronDown,
+  Sun,
+  Moon,
+  Building2,
+  ShoppingCart,
+  Factory,
+  Wallet,
+  Scale,
+  Target,
+  Database,
+  BarChart3,
+  Settings,
   Home,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -29,15 +41,12 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
-import { supabase } from "@/integrations/supabase/client";
 
-
-// ── ERP Module Structure ──
 interface ModuleItem {
   label: string;
   route: string;
   icon: keyof typeof LucideIcons;
-  module?: string; // permission module key
+  module?: string;
   available: boolean;
 }
 
@@ -46,7 +55,7 @@ interface ModuleGroup {
   label: string;
   icon: React.ElementType;
   items: ModuleItem[];
-  requiredModules?: string[]; // at least one must be accessible
+  requiredModules?: string[];
   masterOnly?: boolean;
   ownerOnly?: boolean;
 }
@@ -212,34 +221,37 @@ export function AppNavbar() {
   const { profile, user, signOut } = useAuth();
   const { data: companySettings } = useCompanySettings();
   const companyLogo = companySettings?.logo_url;
-  const companyName = companySettings?.trade_name || companySettings?.company_name || 'Sistema';
+  const companyName = companySettings?.trade_name || companySettings?.company_name || "Sistema";
+  const normalizedRole = profile?.role?.toLowerCase().trim() ?? "";
+  const canSeeOwnerMenu = isOwner || isMaster || normalizedRole === "owner" || normalizedRole === "tenant_owner";
+  const ownerModule = ERP_MODULES.find((mod) => mod.key === "owner") ?? null;
 
   const getIconComponent = (iconName: string) => {
     const Icon = (LucideIcons as any)[iconName];
     return Icon || LucideIcons.HelpCircle;
   };
 
-  // Filter visible module groups based on permissions
   const visibleModules = useMemo(() => {
-    if (loading) return ERP_MODULES.filter(m => !m.ownerOnly);
+    if (loading) return ERP_MODULES.filter((m) => !m.ownerOnly);
 
     return ERP_MODULES.filter((mod) => {
-      if (mod.ownerOnly && !isOwner) return false;
+      if (mod.key === "owner") return false;
+      if (mod.ownerOnly && !canSeeOwnerMenu) return false;
       if (mod.masterOnly && !isMaster) return false;
       if (mod.requiredModules) {
-        return mod.requiredModules.some(m => hasModuleAccess(m as any));
+        return mod.requiredModules.some((m) => hasModuleAccess(m as any));
       }
       return true;
     });
-  }, [loading, isMaster, isOwner, hasModuleAccess]);
+  }, [loading, isMaster, canSeeOwnerMenu, hasModuleAccess]);
 
   const renderModuleDropdown = (mod: ModuleGroup) => {
-    const availableItems = mod.items.filter(i => {
+    const availableItems = mod.items.filter((i) => {
       if (!i.available) return false;
       if (i.module && !loading) return hasModuleAccess(i.module as any);
       return true;
     });
-    const comingSoonItems = mod.items.filter(i => !i.available);
+    const comingSoonItems = mod.items.filter((i) => !i.available);
 
     if (availableItems.length === 0 && comingSoonItems.length === 0) return null;
 
@@ -296,27 +308,37 @@ export function AppNavbar() {
   };
 
   const getRoleColor = (role: string) => {
-    const colors: Record<string, string> = { admin: 'bg-red-500', vendedor: 'bg-blue-500', arquiteto: 'bg-green-500' };
-    return colors[role] || 'bg-gray-500';
+    const colors: Record<string, string> = {
+      admin: "bg-red-500",
+      vendedor: "bg-blue-500",
+      arquiteto: "bg-green-500",
+      owner: "bg-amber-500",
+      tenant_owner: "bg-amber-500",
+    };
+    return colors[role] || "bg-gray-500";
   };
 
   const getRoleLabel = (role: string) => {
-    const labels: Record<string, string> = { admin: 'Admin', vendedor: 'Vendedor', arquiteto: 'Arquiteto' };
+    const labels: Record<string, string> = {
+      admin: "Admin",
+      vendedor: "Vendedor",
+      arquiteto: "Arquiteto",
+      owner: "Owner",
+      tenant_owner: "Owner",
+    };
     return labels[role] || role;
   };
 
   return (
     <nav className="sticky top-0 z-50 h-14 border-b border-border/40 bg-card/95 text-card-foreground backdrop-blur-[12px] supports-[backdrop-filter]:bg-card/95 shadow-sm">
       <div className="flex items-center h-full px-3 max-w-[1800px] mx-auto gap-1">
-        {/* Logo */}
         {companyLogo ? (
           <img src={companyLogo} alt={companyName} className="h-7 w-auto flex-shrink-0" />
         ) : (
           <span className="font-bold text-sm flex-shrink-0">{companyName}</span>
         )}
 
-        {/* Desktop: Dashboard direct link + module dropdowns */}
-        <div className="hidden xl:flex items-center gap-0.5 flex-1 ml-3">
+        <div className="hidden xl:flex items-center gap-0.5 flex-1 ml-3 min-w-0 overflow-x-auto">
           <NavLink
             to="/central-navegacao"
             end
@@ -330,7 +352,6 @@ export function AppNavbar() {
           {visibleModules.map(renderModuleDropdown)}
         </div>
 
-        {/* Mobile Menu */}
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetTrigger asChild className="xl:hidden">
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -348,7 +369,7 @@ export function AppNavbar() {
                 <p className="text-xs text-muted-foreground font-semibold tracking-wider uppercase mt-2">ERP</p>
               </div>
               <div className="flex-1 overflow-y-auto py-2">
-                {(!loading && hasModuleAccess("dashboard" as any)) && (
+                {!loading && hasModuleAccess("dashboard" as any) && (
                   <div className="px-3 mb-1">
                     <NavLink
                       to="/central-navegacao"
@@ -369,7 +390,7 @@ export function AppNavbar() {
                     if (item.module && !loading) return hasModuleAccess(item.module as any);
                     return true;
                   });
-                  const comingSoonItems = mod.items.filter(i => !i.available);
+                  const comingSoonItems = mod.items.filter((i) => !i.available);
 
                   if (availableItems.length === 0 && comingSoonItems.length === 0) return null;
 
@@ -404,7 +425,9 @@ export function AppNavbar() {
                             >
                               <IconComp className="h-4 w-4 flex-shrink-0" />
                               <span>{item.label}</span>
-                              <Badge variant="outline" className="ml-auto text-[8px] h-4 px-1 border-muted-foreground/20 text-muted-foreground/40">Em breve</Badge>
+                              <Badge variant="outline" className="ml-auto text-[8px] h-4 px-1 border-muted-foreground/20 text-muted-foreground/40">
+                                Em breve
+                              </Badge>
                             </div>
                           );
                         })}
@@ -413,22 +436,28 @@ export function AppNavbar() {
                   );
                 })}
 
-                {isOwner && (
+                {canSeeOwnerMenu && ownerModule && (
                   <div className="mb-1">
                     <p className="text-[10px] text-muted-foreground font-semibold tracking-wider uppercase px-6 py-2 flex items-center gap-2">
                       <Building2 className="h-3.5 w-3.5" />
                       Owner
                     </p>
-                    <div className="px-3">
-                      <NavLink
-                        to="/super-admin"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all hover:bg-muted text-sm"
-                        activeClassName="bg-primary text-primary-foreground font-semibold"
-                      >
-                        <Building2 className="h-4 w-4 flex-shrink-0" />
-                        <span>Painel Owner</span>
-                      </NavLink>
+                    <div className="px-3 space-y-0.5">
+                      {ownerModule.items.map((item) => {
+                        const IconComp = getIconComponent(item.icon);
+                        return (
+                          <NavLink
+                            key={item.route}
+                            to={item.route}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all hover:bg-muted text-sm"
+                            activeClassName="bg-primary text-primary-foreground font-semibold"
+                          >
+                            <IconComp className="h-4 w-4 flex-shrink-0" />
+                            <span>{item.label}</span>
+                          </NavLink>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -439,34 +468,60 @@ export function AppNavbar() {
 
         <div className="flex-1 xl:flex-none" />
 
-        {/* Right side */}
         <div className="flex items-center gap-1.5">
-          {isOwner && (
-            <NavLink
-              to="/super-admin"
-              className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md hover:bg-muted/50 font-medium transition-colors"
-              activeClassName="bg-primary/10 text-primary font-semibold"
-            >
-              <Building2 className="h-3.5 w-3.5 flex-shrink-0" />
-              <span className="whitespace-nowrap">Owner</span>
-            </NavLink>
+          {canSeeOwnerMenu && ownerModule && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 h-auto text-xs rounded-md hover:bg-muted/50 font-medium transition-colors"
+                >
+                  <Building2 className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="whitespace-nowrap">Owner</span>
+                  <ChevronDown className="h-3 w-3 opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72 max-h-[70vh] overflow-y-auto bg-card border border-border shadow-lg">
+                <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider">
+                  Owner
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {ownerModule.items.map((item) => {
+                  const IconComp = getIconComponent(item.icon);
+                  return (
+                    <DropdownMenuItem key={item.route} asChild className="cursor-pointer">
+                      <NavLink
+                        to={item.route}
+                        className="flex items-center gap-2 w-full px-2 py-2"
+                        activeClassName="bg-primary/10 text-primary font-medium"
+                      >
+                        <IconComp className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </NavLink>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
+
           <WorkspaceSelector />
           <ThemeToggle />
           <NotificationBell />
 
-          {/* User dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="gap-1.5 h-auto py-1 px-1.5">
                 <Avatar className="h-6 w-6">
                   <AvatarFallback className={`${getRoleColor(profile?.role)} text-white text-[10px]`}>
-                    {profile?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
+                    {profile?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden lg:flex flex-col items-start">
                   <span className="text-[11px] font-medium leading-tight">{profile?.full_name || user?.email}</span>
-                  <Badge variant="outline" className="text-[9px] h-3.5 px-1">{getRoleLabel(profile?.role)}</Badge>
+                  <Badge variant="outline" className="text-[9px] h-3.5 px-1">
+                    {getRoleLabel(profile?.role)}
+                  </Badge>
                 </div>
               </Button>
             </DropdownMenuTrigger>
