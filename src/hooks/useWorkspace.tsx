@@ -176,8 +176,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
   const isGroupVisible = useCallback((groupLabel: string): boolean => {
     if (activeWorkspace.groups.length === 0) return true;
-    // Always show Sistema and Owner
-    if (groupLabel === "Sistema" || groupLabel === "Configurações" || groupLabel === "Owner") return true;
+    // Always show core system areas and the Owner section for authorized Owner profiles.
+    if (["Sistema", "Configurações", "Owner", "Owner Panel", "Painel Owner"].includes(groupLabel)) return true;
     return activeWorkspace.groups.includes(groupLabel);
   }, [activeWorkspace]);
 
