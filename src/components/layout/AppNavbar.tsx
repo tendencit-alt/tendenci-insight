@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import * as LucideIcons from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   LogOut, User, Menu, ChevronDown, Sun, Moon, Building2,
-  LayoutDashboard, ShoppingCart, Factory, Wallet, Scale, Target,
+  ShoppingCart, Factory, Wallet, Scale, Target,
   Database, BarChart3, Settings,
   Home,
 } from "lucide-react";
@@ -29,6 +29,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { supabase } from "@/integrations/supabase/client";
 
 
 // ── ERP Module Structure ──
