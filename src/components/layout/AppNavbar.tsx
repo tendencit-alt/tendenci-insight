@@ -27,6 +27,7 @@ import {
   Home,
 } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useLocation } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
