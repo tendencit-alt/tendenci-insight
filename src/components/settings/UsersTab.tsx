@@ -26,7 +26,7 @@ interface UserProfile {
   email: string;
   username: string;
   full_name?: string;
-  role: 'admin' | 'vendedor' | 'arquiteto' | 'projetista';
+  role: 'owner' | 'tenant_owner' | 'admin' | 'vendedor' | 'arquiteto' | 'projetista';
   profile_type_id?: string | null;
   profile_type?: ProfileType | null;
   created_at: string;
