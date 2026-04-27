@@ -42,11 +42,16 @@ const Auth = () => {
   useEffect(() => {
     const redirectAuthenticatedUser = async () => {
       if (user && profile) {
-        // Verificar se é admin
-        const isMaster = profile.role === 'admin';
-        
+        // Owner/Admin/Master => acesso global, redirecionar direto
+        const isMaster =
+          profile.is_owner === true ||
+          profile.role === 'admin' ||
+          profile.role === 'owner' ||
+          profile.role === 'tenant_owner' ||
+          profile.role === 'master';
+
         if (isMaster) {
-          navigate('/bi-dashboard');
+          navigate('/');
           return;
         }
         
