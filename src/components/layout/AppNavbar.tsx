@@ -25,7 +25,9 @@ import {
   BarChart3,
   Settings,
   Home,
+  Search,
 } from "lucide-react";
+import { commandBarStore } from "@/components/command/CommandBar";
 import { useTheme } from "next-themes";
 import { useLocation } from "react-router-dom";
 import {
@@ -728,6 +730,29 @@ export function AppNavbar() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => commandBarStore.open()}
+            className="hidden md:flex items-center gap-2 h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground border-border/60"
+            title="Abrir busca (Ctrl+K)"
+          >
+            <Search className="h-3.5 w-3.5" />
+            <span className="hidden lg:inline">Buscar...</span>
+            <kbd className="hidden lg:inline-flex h-4 items-center gap-0.5 rounded border border-border bg-muted px-1 text-[9px] font-mono">
+              ⌘K
+            </kbd>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => commandBarStore.open()}
+            className="md:hidden h-8 w-8"
+            title="Buscar (Ctrl+K)"
+          >
+            <Search className="h-4 w-4" />
+          </Button>
 
           <WorkspaceSelector />
           <ThemeToggle />

@@ -1,71 +1,115 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Command } from "cmdk";
 import {
   Home, ShoppingCart, Factory, Wallet, BookOpen, Target,
   Database, BarChart3, Settings, Building2, Users, FileText,
-  Briefcase, DollarSign, HardHat, Package, Layers, CreditCard,
+  Briefcase, DollarSign, Package, Layers, CreditCard,
   ArrowLeftRight, BarChart, TrendingUp, Calculator, History,
-  Zap, Shield, LineChart, PieChart, UserCog, Link2, Landmark,
-  ClipboardList, FolderOpen, Wrench, Search, Plus, Play,
-  Star, Clock
+  Zap, Shield, LineChart, PieChart, UserCog, Landmark,
+  ClipboardList, Wrench, Search, Plus, Play, Star, Clock,
+  Truck, Receipt, FileSignature, GitCompare, Bot, Sparkles,
+  type LucideIcon,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useNavigationUsage } from "@/hooks/useNavigationUsage";
 import { cn } from "@/lib/utils";
 
+// ── Global open store (so navbar button can trigger it) ──
+type Listener = (open: boolean) => void;
+const listeners = new Set<Listener>();
+export const commandBarStore = {
+  open: () => listeners.forEach((l) => l(true)),
+  close: () => listeners.forEach((l) => l(false)),
+  toggle: () => listeners.forEach((l) => l(undefined as any)),
+};
+
 // ── Types ──
-type RoleKey = "owner" | "financeiro" | "comercial" | "operacional" | "admin";
+type GroupKey = "Ações" | "Módulos" | "Registros" | "Relatórios" | "Configurações";
 
 interface CommandItem {
   id: string;
   label: string;
-  keywords: string[];
-  icon: any;
+  description?: string;
+  keywords: string[]; // include synonyms + abbreviations
+  icon: LucideIcon;
+  group: GroupKey;
   action: () => void;
-  group: string;
-  priority?: number; // higher = more relevant
+  contextRoutes?: string[]; // boost when current route matches
+  roles?: string[]; // visible only for these roles (empty = all)
 }
 
-// ── Role-based priority boosts ──
-const ROLE_BOOSTS: Record<RoleKey, string[]> = {
-  owner: ["dre", "metas", "resultado", "fluxo-caixa", "bi-dashboard", "controladoria"],
-  financeiro: ["contas-pagar", "contas-receber", "conciliacao", "fluxo-caixa", "dre", "financeiro"],
-  comercial: ["pedidos", "clientes", "propostas", "contratos", "comissoes"],
-  operacional: ["producao", "ordens-producao", "execucao-obras", "projetos-operacionais"],
-  admin: [],
-};
+// ── History (recent commands) ──
+const HISTORY_KEY = "erp_command_bar_history";
+const MAX_HISTORY = 8;
 
-function resolveRoleKey(userLevel: string): RoleKey {
-  if (userLevel === 'system_owner' || userLevel === 'tenant_owner') return 'owner';
-  return 'admin';
+function loadHistory(): string[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+function pushHistory(id: string) {
+  try {
+    const cur = loadHistory().filter((x) => x !== id);
+    cur.unshift(id);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(cur.slice(0, MAX_HISTORY)));
+  } catch {}
 }
 
-// ── Icon map for dynamic lookup ──
-const ICON_MAP: Record<string, any> = {
-  Home, ShoppingCart, Factory, Wallet, BookOpen, Target,
-  Database, BarChart3, Settings, Building2, Users, FileText,
-  Briefcase, DollarSign, HardHat, Package, Layers, CreditCard,
-  ArrowLeftRight, BarChart, TrendingUp, Calculator, History,
-  Zap, Shield, LineChart, PieChart, UserCog, Link2, Landmark,
-  ClipboardList, FolderOpen, Wrench,
-};
+// ── Fuzzy + diacritic-insensitive match ──
+function normalize(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function fuzzyScore(haystack: string, needle: string): number {
+  if (!needle) return 1;
+  const h = normalize(haystack);
+  const n = normalize(needle);
+  if (h === n) return 1000;
+  if (h.startsWith(n)) return 500;
+  if (h.includes(n)) return 200;
+  // subsequence (typo tolerance)
+  let i = 0;
+  for (const ch of h) {
+    if (ch === n[i]) i++;
+    if (i === n.length) return 50;
+  }
+  return 0;
+}
 
 export function CommandBar() {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [debounced, setDebounced] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
   const { userLevel } = usePermissions();
-  const { getTopPaths } = useNavigationUsage();
-  const roleKey = resolveRoleKey(userLevel);
-  const boostSet = useMemo(() => new Set(ROLE_BOOSTS[roleKey]), [roleKey]);
+  const { getTopPaths, trackVisit } = useNavigationUsage();
+  const debounceRef = useRef<number | null>(null);
 
-  // Keyboard shortcut
+  // Subscribe to global store
+  useEffect(() => {
+    const l: Listener = (next) => {
+      setOpen((prev) => (next === undefined ? !prev : next));
+    };
+    listeners.add(l);
+    return () => {
+      listeners.delete(l);
+    };
+  }, []);
+
+  // Ctrl+K / Cmd+K + Esc
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        setOpen(prev => !prev);
+        setOpen((prev) => !prev);
       }
       if (e.key === "Escape") setOpen(false);
     };
@@ -73,145 +117,266 @@ export function CommandBar() {
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
-  const go = useCallback((path: string) => {
-    navigate(path);
-    setOpen(false);
-    setSearch("");
-  }, [navigate]);
+  // Debounce search (50ms — instant feel, no jank on long lists)
+  useEffect(() => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => setDebounced(search), 50);
+    return () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    };
+  }, [search]);
 
-  // ── All command items ──
-  const commands = useMemo<CommandItem[]>(() => {
-    const nav: CommandItem[] = [
-      // Navigation
-      { id: "nav-home", label: "Central de Navegação", keywords: ["home", "inicio", "central", "navegação"], icon: Home, action: () => go("/central-navegacao"), group: "Navegação" },
-      { id: "nav-pedidos", label: "Pedidos", keywords: ["pedidos", "vendas", "orders"], icon: ShoppingCart, action: () => go("/pedidos"), group: "Navegação" },
-      { id: "nav-clientes", label: "Clientes", keywords: ["clientes", "customers"], icon: Users, action: () => go("/clientes"), group: "Navegação" },
-      { id: "nav-producao", label: "Produção", keywords: ["producao", "produção", "fabrica"], icon: Factory, action: () => go("/producao"), group: "Navegação" },
-      { id: "nav-financeiro", label: "Tesouraria", keywords: ["tesouraria", "financeiro", "caixa", "banco"], icon: Wallet, action: () => go("/financeiro"), group: "Navegação" },
-      { id: "nav-fornecedores", label: "Fornecedores", keywords: ["fornecedores", "suppliers"], icon: Package, action: () => go("/fornecedores"), group: "Navegação" },
-      { id: "nav-estoque", label: "Produtos / Materiais", keywords: ["estoque", "materiais", "produtos", "inventory"], icon: Layers, action: () => go("/estoque"), group: "Navegação" },
-      { id: "nav-plano-contas", label: "Plano de Contas", keywords: ["plano", "contas", "categorias", "chart"], icon: BookOpen, action: () => go("/cadastros-financeiros"), group: "Navegação" },
-      { id: "nav-metas", label: "Metas", keywords: ["metas", "goals", "objetivos"], icon: Target, action: () => go("/metas"), group: "Navegação" },
-      { id: "nav-bi", label: "BI Analítico", keywords: ["bi", "dashboard", "analítico", "indicadores"], icon: PieChart, action: () => go("/bi-dashboard"), group: "Navegação" },
-      { id: "nav-dashboards", label: "Dashboards", keywords: ["dashboards", "relatórios", "painel"], icon: BarChart3, action: () => go("/dashboards"), group: "Navegação" },
-      { id: "nav-automacoes", label: "Automações", keywords: ["automações", "regras", "automação"], icon: Zap, action: () => go("/automacoes"), group: "Navegação" },
-      { id: "nav-auditoria", label: "Auditoria", keywords: ["auditoria", "log", "histórico"], icon: History, action: () => go("/auditoria"), group: "Navegação" },
-      { id: "nav-aprovacoes", label: "Aprovações", keywords: ["aprovações", "aprovar", "pendente"], icon: Shield, action: () => go("/aprovacoes"), group: "Navegação" },
-      { id: "nav-tarefas", label: "Tarefas", keywords: ["tarefas", "tasks", "pendências"], icon: ClipboardList, action: () => go("/tarefas"), group: "Navegação" },
-      { id: "nav-settings", label: "Configurações", keywords: ["configurações", "settings", "config"], icon: Settings, action: () => go("/settings"), group: "Navegação" },
-      { id: "nav-users", label: "Usuários", keywords: ["usuários", "users", "permissões"], icon: UserCog, action: () => go("/settings/users"), group: "Navegação" },
-      { id: "nav-documentos", label: "Documentos", keywords: ["documentos", "arquivos", "files"], icon: FileText, action: () => go("/documentos"), group: "Navegação" },
+  // Reset search when closing
+  useEffect(() => {
+    if (!open) setSearch("");
+  }, [open]);
 
-      // Actions
-      { id: "act-novo-pedido", label: "Novo Pedido", keywords: ["novo", "pedido", "criar", "venda"], icon: Plus, action: () => go("/pedidos?action=new"), group: "Ações" },
-      { id: "act-novo-cliente", label: "Novo Cliente", keywords: ["novo", "cliente", "cadastrar"], icon: Plus, action: () => go("/clientes?action=new"), group: "Ações" },
-      { id: "act-novo-fornecedor", label: "Novo Fornecedor", keywords: ["novo", "fornecedor", "cadastrar"], icon: Plus, action: () => go("/fornecedores?action=new"), group: "Ações" },
-      { id: "act-novo-lancamento", label: "Novo Lançamento Financeiro", keywords: ["novo", "lançamento", "financeiro", "despesa", "receita"], icon: Plus, action: () => go("/financeiro?action=new"), group: "Ações" },
+  const go = useCallback(
+    (id: string, path: string, label: string, group: string) => {
+      pushHistory(id);
+      trackVisit(path, group);
+      navigate(path);
+      setOpen(false);
+      setSearch("");
+    },
+    [navigate, trackVisit]
+  );
 
-      // Reports / Executive
-      { id: "rep-dre", label: "DRE Gerencial", keywords: ["dre", "resultado", "demonstrativo", "lucro"], icon: LineChart, action: () => go("/dre"), group: "Relatórios" },
-      { id: "rep-fluxo", label: "Fluxo de Caixa", keywords: ["fluxo", "caixa", "cash", "flow", "projeção"], icon: BarChart, action: () => go("/fluxo-caixa"), group: "Relatórios" },
-      { id: "rep-resultado", label: "Resultado Financeiro", keywords: ["resultado", "financeiro", "juros"], icon: Calculator, action: () => go("/resultado-financeiro"), group: "Relatórios" },
+  // ── Catalog: Modules + Actions + Reports + Records + Settings ──
+  const commands = useMemo<CommandItem[]>(
+    () => [
+      // ───── MÓDULOS ─────
+      { id: "mod-home", label: "Central de Navegação", group: "Módulos", icon: Home,
+        keywords: ["home", "inicio", "central", "launcher", "dashboard"],
+        action: () => go("mod-home", "/central-navegacao", "Central de Navegação", "Módulos") },
+      { id: "mod-pedidos", label: "Pedidos", group: "Módulos", icon: ShoppingCart,
+        keywords: ["pedidos", "vendas", "ordens", "orders", "pe"],
+        action: () => go("mod-pedidos", "/pedidos", "Pedidos", "Módulos") },
+      { id: "mod-crm", label: "CRM Comercial", group: "Módulos", icon: Users,
+        keywords: ["crm", "pipeline", "funil", "leads", "comercial"],
+        action: () => go("mod-crm", "/crm-comercial", "CRM", "Módulos") },
+      { id: "mod-producao", label: "Produção", group: "Módulos", icon: Factory,
+        keywords: ["producao", "fabrica", "kanban", "op", "ordens de producao"],
+        action: () => go("mod-producao", "/producao", "Produção", "Módulos") },
+      { id: "mod-projetos", label: "Projetos", group: "Módulos", icon: Briefcase,
+        keywords: ["projetos", "obras", "execucao"],
+        action: () => go("mod-projetos", "/projetos", "Projetos", "Módulos") },
+      { id: "mod-financeiro", label: "Financeiro", group: "Módulos", icon: Wallet,
+        keywords: ["financeiro", "tesouraria", "fin", "caixa"],
+        action: () => go("mod-financeiro", "/financeiro", "Financeiro", "Módulos") },
+      { id: "mod-bi", label: "BI Dashboard", group: "Módulos", icon: PieChart,
+        keywords: ["bi", "dashboard", "indicadores", "kpi", "analitico"],
+        action: () => go("mod-bi", "/bi-dashboard", "BI", "Módulos") },
+      { id: "mod-cadastros-fin", label: "Cadastros Financeiros", group: "Módulos", icon: BookOpen,
+        keywords: ["plano de contas", "categorias", "centros de custo", "cc", "controladoria"],
+        action: () => go("mod-cadastros-fin", "/cadastros-financeiros", "Cadastros Financeiros", "Módulos") },
+      { id: "mod-fornecedores", label: "Fornecedores", group: "Módulos", icon: Truck,
+        keywords: ["fornecedores", "suppliers", "compras"],
+        action: () => go("mod-fornecedores", "/fornecedores", "Fornecedores", "Módulos") },
+      { id: "mod-estoque", label: "Estoque / Produtos", group: "Módulos", icon: Package,
+        keywords: ["estoque", "produtos", "inventario", "materiais", "sku"],
+        action: () => go("mod-estoque", "/estoque", "Estoque", "Módulos") },
+      { id: "mod-tarefas", label: "Tarefas", group: "Módulos", icon: ClipboardList,
+        keywords: ["tarefas", "tasks", "to do", "pendencias"],
+        action: () => go("mod-tarefas", "/tarefas", "Tarefas", "Módulos") },
+      { id: "mod-aprovacoes", label: "Aprovações", group: "Módulos", icon: Shield,
+        keywords: ["aprovacoes", "aprovar", "workflow"],
+        action: () => go("mod-aprovacoes", "/aprovacoes", "Aprovações", "Módulos") },
+      { id: "mod-rh", label: "Recursos Humanos", group: "Módulos", icon: Users,
+        keywords: ["rh", "colaboradores", "ponto", "funcionarios"],
+        action: () => go("mod-rh", "/rh", "RH", "Módulos") },
 
-      // Operational
-      { id: "op-contas-pagar", label: "Contas a Pagar", keywords: ["contas", "pagar", "vencidas", "despesas"], icon: CreditCard, action: () => go("/contas-pagar"), group: "Operacional" },
-      { id: "op-contas-receber", label: "Contas a Receber", keywords: ["contas", "receber", "recebíveis", "receitas"], icon: TrendingUp, action: () => go("/contas-receber"), group: "Operacional" },
-      { id: "op-conciliacao", label: "Conciliação Bancária", keywords: ["conciliação", "conciliar", "banco", "ofx"], icon: ArrowLeftRight, action: () => go("/conciliacao"), group: "Operacional" },
-      { id: "op-ordens-prod", label: "Ordens de Produção", keywords: ["ordens", "produção", "op", "fabricação"], icon: ClipboardList, action: () => go("/ordens-producao"), group: "Operacional" },
+      // ───── AÇÕES (execução direta) ─────
+      { id: "act-novo-pedido", label: "Criar novo pedido", group: "Ações", icon: Plus,
+        keywords: ["novo", "criar", "pedido", "venda", "+"],
+        action: () => go("act-novo-pedido", "/pedidos?action=new", "Novo Pedido", "Ações") },
+      { id: "act-nova-proposta", label: "Criar nova proposta", group: "Ações", icon: FileSignature,
+        keywords: ["nova", "proposta", "orcamento", "cotacao"],
+        action: () => go("act-nova-proposta", "/crm-comercial?action=new-proposta", "Proposta", "Ações") },
+      { id: "act-nova-despesa", label: "Lançar nova despesa", group: "Ações", icon: ArrowLeftRight,
+        keywords: ["nova", "despesa", "pagar", "lancamento", "saida", "conta a pagar", "ap"],
+        action: () => go("act-nova-despesa", "/financeiro?tab=payables&action=new", "Nova Despesa", "Ações") },
+      { id: "act-nova-receita", label: "Lançar nova receita", group: "Ações", icon: TrendingUp,
+        keywords: ["nova", "receita", "receber", "entrada", "conta a receber", "ar"],
+        action: () => go("act-nova-receita", "/financeiro?tab=receivables&action=new", "Nova Receita", "Ações") },
+      { id: "act-novo-cliente", label: "Cadastrar novo cliente", group: "Ações", icon: Plus,
+        keywords: ["novo", "cliente", "cadastrar", "cad cliente"],
+        action: () => go("act-novo-cliente", "/clientes?action=new", "Novo Cliente", "Ações") },
+      { id: "act-novo-fornecedor", label: "Cadastrar novo fornecedor", group: "Ações", icon: Plus,
+        keywords: ["novo", "fornecedor", "cadastrar", "supplier"],
+        action: () => go("act-novo-fornecedor", "/fornecedores?action=new", "Novo Fornecedor", "Ações") },
+      { id: "act-conciliar", label: "Iniciar conciliação bancária", group: "Ações", icon: GitCompare,
+        keywords: ["conciliar", "conciliacao", "ofx", "extrato", "banco"],
+        action: () => go("act-conciliar", "/financeiro?tab=reconciliation", "Conciliação", "Ações") },
+      { id: "act-importar-ofx", label: "Importar extrato OFX", group: "Ações", icon: Database,
+        keywords: ["importar", "ofx", "extrato", "banco"],
+        action: () => go("act-importar-ofx", "/financeiro?tab=reconciliation&import=ofx", "Importar OFX", "Ações") },
 
-      // Activity feed commands
-      { id: "feed-hoje", label: "Atividade Hoje", keywords: ["atividade", "hoje", "feed", "recente"], icon: Clock, action: () => go("/atividades"), group: "Feed" },
-      { id: "feed-financeiro", label: "Atividade Financeiro", keywords: ["atividade", "financeiro", "feed"], icon: Play, action: () => go("/atividades?sector=financeiro"), group: "Feed" },
-      { id: "feed-comercial", label: "Atividade Comercial", keywords: ["atividade", "comercial", "feed"], icon: Play, action: () => go("/atividades?sector=comercial"), group: "Feed" },
-      { id: "feed-operacoes", label: "Atividade Operações", keywords: ["atividade", "operações", "produção", "feed"], icon: Play, action: () => go("/atividades?sector=operacoes"), group: "Feed" },
+      // ───── REGISTROS (atalhos para listas filtráveis) ─────
+      { id: "rec-clientes", label: "Lista de clientes", group: "Registros", icon: Users,
+        keywords: ["clientes", "customers", "buscar cliente"],
+        action: () => go("rec-clientes", "/clientes", "Clientes", "Registros") },
+      { id: "rec-fornecedores", label: "Lista de fornecedores", group: "Registros", icon: Truck,
+        keywords: ["fornecedores", "suppliers"],
+        action: () => go("rec-fornecedores", "/fornecedores", "Fornecedores", "Registros") },
+      { id: "rec-pedidos", label: "Lista de pedidos", group: "Registros", icon: Receipt,
+        keywords: ["pedidos", "buscar pedido"],
+        action: () => go("rec-pedidos", "/pedidos", "Pedidos", "Registros") },
+      { id: "rec-projetos", label: "Lista de projetos", group: "Registros", icon: Briefcase,
+        keywords: ["projetos", "obras"],
+        action: () => go("rec-projetos", "/projetos", "Projetos", "Registros") },
+      { id: "rec-produtos", label: "Lista de produtos", group: "Registros", icon: Package,
+        keywords: ["produtos", "sku", "estoque"],
+        action: () => go("rec-produtos", "/estoque", "Produtos", "Registros") },
 
-      // Notification commands
-      { id: "notif-criticas", label: "Notificações Críticas", keywords: ["notificações", "críticas", "alertas", "urgente"], icon: Search, action: () => go("/tarefas?filter=critica"), group: "Notificações" },
-      { id: "notif-contas", label: "Contas Vencidas", keywords: ["contas", "vencidas", "atraso", "inadimplência"], icon: CreditCard, action: () => go("/contas-pagar?filter=vencidas"), group: "Notificações" },
-      { id: "notif-aprovacoes", label: "Aprovações Pendentes", keywords: ["aprovações", "pendentes", "aprovar"], icon: Shield, action: () => go("/aprovacoes?status=pending"), group: "Notificações" },
-      { id: "notif-resumo", label: "Resumo do Dia", keywords: ["resumo", "dia", "diário", "pendências"], icon: Star, action: () => go("/central-navegacao"), group: "Notificações" },
+      // ───── RELATÓRIOS ─────
+      { id: "rep-dre", label: "DRE Gerencial", group: "Relatórios", icon: LineChart,
+        keywords: ["dre", "resultado", "demonstrativo", "lucro", "competencia"],
+        action: () => go("rep-dre", "/financeiro?tab=dre", "DRE", "Relatórios") },
+      { id: "rep-fluxo", label: "Fluxo de Caixa", group: "Relatórios", icon: BarChart,
+        keywords: ["fluxo", "caixa", "cash flow", "liquidez", "fc"],
+        action: () => go("rep-fluxo", "/financeiro?tab=cashflow", "Fluxo de Caixa", "Relatórios") },
+      { id: "rep-resultado", label: "Resultado Financeiro", group: "Relatórios", icon: Calculator,
+        keywords: ["resultado", "financeiro", "juros", "rentabilidade"],
+        action: () => go("rep-resultado", "/financeiro?tab=financial-result", "Resultado", "Relatórios") },
+      { id: "rep-pagar", label: "Contas a Pagar", group: "Relatórios", icon: CreditCard,
+        keywords: ["contas a pagar", "ap", "vencidas", "despesas"],
+        action: () => go("rep-pagar", "/financeiro?tab=payables", "Contas a Pagar", "Relatórios") },
+      { id: "rep-receber", label: "Contas a Receber", group: "Relatórios", icon: TrendingUp,
+        keywords: ["contas a receber", "ar", "recebiveis"],
+        action: () => go("rep-receber", "/financeiro?tab=receivables", "Contas a Receber", "Relatórios") },
+      { id: "rep-tesouraria", label: "Tesouraria", group: "Relatórios", icon: Landmark,
+        keywords: ["tesouraria", "saldo", "bancos"],
+        action: () => go("rep-tesouraria", "/financeiro?tab=treasury", "Tesouraria", "Relatórios") },
+      { id: "rep-relatorios", label: "Central de Relatórios", group: "Relatórios", icon: BarChart3,
+        keywords: ["relatorios", "reports", "exportar"],
+        action: () => go("rep-relatorios", "/relatorios", "Relatórios", "Relatórios") },
+      { id: "rep-bi", label: "BI Analítico", group: "Relatórios", icon: PieChart,
+        keywords: ["bi", "analitico", "indicadores", "dashboard"],
+        action: () => go("rep-bi", "/bi-dashboard", "BI", "Relatórios") },
 
-      // Flow commands
-      { id: "flow-comercial", label: "Fluxo Comercial", keywords: ["fluxo", "comercial", "lead", "orçamento", "pedido"], icon: ShoppingCart, action: () => go("/central-navegacao"), group: "Fluxos" },
-      { id: "flow-producao", label: "Fluxo Produção", keywords: ["fluxo", "produção", "corte", "montagem", "embalagem"], icon: Factory, action: () => go("/central-navegacao"), group: "Fluxos" },
-      { id: "flow-financeiro", label: "Fluxo Financeiro", keywords: ["fluxo", "financeiro", "conciliação", "baixa"], icon: Wallet, action: () => go("/central-navegacao"), group: "Fluxos" },
-      { id: "flow-fechamento", label: "Fluxo Fechamento Mensal", keywords: ["fluxo", "fechamento", "mensal", "dre", "resultado"], icon: BarChart3, action: () => go("/central-navegacao"), group: "Fluxos" },
+      // ───── CONFIGURAÇÕES ─────
+      { id: "cfg-empresa", label: "Configurações da Empresa", group: "Configurações", icon: Building2,
+        keywords: ["empresa", "company", "configuracoes", "settings"],
+        action: () => go("cfg-empresa", "/settings", "Configurações", "Configurações") },
+      { id: "cfg-usuarios", label: "Usuários e Permissões", group: "Configurações", icon: UserCog,
+        keywords: ["usuarios", "users", "permissoes", "rbac", "papeis"],
+        action: () => go("cfg-usuarios", "/settings/users", "Usuários", "Configurações") },
+      { id: "cfg-automacoes", label: "Automações por Evento", group: "Configurações", icon: Bot,
+        keywords: ["automacoes", "regras", "engine", "eventos"],
+        action: () => go("cfg-automacoes", "/cadastros-financeiros?tab=event_automations", "Automações", "Configurações") },
+      { id: "cfg-classificacao", label: "Classificação Automática", group: "Configurações", icon: Sparkles,
+        keywords: ["classificacao", "ia", "smart", "categorizar"],
+        action: () => go("cfg-classificacao", "/cadastros-financeiros?tab=classification", "Classificação", "Configurações") },
+      { id: "cfg-auditoria", label: "Auditoria do Sistema", group: "Configurações", icon: History,
+        keywords: ["auditoria", "log", "trilha", "audit"],
+        action: () => go("cfg-auditoria", "/auditoria", "Auditoria", "Configurações") },
+      { id: "cfg-cc", label: "Centros de Custo", group: "Configurações", icon: Layers,
+        keywords: ["centros de custo", "cc", "setores", "departamentos"],
+        action: () => go("cfg-cc", "/cadastros-financeiros?tab=cost-centers", "Centros de Custo", "Configurações") },
+      { id: "cfg-plano", label: "Plano de Contas", group: "Configurações", icon: BookOpen,
+        keywords: ["plano de contas", "categorias", "natureza", "chart"],
+        action: () => go("cfg-plano", "/cadastros-financeiros?tab=chart", "Plano de Contas", "Configurações") },
+    ],
+    [go]
+  );
 
-      // Integrity commands
-      { id: "int-integridade", label: "Integridade da Base", keywords: ["integridade", "consistência", "validação", "score"], icon: Shield, action: () => go("/central-navegacao"), group: "Integridade" },
-      { id: "int-auditoria", label: "Auditoria Automática", keywords: ["auditoria", "automática", "inconsistências", "órfãos"], icon: ClipboardList, action: () => go("/auditoria"), group: "Integridade" },
+  // ── Context-aware boosts ──
+  const contextBoost = useCallback(
+    (item: CommandItem): number => {
+      let boost = 0;
+      // Current route boost
+      const path = location.pathname;
+      if (path.startsWith("/financeiro") && (item.group === "Relatórios" || item.id.startsWith("act-nova-"))) boost += 30;
+      if (path.startsWith("/pedidos") && item.id.includes("pedido")) boost += 30;
+      if (path.startsWith("/producao") && item.id.includes("producao")) boost += 30;
+      // Role boost
+      if (userLevel === "system_owner" || userLevel === "tenant_owner") {
+        if (["rep-dre", "rep-fluxo", "mod-bi"].includes(item.id)) boost += 20;
+      }
+      return boost;
+    },
+    [location.pathname, userLevel]
+  );
 
-      // Automation commands
-      { id: "auto-regras", label: "Regras de Automação", keywords: ["automação", "regras", "motor", "engine"], icon: Zap, action: () => go("/automacoes"), group: "Automação" },
-      { id: "auto-pedido", label: "Automação Pedido Aprovado", keywords: ["automação", "pedido", "aprovado", "comissão", "receber"], icon: Zap, action: () => go("/automacoes"), group: "Automação" },
-      { id: "auto-fechamento", label: "Checklist Fechamento", keywords: ["fechamento", "mensal", "checklist", "verificação"], icon: ClipboardList, action: () => go("/automacoes"), group: "Automação" },
+  // ── Recent / frequent ranking ──
+  const history = useMemo(() => loadHistory(), [open]);
+  const topPaths = useMemo(() => getTopPaths(10), [getTopPaths, open]);
 
-      // Forecast & Scenarios
-      { id: "forecast-resultado", label: "Forecast Resultado Mensal", keywords: ["forecast", "resultado", "previsão", "lucro", "projeção"], icon: TrendingUp, action: () => go("/central-navegacao"), group: "Forecast" },
-      { id: "forecast-caixa", label: "Projeção Liquidez", keywords: ["caixa", "liquidez", "projeção", "saldo", "7 dias", "30 dias"], icon: BarChart, action: () => go("/central-navegacao"), group: "Forecast" },
-      { id: "forecast-cenarios", label: "Cenários Financeiros", keywords: ["cenários", "conservador", "agressivo", "realista", "simulação"], icon: BarChart3, action: () => go("/central-navegacao"), group: "Forecast" },
-      { id: "forecast-simulador", label: "Simulador de Custos", keywords: ["simulador", "custos", "comissão", "frete", "matéria-prima", "margem"], icon: Calculator, action: () => go("/central-navegacao"), group: "Forecast" },
-      { id: "forecast-emprestimo", label: "Simulador Empréstimo", keywords: ["empréstimo", "financiamento", "juros", "parcela"], icon: Landmark, action: () => go("/central-navegacao"), group: "Forecast" },
+  const recencyScore = useCallback(
+    (id: string): number => {
+      const idx = history.indexOf(id);
+      return idx === -1 ? 0 : (MAX_HISTORY - idx) * 15;
+    },
+    [history]
+  );
 
-      // Performance Intelligence
-      { id: "perf-diagnostico", label: "Diagnóstico Performance", keywords: ["diagnóstico", "performance", "margem", "caixa", "crescimento"], icon: BarChart3, action: () => go("/central-navegacao"), group: "Performance" },
-      { id: "perf-custos", label: "Ranking de Custos", keywords: ["ranking", "custos", "top", "maiores", "despesas"], icon: BarChart, action: () => go("/central-navegacao"), group: "Performance" },
-      { id: "perf-recomendacoes", label: "Recomendações Gerenciais", keywords: ["recomendações", "sugestões", "melhoria", "gerencial"], icon: TrendingUp, action: () => go("/central-navegacao"), group: "Performance" },
+  const frequencyScore = useCallback(
+    (item: CommandItem): number => {
+      // boost if any keyword/path matches a top visited path
+      const allText = normalize(item.label + " " + item.keywords.join(" "));
+      let score = 0;
+      topPaths.forEach((p, i) => {
+        const seg = normalize(p.replace(/^\//, "").split("?")[0]);
+        if (seg && allText.includes(seg)) score += (10 - i) * 2;
+      });
+      return score;
+    },
+    [topPaths]
+  );
 
-      // Governance
-      { id: "gov-auditoria", label: "Auditoria de Alterações", keywords: ["auditoria", "alterações", "log", "histórico", "governança"], icon: Shield, action: () => go("/auditoria"), group: "Governança" },
-      { id: "gov-permissoes", label: "Matriz de Permissões", keywords: ["permissões", "acesso", "níveis", "controle", "matriz"], icon: Shield, action: () => go("/central-navegacao"), group: "Governança" },
-      { id: "gov-aprovacoes", label: "Aprovações Pendentes", keywords: ["aprovações", "pendentes", "fluxo", "autorização"], icon: Shield, action: () => go("/aprovacoes"), group: "Governança" },
-      { id: "gov-bloqueios", label: "Bloqueios Estruturais", keywords: ["bloqueios", "trava", "conciliado", "fechado", "faturado"], icon: Shield, action: () => go("/central-navegacao"), group: "Governança" },
+  // ── Filtered + ranked results ──
+  const ranked = useMemo(() => {
+    const q = debounced.trim();
+    return commands
+      .map((c) => {
+        const labelScore = fuzzyScore(c.label, q);
+        const keywordScore = q
+          ? Math.max(0, ...c.keywords.map((k) => fuzzyScore(k, q)))
+          : 0;
+        const matchScore = Math.max(labelScore, keywordScore);
+        if (q && matchScore === 0) return null;
+        const total =
+          matchScore +
+          contextBoost(c) +
+          recencyScore(c.id) +
+          frequencyScore(c);
+        return { item: c, score: total };
+      })
+      .filter((x): x is { item: CommandItem; score: number } => x !== null)
+      .sort((a, b) => b.score - a.score);
+  }, [commands, debounced, contextBoost, recencyScore, frequencyScore]);
 
-      // Master Data
-      { id: "md-fornecedores", label: "Cadastro Fornecedores", keywords: ["fornecedores", "cadastro", "mestre", "suppliers"], icon: Package, action: () => go("/fornecedores"), group: "Dados Mestres" },
-      { id: "md-clientes", label: "Cadastro Clientes", keywords: ["clientes", "cadastro", "mestre"], icon: Users, action: () => go("/clientes"), group: "Dados Mestres" },
-      { id: "md-duplicados", label: "Detecção Duplicados", keywords: ["duplicados", "duplicidade", "unificação", "merge"], icon: Database, action: () => go("/central-navegacao"), group: "Dados Mestres" },
-      { id: "md-centros-custo", label: "Centros de Custo", keywords: ["centros", "custo", "departamento", "setor"], icon: Database, action: () => go("/cadastros-financeiros"), group: "Dados Mestres" },
+  // ── Group results by GroupKey ──
+  const groups = useMemo(() => {
+    const order: GroupKey[] = ["Ações", "Módulos", "Registros", "Relatórios", "Configurações"];
+    const map = new Map<GroupKey, { item: CommandItem; score: number }[]>();
+    order.forEach((g) => map.set(g, []));
+    ranked.forEach((r) => map.get(r.item.group)!.push(r));
+    return order.filter((g) => (map.get(g)?.length ?? 0) > 0).map((g) => ({ group: g, items: map.get(g)! }));
+  }, [ranked]);
 
-      // Integrações
-      { id: "int-ofx", label: "Importar OFX", keywords: ["ofx", "extrato", "bancário", "importar", "banco"], icon: Database, action: () => go("/financeiro"), group: "Integrações" },
-      { id: "int-nfe", label: "NF-e Emitidas", keywords: ["nfe", "nota", "fiscal", "emitida"], icon: Database, action: () => go("/financeiro"), group: "Integrações" },
-      { id: "int-xml", label: "XML Fornecedores", keywords: ["xml", "fornecedor", "entrada", "nota"], icon: Database, action: () => go("/financeiro"), group: "Integrações" },
-      { id: "int-webhook", label: "Webhook n8n", keywords: ["webhook", "n8n", "automação", "integração"], icon: Database, action: () => go("/configuracoes"), group: "Integrações" },
-      { id: "int-api", label: "API Pública ERP", keywords: ["api", "rest", "endpoint", "externo"], icon: Database, action: () => go("/central-navegacao"), group: "Integrações" },
-    ];
-
-    // Apply role-based priority
-    return nav.map(item => ({
-      ...item,
-      priority: boostSet.has(item.id.replace(/^nav-|^act-|^rep-|^op-/, "")) ? 10 : 0,
-    }));
-  }, [go, boostSet]);
-
-  // ── Recent paths as suggestions ──
-  const recentSuggestions = useMemo(() => {
-    const topPaths = getTopPaths(5);
-    return commands.filter(c => topPaths.some(p => {
-      // Match if the command action navigates to this path
-      const cmdPath = c.id.replace(/^nav-/, "/").replace(/-/g, "/");
-      return false; // We'll use label matching instead
-    }));
-  }, [getTopPaths, commands]);
+  // ── Recent (only when no search) ──
+  const recentItems = useMemo(() => {
+    if (debounced.trim()) return [];
+    return history
+      .map((id) => commands.find((c) => c.id === id))
+      .filter((c): c is CommandItem => !!c)
+      .slice(0, 5);
+  }, [history, commands, debounced]);
 
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-[100]" onClick={() => setOpen(false)}>
-      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm" />
-      <div className="fixed inset-0 flex items-start justify-center pt-[20vh]" onClick={e => e.stopPropagation()}>
-        <div className="w-full max-w-[560px] rounded-xl border border-border bg-popover shadow-2xl overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150">
+      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm animate-in fade-in-0 duration-150" />
+      <div className="fixed inset-0 flex items-start justify-center pt-[15vh] px-4" onClick={(e) => e.stopPropagation()}>
+        <div className="w-full max-w-[640px] rounded-xl border border-border bg-popover shadow-2xl overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150">
           <Command
-            className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
-            filter={(value, search) => {
-              const item = commands.find(c => c.id === value);
-              if (!item) return 0;
-              const s = search.toLowerCase();
-              if (item.label.toLowerCase().includes(s)) return 1;
-              if (item.keywords.some(k => k.includes(s))) return 1;
-              return 0;
-            }}
+            className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-widest"
+            // Disable cmdk's internal filter — we do our own ranking
+            shouldFilter={false}
+            loop
           >
             {/* Input */}
             <div className="flex items-center gap-2 px-4 border-b border-border">
@@ -219,79 +384,37 @@ export function CommandBar() {
               <Command.Input
                 value={search}
                 onValueChange={setSearch}
-                placeholder="Buscar módulo, ação ou relatório..."
+                placeholder="Digite para buscar ações, módulos, registros, relatórios..."
                 className="flex-1 h-12 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+                autoFocus
               />
               <kbd className="hidden sm:inline-flex h-5 items-center gap-0.5 rounded border border-border bg-muted px-1.5 text-[10px] font-medium text-muted-foreground">
                 ESC
               </kbd>
             </div>
 
-            <Command.List className="max-h-[340px] overflow-y-auto p-2">
-              <Command.Empty className="py-8 text-center text-sm text-muted-foreground">
-                Nenhum resultado encontrado.
+            <Command.List className="max-h-[420px] overflow-y-auto p-2">
+              <Command.Empty className="py-10 text-center text-sm text-muted-foreground">
+                Nenhum resultado para "{search}".
               </Command.Empty>
 
-              {/* Suggested */}
-              {!search && (
-                <Command.Group heading="Sugerido">
-                  {commands
-                    .filter(c => c.priority && c.priority > 0)
-                    .slice(0, 4)
-                    .map(item => (
-                      <CommandItemRow key={item.id} item={item} />
-                    ))}
+              {/* Recent */}
+              {recentItems.length > 0 && (
+                <Command.Group heading="Recentes">
+                  {recentItems.map((item) => (
+                    <Row key={`recent-${item.id}`} item={item} icon={Clock} />
+                  ))}
                 </Command.Group>
               )}
 
-              {/* Navegação */}
-              <Command.Group heading="Navegação">
-                {commands.filter(c => c.group === "Navegação").map(item => (
-                  <CommandItemRow key={item.id} item={item} />
-                ))}
-              </Command.Group>
-
-              {/* Ações */}
-              <Command.Group heading="Ações rápidas">
-                {commands.filter(c => c.group === "Ações").map(item => (
-                  <CommandItemRow key={item.id} item={item} />
-                ))}
-              </Command.Group>
-
-              {/* Relatórios */}
-              <Command.Group heading="Relatórios">
-                {commands.filter(c => c.group === "Relatórios").map(item => (
-                  <CommandItemRow key={item.id} item={item} />
-                ))}
-              </Command.Group>
-
-              {/* Operacional */}
-              <Command.Group heading="Operacional">
-                {commands.filter(c => c.group === "Operacional").map(item => (
-                  <CommandItemRow key={item.id} item={item} />
-                ))}
-              </Command.Group>
-
-              {/* Feed */}
-              <Command.Group heading="Feed de Atividades">
-                {commands.filter(c => c.group === "Feed").map(item => (
-                  <CommandItemRow key={item.id} item={item} />
-                ))}
-              </Command.Group>
-
-              {/* Fluxos */}
-              <Command.Group heading="Fluxos Operacionais">
-                {commands.filter(c => c.group === "Fluxos").map(item => (
-                  <CommandItemRow key={item.id} item={item} />
-                ))}
-              </Command.Group>
-
-              {/* Integridade */}
-              <Command.Group heading="Integridade">
-                {commands.filter(c => c.group === "Integridade").map(item => (
-                  <CommandItemRow key={item.id} item={item} />
-                ))}
-              </Command.Group>
+              {/* Ranked groups */}
+              {groups.map(({ group, items }) => (
+                <Command.Group key={group} heading={group}>
+                  {items.map(({ item }) => (
+                    <Row key={item.id} item={item} />
+                  ))}
+                </Command.Group>
+              ))}
             </Command.List>
 
             {/* Footer */}
@@ -303,7 +426,11 @@ export function CommandBar() {
                 </span>
                 <span className="flex items-center gap-1">
                   <kbd className="inline-flex h-4 items-center rounded border border-border bg-muted px-1 text-[9px]">↵</kbd>
-                  abrir
+                  executar
+                </span>
+                <span className="flex items-center gap-1">
+                  <kbd className="inline-flex h-4 items-center rounded border border-border bg-muted px-1 text-[9px]">esc</kbd>
+                  fechar
                 </span>
               </div>
               <span className="flex items-center gap-1">
@@ -318,24 +445,39 @@ export function CommandBar() {
   );
 }
 
-// ── Individual command row ──
-function CommandItemRow({ item }: { item: CommandItem }) {
-  const Icon = item.icon;
+// ── Row ──
+function Row({ item, icon }: { item: CommandItem; icon?: LucideIcon }) {
+  const Icon = icon ?? item.icon;
   return (
     <Command.Item
       value={item.id}
       onSelect={() => item.action()}
-      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground text-foreground/80"
+      className={cn(
+        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors",
+        "data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground text-foreground/85"
+      )}
     >
       <div className="flex items-center justify-center w-8 h-8 rounded-md bg-muted/60 flex-shrink-0">
         <Icon className="h-4 w-4 text-muted-foreground" />
       </div>
       <div className="flex-1 min-w-0">
-        <span className="truncate">{item.label}</span>
+        <span className="truncate block">{item.label}</span>
+        {item.description && (
+          <span className="text-[11px] text-muted-foreground truncate block">{item.description}</span>
+        )}
       </div>
-      {item.group === "Ações" && (
-        <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">ação</span>
-      )}
+      <span
+        className={cn(
+          "text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded font-semibold",
+          item.group === "Ações" && "bg-primary/15 text-primary",
+          item.group === "Módulos" && "bg-blue-500/15 text-blue-500",
+          item.group === "Registros" && "bg-emerald-500/15 text-emerald-500",
+          item.group === "Relatórios" && "bg-amber-500/15 text-amber-600",
+          item.group === "Configurações" && "bg-muted text-muted-foreground"
+        )}
+      >
+        {item.group}
+      </span>
     </Command.Item>
   );
 }
