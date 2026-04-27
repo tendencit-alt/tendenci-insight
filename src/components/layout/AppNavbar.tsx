@@ -580,48 +580,62 @@ export function AppNavbar() {
                     if (item.module && !loading) return hasModuleAccess(item.module as any);
                     return true;
                   });
-                  const comingSoonItems = mod.items.filter((i) => !i.available);
+                  if (availableItems.length === 0) return null;
 
-                  if (availableItems.length === 0 && comingSoonItems.length === 0) return null;
+                  const sortedItems = sortByUsage(availableItems);
+                  const isOpen = openMainGroup === mod.key;
+                  const isModuleActive = mod.items.some(
+                    (i) => i.available && (location.pathname === i.route || location.pathname.startsWith(i.route.split("?")[0]))
+                  );
 
                   return (
-                    <div key={mod.key} className="mb-1">
-                      <p className="text-[10px] text-muted-foreground font-semibold tracking-wider uppercase px-6 py-2 flex items-center gap-2">
-                        <mod.icon className="h-3.5 w-3.5" />
-                        {mod.label}
-                      </p>
-                      <div className="px-3 space-y-0.5">
-                        {availableItems.map((item) => {
-                          const IconComp = getIconComponent(item.icon);
-                          return (
-                            <NavLink
-                              key={item.route}
-                              to={item.route}
-                              onClick={() => setMobileMenuOpen(false)}
-                              className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all hover:bg-muted text-sm"
-                              activeClassName="bg-primary text-primary-foreground font-semibold"
-                            >
-                              <IconComp className="h-4 w-4 flex-shrink-0" />
-                              <span>{item.label}</span>
-                            </NavLink>
-                          );
-                        })}
-                        {comingSoonItems.map((item) => {
-                          const IconComp = getIconComponent(item.icon);
-                          return (
-                            <div
-                              key={item.label}
-                              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground/50 cursor-default select-none"
-                            >
-                              <IconComp className="h-4 w-4 flex-shrink-0" />
-                              <span>{item.label}</span>
-                              <Badge variant="outline" className="ml-auto text-[8px] h-4 px-1 border-muted-foreground/20 text-muted-foreground/40">
-                                Em breve
-                              </Badge>
+                    <div key={mod.key} className="px-3 mb-1">
+                      <Collapsible open={isOpen} onOpenChange={() => handleToggleMainGroup(mod.key)}>
+                        <CollapsibleTrigger
+                          className={cn(
+                            "flex items-center justify-between w-full px-3 py-2 rounded-lg hover:bg-muted transition-colors",
+                            isModuleActive && "bg-primary/5"
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <mod.icon className={cn(
+                              "h-4 w-4",
+                              isModuleActive || isOpen ? "text-primary" : "text-muted-foreground"
+                            )} />
+                            <span className={cn(
+                              "text-[11px] font-bold uppercase tracking-wider",
+                              isModuleActive || isOpen ? "text-primary" : "text-foreground/80"
+                            )}>
+                              {mod.label}
+                            </span>
+                          </div>
+                          <ChevronDown className={cn(
+                            "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                            isOpen && "rotate-180"
+                          )} />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+                          {isOpen && (
+                            <div className="pl-4 ml-3 border-l border-border/40 space-y-0.5 py-1">
+                              {sortedItems.map((item) => {
+                                const IconComp = getIconComponent(item.icon);
+                                return (
+                                  <NavLink
+                                    key={item.route}
+                                    to={item.route}
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all hover:bg-muted text-sm"
+                                    activeClassName="bg-primary text-primary-foreground font-semibold"
+                                  >
+                                    <IconComp className="h-4 w-4 flex-shrink-0" />
+                                    <span>{item.label}</span>
+                                  </NavLink>
+                                );
+                              })}
                             </div>
-                          );
-                        })}
-                      </div>
+                          )}
+                        </CollapsibleContent>
+                      </Collapsible>
                     </div>
                   );
                 })}
