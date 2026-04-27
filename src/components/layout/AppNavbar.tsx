@@ -281,6 +281,23 @@ export function AppNavbar() {
   const ownerModule = ERP_MODULES.find((mod) => mod.key === "owner") ?? null;
   const location = useLocation();
 
+  // ── Module dropdown accordion: only ONE module dropdown open at a time, persisted ──
+  const MODULE_OPEN_KEY = "erp_navbar_open_module";
+  const [openModuleKey, setOpenModuleKey] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(MODULE_OPEN_KEY);
+    } catch {
+      return null;
+    }
+  });
+  const handleToggleModule = (key: string, isOpen: boolean) => {
+    const next = isOpen ? key : null;
+    setOpenModuleKey(next);
+    try {
+      if (next) localStorage.setItem(MODULE_OPEN_KEY, next);
+      else localStorage.removeItem(MODULE_OPEN_KEY);
+    } catch {}
+  };
   // ── Accordion state: only ONE owner section open at a time, persisted ──
   const [openOwnerSection, setOpenOwnerSection] = useState<string | null>(() => {
     try {
