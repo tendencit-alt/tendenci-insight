@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import * as LucideIcons from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useNavigationUsage } from "@/hooks/useNavigationUsage";
+import { LayoutGrid } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
