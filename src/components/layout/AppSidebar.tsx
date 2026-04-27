@@ -190,42 +190,99 @@ const menuGroups: MenuGroup[] = [
       { title: "Logs do Sistema", url: "/settings/logs", icon: History, comingSoon: true },
     ],
   },
-  // ── OWNER PANEL (system_owner / tenant_owner) ──
+  // ============================================================
+  // ── OWNER PANEL — agrupado por finalidade operacional
+  // Visível apenas para system_owner / tenant_owner
+  // ============================================================
+
+  // Grupo 1 — Operação do Sistema
+  // Acompanhamento geral e priorização de execução
   {
-    label: "Owner Panel",
+    label: "Owner · Operação",
+    icon: Landmark,
+    profiles: ["system_owner", "tenant_owner"],
+    separator: true,
+    items: [
+      { title: "Owner Control Tower", url: "/owner/control-tower", icon: Landmark },
+      { title: "Global Control Tower", url: "/control-tower", icon: Telescope },
+      { title: "Execution Priority", url: "/owner/execution-priority", icon: Target },
+    ],
+  },
+
+  // Grupo 2 — Receita e Clientes
+  // Gestão de receita, clientes, planos e monetização
+  {
+    label: "Owner · Receita & Clientes",
+    icon: CreditCard,
+    profiles: ["system_owner", "tenant_owner"],
+    items: [
+      { title: "Billing Ops", url: "/owner/billing-ops", icon: CreditCard },
+      { title: "Billing & Subscriptions", url: "/billing", icon: DollarSign },
+      { title: "Upgrade Center", url: "/owner/upgrade-center", icon: Rocket },
+      { title: "Offer Center", url: "/owner/offer-center", icon: Star },
+      { title: "Customer Lifecycle", url: "/customer-lifecycle", icon: Users },
+      { title: "Customer Success", url: "/customer-success", icon: UserCheck },
+      { title: "Multi-Company", url: "/multi-company", icon: PieChart },
+      { title: "Entitlements", url: "/owner/entitlements", icon: Tag },
+    ],
+  },
+
+  // Grupo 3 — Automação e Inteligência
+  // Automações e inteligência operacional
+  {
+    label: "Owner · Automação & IA",
+    icon: Sparkles,
+    profiles: ["system_owner", "tenant_owner"],
+    items: [
+      { title: "Automation Center", url: "/owner/automation-center", icon: Sparkles },
+      { title: "AI Decision", url: "/ai-decision", icon: Brain },
+      { title: "Lifecycle (tenants)", url: "/owner/lifecycle", icon: Users },
+    ],
+  },
+
+  // Grupo 4 — Estabilidade e Recuperação
+  // Estabilidade do sistema, falhas e recuperação
+  {
+    label: "Owner · Estabilidade",
+    icon: Shield,
+    profiles: ["system_owner", "tenant_owner"],
+    items: [
+      { title: "Incident Timeline", url: "/owner/incident-timeline", icon: Clock },
+      { title: "Recovery Actions", url: "/owner/recovery-actions", icon: LifeBuoy },
+      { title: "Runbooks", url: "/owner/runbooks", icon: ListChecks },
+      { title: "Self-Healing Policies", url: "/owner/self-healing", icon: Shield },
+      { title: "Autonomous Recovery", url: "/owner/autonomous-recovery", icon: Wrench },
+      { title: "Predictive Failures", url: "/owner/predictive-failures", icon: Brain },
+      { title: "Capacity & Load Risk", url: "/owner/capacity-risk", icon: Gauge },
+      { title: "Stability Gates", url: "/owner/stability-gates", icon: ShieldCheck },
+      { title: "Dependency Impact", url: "/owner/dependency-impact", icon: GitBranch },
+    ],
+  },
+
+  // Grupo 5 — Arquitetura e Governança
+  // Decisões estruturais e arquitetura do sistema
+  {
+    label: "Owner · Arquitetura",
+    icon: LayoutGrid,
+    profiles: ["system_owner", "tenant_owner"],
+    items: [
+      { title: "Architecture Board", url: "/owner/architecture-board", icon: LayoutGrid },
+      { title: "Integration Map", url: "/owner/integration-map", icon: Network },
+    ],
+  },
+
+  // Grupo 6 — Administração Técnica
+  // Ferramentas técnicas e administrativas internas
+  {
+    label: "Owner · Administração",
     icon: Building2,
     profiles: ["system_owner", "tenant_owner"],
-      items: [
-        { title: "Owner Control Tower", url: "/owner/control-tower", icon: Landmark },
-        { title: "Smart Admin", url: "/owner/admin", icon: ShieldCheck },
-        { title: "Billing Ops", url: "/owner/billing-ops", icon: CreditCard },
-        { title: "Lifecycle", url: "/owner/lifecycle", icon: Users },
-        { title: "Permission Debug", url: "/owner/permission-debug", icon: Bug },
-        { title: "Automation Center", url: "/owner/automation-center", icon: Sparkles },
-        { title: "Entitlements", url: "/owner/entitlements", icon: Tag },
-        { title: "Upgrade Center", url: "/owner/upgrade-center", icon: Rocket },
-        { title: "Offer Center", url: "/owner/offer-center", icon: Star },
-        { title: "Integration Map", url: "/owner/integration-map", icon: Network },
-        { title: "Dependency Impact", url: "/owner/dependency-impact", icon: GitBranch },
-        { title: "Recovery Actions", url: "/owner/recovery-actions", icon: LifeBuoy },
-        { title: "Incident Timeline", url: "/owner/incident-timeline", icon: Clock },
-        { title: "Runbooks", url: "/owner/runbooks", icon: ListChecks },
-        { title: "Self-Healing Policies", url: "/owner/self-healing", icon: Shield },
-        { title: "Architecture Board", url: "/owner/architecture-board", icon: LayoutGrid },
-        { title: "Execution Priority Board", url: "/owner/execution-priority", icon: Target },
-        { title: "Stability Gates", url: "/owner/stability-gates", icon: ShieldCheck },
-        { title: "Autonomous Recovery", url: "/owner/autonomous-recovery", icon: Wrench },
-        { title: "Predictive Failures", url: "/owner/predictive-failures", icon: Brain },
-        { title: "Capacity & Load Risk", url: "/owner/capacity-risk", icon: Gauge },
-        { title: "Painel Owner (legado)", url: "/super-admin", icon: Building2 },
-        { title: "Global Control Tower", url: "/control-tower", icon: Landmark },
-        { title: "AI Decision", url: "/ai-decision", icon: Brain },
-        { title: "Multi-Company", url: "/multi-company", icon: PieChart },
-        { title: "Billing & Subscriptions", url: "/billing", icon: CreditCard },
-        { title: "Customer Lifecycle", url: "/customer-lifecycle", icon: Users },
-        { title: "Customer Success", url: "/customer-success", icon: Star },
-        { title: "Base de Conhecimento", url: "/support-knowledge", icon: BookOpen },
-      ],
+    items: [
+      { title: "Painel Owner (legado)", url: "/super-admin", icon: Building2 },
+      { title: "Smart Admin", url: "/owner/admin", icon: ShieldCheck },
+      { title: "Permission Debug", url: "/owner/permission-debug", icon: Bug },
+      { title: "Base de Conhecimento", url: "/support-knowledge", icon: BookOpen },
+    ],
   },
 ];
 
