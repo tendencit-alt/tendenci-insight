@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import * as LucideIcons from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useNavigationUsage } from "@/hooks/useNavigationUsage";
+import { LayoutGrid } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -53,7 +55,8 @@ import { cn } from "@/lib/utils";
 
 // ── Owner accordion persistence ──
 const OWNER_ACCORDION_KEY = "erp_owner_accordion_open";
-
+// ── Main modules accordion persistence ──
+const MAIN_ACCORDION_KEY = "erp_main_accordion_open";
 interface ModuleItem {
   label: string;
   route: string;
@@ -300,6 +303,23 @@ export function AppNavbar() {
       else localStorage.removeItem(MODULE_OPEN_KEY);
     } catch {}
   };
+  // ── Main modules accordion (single-open, persisted) ──
+  const [openMainGroup, setOpenMainGroup] = useState<string | null>(() => {
+    try { return localStorage.getItem(MAIN_ACCORDION_KEY); } catch { return null; }
+  });
+  const handleToggleMainGroup = (key: string) => {
+    setOpenMainGroup((prev) => {
+      const next = prev === key ? null : key;
+      try {
+        if (next) localStorage.setItem(MAIN_ACCORDION_KEY, next);
+        else localStorage.removeItem(MAIN_ACCORDION_KEY);
+      } catch {}
+      return next;
+    });
+  };
+  const { getTopPaths } = useNavigationUsage();
+  const topPaths = getTopPaths(50);
+
   // ── Accordion state: only ONE owner section open at a time, persisted ──
   const [openOwnerSection, setOpenOwnerSection] = useState<string | null>(() => {
     try {
@@ -336,6 +356,29 @@ export function AppNavbar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
+  // Auto-open the main group that contains the current route
+  useMemo(() => {
+    const match = ERP_MODULES.find((g) =>
+      g.key !== "owner" &&
+      g.items.some((i) => i.available && (location.pathname === i.route || location.pathname.startsWith(i.route.split("?")[0])))
+    );
+    if (match && openMainGroup !== match.key) {
+      setOpenMainGroup(match.key);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
+  // Sort items by usage frequency (most used first)
+  const sortByUsage = (items: ModuleItem[]) => {
+    return [...items].sort((a, b) => {
+      const ai = topPaths.indexOf(a.route);
+      const bi = topPaths.indexOf(b.route);
+      const aw = ai === -1 ? 999 : ai;
+      const bw = bi === -1 ? 999 : bi;
+      return aw - bw;
+    });
+  };
+
   const getIconComponent = (iconName: string) => {
     const Icon = (LucideIcons as any)[iconName];
     return Icon || LucideIcons.HelpCircle;
@@ -355,77 +398,75 @@ export function AppNavbar() {
     });
   }, [loading, isMaster, canSeeOwnerMenu, hasModuleAccess]);
 
-  const renderModuleDropdown = (mod: ModuleGroup) => {
+  const renderMainGroupAccordion = (mod: ModuleGroup) => {
     const availableItems = mod.items.filter((i) => {
       if (!i.available) return false;
       if (i.module && !loading) return hasModuleAccess(i.module as any);
       return true;
     });
-    const comingSoonItems = mod.items.filter((i) => !i.available);
+    if (availableItems.length === 0) return null;
 
-    if (availableItems.length === 0 && comingSoonItems.length === 0) return null;
-
+    const sortedItems = sortByUsage(availableItems);
     const isModuleActive = mod.items.some(
-      (i) => i.available && (location.pathname === i.route || location.pathname.startsWith(i.route + "/"))
+      (i) => i.available && (location.pathname === i.route || location.pathname.startsWith(i.route.split("?")[0]))
     );
-    const isOpen = openModuleKey === mod.key;
+    const isOpen = openMainGroup === mod.key;
 
     return (
-      <DropdownMenu
+      <Collapsible
         key={mod.key}
         open={isOpen}
-        onOpenChange={(o) => handleToggleModule(mod.key, o)}
+        onOpenChange={() => handleToggleMainGroup(mod.key)}
       >
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
+        <CollapsibleTrigger
+          className={cn(
+            "flex items-center justify-between w-full px-3 py-2 rounded-md transition-colors hover:bg-muted/60 group",
+            isModuleActive && "bg-primary/5"
+          )}
+        >
+          <div className="flex items-center gap-2">
+            <mod.icon className={cn(
+              "h-4 w-4 flex-shrink-0",
+              isModuleActive || isOpen ? "text-primary" : "text-muted-foreground"
+            )} />
+            <span
+              className={cn(
+                "text-[12px] font-bold uppercase tracking-wider transition-colors",
+                isModuleActive || isOpen ? "text-primary" : "text-foreground/80"
+              )}
+            >
+              {mod.label}
+            </span>
+          </div>
+          <ChevronDown
             className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1.5 h-auto text-xs rounded-md hover:bg-muted/50 transition-colors",
-              (isModuleActive || isOpen) && "bg-primary/10 text-primary font-semibold"
+              "h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 flex-shrink-0",
+              isOpen && "rotate-180"
             )}
-          >
-            <mod.icon className="h-3.5 w-3.5 flex-shrink-0" />
-            <span className="whitespace-nowrap font-medium">{mod.label}</span>
-            <ChevronDown className={cn("h-3 w-3 opacity-60 transition-transform duration-200", isOpen && "rotate-180")} />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56 bg-card border border-border shadow-lg">
-          <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider">
-            {mod.label}
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {availableItems.map((item) => {
-            const IconComp = getIconComponent(item.icon);
-            return (
-              <DropdownMenuItem key={item.route} asChild className="cursor-pointer">
-                <NavLink
-                  to={item.route}
-                  className="flex items-center gap-2 w-full px-2 py-2"
-                  activeClassName="bg-primary/10 text-primary font-medium"
-                >
-                  <IconComp className="h-4 w-4" />
-                  <span>{item.label}</span>
-                </NavLink>
-              </DropdownMenuItem>
-            );
-          })}
-          {comingSoonItems.length > 0 && (
-            <>
-              <DropdownMenuSeparator />
-              {comingSoonItems.map((item) => {
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+          {/* Lazy: only render items when open */}
+          {isOpen && (
+            <div className="pl-3 pr-1 py-1 space-y-0.5 border-l border-border/40 ml-5 mb-1">
+              {sortedItems.map((item) => {
                 const IconComp = getIconComponent(item.icon);
                 return (
-                  <DropdownMenuItem key={item.label} disabled className="opacity-40">
-                    <IconComp className="h-4 w-4 mr-2" />
+                  <NavLink
+                    key={item.route}
+                    to={item.route}
+                    className="flex items-center gap-2 w-full px-2 py-1.5 text-[13px] rounded-md hover:bg-muted/60 transition-colors"
+                    activeClassName="bg-primary/10 text-primary font-medium"
+                  >
+                    <IconComp className="h-3.5 w-3.5" />
                     <span>{item.label}</span>
-                    <Badge variant="outline" className="ml-auto text-[8px] h-4 px-1">Em breve</Badge>
-                  </DropdownMenuItem>
+                  </NavLink>
                 );
               })}
-            </>
+            </div>
           )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </CollapsibleContent>
+      </Collapsible>
     );
   };
 
@@ -471,7 +512,34 @@ export function AppNavbar() {
             <span className="whitespace-nowrap">Central</span>
           </NavLink>
 
-          {visibleModules.map(renderModuleDropdown)}
+          <DropdownMenu
+            open={openModuleKey === "__main__"}
+            onOpenChange={(o) => handleToggleModule("__main__", o)}
+          >
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 py-1.5 h-auto text-xs rounded-md hover:bg-muted/50 transition-colors font-medium",
+                  openModuleKey === "__main__" && "bg-primary/10 text-primary font-semibold"
+                )}
+              >
+                <LayoutGrid className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="whitespace-nowrap">Módulos</span>
+                <ChevronDown className={cn("h-3 w-3 opacity-60 transition-transform duration-200", openModuleKey === "__main__" && "rotate-180")} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-80 max-h-[80vh] overflow-y-auto bg-card border border-border shadow-lg">
+              <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                <LayoutGrid className="h-3.5 w-3.5" />
+                Módulos
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <div className="py-1 px-1">
+                {visibleModules.map(renderMainGroupAccordion)}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -512,48 +580,62 @@ export function AppNavbar() {
                     if (item.module && !loading) return hasModuleAccess(item.module as any);
                     return true;
                   });
-                  const comingSoonItems = mod.items.filter((i) => !i.available);
+                  if (availableItems.length === 0) return null;
 
-                  if (availableItems.length === 0 && comingSoonItems.length === 0) return null;
+                  const sortedItems = sortByUsage(availableItems);
+                  const isOpen = openMainGroup === mod.key;
+                  const isModuleActive = mod.items.some(
+                    (i) => i.available && (location.pathname === i.route || location.pathname.startsWith(i.route.split("?")[0]))
+                  );
 
                   return (
-                    <div key={mod.key} className="mb-1">
-                      <p className="text-[10px] text-muted-foreground font-semibold tracking-wider uppercase px-6 py-2 flex items-center gap-2">
-                        <mod.icon className="h-3.5 w-3.5" />
-                        {mod.label}
-                      </p>
-                      <div className="px-3 space-y-0.5">
-                        {availableItems.map((item) => {
-                          const IconComp = getIconComponent(item.icon);
-                          return (
-                            <NavLink
-                              key={item.route}
-                              to={item.route}
-                              onClick={() => setMobileMenuOpen(false)}
-                              className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all hover:bg-muted text-sm"
-                              activeClassName="bg-primary text-primary-foreground font-semibold"
-                            >
-                              <IconComp className="h-4 w-4 flex-shrink-0" />
-                              <span>{item.label}</span>
-                            </NavLink>
-                          );
-                        })}
-                        {comingSoonItems.map((item) => {
-                          const IconComp = getIconComponent(item.icon);
-                          return (
-                            <div
-                              key={item.label}
-                              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground/50 cursor-default select-none"
-                            >
-                              <IconComp className="h-4 w-4 flex-shrink-0" />
-                              <span>{item.label}</span>
-                              <Badge variant="outline" className="ml-auto text-[8px] h-4 px-1 border-muted-foreground/20 text-muted-foreground/40">
-                                Em breve
-                              </Badge>
+                    <div key={mod.key} className="px-3 mb-1">
+                      <Collapsible open={isOpen} onOpenChange={() => handleToggleMainGroup(mod.key)}>
+                        <CollapsibleTrigger
+                          className={cn(
+                            "flex items-center justify-between w-full px-3 py-2 rounded-lg hover:bg-muted transition-colors",
+                            isModuleActive && "bg-primary/5"
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <mod.icon className={cn(
+                              "h-4 w-4",
+                              isModuleActive || isOpen ? "text-primary" : "text-muted-foreground"
+                            )} />
+                            <span className={cn(
+                              "text-[11px] font-bold uppercase tracking-wider",
+                              isModuleActive || isOpen ? "text-primary" : "text-foreground/80"
+                            )}>
+                              {mod.label}
+                            </span>
+                          </div>
+                          <ChevronDown className={cn(
+                            "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                            isOpen && "rotate-180"
+                          )} />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+                          {isOpen && (
+                            <div className="pl-4 ml-3 border-l border-border/40 space-y-0.5 py-1">
+                              {sortedItems.map((item) => {
+                                const IconComp = getIconComponent(item.icon);
+                                return (
+                                  <NavLink
+                                    key={item.route}
+                                    to={item.route}
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all hover:bg-muted text-sm"
+                                    activeClassName="bg-primary text-primary-foreground font-semibold"
+                                  >
+                                    <IconComp className="h-4 w-4 flex-shrink-0" />
+                                    <span>{item.label}</span>
+                                  </NavLink>
+                                );
+                              })}
                             </div>
-                          );
-                        })}
-                      </div>
+                          )}
+                        </CollapsibleContent>
+                      </Collapsible>
                     </div>
                   );
                 })}
