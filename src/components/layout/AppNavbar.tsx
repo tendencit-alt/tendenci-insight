@@ -487,22 +487,38 @@ export function AppNavbar() {
                       <Building2 className="h-3.5 w-3.5" />
                       Owner
                     </p>
-                    <div className="px-3 space-y-0.5">
-                      {ownerModule.items.map((item) => {
-                        const IconComp = getIconComponent(item.icon);
-                        return (
-                          <NavLink
-                            key={item.route}
-                            to={item.route}
-                            onClick={() => setMobileMenuOpen(false)}
-                            className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all hover:bg-muted text-sm"
-                            activeClassName="bg-primary text-primary-foreground font-semibold"
-                          >
-                            <IconComp className="h-4 w-4 flex-shrink-0" />
-                            <span>{item.label}</span>
-                          </NavLink>
-                        );
-                      })}
+                    <div className="px-3 space-y-3">
+                      {(ownerModule.sections ?? []).map((section) => (
+                        <div key={section.title}>
+                          <div className="px-3 pt-1 pb-1.5">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-primary/80">
+                              {section.title}
+                            </p>
+                            {section.description && (
+                              <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                                {section.description}
+                              </p>
+                            )}
+                          </div>
+                          <div className="space-y-0.5">
+                            {section.items.map((item) => {
+                              const IconComp = getIconComponent(item.icon);
+                              return (
+                                <NavLink
+                                  key={item.route}
+                                  to={item.route}
+                                  onClick={() => setMobileMenuOpen(false)}
+                                  className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all hover:bg-muted text-sm"
+                                  activeClassName="bg-primary text-primary-foreground font-semibold"
+                                >
+                                  <IconComp className="h-4 w-4 flex-shrink-0" />
+                                  <span>{item.label}</span>
+                                </NavLink>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
