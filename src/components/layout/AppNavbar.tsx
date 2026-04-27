@@ -281,6 +281,23 @@ export function AppNavbar() {
   const ownerModule = ERP_MODULES.find((mod) => mod.key === "owner") ?? null;
   const location = useLocation();
 
+  // ── Module dropdown accordion: only ONE module dropdown open at a time, persisted ──
+  const MODULE_OPEN_KEY = "erp_navbar_open_module";
+  const [openModuleKey, setOpenModuleKey] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(MODULE_OPEN_KEY);
+    } catch {
+      return null;
+    }
+  });
+  const handleToggleModule = (key: string, isOpen: boolean) => {
+    const next = isOpen ? key : null;
+    setOpenModuleKey(next);
+    try {
+      if (next) localStorage.setItem(MODULE_OPEN_KEY, next);
+      else localStorage.removeItem(MODULE_OPEN_KEY);
+    } catch {}
+  };
   // ── Accordion state: only ONE owner section open at a time, persisted ──
   const [openOwnerSection, setOpenOwnerSection] = useState<string | null>(() => {
     try {
@@ -346,16 +363,28 @@ export function AppNavbar() {
 
     if (availableItems.length === 0 && comingSoonItems.length === 0) return null;
 
+    const isModuleActive = mod.items.some(
+      (i) => i.available && (location.pathname === i.route || location.pathname.startsWith(i.route + "/"))
+    );
+    const isOpen = openModuleKey === mod.key;
+
     return (
-      <DropdownMenu key={mod.key}>
+      <DropdownMenu
+        key={mod.key}
+        open={isOpen}
+        onOpenChange={(o) => handleToggleModule(mod.key, o)}
+      >
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 h-auto text-xs rounded-md hover:bg-muted/50"
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1.5 h-auto text-xs rounded-md hover:bg-muted/50 transition-colors",
+              (isModuleActive || isOpen) && "bg-primary/10 text-primary font-semibold"
+            )}
           >
             <mod.icon className="h-3.5 w-3.5 flex-shrink-0" />
             <span className="whitespace-nowrap font-medium">{mod.label}</span>
-            <ChevronDown className="h-3 w-3 opacity-60" />
+            <ChevronDown className={cn("h-3 w-3 opacity-60 transition-transform duration-200", isOpen && "rotate-180")} />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56 bg-card border border-border shadow-lg">
@@ -598,15 +627,21 @@ export function AppNavbar() {
 
         <div className="flex items-center gap-1.5">
           {canSeeOwnerMenu && ownerModule && (
-            <DropdownMenu>
+            <DropdownMenu
+              open={openModuleKey === "__owner__"}
+              onOpenChange={(o) => handleToggleModule("__owner__", o)}
+            >
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 h-auto text-xs rounded-md hover:bg-muted/50 font-medium transition-colors"
+                  className={cn(
+                    "hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 h-auto text-xs rounded-md hover:bg-muted/50 font-medium transition-colors",
+                    (location.pathname.startsWith("/owner") || openModuleKey === "__owner__") && "bg-primary/10 text-primary font-semibold"
+                  )}
                 >
                   <Building2 className="h-3.5 w-3.5 flex-shrink-0" />
                   <span className="whitespace-nowrap">Owner</span>
-                  <ChevronDown className="h-3 w-3 opacity-60" />
+                  <ChevronDown className={cn("h-3 w-3 opacity-60 transition-transform duration-200", openModuleKey === "__owner__" && "rotate-180")} />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-80 max-h-[80vh] overflow-y-auto bg-card border border-border shadow-lg">
