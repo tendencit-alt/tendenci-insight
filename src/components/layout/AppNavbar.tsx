@@ -542,26 +542,42 @@ export function AppNavbar() {
                   <ChevronDown className="h-3 w-3 opacity-60" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-72 max-h-[70vh] overflow-y-auto bg-card border border-border shadow-lg">
-                <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider">
-                  Owner
+              <DropdownMenuContent align="end" className="w-80 max-h-[80vh] overflow-y-auto bg-card border border-border shadow-lg">
+                <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <Building2 className="h-3.5 w-3.5" />
+                  Painel Owner
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {ownerModule.items.map((item) => {
-                  const IconComp = getIconComponent(item.icon);
-                  return (
-                    <DropdownMenuItem key={item.route} asChild className="cursor-pointer">
-                      <NavLink
-                        to={item.route}
-                        className="flex items-center gap-2 w-full px-2 py-2"
-                        activeClassName="bg-primary/10 text-primary font-medium"
-                      >
-                        <IconComp className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </NavLink>
-                    </DropdownMenuItem>
-                  );
-                })}
+                {(ownerModule.sections ?? []).map((section, idx) => (
+                  <div key={section.title}>
+                    {idx > 0 && <DropdownMenuSeparator />}
+                    <div className="px-3 pt-2 pb-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-primary/80">
+                        {section.title}
+                      </p>
+                      {section.description && (
+                        <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                          {section.description}
+                        </p>
+                      )}
+                    </div>
+                    {section.items.map((item) => {
+                      const IconComp = getIconComponent(item.icon);
+                      return (
+                        <DropdownMenuItem key={item.route} asChild className="cursor-pointer">
+                          <NavLink
+                            to={item.route}
+                            className="flex items-center gap-2 w-full px-2 py-2"
+                            activeClassName="bg-primary/10 text-primary font-medium"
+                          >
+                            <IconComp className="h-4 w-4" />
+                            <span>{item.label}</span>
+                          </NavLink>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </div>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
