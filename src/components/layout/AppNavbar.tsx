@@ -47,6 +47,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { cn } from "@/lib/utils";
 
 // ── Owner accordion persistence ──
 const OWNER_ACCORDION_KEY = "erp_owner_accordion_open";
