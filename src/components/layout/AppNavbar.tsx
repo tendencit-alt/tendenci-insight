@@ -55,7 +55,8 @@ import { cn } from "@/lib/utils";
 
 // ── Owner accordion persistence ──
 const OWNER_ACCORDION_KEY = "erp_owner_accordion_open";
-
+// ── Main modules accordion persistence ──
+const MAIN_ACCORDION_KEY = "erp_main_accordion_open";
 interface ModuleItem {
   label: string;
   route: string;
