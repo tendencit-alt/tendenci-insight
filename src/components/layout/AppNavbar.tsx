@@ -398,77 +398,75 @@ export function AppNavbar() {
     });
   }, [loading, isMaster, canSeeOwnerMenu, hasModuleAccess]);
 
-  const renderModuleDropdown = (mod: ModuleGroup) => {
+  const renderMainGroupAccordion = (mod: ModuleGroup) => {
     const availableItems = mod.items.filter((i) => {
       if (!i.available) return false;
       if (i.module && !loading) return hasModuleAccess(i.module as any);
       return true;
     });
-    const comingSoonItems = mod.items.filter((i) => !i.available);
+    if (availableItems.length === 0) return null;
 
-    if (availableItems.length === 0 && comingSoonItems.length === 0) return null;
-
+    const sortedItems = sortByUsage(availableItems);
     const isModuleActive = mod.items.some(
-      (i) => i.available && (location.pathname === i.route || location.pathname.startsWith(i.route + "/"))
+      (i) => i.available && (location.pathname === i.route || location.pathname.startsWith(i.route.split("?")[0]))
     );
-    const isOpen = openModuleKey === mod.key;
+    const isOpen = openMainGroup === mod.key;
 
     return (
-      <DropdownMenu
+      <Collapsible
         key={mod.key}
         open={isOpen}
-        onOpenChange={(o) => handleToggleModule(mod.key, o)}
+        onOpenChange={() => handleToggleMainGroup(mod.key)}
       >
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
+        <CollapsibleTrigger
+          className={cn(
+            "flex items-center justify-between w-full px-3 py-2 rounded-md transition-colors hover:bg-muted/60 group",
+            isModuleActive && "bg-primary/5"
+          )}
+        >
+          <div className="flex items-center gap-2">
+            <mod.icon className={cn(
+              "h-4 w-4 flex-shrink-0",
+              isModuleActive || isOpen ? "text-primary" : "text-muted-foreground"
+            )} />
+            <span
+              className={cn(
+                "text-[12px] font-bold uppercase tracking-wider transition-colors",
+                isModuleActive || isOpen ? "text-primary" : "text-foreground/80"
+              )}
+            >
+              {mod.label}
+            </span>
+          </div>
+          <ChevronDown
             className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1.5 h-auto text-xs rounded-md hover:bg-muted/50 transition-colors",
-              (isModuleActive || isOpen) && "bg-primary/10 text-primary font-semibold"
+              "h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 flex-shrink-0",
+              isOpen && "rotate-180"
             )}
-          >
-            <mod.icon className="h-3.5 w-3.5 flex-shrink-0" />
-            <span className="whitespace-nowrap font-medium">{mod.label}</span>
-            <ChevronDown className={cn("h-3 w-3 opacity-60 transition-transform duration-200", isOpen && "rotate-180")} />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56 bg-card border border-border shadow-lg">
-          <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider">
-            {mod.label}
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {availableItems.map((item) => {
-            const IconComp = getIconComponent(item.icon);
-            return (
-              <DropdownMenuItem key={item.route} asChild className="cursor-pointer">
-                <NavLink
-                  to={item.route}
-                  className="flex items-center gap-2 w-full px-2 py-2"
-                  activeClassName="bg-primary/10 text-primary font-medium"
-                >
-                  <IconComp className="h-4 w-4" />
-                  <span>{item.label}</span>
-                </NavLink>
-              </DropdownMenuItem>
-            );
-          })}
-          {comingSoonItems.length > 0 && (
-            <>
-              <DropdownMenuSeparator />
-              {comingSoonItems.map((item) => {
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+          {/* Lazy: only render items when open */}
+          {isOpen && (
+            <div className="pl-3 pr-1 py-1 space-y-0.5 border-l border-border/40 ml-5 mb-1">
+              {sortedItems.map((item) => {
                 const IconComp = getIconComponent(item.icon);
                 return (
-                  <DropdownMenuItem key={item.label} disabled className="opacity-40">
-                    <IconComp className="h-4 w-4 mr-2" />
+                  <NavLink
+                    key={item.route}
+                    to={item.route}
+                    className="flex items-center gap-2 w-full px-2 py-1.5 text-[13px] rounded-md hover:bg-muted/60 transition-colors"
+                    activeClassName="bg-primary/10 text-primary font-medium"
+                  >
+                    <IconComp className="h-3.5 w-3.5" />
                     <span>{item.label}</span>
-                    <Badge variant="outline" className="ml-auto text-[8px] h-4 px-1">Em breve</Badge>
-                  </DropdownMenuItem>
+                  </NavLink>
                 );
               })}
-            </>
+            </div>
           )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </CollapsibleContent>
+      </Collapsible>
     );
   };
 
