@@ -25,7 +25,9 @@ import {
   BarChart3,
   Settings,
   Home,
+  Search,
 } from "lucide-react";
+import { commandBarStore } from "@/components/command/CommandBar";
 import { useTheme } from "next-themes";
 import { useLocation } from "react-router-dom";
 import {
