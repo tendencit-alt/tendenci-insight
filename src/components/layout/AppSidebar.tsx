@@ -62,7 +62,7 @@ interface RoleConfig {
 
 const ROLE_CONFIGS: Record<RoleKey, RoleConfig> = {
   owner: {
-    autoExpandGroups: ["Owner Panel", "Hoje", "Estratégia", "Financeiro"],
+    autoExpandGroups: ["Owner · Operação", "Hoje", "Estratégia", "Financeiro"],
     highlightItems: [],
     dimGroups: [],
   },
