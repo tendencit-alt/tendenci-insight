@@ -51,11 +51,18 @@ interface ModuleItem {
   available: boolean;
 }
 
+interface ModuleSection {
+  title: string;
+  description?: string;
+  items: ModuleItem[];
+}
+
 interface ModuleGroup {
   key: string;
   label: string;
   icon: React.ElementType;
   items: ModuleItem[];
+  sections?: ModuleSection[];
   requiredModules?: string[];
   masterOnly?: boolean;
   ownerOnly?: boolean;
@@ -167,36 +174,73 @@ const ERP_MODULES: ModuleGroup[] = [
     label: "Owner",
     icon: Building2,
     ownerOnly: true,
-    items: [
-      { label: "Painel Owner", route: "/super-admin", icon: "Building2", available: true },
-      { label: "Owner Control Tower", route: "/owner/control-tower", icon: "Landmark", available: true },
-      { label: "Smart Admin", route: "/owner/admin", icon: "ShieldCheck", available: true },
-      { label: "Billing Ops", route: "/owner/billing-ops", icon: "CreditCard", available: true },
-      { label: "Lifecycle", route: "/owner/lifecycle", icon: "Users", available: true },
-      { label: "Permission Debug", route: "/owner/permission-debug", icon: "Bug", available: true },
-      { label: "Automation Center", route: "/owner/automation-center", icon: "Sparkles", available: true },
-      { label: "Entitlements", route: "/owner/entitlements", icon: "Tag", available: true },
-      { label: "Upgrade Center", route: "/owner/upgrade-center", icon: "Rocket", available: true },
-      { label: "Offer Center", route: "/owner/offer-center", icon: "Star", available: true },
-      { label: "Integration Map", route: "/owner/integration-map", icon: "Network", available: true },
-      { label: "Dependency Impact", route: "/owner/dependency-impact", icon: "GitBranch", available: true },
-      { label: "Recovery Actions", route: "/owner/recovery-actions", icon: "LifeBuoy", available: true },
-      { label: "Incident Timeline", route: "/owner/incident-timeline", icon: "Clock3", available: true },
-      { label: "Runbooks", route: "/owner/runbooks", icon: "ListChecks", available: true },
-      { label: "Self-Healing Policies", route: "/owner/self-healing", icon: "Shield", available: true },
-      { label: "Architecture Board", route: "/owner/architecture-board", icon: "LayoutGrid", available: true },
-      { label: "Execution Priority", route: "/owner/execution-priority", icon: "Target", available: true },
-      { label: "Stability Gates", route: "/owner/stability-gates", icon: "ShieldCheck", available: true },
-      { label: "Autonomous Recovery", route: "/owner/autonomous-recovery", icon: "Wrench", available: true },
-      { label: "Predictive Failures", route: "/owner/predictive-failures", icon: "Brain", available: true },
-      { label: "Capacity Risk", route: "/owner/capacity-risk", icon: "Gauge", available: true },
-      { label: "Global Control Tower", route: "/control-tower", icon: "Landmark", available: true },
-      { label: "AI Decision", route: "/ai-decision", icon: "Brain", available: true },
-      { label: "Multi-Company", route: "/multi-company", icon: "Building2", available: true },
-      { label: "Billing & Subscriptions", route: "/billing", icon: "CreditCard", available: true },
-      { label: "Customer Lifecycle", route: "/customer-lifecycle", icon: "Users", available: true },
-      { label: "Customer Success", route: "/customer-success", icon: "Star", available: true },
-      { label: "Base de Conhecimento", route: "/support-knowledge", icon: "BookOpen", available: true },
+    items: [],
+    sections: [
+      {
+        title: "Operação do Sistema",
+        description: "Acompanhamento geral e priorização",
+        items: [
+          { label: "Owner Control Tower", route: "/owner/control-tower", icon: "Landmark", available: true },
+          { label: "Global Control Tower", route: "/control-tower", icon: "Telescope", available: true },
+          { label: "Execution Priority", route: "/owner/execution-priority", icon: "Target", available: true },
+        ],
+      },
+      {
+        title: "Receita & Clientes",
+        description: "Receita, planos, clientes e monetização",
+        items: [
+          { label: "Billing Ops", route: "/owner/billing-ops", icon: "CreditCard", available: true },
+          { label: "Billing & Subscriptions", route: "/billing", icon: "DollarSign", available: true },
+          { label: "Upgrade Center", route: "/owner/upgrade-center", icon: "Rocket", available: true },
+          { label: "Offer Center", route: "/owner/offer-center", icon: "Star", available: true },
+          { label: "Customer Lifecycle", route: "/customer-lifecycle", icon: "Users", available: true },
+          { label: "Customer Success", route: "/customer-success", icon: "UserCheck", available: true },
+          { label: "Multi-Company", route: "/multi-company", icon: "PieChart", available: true },
+          { label: "Entitlements", route: "/owner/entitlements", icon: "Tag", available: true },
+        ],
+      },
+      {
+        title: "Automação & Inteligência",
+        description: "Automações e IA operacional",
+        items: [
+          { label: "Automation Center", route: "/owner/automation-center", icon: "Sparkles", available: true },
+          { label: "AI Decision", route: "/ai-decision", icon: "Brain", available: true },
+          { label: "Lifecycle (tenants)", route: "/owner/lifecycle", icon: "Users", available: true },
+        ],
+      },
+      {
+        title: "Estabilidade & Recuperação",
+        description: "Falhas, incidentes e recuperação",
+        items: [
+          { label: "Incident Timeline", route: "/owner/incident-timeline", icon: "Clock3", available: true },
+          { label: "Recovery Actions", route: "/owner/recovery-actions", icon: "LifeBuoy", available: true },
+          { label: "Runbooks", route: "/owner/runbooks", icon: "ListChecks", available: true },
+          { label: "Self-Healing Policies", route: "/owner/self-healing", icon: "Shield", available: true },
+          { label: "Autonomous Recovery", route: "/owner/autonomous-recovery", icon: "Wrench", available: true },
+          { label: "Predictive Failures", route: "/owner/predictive-failures", icon: "Brain", available: true },
+          { label: "Capacity Risk", route: "/owner/capacity-risk", icon: "Gauge", available: true },
+          { label: "Stability Gates", route: "/owner/stability-gates", icon: "ShieldCheck", available: true },
+          { label: "Dependency Impact", route: "/owner/dependency-impact", icon: "GitBranch", available: true },
+        ],
+      },
+      {
+        title: "Arquitetura & Governança",
+        description: "Decisões estruturais",
+        items: [
+          { label: "Architecture Board", route: "/owner/architecture-board", icon: "LayoutGrid", available: true },
+          { label: "Integration Map", route: "/owner/integration-map", icon: "Network", available: true },
+        ],
+      },
+      {
+        title: "Administração Técnica",
+        description: "Ferramentas técnicas internas",
+        items: [
+          { label: "Painel Owner (legado)", route: "/super-admin", icon: "Building2", available: true },
+          { label: "Smart Admin", route: "/owner/admin", icon: "ShieldCheck", available: true },
+          { label: "Permission Debug", route: "/owner/permission-debug", icon: "Bug", available: true },
+          { label: "Base de Conhecimento", route: "/support-knowledge", icon: "BookOpen", available: true },
+        ],
+      },
     ],
   },
 ];
@@ -443,22 +487,38 @@ export function AppNavbar() {
                       <Building2 className="h-3.5 w-3.5" />
                       Owner
                     </p>
-                    <div className="px-3 space-y-0.5">
-                      {ownerModule.items.map((item) => {
-                        const IconComp = getIconComponent(item.icon);
-                        return (
-                          <NavLink
-                            key={item.route}
-                            to={item.route}
-                            onClick={() => setMobileMenuOpen(false)}
-                            className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all hover:bg-muted text-sm"
-                            activeClassName="bg-primary text-primary-foreground font-semibold"
-                          >
-                            <IconComp className="h-4 w-4 flex-shrink-0" />
-                            <span>{item.label}</span>
-                          </NavLink>
-                        );
-                      })}
+                    <div className="px-3 space-y-3">
+                      {(ownerModule.sections ?? []).map((section) => (
+                        <div key={section.title}>
+                          <div className="px-3 pt-1 pb-1.5">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-primary/80">
+                              {section.title}
+                            </p>
+                            {section.description && (
+                              <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                                {section.description}
+                              </p>
+                            )}
+                          </div>
+                          <div className="space-y-0.5">
+                            {section.items.map((item) => {
+                              const IconComp = getIconComponent(item.icon);
+                              return (
+                                <NavLink
+                                  key={item.route}
+                                  to={item.route}
+                                  onClick={() => setMobileMenuOpen(false)}
+                                  className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all hover:bg-muted text-sm"
+                                  activeClassName="bg-primary text-primary-foreground font-semibold"
+                                >
+                                  <IconComp className="h-4 w-4 flex-shrink-0" />
+                                  <span>{item.label}</span>
+                                </NavLink>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -482,26 +542,42 @@ export function AppNavbar() {
                   <ChevronDown className="h-3 w-3 opacity-60" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-72 max-h-[70vh] overflow-y-auto bg-card border border-border shadow-lg">
-                <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider">
-                  Owner
+              <DropdownMenuContent align="end" className="w-80 max-h-[80vh] overflow-y-auto bg-card border border-border shadow-lg">
+                <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <Building2 className="h-3.5 w-3.5" />
+                  Painel Owner
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {ownerModule.items.map((item) => {
-                  const IconComp = getIconComponent(item.icon);
-                  return (
-                    <DropdownMenuItem key={item.route} asChild className="cursor-pointer">
-                      <NavLink
-                        to={item.route}
-                        className="flex items-center gap-2 w-full px-2 py-2"
-                        activeClassName="bg-primary/10 text-primary font-medium"
-                      >
-                        <IconComp className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </NavLink>
-                    </DropdownMenuItem>
-                  );
-                })}
+                {(ownerModule.sections ?? []).map((section, idx) => (
+                  <div key={section.title}>
+                    {idx > 0 && <DropdownMenuSeparator />}
+                    <div className="px-3 pt-2 pb-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-primary/80">
+                        {section.title}
+                      </p>
+                      {section.description && (
+                        <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                          {section.description}
+                        </p>
+                      )}
+                    </div>
+                    {section.items.map((item) => {
+                      const IconComp = getIconComponent(item.icon);
+                      return (
+                        <DropdownMenuItem key={item.route} asChild className="cursor-pointer">
+                          <NavLink
+                            to={item.route}
+                            className="flex items-center gap-2 w-full px-2 py-2"
+                            activeClassName="bg-primary/10 text-primary font-medium"
+                          >
+                            <IconComp className="h-4 w-4" />
+                            <span>{item.label}</span>
+                          </NavLink>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </div>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
