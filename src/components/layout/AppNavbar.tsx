@@ -278,6 +278,43 @@ export function AppNavbar() {
   const normalizedRole = profile?.role?.toLowerCase().trim() ?? "";
   const canSeeOwnerMenu = isOwner || isMaster || normalizedRole === "owner" || normalizedRole === "tenant_owner";
   const ownerModule = ERP_MODULES.find((mod) => mod.key === "owner") ?? null;
+  const location = useLocation();
+
+  // ── Accordion state: only ONE owner section open at a time, persisted ──
+  const [openOwnerSection, setOpenOwnerSection] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(OWNER_ACCORDION_KEY);
+    } catch {
+      return null;
+    }
+  });
+  const [openOwnerSectionMobile, setOpenOwnerSectionMobile] = useState<string | null>(null);
+
+  const handleToggleOwnerSection = (title: string) => {
+    setOpenOwnerSection((prev) => {
+      const next = prev === title ? null : title;
+      try {
+        if (next) localStorage.setItem(OWNER_ACCORDION_KEY, next);
+        else localStorage.removeItem(OWNER_ACCORDION_KEY);
+      } catch {}
+      return next;
+    });
+  };
+  const handleToggleOwnerSectionMobile = (title: string) => {
+    setOpenOwnerSectionMobile((prev) => (prev === title ? null : title));
+  };
+
+  // Auto-open the section that contains the current route
+  useMemo(() => {
+    if (!ownerModule?.sections) return;
+    const match = ownerModule.sections.find((s) =>
+      s.items.some((i) => location.pathname === i.route || location.pathname.startsWith(i.route + "/"))
+    );
+    if (match && openOwnerSection !== match.title) {
+      setOpenOwnerSection(match.title);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   const getIconComponent = (iconName: string) => {
     const Icon = (LucideIcons as any)[iconName];
