@@ -4,7 +4,7 @@ import { SmartBreadcrumb } from "@/components/navigation-intelligence/SmartBread
 import { RecentNavigationBar } from "@/components/navigation-intelligence/RecentNavigationBar";
 import { ContextualShortcutsBar } from "@/components/navigation-intelligence/ContextualShortcutsBar";
 import { NextActionSuggestion } from "@/components/navigation-intelligence/NextActionSuggestion";
-import { CommandPalette } from "@/components/command-palette/CommandPalette";
+
 import { PermissionSimulatorTrigger } from "@/components/smart-permissions/PermissionSimulator";
 import { useProductAnalytics } from "@/hooks/useProductAnalytics";
 
