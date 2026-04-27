@@ -533,39 +533,60 @@ export function AppNavbar() {
                       <Building2 className="h-3.5 w-3.5" />
                       Owner
                     </p>
-                    <div className="px-3 space-y-3">
-                      {(ownerModule.sections ?? []).map((section) => (
-                        <div key={section.title}>
-                          <div className="px-3 pt-1 pb-1.5">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-primary/80">
-                              {section.title}
-                            </p>
-                            {section.description && (
-                              <p className="text-[10px] text-muted-foreground/70 mt-0.5">
-                                {section.description}
-                              </p>
-                            )}
-                          </div>
-                          <div className="space-y-0.5">
-                            {section.items.map((item) => {
-                              const IconComp = getIconComponent(item.icon);
-                              return (
-                                <NavLink
-                                  key={item.route}
-                                  to={item.route}
-                                  onClick={() => setMobileMenuOpen(false)}
-                                  className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all hover:bg-muted text-sm"
-                                  activeClassName="bg-primary text-primary-foreground font-semibold"
-                                >
-                                  <IconComp className="h-4 w-4 flex-shrink-0" />
-                                  <span>{item.label}</span>
-                                </NavLink>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
+                    <div className="px-3 space-y-1">
+                      {(ownerModule.sections ?? []).map((section) => {
+                        const isOpen = openOwnerSectionMobile === section.title;
+                        return (
+                          <Collapsible
+                            key={section.title}
+                            open={isOpen}
+                            onOpenChange={() => handleToggleOwnerSectionMobile(section.title)}
+                          >
+                            <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 rounded-lg hover:bg-muted transition-colors">
+                              <div className="flex flex-col items-start text-left">
+                                <span className={cn(
+                                  "text-[11px] font-bold uppercase tracking-wider",
+                                  isOpen ? "text-primary" : "text-foreground/80"
+                                )}>
+                                  {section.title}
+                                </span>
+                                {section.description && (
+                                  <span className="text-[10px] text-muted-foreground/70 mt-0.5">
+                                    {section.description}
+                                  </span>
+                                )}
+                              </div>
+                              <ChevronDown className={cn(
+                                "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                                isOpen && "rotate-180"
+                              )} />
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+                              {isOpen && (
+                                <div className="pl-4 ml-3 border-l border-border/40 space-y-0.5 py-1">
+                                  {section.items.map((item) => {
+                                    const IconComp = getIconComponent(item.icon);
+                                    return (
+                                      <NavLink
+                                        key={item.route}
+                                        to={item.route}
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all hover:bg-muted text-sm"
+                                        activeClassName="bg-primary text-primary-foreground font-semibold"
+                                      >
+                                        <IconComp className="h-4 w-4 flex-shrink-0" />
+                                        <span>{item.label}</span>
+                                      </NavLink>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </CollapsibleContent>
+                          </Collapsible>
+                        );
+                      })}
                     </div>
+
                   </div>
                 )}
               </div>
