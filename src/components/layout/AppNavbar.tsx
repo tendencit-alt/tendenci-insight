@@ -41,7 +41,15 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+
+// ── Owner accordion persistence ──
+const OWNER_ACCORDION_KEY = "erp_owner_accordion_open";
 
 interface ModuleItem {
   label: string;
