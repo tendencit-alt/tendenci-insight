@@ -593,36 +593,81 @@ export function AppNavbar() {
                   Painel Owner
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {(ownerModule.sections ?? []).map((section, idx) => (
-                  <div key={section.title}>
-                    {idx > 0 && <DropdownMenuSeparator />}
-                    <div className="px-3 pt-2 pb-1">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-primary/80">
-                        {section.title}
-                      </p>
-                      {section.description && (
-                        <p className="text-[10px] text-muted-foreground/70 mt-0.5">
-                          {section.description}
-                        </p>
-                      )}
-                    </div>
-                    {section.items.map((item) => {
-                      const IconComp = getIconComponent(item.icon);
-                      return (
-                        <DropdownMenuItem key={item.route} asChild className="cursor-pointer">
-                          <NavLink
-                            to={item.route}
-                            className="flex items-center gap-2 w-full px-2 py-2"
-                            activeClassName="bg-primary/10 text-primary font-medium"
-                          >
-                            <IconComp className="h-4 w-4" />
-                            <span>{item.label}</span>
-                          </NavLink>
-                        </DropdownMenuItem>
-                      );
-                    })}
-                  </div>
-                ))}
+                <div className="py-1">
+                  {(ownerModule.sections ?? []).map((section) => {
+                    const isOpen = openOwnerSection === section.title;
+                    const isActiveSection = section.items.some(
+                      (i) =>
+                        location.pathname === i.route ||
+                        location.pathname.startsWith(i.route + "/")
+                    );
+                    return (
+                      <Collapsible
+                        key={section.title}
+                        open={isOpen}
+                        onOpenChange={() => handleToggleOwnerSection(section.title)}
+                      >
+                        <CollapsibleTrigger
+                          className={cn(
+                            "flex items-center justify-between w-full px-3 py-2 rounded-md transition-colors hover:bg-muted/60 group",
+                            isActiveSection && "bg-primary/5"
+                          )}
+                        >
+                          <div className="flex flex-col items-start text-left">
+                            <span
+                              className={cn(
+                                "text-[11px] font-bold uppercase tracking-wider transition-colors",
+                                isActiveSection || isOpen
+                                  ? "text-primary"
+                                  : "text-foreground/80"
+                              )}
+                            >
+                              {section.title}
+                            </span>
+                            {section.description && (
+                              <span className="text-[10px] text-muted-foreground/70 mt-0.5">
+                                {section.description}
+                              </span>
+                            )}
+                          </div>
+                          <ChevronDown
+                            className={cn(
+                              "h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 flex-shrink-0",
+                              isOpen && "rotate-180"
+                            )}
+                          />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+                          {/* Lazy: only render items when open */}
+                          {isOpen && (
+                            <div className="pl-3 pr-1 py-1 space-y-0.5 border-l border-border/40 ml-4 mb-1">
+                              {section.items.map((item) => {
+                                const IconComp = getIconComponent(item.icon);
+                                return (
+                                  <DropdownMenuItem
+                                    key={item.route}
+                                    asChild
+                                    className="cursor-pointer"
+                                  >
+                                    <NavLink
+                                      to={item.route}
+                                      className="flex items-center gap-2 w-full px-2 py-1.5 text-[13px]"
+                                      activeClassName="bg-primary/10 text-primary font-medium"
+                                    >
+                                      <IconComp className="h-3.5 w-3.5" />
+                                      <span>{item.label}</span>
+                                    </NavLink>
+                                  </DropdownMenuItem>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </CollapsibleContent>
+                      </Collapsible>
+                    );
+                  })}
+                </div>
+
               </DropdownMenuContent>
             </DropdownMenu>
           )}
