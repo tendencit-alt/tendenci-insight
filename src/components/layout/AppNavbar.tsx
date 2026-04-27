@@ -363,16 +363,28 @@ export function AppNavbar() {
 
     if (availableItems.length === 0 && comingSoonItems.length === 0) return null;
 
+    const isModuleActive = mod.items.some(
+      (i) => i.available && (location.pathname === i.route || location.pathname.startsWith(i.route + "/"))
+    );
+    const isOpen = openModuleKey === mod.key;
+
     return (
-      <DropdownMenu key={mod.key}>
+      <DropdownMenu
+        key={mod.key}
+        open={isOpen}
+        onOpenChange={(o) => handleToggleModule(mod.key, o)}
+      >
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 h-auto text-xs rounded-md hover:bg-muted/50"
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1.5 h-auto text-xs rounded-md hover:bg-muted/50 transition-colors",
+              (isModuleActive || isOpen) && "bg-primary/10 text-primary font-semibold"
+            )}
           >
             <mod.icon className="h-3.5 w-3.5 flex-shrink-0" />
             <span className="whitespace-nowrap font-medium">{mod.label}</span>
-            <ChevronDown className="h-3 w-3 opacity-60" />
+            <ChevronDown className={cn("h-3 w-3 opacity-60 transition-transform duration-200", isOpen && "rotate-180")} />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56 bg-card border border-border shadow-lg">
