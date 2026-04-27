@@ -303,6 +303,23 @@ export function AppNavbar() {
       else localStorage.removeItem(MODULE_OPEN_KEY);
     } catch {}
   };
+  // ── Main modules accordion (single-open, persisted) ──
+  const [openMainGroup, setOpenMainGroup] = useState<string | null>(() => {
+    try { return localStorage.getItem(MAIN_ACCORDION_KEY); } catch { return null; }
+  });
+  const handleToggleMainGroup = (key: string) => {
+    setOpenMainGroup((prev) => {
+      const next = prev === key ? null : key;
+      try {
+        if (next) localStorage.setItem(MAIN_ACCORDION_KEY, next);
+        else localStorage.removeItem(MAIN_ACCORDION_KEY);
+      } catch {}
+      return next;
+    });
+  };
+  const { getTopPaths } = useNavigationUsage();
+  const topPaths = getTopPaths(50);
+
   // ── Accordion state: only ONE owner section open at a time, persisted ──
   const [openOwnerSection, setOpenOwnerSection] = useState<string | null>(() => {
     try {
