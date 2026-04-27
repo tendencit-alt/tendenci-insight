@@ -512,7 +512,34 @@ export function AppNavbar() {
             <span className="whitespace-nowrap">Central</span>
           </NavLink>
 
-          {visibleModules.map(renderModuleDropdown)}
+          <DropdownMenu
+            open={openModuleKey === "__main__"}
+            onOpenChange={(o) => handleToggleModule("__main__", o)}
+          >
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 py-1.5 h-auto text-xs rounded-md hover:bg-muted/50 transition-colors font-medium",
+                  openModuleKey === "__main__" && "bg-primary/10 text-primary font-semibold"
+                )}
+              >
+                <LayoutGrid className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="whitespace-nowrap">Módulos</span>
+                <ChevronDown className={cn("h-3 w-3 opacity-60 transition-transform duration-200", openModuleKey === "__main__" && "rotate-180")} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-80 max-h-[80vh] overflow-y-auto bg-card border border-border shadow-lg">
+              <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                <LayoutGrid className="h-3.5 w-3.5" />
+                Módulos
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <div className="py-1 px-1">
+                {visibleModules.map(renderMainGroupAccordion)}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
