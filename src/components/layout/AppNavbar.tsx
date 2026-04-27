@@ -51,11 +51,18 @@ interface ModuleItem {
   available: boolean;
 }
 
+interface ModuleSection {
+  title: string;
+  description?: string;
+  items: ModuleItem[];
+}
+
 interface ModuleGroup {
   key: string;
   label: string;
   icon: React.ElementType;
   items: ModuleItem[];
+  sections?: ModuleSection[];
   requiredModules?: string[];
   masterOnly?: boolean;
   ownerOnly?: boolean;
