@@ -356,6 +356,29 @@ export function AppNavbar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
+  // Auto-open the main group that contains the current route
+  useMemo(() => {
+    const match = ERP_MODULES.find((g) =>
+      g.key !== "owner" &&
+      g.items.some((i) => i.available && (location.pathname === i.route || location.pathname.startsWith(i.route.split("?")[0])))
+    );
+    if (match && openMainGroup !== match.key) {
+      setOpenMainGroup(match.key);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
+  // Sort items by usage frequency (most used first)
+  const sortByUsage = (items: ModuleItem[]) => {
+    return [...items].sort((a, b) => {
+      const ai = topPaths.indexOf(a.route);
+      const bi = topPaths.indexOf(b.route);
+      const aw = ai === -1 ? 999 : ai;
+      const bw = bi === -1 ? 999 : bi;
+      return aw - bw;
+    });
+  };
+
   const getIconComponent = (iconName: string) => {
     const Icon = (LucideIcons as any)[iconName];
     return Icon || LucideIcons.HelpCircle;
