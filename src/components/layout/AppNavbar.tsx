@@ -627,15 +627,21 @@ export function AppNavbar() {
 
         <div className="flex items-center gap-1.5">
           {canSeeOwnerMenu && ownerModule && (
-            <DropdownMenu>
+            <DropdownMenu
+              open={openModuleKey === "__owner__"}
+              onOpenChange={(o) => handleToggleModule("__owner__", o)}
+            >
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 h-auto text-xs rounded-md hover:bg-muted/50 font-medium transition-colors"
+                  className={cn(
+                    "hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 h-auto text-xs rounded-md hover:bg-muted/50 font-medium transition-colors",
+                    (location.pathname.startsWith("/owner") || openModuleKey === "__owner__") && "bg-primary/10 text-primary font-semibold"
+                  )}
                 >
                   <Building2 className="h-3.5 w-3.5 flex-shrink-0" />
                   <span className="whitespace-nowrap">Owner</span>
-                  <ChevronDown className="h-3 w-3 opacity-60" />
+                  <ChevronDown className={cn("h-3 w-3 opacity-60 transition-transform duration-200", openModuleKey === "__owner__" && "rotate-180")} />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-80 max-h-[80vh] overflow-y-auto bg-card border border-border shadow-lg">
