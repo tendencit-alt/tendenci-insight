@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useFinanceiroRealtime } from "@/hooks/useFinanceiroRealtime";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { ModuleShell } from "@/components/layout/ModuleShell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FinanceiroFilters, FinanceiroFiltersState } from "@/components/financeiro/FinanceiroFilters";
 import { PayablesReceivablesTab } from "@/components/financeiro/PayablesReceivablesTab";
