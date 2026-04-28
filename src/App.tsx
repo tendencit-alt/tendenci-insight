@@ -156,6 +156,7 @@ const App = () => (
               <Route path="/owner/lifecycle" element={<ProtectedRoute><TenantLifecycle /></ProtectedRoute>} />
               <Route path="/owner/control-tower" element={<ProtectedRoute><OwnerControlTower /></ProtectedRoute>} />
               <Route path="/owner/automation-center" element={<ProtectedRoute><AutomationCenter /></ProtectedRoute>} />
+              <Route path="/automation-center" element={<ProtectedRoute><AutomationCenter /></ProtectedRoute>} />
               <Route path="/owner/entitlements" element={<ProtectedRoute><OwnerEntitlementsCenter /></ProtectedRoute>} />
               <Route path="/owner/upgrade-center" element={<ProtectedRoute><OwnerUpgradeCenter /></ProtectedRoute>} />
               <Route path="/owner/offer-center" element={<ProtectedRoute><OwnerOfferCenter /></ProtectedRoute>} />
