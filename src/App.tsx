@@ -40,6 +40,7 @@ import Documentos from "./pages/Documentos";
 import Tarefas from "./pages/Tarefas";
 import Automacoes from "./pages/Automacoes";
 import Relatorios from "./pages/Relatorios";
+import DataFlowMap from "./pages/DataFlowMap";
 import HomeLauncher from "./pages/HomeLauncher";
 import DashboardBI from "./pages/DashboardBI";
 import RecursosHumanos from "./pages/RecursosHumanos";
