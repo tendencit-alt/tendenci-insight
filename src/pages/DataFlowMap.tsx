@@ -12,7 +12,7 @@ import { GitBranch, AlertTriangle, Search, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DataLineageTimeline } from "@/components/data-flow/DataLineageTimeline";
-import DashboardLayout from "@/components/layout/DashboardLayout";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 interface Warning {
   id: string;
