@@ -4361,6 +4361,63 @@ export type Database = {
           },
         ]
       }
+      data_quality_warnings: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          created_at: string
+          created_by: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          message: string
+          metadata: Json | null
+          related_entity_id: string | null
+          related_entity_type: string | null
+          resolved_at: string | null
+          severity: string
+          status: string
+          tenant_id: string
+          warning_type: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          message: string
+          metadata?: Json | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          tenant_id: string
+          warning_type: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          message?: string
+          metadata?: Json | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          tenant_id?: string
+          warning_type?: string
+        }
+        Relationships: []
+      }
       deals: {
         Row: {
           amount: number | null
@@ -21147,7 +21204,52 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_data_lineage: {
+        Row: {
+          event_created_at: string | null
+          event_status: string | null
+          event_type: string | null
+          financial_entry_id: string | null
+          impact_layer: string | null
+          impact_type: string | null
+          link_status: string | null
+          linked_at: string | null
+          origin_id: string | null
+          origin_type: string | null
+          payable_id: string | null
+          processed_at: string | null
+          source_entity: string | null
+          source_entity_id: string | null
+          source_module: string | null
+          target_entity: string | null
+          target_entity_id: string | null
+          target_module: string | null
+          tenant_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_origin_links_financial_entry_id_fkey"
+            columns: ["financial_entry_id"]
+            isOneToOne: false
+            referencedRelation: "fin_ledger_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_origin_links_payable_id_fkey"
+            columns: ["payable_id"]
+            isOneToOne: false
+            referencedRelation: "fin_payables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_origin_links_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       acquire_message_lock: {
@@ -21504,6 +21606,19 @@ export type Database = {
           runbook_code: string
         }[]
       }
+      flag_data_quality_warning: {
+        Args: {
+          p_entity_id: string
+          p_entity_type: string
+          p_message: string
+          p_metadata?: Json
+          p_related_entity_id?: string
+          p_related_entity_type?: string
+          p_severity?: string
+          p_warning_type: string
+        }
+        Returns: string
+      }
       generate_permission_recommendations: {
         Args: { _since_days?: number }
         Returns: number
@@ -21833,6 +21948,10 @@ export type Database = {
               whatsapp_valido: boolean
             }[]
           }
+      get_record_lineage: {
+        Args: { p_entity_id: string; p_entity_type: string }
+        Returns: Json
+      }
       get_recovery_overview: { Args: never; Returns: Json }
       get_runbook_overview: { Args: never; Returns: Json }
       get_saas_admin_analytics: { Args: never; Returns: Json }

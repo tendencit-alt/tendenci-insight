@@ -40,6 +40,7 @@ import Documentos from "./pages/Documentos";
 import Tarefas from "./pages/Tarefas";
 import Automacoes from "./pages/Automacoes";
 import Relatorios from "./pages/Relatorios";
+import DataFlowMap from "./pages/DataFlowMap";
 import HomeLauncher from "./pages/HomeLauncher";
 import DashboardBI from "./pages/DashboardBI";
 import RecursosHumanos from "./pages/RecursosHumanos";
@@ -128,6 +129,7 @@ const App = () => (
               <Route path="/suprimentos" element={<ProtectedRoute><Suprimentos /></ProtectedRoute>} />
               <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
               <Route path="/atividades" element={<ProtectedRoute><ActivityCenter /></ProtectedRoute>} />
+              <Route path="/data-flow" element={<ProtectedRoute><DataFlowMap /></ProtectedRoute>} />
               <Route path="/system-errors" element={<Navigate to="/" replace />} />
               <Route path="/excluidos" element={<Navigate to="/" replace />} />
               {/* Redirects para rotas removidas */}
