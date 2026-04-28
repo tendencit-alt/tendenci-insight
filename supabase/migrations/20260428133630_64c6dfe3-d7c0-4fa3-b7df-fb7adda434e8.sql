@@ -1,0 +1,1 @@
+ALTER TABLE public.automation_rules ADD COLUMN IF NOT EXISTS dry_run BOOLEAN NOT NULL DEFAULT false;

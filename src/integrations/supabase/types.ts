@@ -1509,6 +1509,7 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           description: string | null
+          dry_run: boolean
           error_count: number | null
           event_module: string
           event_type: string
@@ -1528,6 +1529,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          dry_run?: boolean
           error_count?: number | null
           event_module: string
           event_type: string
@@ -1547,6 +1549,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          dry_run?: boolean
           error_count?: number | null
           event_module?: string
           event_type?: string
