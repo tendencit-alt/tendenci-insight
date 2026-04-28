@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { ModuleShell } from '@/components/layout/ModuleShell';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { OrdersKPIs } from '@/components/orders/OrdersKPIs';
 import { OrdersFilters } from '@/components/orders/OrdersFilters';
@@ -13,7 +14,7 @@ import { OrderDetailSheet } from '@/components/orders/OrderDetailSheet';
 import { EditOrderDialog } from '@/components/orders/EditOrderDialog';
 import { DeleteOrderDialog } from '@/components/orders/DeleteOrderDialog';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, ShoppingCart } from 'lucide-react';
 import { startOfMonth } from 'date-fns';
 
 export default function Orders() {
@@ -108,41 +109,54 @@ export default function Orders() {
   return (
     <PermissionGuard module="pedidos">
       <DashboardLayout>
-        <div className="mx-auto w-full max-w-[1600px] space-y-4 p-4 md:p-6">
-          {/* Header compacto */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Pedidos</h1>
-              <p className="text-xs text-muted-foreground">
-                Gerencie seus pedidos em um só lugar.
-              </p>
-            </div>
-            <Button onClick={() => setCreateOpen(true)} size="sm" className="h-9 px-4 shadow-sm">
-              <Plus className="h-4 w-4 mr-1.5" />
-              Novo Pedido
-            </Button>
-          </div>
-
-          {/* KPIs compactos */}
-          <OrdersKPIs
-            orders={orders || []}
-            isLoading={isLoading}
-            selectedIds={selectedOrderIds}
-          />
-
-          {/* Filtros inline */}
-          <OrdersFilters filters={filters} onFiltersChange={setFilters} />
-
-          {/* Tabela */}
-          <OrdersTable
-            orders={orders || []}
-            isLoading={isLoading}
-            onSelectOrder={setSelectedOrderId}
-            onEditOrder={setEditingOrderId}
-            onDeleteOrder={(id, orderNumber) => setDeletingOrder({ id, orderNumber })}
-            selectedIds={selectedOrderIds}
-            onSelectedIdsChange={setSelectedOrderIds}
-            onBulkEdit={() => setBulkEditOpen(true)}
+        <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6">
+          <ModuleShell
+            moduleKey="pedidos"
+            title="Pedidos"
+            description="Gerencie seus pedidos em um só lugar."
+            icon={<ShoppingCart className="h-5 w-5" />}
+            headerActions={
+              <Button onClick={() => setCreateOpen(true)} size="sm" className="h-9 px-4 shadow-sm">
+                <Plus className="h-4 w-4 mr-1.5" />
+                Novo Pedido
+              </Button>
+            }
+            overview={
+              <OrdersKPIs
+                orders={orders || []}
+                isLoading={isLoading}
+                selectedIds={selectedOrderIds}
+              />
+            }
+            records={
+              <div className="space-y-4">
+                <OrdersFilters filters={filters} onFiltersChange={setFilters} />
+                <OrdersTable
+                  orders={orders || []}
+                  isLoading={isLoading}
+                  onSelectOrder={setSelectedOrderId}
+                  onEditOrder={setEditingOrderId}
+                  onDeleteOrder={(id, orderNumber) => setDeletingOrder({ id, orderNumber })}
+                  selectedIds={selectedOrderIds}
+                  onSelectedIdsChange={setSelectedOrderIds}
+                  onBulkEdit={() => setBulkEditOpen(true)}
+                />
+              </div>
+            }
+            actions={
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Selecione pedidos na aba Registros e use as ações em massa abaixo.
+                </p>
+                <Button
+                  variant="outline"
+                  disabled={selectedOrderIds.length === 0}
+                  onClick={() => setBulkEditOpen(true)}
+                >
+                  Editar em massa ({selectedOrderIds.length})
+                </Button>
+              </div>
+            }
           />
 
           <CreateOrderDialog

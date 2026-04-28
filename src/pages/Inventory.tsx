@@ -2,9 +2,10 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { ModuleShell } from "@/components/layout/ModuleShell";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus } from "lucide-react";
+import { Plus, Package } from "lucide-react";
 import InventoryKPIs from "@/components/inventory/InventoryKPIs";
 import InventoryFilters from "@/components/inventory/InventoryFilters";
 import ProductsTable from "@/components/inventory/ProductsTable";
@@ -127,12 +128,12 @@ export default function Inventory() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Estoque</h1>
-            <p className="text-sm text-muted-foreground">Controle de itens e movimentações</p>
-          </div>
+      <ModuleShell
+        moduleKey="estoque"
+        title="Estoque"
+        description="Controle de itens e movimentações"
+        icon={<Package className="h-5 w-5" />}
+        headerActions={
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setCreateMovementOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -143,91 +144,83 @@ export default function Inventory() {
               Novo Item
             </Button>
           </div>
-        </div>
+        }
+        overview={
+          <div className="space-y-4">
+            <InventoryKPIs />
+            <LowStockAlerts />
+          </div>
+        }
+        records={
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="flex-wrap h-auto gap-1">
+              <TabsTrigger value="products">Cadastro Itens</TabsTrigger>
+              <TabsTrigger value="movements">Movimentações</TabsTrigger>
+              <TabsTrigger value="reservations">Reservas</TabsTrigger>
+              <TabsTrigger value="costs">Custos Estoque</TabsTrigger>
+              <TabsTrigger value="requests">Requisições</TabsTrigger>
+              <TabsTrigger value="suggestions">Sugestão Compras</TabsTrigger>
+            </TabsList>
 
-        <InventoryKPIs />
+            <TabsContent value="products" className="space-y-4">
+              <InventoryFilters filters={filters} setFilters={setFilters} />
+              <ProductsTable
+                products={products}
+                isLoading={loadingProducts}
+                onSelect={() => {}}
+                onRefresh={refetchProducts}
+              />
+            </TabsContent>
 
-        <LowStockAlerts />
+            <TabsContent value="movements">
+              <StockMovementsTable
+                movements={movements}
+                isLoading={loadingMovements}
+              />
+            </TabsContent>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="flex-wrap h-auto gap-1">
-            <TabsTrigger value="products">Cadastro Itens</TabsTrigger>
-            <TabsTrigger value="movements">Movimentações</TabsTrigger>
-            <TabsTrigger value="reservations">Reservas</TabsTrigger>
-            <TabsTrigger value="costs">Custos Estoque</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="requests">Requisições</TabsTrigger>
-            <TabsTrigger value="suggestions">Sugestão Compras</TabsTrigger>
-            <TabsTrigger value="abc">Curva ABC</TabsTrigger>
-            <TabsTrigger value="categories">Categorias</TabsTrigger>
-            <TabsTrigger value="locations">Locais</TabsTrigger>
-          </TabsList>
+            <TabsContent value="reservations"><InvReservationsTab /></TabsContent>
+            <TabsContent value="costs"><InvCostsTab /></TabsContent>
+            <TabsContent value="requests"><MaterialRequestsTable /></TabsContent>
+            <TabsContent value="suggestions"><PurchaseSuggestions /></TabsContent>
+          </Tabs>
+        }
+        settings={
+          <Tabs defaultValue="categories">
+            <TabsList>
+              <TabsTrigger value="categories">Categorias</TabsTrigger>
+              <TabsTrigger value="locations">Locais</TabsTrigger>
+            </TabsList>
+            <TabsContent value="categories"><CategoriesManager /></TabsContent>
+            <TabsContent value="locations"><LocationsManager /></TabsContent>
+          </Tabs>
+        }
+        reports={
+          <Tabs defaultValue="analytics">
+            <TabsList>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              <TabsTrigger value="abc">Curva ABC</TabsTrigger>
+            </TabsList>
+            <TabsContent value="analytics"><InvAnalyticsTab /></TabsContent>
+            <TabsContent value="abc"><ABCAnalysis /></TabsContent>
+          </Tabs>
+        }
+      />
 
-          <TabsContent value="products" className="space-y-4">
-            <InventoryFilters filters={filters} setFilters={setFilters} />
-            <ProductsTable 
-              products={products} 
-              isLoading={loadingProducts}
-              onSelect={() => {}}
-              onRefresh={refetchProducts}
-            />
-          </TabsContent>
+      <CreateProductDialog
+        open={createProductOpen}
+        onOpenChange={setCreateProductOpen}
+        onSuccess={refetchProducts}
+      />
 
-          <TabsContent value="movements">
-            <StockMovementsTable 
-              movements={movements} 
-              isLoading={loadingMovements}
-            />
-          </TabsContent>
-
-          <TabsContent value="reservations">
-            <InvReservationsTab />
-          </TabsContent>
-
-          <TabsContent value="costs">
-            <InvCostsTab />
-          </TabsContent>
-
-          <TabsContent value="analytics">
-            <InvAnalyticsTab />
-          </TabsContent>
-
-          <TabsContent value="requests">
-            <MaterialRequestsTable />
-          </TabsContent>
-
-          <TabsContent value="suggestions">
-            <PurchaseSuggestions />
-          </TabsContent>
-
-          <TabsContent value="abc">
-            <ABCAnalysis />
-          </TabsContent>
-
-          <TabsContent value="categories">
-            <CategoriesManager />
-          </TabsContent>
-
-          <TabsContent value="locations">
-            <LocationsManager />
-          </TabsContent>
-        </Tabs>
-
-        <CreateProductDialog 
-          open={createProductOpen} 
-          onOpenChange={setCreateProductOpen}
-          onSuccess={refetchProducts}
-        />
-
-        <CreateMovementDialog
-          open={createMovementOpen}
-          onOpenChange={setCreateMovementOpen}
-          onSuccess={() => {
-            refetchProducts();
-            refetchMovements();
-          }}
-        />
-      </div>
+      <CreateMovementDialog
+        open={createMovementOpen}
+        onOpenChange={setCreateMovementOpen}
+        onSuccess={() => {
+          refetchProducts();
+          refetchMovements();
+        }}
+      />
     </DashboardLayout>
   );
 }

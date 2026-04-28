@@ -1,0 +1,194 @@
+import { ReactNode, Suspense, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import {
+  LayoutDashboard,
+  ListChecks,
+  Zap,
+  Settings as SettingsIcon,
+  Plug,
+  BarChart3,
+  Construction,
+} from "lucide-react";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+
+/**
+ * ModuleShell — Estrutura padrão obrigatória de TODOS os módulos do ERP.
+ * Hierarquia única: Visão Geral → Registros → Ações → Configurações → Integrações → Relatórios.
+ *
+ * Regras:
+ * - Ordem das seções é FIXA. Não reordenar.
+ * - Nomes das seções são FIXOS. Não renomear.
+ * - Seções sem conteúdo aparecem como "Em breve" (placeholder), nunca são ocultadas.
+ * - Aba ativa é persistida via URL `?section=`.
+ * - Conteúdo é renderizado sob demanda (lazy) — só monta a aba ativa.
+ */
+
+export type ModuleSectionKey =
+  | "overview"
+  | "records"
+  | "actions"
+  | "settings"
+  | "integrations"
+  | "reports";
+
+export interface ModuleShellProps {
+  /** Identificador interno (ex: "pedidos") usado para storage local. */
+  moduleKey: string;
+  /** Nome exibido no header. */
+  title: string;
+  /** Subtítulo curto descrevendo o módulo. */
+  description?: string;
+  /** Ícone do módulo (lucide). */
+  icon?: ReactNode;
+  /** Ações globais do módulo (botões à direita do header). */
+  headerActions?: ReactNode;
+
+  /** Slots de conteúdo. Quando ausente → placeholder "Em breve". */
+  overview?: ReactNode;
+  records?: ReactNode;
+  actions?: ReactNode;
+  settings?: ReactNode;
+  integrations?: ReactNode;
+  reports?: ReactNode;
+
+  /** Aba inicial caso não haja `?section=` na URL. Default: "records". */
+  defaultSection?: ModuleSectionKey;
+}
+
+const SECTION_ORDER: {
+  key: ModuleSectionKey;
+  label: string;
+  icon: ReactNode;
+  hint: string;
+}[] = [
+  { key: "overview", label: "Visão Geral", icon: <LayoutDashboard className="h-4 w-4" />, hint: "Indicadores, resumo operacional e alertas." },
+  { key: "records", label: "Registros", icon: <ListChecks className="h-4 w-4" />, hint: "Lista principal, filtros e busca." },
+  { key: "actions", label: "Ações", icon: <Zap className="h-4 w-4" />, hint: "Operações em massa, workflows e execuções." },
+  { key: "settings", label: "Configurações", icon: <SettingsIcon className="h-4 w-4" />, hint: "Regras, parâmetros e definições." },
+  { key: "integrations", label: "Integrações", icon: <Plug className="h-4 w-4" />, hint: "Entrada/saída de dados, APIs e sincronizações." },
+  { key: "reports", label: "Relatórios", icon: <BarChart3 className="h-4 w-4" />, hint: "Análises, comparações e indicadores." },
+];
+
+function ComingSoon({ label, hint }: { label: string; hint: string }) {
+  return (
+    <Card className="p-12 flex flex-col items-center justify-center text-center border-dashed">
+      <div className="p-4 rounded-full bg-muted/50 mb-4">
+        <Construction className="h-8 w-8 text-muted-foreground" />
+      </div>
+      <h3 className="text-lg font-semibold mb-1">{label}</h3>
+      <Badge variant="secondary" className="mb-3">Em breve</Badge>
+      <p className="text-sm text-muted-foreground max-w-md">{hint}</p>
+    </Card>
+  );
+}
+
+export function ModuleShell({
+  moduleKey,
+  title,
+  description,
+  icon,
+  headerActions,
+  overview,
+  records,
+  actions,
+  settings,
+  integrations,
+  reports,
+  defaultSection = "records",
+}: ModuleShellProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const slots: Record<ModuleSectionKey, ReactNode> = {
+    overview,
+    records,
+    actions,
+    settings,
+    integrations,
+    reports,
+  };
+
+  const urlSection = searchParams.get("section") as ModuleSectionKey | null;
+  const storageKey = `erp_module_section_${moduleKey}`;
+  const stored = (typeof window !== "undefined"
+    ? (localStorage.getItem(storageKey) as ModuleSectionKey | null)
+    : null);
+
+  const initial =
+    urlSection && SECTION_ORDER.some((s) => s.key === urlSection)
+      ? urlSection
+      : stored && SECTION_ORDER.some((s) => s.key === stored)
+        ? stored
+        : defaultSection;
+
+  const handleChange = (value: string) => {
+    const next = value as ModuleSectionKey;
+    const params = new URLSearchParams(searchParams);
+    params.set("section", next);
+    setSearchParams(params, { replace: true });
+    try {
+      localStorage.setItem(storageKey, next);
+    } catch {}
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header padrão */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="flex items-start gap-3">
+          {icon && (
+            <div className="p-2 rounded-lg bg-primary/10 text-primary">{icon}</div>
+          )}
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+            {description && (
+              <p className="text-sm text-muted-foreground">{description}</p>
+            )}
+          </div>
+        </div>
+        {headerActions && <div className="flex items-center gap-2">{headerActions}</div>}
+      </div>
+
+      <Tabs value={initial} onValueChange={handleChange} className="w-full">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto">
+          {SECTION_ORDER.map((s) => {
+            const empty = !slots[s.key];
+            return (
+              <TabsTrigger
+                key={s.key}
+                value={s.key}
+                className={cn(
+                  "flex items-center gap-2 py-2",
+                  empty && "opacity-60"
+                )}
+                title={empty ? `${s.label} — Em breve` : s.label}
+              >
+                {s.icon}
+                <span className="hidden sm:inline">{s.label}</span>
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
+
+        {SECTION_ORDER.map((s) => (
+          <TabsContent key={s.key} value={s.key} className="mt-4">
+            {/* Lazy: só renderiza se for a aba ativa */}
+            {initial === s.key ? (
+              <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+                {slots[s.key] ?? <ComingSoon label={s.label} hint={s.hint} />}
+              </Suspense>
+            ) : null}
+          </TabsContent>
+        ))}
+      </Tabs>
+    </div>
+  );
+}

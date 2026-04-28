@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { ModuleShell } from '@/components/layout/ModuleShell';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Plus, Settings, Zap } from 'lucide-react';
+import { Plus, Settings, Zap, Factory } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ProductionKanban } from '@/components/production/ProductionKanban';
@@ -175,101 +176,109 @@ export default function Production() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-3">
-        {/* Header compacto */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-foreground">Produção</h1>
-          
-          <div className="flex items-center gap-2">
-            {isMaster && (
-              <Button variant="ghost" size="sm" onClick={() => setAutomationsDialogOpen(true)} className="gap-1.5 text-muted-foreground">
-                <Zap className="h-4 w-4" />
-                <span className="hidden sm:inline">Automações</span>
-              </Button>
-            )}
-            {isMaster && (
-              <Button variant="ghost" size="sm" onClick={() => setConfigDialogOpen(true)} className="gap-1.5 text-muted-foreground">
-                <Settings className="h-4 w-4" />
-                <span className="hidden sm:inline">Etapas</span>
-              </Button>
-            )}
-            <Button size="sm" onClick={() => setCreateDialogOpen(true)} className="gap-1.5">
-              <Plus className="h-4 w-4" />
-              Nova OP
+      <ModuleShell
+        moduleKey="producao"
+        title="Produção"
+        description="Ordens de produção, kanban e automações"
+        icon={<Factory className="h-5 w-5" />}
+        headerActions={
+          <Button size="sm" onClick={() => setCreateDialogOpen(true)} className="gap-1.5">
+            <Plus className="h-4 w-4" />
+            Nova OP
+          </Button>
+        }
+        overview={<ProductionKPIs productionTypeId={currentTypeId} filters={filters} />}
+        records={
+          <div className="space-y-3">
+            <ProductionFilters
+              filters={filters}
+              onFiltersChange={setFilters}
+              onExport={handleExport}
+              onUnifyOps={() => setUnifyDialogOpen(true)}
+            />
+            <Tabs value={selectedType || productionTypes[0]?.id || ''} onValueChange={setSelectedType} className="w-full">
+              <TabsList className="w-full justify-start overflow-x-auto">
+                {productionTypes.map((type) => (
+                  <TabsTrigger key={type.id} value={type.id} className="min-w-fit gap-2">
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: getTailwindColor(type.color) }}
+                    />
+                    {type.name}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+
+              {productionTypes.map((type) => (
+                <TabsContent key={type.id} value={type.id} className="mt-3">
+                  <ProductionKanban
+                    productionTypeId={type.id}
+                    filters={filters}
+                    onOrderClick={(orderId) => setSelectedOrderId(orderId)}
+                  />
+                </TabsContent>
+              ))}
+            </Tabs>
+          </div>
+        }
+        actions={
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Operações em massa de ordens de produção.</p>
+            <Button variant="outline" onClick={() => setUnifyDialogOpen(true)} className="gap-1.5">
+              <Zap className="h-4 w-4" />
+              Unificar OPs
             </Button>
           </div>
-        </div>
+        }
+        settings={
+          isMaster ? (
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => setConfigDialogOpen(true)} className="gap-1.5">
+                <Settings className="h-4 w-4" />
+                Etapas de produção
+              </Button>
+              <Button variant="outline" onClick={() => setAutomationsDialogOpen(true)} className="gap-1.5">
+                <Zap className="h-4 w-4" />
+                Automações
+              </Button>
+            </div>
+          ) : undefined
+        }
+      />
 
-        {/* Resumo / KPIs */}
-        <ProductionKPIs productionTypeId={currentTypeId} filters={filters} />
+      {/* Dialog de criação */}
+      <CreateProductionOrderDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        productionTypes={productionTypes}
+      />
 
-        {/* Filtros */}
-        <ProductionFilters
-          filters={filters} 
-          onFiltersChange={setFilters} 
-          onExport={handleExport}
-          onUnifyOps={() => setUnifyDialogOpen(true)}
+      {/* Sheet de detalhes */}
+      <ProductionOrderDetailSheet
+        orderId={selectedOrderId}
+        open={!!selectedOrderId}
+        onOpenChange={(open) => !open && setSelectedOrderId(null)}
+      />
+
+      {/* Dialog de unificar OPs */}
+      <UnifyOpsDialog
+        open={unifyDialogOpen}
+        onOpenChange={setUnifyDialogOpen}
+      />
+
+      {/* Dialog de configuração de etapas */}
+      <ManageProductionStagesDialog
+        open={configDialogOpen}
+        onOpenChange={setConfigDialogOpen}
+      />
+
+      {/* Dialog de automações - apenas MASTER */}
+      {isMaster && (
+        <ManageProductionAutomationsDialog
+          open={automationsDialogOpen}
+          onOpenChange={setAutomationsDialogOpen}
         />
-
-        {/* Tabs por tipo de produção + Kanban */}
-        <Tabs value={selectedType || productionTypes[0]?.id || ''} onValueChange={setSelectedType} className="w-full">
-          <TabsList className="w-full justify-start overflow-x-auto">
-            {productionTypes.map((type) => (
-              <TabsTrigger key={type.id} value={type.id} className="min-w-fit gap-2">
-                <span 
-                  className="w-2 h-2 rounded-full" 
-                  style={{ backgroundColor: getTailwindColor(type.color) }}
-                />
-                {type.name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          {productionTypes.map((type) => (
-            <TabsContent key={type.id} value={type.id} className="mt-3">
-              <ProductionKanban 
-                productionTypeId={type.id} 
-                filters={filters}
-                onOrderClick={(orderId) => setSelectedOrderId(orderId)}
-              />
-            </TabsContent>
-          ))}
-        </Tabs>
-
-        {/* Dialog de criação */}
-        <CreateProductionOrderDialog 
-          open={createDialogOpen} 
-          onOpenChange={setCreateDialogOpen}
-          productionTypes={productionTypes}
-        />
-
-        {/* Sheet de detalhes */}
-        <ProductionOrderDetailSheet
-          orderId={selectedOrderId}
-          open={!!selectedOrderId}
-          onOpenChange={(open) => !open && setSelectedOrderId(null)}
-        />
-
-        {/* Dialog de unificar OPs */}
-        <UnifyOpsDialog
-          open={unifyDialogOpen}
-          onOpenChange={setUnifyDialogOpen}
-        />
-
-        {/* Dialog de configuração de etapas */}
-        <ManageProductionStagesDialog
-          open={configDialogOpen}
-          onOpenChange={setConfigDialogOpen}
-        />
-
-        {/* Dialog de automações - apenas MASTER */}
-        {isMaster && (
-          <ManageProductionAutomationsDialog
-            open={automationsDialogOpen}
-            onOpenChange={setAutomationsDialogOpen}
-          />
-        )}
-      </div>
+      )}
     </DashboardLayout>
   );
 }

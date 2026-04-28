@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { ModuleShell } from "@/components/layout/ModuleShell";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Building2 } from "lucide-react";
 import SuppliersKPIs from "@/components/suppliers/SuppliersKPIs";
 import SuppliersFilters from "@/components/suppliers/SuppliersFilters";
 import SuppliersTable from "@/components/suppliers/SuppliersTable";
@@ -47,41 +48,42 @@ export default function Suppliers() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Fornecedores</h1>
-            <p className="text-sm text-muted-foreground">Gerencie seus fornecedores e parceiros comerciais</p>
-          </div>
+      <ModuleShell
+        moduleKey="fornecedores"
+        title="Fornecedores"
+        description="Gerencie seus fornecedores e parceiros comerciais"
+        icon={<Building2 className="h-5 w-5" />}
+        headerActions={
           <Button onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Novo Fornecedor
           </Button>
-        </div>
+        }
+        overview={<SuppliersKPIs />}
+        records={
+          <div className="space-y-4">
+            <SuppliersFilters filters={filters} setFilters={setFilters} />
+            <SuppliersTable
+              suppliers={suppliers}
+              isLoading={isLoading}
+              onSelect={setSelectedSupplier}
+            />
+          </div>
+        }
+      />
 
-        <SuppliersKPIs />
+      <CreateSupplierDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onSuccess={refetch}
+      />
 
-        <SuppliersFilters filters={filters} setFilters={setFilters} />
-
-        <SuppliersTable 
-          suppliers={suppliers} 
-          isLoading={isLoading}
-          onSelect={setSelectedSupplier}
-        />
-
-        <CreateSupplierDialog 
-          open={createOpen} 
-          onOpenChange={setCreateOpen}
-          onSuccess={refetch}
-        />
-
-        <SupplierDetailSheet
-          supplier={selectedSupplier}
-          open={!!selectedSupplier}
-          onOpenChange={(open) => !open && setSelectedSupplier(null)}
-          onUpdate={refetch}
-        />
-      </div>
+      <SupplierDetailSheet
+        supplier={selectedSupplier}
+        open={!!selectedSupplier}
+        onOpenChange={(open) => !open && setSelectedSupplier(null)}
+        onUpdate={refetch}
+      />
     </DashboardLayout>
   );
 }

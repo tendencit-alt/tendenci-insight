@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useFinanceiroRealtime } from "@/hooks/useFinanceiroRealtime";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { ModuleShell } from "@/components/layout/ModuleShell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FinanceiroFilters, FinanceiroFiltersState } from "@/components/financeiro/FinanceiroFilters";
 import { PayablesReceivablesTab } from "@/components/financeiro/PayablesReceivablesTab";
@@ -26,6 +27,7 @@ import {
   Banknote,
   CalendarClock,
   ShieldCheck,
+  Wallet,
 } from "lucide-react";
 
 export default function Financeiro() {
@@ -54,105 +56,84 @@ export default function Financeiro() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold">Financeiro</h1>
-          <p className="text-muted-foreground text-sm">
-            Gestão financeira completa: obrigações, tesouraria, resultado e capital
-          </p>
-        </div>
+      <ModuleShell
+        moduleKey="financeiro"
+        title="Financeiro"
+        description="Gestão financeira completa: obrigações, tesouraria, resultado e capital"
+        icon={<Wallet className="h-5 w-5" />}
+        records={
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <div className="w-full rounded-xl bg-card border border-border p-1.5 overflow-x-auto">
+              <TabsList className="flex h-auto justify-start gap-1 rounded-none bg-transparent p-0 min-w-max">
+                <TabsTrigger value="receivables" className={tabClass}>
+                  <ArrowUpCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="whitespace-nowrap">Contas a Receber</span>
+                </TabsTrigger>
+                <TabsTrigger value="payables" className={tabClass}>
+                  <ArrowDownCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="whitespace-nowrap">Contas a Pagar</span>
+                </TabsTrigger>
+                <TabsTrigger value="treasury" className={tabClass}>
+                  <Landmark className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="whitespace-nowrap">Tesouraria</span>
+                </TabsTrigger>
+                <TabsTrigger value="reconciliation" className={tabClass}>
+                  <GitCompare className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="whitespace-nowrap">Conciliação</span>
+                </TabsTrigger>
+                <TabsTrigger value="capital" className={tabClass}>
+                  <Banknote className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="whitespace-nowrap">Capital</span>
+                </TabsTrigger>
+                <TabsTrigger value="recurring" className={tabClass}>
+                  <CalendarClock className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="whitespace-nowrap">Recorrentes</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <div className="w-full rounded-xl bg-card border border-border p-1.5 overflow-x-auto">
-            <TabsList className="flex h-auto justify-start gap-1 rounded-none bg-transparent p-0 min-w-max">
-              <TabsTrigger value="receivables" className={tabClass}>
-                <ArrowUpCircle className="h-3.5 w-3.5 flex-shrink-0" />
-                <span className="whitespace-nowrap">Contas a Receber</span>
-              </TabsTrigger>
-              <TabsTrigger value="payables" className={tabClass}>
-                <ArrowDownCircle className="h-3.5 w-3.5 flex-shrink-0" />
-                <span className="whitespace-nowrap">Contas a Pagar</span>
-              </TabsTrigger>
-              <TabsTrigger value="treasury" className={tabClass}>
-                <Landmark className="h-3.5 w-3.5 flex-shrink-0" />
-                <span className="whitespace-nowrap">Tesouraria</span>
-              </TabsTrigger>
-              <TabsTrigger value="reconciliation" className={tabClass}>
-                <GitCompare className="h-3.5 w-3.5 flex-shrink-0" />
-                <span className="whitespace-nowrap">Conciliação</span>
-              </TabsTrigger>
-              <TabsTrigger value="cashflow" className={tabClass}>
-                <TrendingUp className="h-3.5 w-3.5 flex-shrink-0" />
-                <span className="whitespace-nowrap">Fluxo de Caixa</span>
-              </TabsTrigger>
-              <TabsTrigger value="dre" className={tabClass}>
-                <BarChart2 className="h-3.5 w-3.5 flex-shrink-0" />
-                <span className="whitespace-nowrap">DRE Gerencial</span>
-              </TabsTrigger>
-              <TabsTrigger value="financial-result" className={tabClass}>
-                <DollarSign className="h-3.5 w-3.5 flex-shrink-0" />
-                <span className="whitespace-nowrap">Resultado Financeiro</span>
-              </TabsTrigger>
-              <TabsTrigger value="capital" className={tabClass}>
-                <Banknote className="h-3.5 w-3.5 flex-shrink-0" />
-                <span className="whitespace-nowrap">Capital</span>
-              </TabsTrigger>
-              <TabsTrigger value="recurring" className={tabClass}>
-                <CalendarClock className="h-3.5 w-3.5 flex-shrink-0" />
-                <span className="whitespace-nowrap">Recorrentes</span>
-              </TabsTrigger>
-              <TabsTrigger value="governance" className={tabClass}>
-                <ShieldCheck className="h-3.5 w-3.5 flex-shrink-0" />
-                <span className="whitespace-nowrap">Governança</span>
-              </TabsTrigger>
+            <FinanceiroFilters filters={filters} onChange={setFilters} />
+            <OrphanEntriesAlert />
+
+            <TabsContent value="receivables" forceMount className={activeTab === "receivables" ? "space-y-4" : "hidden"}>
+              <PayablesReceivablesTab filters={filters} />
+            </TabsContent>
+
+            <TabsContent value="payables" forceMount className={activeTab === "payables" ? "space-y-4" : "hidden"}>
+              <PayablesReceivablesTab filters={filters} />
+            </TabsContent>
+
+            <TabsContent value="treasury" forceMount className={activeTab === "treasury" ? "space-y-4" : "hidden"}>
+              <TreasuryTab filters={filters} />
+            </TabsContent>
+
+            <TabsContent value="reconciliation" forceMount className={activeTab === "reconciliation" ? "space-y-4" : "hidden"}>
+              <LedgerReconciliationTab filters={filters} />
+            </TabsContent>
+
+            <TabsContent value="capital" forceMount className={activeTab === "capital" ? "space-y-4" : "hidden"}>
+              <CapitalFinancingTab filters={filters} />
+            </TabsContent>
+
+            <TabsContent value="recurring" forceMount className={activeTab === "recurring" ? "space-y-4" : "hidden"}>
+              <RecurringContractsTab filters={filters} />
+            </TabsContent>
+          </Tabs>
+        }
+        settings={<GovernanceTab filters={filters} />}
+        reports={
+          <Tabs defaultValue="cashflow" className="space-y-4">
+            <TabsList className="flex h-auto flex-wrap gap-1">
+              <TabsTrigger value="cashflow" className="gap-1.5"><TrendingUp className="h-4 w-4" />Fluxo de Caixa</TabsTrigger>
+              <TabsTrigger value="dre" className="gap-1.5"><BarChart2 className="h-4 w-4" />DRE Gerencial</TabsTrigger>
+              <TabsTrigger value="financial-result" className="gap-1.5"><DollarSign className="h-4 w-4" />Resultado Financeiro</TabsTrigger>
             </TabsList>
-          </div>
-
-          <FinanceiroFilters filters={filters} onChange={setFilters} />
-          <OrphanEntriesAlert />
-
-          {/* Contas a Receber + Contas a Pagar: reusa o componente unificado com filtro de tipo */}
-          <TabsContent value="receivables" forceMount className={activeTab === "receivables" ? "space-y-4" : "hidden"}>
-            <PayablesReceivablesTab filters={filters} />
-          </TabsContent>
-
-          <TabsContent value="payables" forceMount className={activeTab === "payables" ? "space-y-4" : "hidden"}>
-            <PayablesReceivablesTab filters={filters} />
-          </TabsContent>
-
-          <TabsContent value="treasury" forceMount className={activeTab === "treasury" ? "space-y-4" : "hidden"}>
-            <TreasuryTab filters={filters} />
-          </TabsContent>
-
-          <TabsContent value="reconciliation" forceMount className={activeTab === "reconciliation" ? "space-y-4" : "hidden"}>
-            <LedgerReconciliationTab filters={filters} />
-          </TabsContent>
-
-          <TabsContent value="cashflow" forceMount className={activeTab === "cashflow" ? "space-y-4" : "hidden"}>
-            <CashflowTab filters={filters} onFiltersChange={setFilters} />
-          </TabsContent>
-
-          <TabsContent value="dre" forceMount className={activeTab === "dre" ? "space-y-4" : "hidden"}>
-            <DRETab filters={filters} onFiltersChange={setFilters} />
-          </TabsContent>
-
-          <TabsContent value="financial-result" forceMount className={activeTab === "financial-result" ? "space-y-4" : "hidden"}>
-            <FinancialResultTab filters={filters} />
-          </TabsContent>
-
-          <TabsContent value="capital" forceMount className={activeTab === "capital" ? "space-y-4" : "hidden"}>
-            <CapitalFinancingTab filters={filters} />
-          </TabsContent>
-
-          <TabsContent value="recurring" forceMount className={activeTab === "recurring" ? "space-y-4" : "hidden"}>
-            <RecurringContractsTab filters={filters} />
-          </TabsContent>
-
-          <TabsContent value="governance" forceMount className={activeTab === "governance" ? "space-y-4" : "hidden"}>
-            <GovernanceTab filters={filters} />
-          </TabsContent>
-        </Tabs>
-      </div>
+            <TabsContent value="cashflow"><CashflowTab filters={filters} onFiltersChange={setFilters} /></TabsContent>
+            <TabsContent value="dre"><DRETab filters={filters} onFiltersChange={setFilters} /></TabsContent>
+            <TabsContent value="financial-result"><FinancialResultTab filters={filters} /></TabsContent>
+          </Tabs>
+        }
+      />
     </DashboardLayout>
   );
 }
