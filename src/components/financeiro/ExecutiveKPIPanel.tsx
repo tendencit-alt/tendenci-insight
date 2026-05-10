@@ -216,7 +216,7 @@ export function ExecutiveKPIPanel({ filters }: Props) {
 
     // Safety balance
     const minSafety = Number(companySettings?.min_safety_balance || 0);
-    const coberturaIdx = minSafety > 0 ? saldoCaixa / minSafety : 999;
+    const coberturaIdx = minSafety > 0 ? saldoCaixa / minSafety : null;
 
     return {
       // Receita block
