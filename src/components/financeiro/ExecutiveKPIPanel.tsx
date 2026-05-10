@@ -189,7 +189,7 @@ export function ExecutiveKPIPanel({ filters }: Props) {
     // Cash
     const saldoCaixa = cashBalance?.netCash || 0;
     const burnRate = despesaOp + deducao;
-    const runway = burnRate > 0 ? Math.floor(saldoCaixa / burnRate) : 999;
+    const runway = burnRate > 0 ? Math.floor(saldoCaixa / burnRate) : null;
 
     // Projections (simple: avg monthly * months remaining)
     const monthsRemaining = 12 - currentMonth;
