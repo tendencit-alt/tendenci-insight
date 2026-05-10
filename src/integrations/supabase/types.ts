@@ -10560,9 +10560,18 @@ export type Database = {
           ad_id: string | null
           architect_id: string | null
           client_id: string | null
+          company: string | null
+          converted_at: string | null
+          converted_deal_id: string | null
           created_at: string | null
+          email: string | null
           id: string
+          name: string | null
+          notes: string | null
+          owner_id: string | null
+          phone: string | null
           source_id: number | null
+          source_label: string | null
           status: string | null
           temperature: string | null
           tenant_id: string | null
@@ -10573,9 +10582,18 @@ export type Database = {
           ad_id?: string | null
           architect_id?: string | null
           client_id?: string | null
+          company?: string | null
+          converted_at?: string | null
+          converted_deal_id?: string | null
           created_at?: string | null
+          email?: string | null
           id?: string
+          name?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          phone?: string | null
           source_id?: number | null
+          source_label?: string | null
           status?: string | null
           temperature?: string | null
           tenant_id?: string | null
@@ -10586,9 +10604,18 @@ export type Database = {
           ad_id?: string | null
           architect_id?: string | null
           client_id?: string | null
+          company?: string | null
+          converted_at?: string | null
+          converted_deal_id?: string | null
           created_at?: string | null
+          email?: string | null
           id?: string
+          name?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          phone?: string | null
           source_id?: number | null
+          source_label?: string | null
           status?: string | null
           temperature?: string | null
           tenant_id?: string | null
@@ -10608,6 +10635,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
