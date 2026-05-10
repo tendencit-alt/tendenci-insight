@@ -83,19 +83,9 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const [userLevel, setUserLevel] = useState<'system_owner' | 'tenant_owner' | 'tenant_admin' | 'operational'>('operational');
 
   const fetchPermissions = useCallback(async () => {
-    console.log('[Permissions] Fetching for user:', user?.id, user?.email);
-    
-    if (!user) {
-      console.log('[Permissions] No user, clearing permissions');
-      setPermissions(null);
-      setIsMaster(false);
-      setIsOwner(false);
-      setIsTenantOwner(false);
-      setIsTenantAdmin(false);
-      setUserLevel('operational');
-      setLoading(false);
-      return;
-    }
+    if (!user?.id) return;
+
+    console.log('[Permissions] Fetching for user:', user.id, user.email);
 
     try {
       // Buscar perfil do usuário
@@ -155,7 +145,6 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
         }
 
         console.log('[Permissions] User permissions loaded:', userPermissions?.length, 'items');
-        console.log('[Permissions] IA Config permission:', userPermissions?.find(p => p.module === 'ia_configuracao'));
         
         setPermissions({
           role: profile.role,
@@ -170,16 +159,28 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       console.log('[Permissions] Loading complete');
       setLoading(false);
     }
-  }, [user]);
+  }, [user?.id, user?.email]);
 
   useEffect(() => {
     if (authLoading) {
       // Ainda aguardando auth, manter loading
       return;
     }
-    
+
+    if (!user?.id) {
+      // Sem usuário autenticado: limpa estado e encerra loading sem chamar a query
+      setPermissions(null);
+      setIsMaster(false);
+      setIsOwner(false);
+      setIsTenantOwner(false);
+      setIsTenantAdmin(false);
+      setUserLevel('operational');
+      setLoading(false);
+      return;
+    }
+
     fetchPermissions();
-  }, [user, authLoading, fetchPermissions]);
+  }, [user?.id, authLoading, fetchPermissions]);
 
   const hasModuleAccess = useCallback((module: AppModule | string, action: PermissionAction = 'view'): boolean => {
     if (loading) return true;
