@@ -208,6 +208,7 @@ const App = () => (
               <Route path="/owner" element={<Navigate to="/owner/control-tower" replace />} />
               <Route path="/benchmarking" element={<ProtectedRoute><Benchmarking /></ProtectedRoute>} />
               <Route path="/multi-company" element={<Navigate to="/benchmarking" replace />} />
+              <Route path="/empresas" element={<ProtectedRoute><Empresas /></ProtectedRoute>} />
 
               {/* Painéis (PT canônico + redirect EN) */}
               <Route path="/paineis" element={<Navigate to="/bi-dashboard" replace />} />
