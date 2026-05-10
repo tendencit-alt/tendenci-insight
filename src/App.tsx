@@ -65,7 +65,7 @@ import PermissionDebug from "./pages/PermissionDebug";
 import SmartAdmin from "./pages/SmartAdmin";
 import BillingOps from "./pages/BillingOps";
 import TenantLifecycle from "./pages/TenantLifecycle";
-import MultiCompanyIntelligence from "./pages/MultiCompanyIntelligence";
+import Benchmarking from "./pages/Benchmarking";
 import OwnerControlTower from "./pages/OwnerControlTower";
 import AutomationCenter from "./pages/AutomationCenter";
 import OwnerEntitlementsCenter from "./pages/OwnerEntitlementsCenter";
