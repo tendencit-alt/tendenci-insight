@@ -64,33 +64,101 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (!mounted) return;
-      
-      if (error) {
-        console.error('Session error:', error);
-        setSession(null);
-        setUser(null);
-        setProfile(null);
-        setLoading(false);
-        return;
-      }
-
-      console.log('Initial session:', session?.user?.email);
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        setTimeout(() => {
-          if (mounted) {
-            fetchProfile(session.user.id);
+    // THEN check for existing session — only if a stored token exists
+    const hasStoredSession = (() => {
+      try {
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        // Supabase v2 stores the session under sb-<project-ref>-auth-token
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (!key) continue;
+          if (
+            (projectId && key === `sb-${projectId}-auth-token`) ||
+            (key.startsWith('sb-') && key.endsWith('-auth-token'))
+          ) {
+            const raw = localStorage.getItem(key);
+            if (raw && raw.includes('refresh_token')) return true;
           }
-        }, 0);
+        }
+      } catch {
+        // localStorage may be unavailable; fall through to attempt getSession
+        return true;
       }
-      
+      return false;
+    })();
+
+    if (!hasStoredSession) {
+      // No stored refresh token — skip getSession() entirely to avoid the
+      // "Invalid Refresh Token: Refresh Token Not Found" error being logged.
+      setSession(null);
+      setUser(null);
+      setProfile(null);
       setLoading(false);
-    });
+    } else {
+      supabase.auth
+        .getSession()
+        .then(async ({ data: { session }, error }) => {
+          if (!mounted) return;
+
+          if (error) {
+            const msg = error.message ?? '';
+            if (
+              msg.includes('Refresh Token Not Found') ||
+              msg.includes('Invalid Refresh Token') ||
+              msg.includes('refresh_token_not_found')
+            ) {
+              // Clean orphaned tokens silently
+              try {
+                await supabase.auth.signOut({ scope: 'local' });
+              } catch {
+                /* noop */
+              }
+            } else {
+              console.error('Session error:', error);
+            }
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+            setLoading(false);
+            return;
+          }
+
+          console.log('Initial session:', session?.user?.email);
+          setSession(session);
+          setUser(session?.user ?? null);
+
+          if (session?.user) {
+            setTimeout(() => {
+              if (mounted) {
+                fetchProfile(session.user.id);
+              }
+            }, 0);
+          }
+
+          setLoading(false);
+        })
+        .catch(async (err: any) => {
+          if (!mounted) return;
+          const msg = err?.message ?? '';
+          if (
+            msg.includes('Refresh Token Not Found') ||
+            msg.includes('Invalid Refresh Token') ||
+            msg.includes('refresh_token_not_found')
+          ) {
+            try {
+              await supabase.auth.signOut({ scope: 'local' });
+            } catch {
+              /* noop */
+            }
+          } else {
+            console.error('Session error:', err);
+          }
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+        });
+    }
 
     return () => {
       mounted = false;
