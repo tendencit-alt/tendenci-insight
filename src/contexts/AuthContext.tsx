@@ -235,7 +235,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null);
     setProfile(null);
     // Redirect via window.location para evitar conflito com React Router
-    window.location.href = '/auth';
+    window.location.href = '/autenticacao';
   };
 
   const value = {
