@@ -135,7 +135,7 @@ const App = () => (
               <Route path="/system-errors" element={<Navigate to="/" replace />} />
               <Route path="/excluidos" element={<Navigate to="/" replace />} />
               {/* Redirects para rotas removidas */}
-              <Route path="/leads" element={<Navigate to="/crm-comercial" replace />} />
+              <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
               <Route path="/kanban" element={<Navigate to="/" replace />} />
               <Route path="/crm" element={<Navigate to="/crm-comercial" replace />} />
               <Route path="/crm-comercial" element={<ProtectedRoute><CRMCommercial /></ProtectedRoute>} />
