@@ -15243,6 +15243,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string | null
+          current_tenant_id: string | null
           email: string
           especializacao: string | null
           full_name: string | null
@@ -15257,6 +15258,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
+          current_tenant_id?: string | null
           email: string
           especializacao?: string | null
           full_name?: string | null
@@ -15271,6 +15273,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string | null
+          current_tenant_id?: string | null
           email?: string
           especializacao?: string | null
           full_name?: string | null
@@ -15286,6 +15289,13 @@ export type Database = {
           {
             foreignKeyName: "fk_profiles_tenant"
             columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_current_tenant_id_fkey"
+            columns: ["current_tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
@@ -21241,6 +21251,35 @@ export type Database = {
           },
         ]
       }
+      user_tenants: {
+        Row: {
+          created_at: string
+          role: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          role?: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          role?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_tenants_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           created_at: string | null
@@ -22444,6 +22483,7 @@ export type Database = {
       run_capacity_sweep: { Args: never; Returns: Json }
       run_inactive_architects_check: { Args: never; Returns: Json }
       run_predictive_sweep: { Args: never; Returns: Json }
+      set_active_tenant: { Args: { target_tenant_id: string }; Returns: string }
       should_show_upgrade_nudge: {
         Args: { _signal_id: string; _tenant_id: string }
         Returns: boolean
