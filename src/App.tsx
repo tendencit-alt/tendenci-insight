@@ -102,23 +102,37 @@ const App = () => (
               <CommandBar />
                <Routes>
               <Route path="/auditoria-permissoes" element={<ProtectedRoute><PermissionAuditPage /></ProtectedRoute>} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
+
+              {/* Autenticação (PT canônico + redirects EN) */}
+              <Route path="/autenticacao" element={<Auth />} />
+              <Route path="/auth" element={<Navigate to="/autenticacao" replace />} />
+              <Route path="/redefinir-senha" element={<ResetPassword />} />
+              <Route path="/reset-password" element={<Navigate to="/redefinir-senha" replace />} />
+
               <Route path="/catalogo" element={<Catalogo />} />
               <Route path="/" element={<ProtectedRoute><Navigate to="/central-navegacao" replace /></ProtectedRoute>} />
               <Route path="/central-navegacao" element={<ProtectedRoute><HomeLauncher /></ProtectedRoute>} />
-               <Route path="/super-admin" element={<ProtectedRoute><SuperAdmin /></ProtectedRoute>} />
-               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-               <Route path="/smart-onboarding" element={<ProtectedRoute><SmartOnboarding /></ProtectedRoute>} />
-               <Route path="/automacoes-inteligentes" element={<ProtectedRoute><SmartAutomations /></ProtectedRoute>} />
-               <Route path="/auditoria" element={<ProtectedRoute><Auditoria /></ProtectedRoute>} />
-               <Route path="/aprovacoes" element={<ProtectedRoute><Aprovacoes /></ProtectedRoute>} />
-               <Route path="/documentos" element={<ProtectedRoute><Documentos /></ProtectedRoute>} />
-               <Route path="/tarefas" element={<ProtectedRoute><Tarefas /></ProtectedRoute>} />
-               <Route path="/automacoes" element={<ProtectedRoute><Automacoes /></ProtectedRoute>} />
-               <Route path="/bi-dashboard" element={<ProtectedRoute><DashboardBI /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ProjectSettings /></PermissionGuard></ProtectedRoute>} />
-              <Route path="/settings/users" element={<ProtectedRoute><PermissionGuard module="configuracoes"><UserManagement /></PermissionGuard></ProtectedRoute>} />
+
+              {/* Super administrador (PT canônico + redirect EN) */}
+              <Route path="/super-administrador" element={<ProtectedRoute><SuperAdmin /></ProtectedRoute>} />
+              <Route path="/super-admin" element={<Navigate to="/super-administrador" replace />} />
+
+              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+              <Route path="/smart-onboarding" element={<ProtectedRoute><SmartOnboarding /></ProtectedRoute>} />
+              <Route path="/automacoes-inteligentes" element={<ProtectedRoute><SmartAutomations /></ProtectedRoute>} />
+              <Route path="/auditoria" element={<ProtectedRoute><Auditoria /></ProtectedRoute>} />
+              <Route path="/aprovacoes" element={<ProtectedRoute><Aprovacoes /></ProtectedRoute>} />
+              <Route path="/documentos" element={<ProtectedRoute><Documentos /></ProtectedRoute>} />
+              <Route path="/tarefas" element={<ProtectedRoute><Tarefas /></ProtectedRoute>} />
+              <Route path="/automacoes" element={<ProtectedRoute><Automacoes /></ProtectedRoute>} />
+              <Route path="/bi-dashboard" element={<ProtectedRoute><DashboardBI /></ProtectedRoute>} />
+
+              {/* Configurações (PT canônico + redirects EN) */}
+              <Route path="/configuracoes" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ProjectSettings /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/configuracoes/usuarios" element={<ProtectedRoute><PermissionGuard module="configuracoes"><UserManagement /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/settings" element={<Navigate to="/configuracoes" replace />} />
+              <Route path="/settings/users" element={<Navigate to="/configuracoes/usuarios" replace />} />
+
               <Route path="/producao" element={<ProtectedRoute><PermissionGuard module="producao"><Production /></PermissionGuard></ProtectedRoute>} />
               <Route path="/pedidos" element={<ProtectedRoute><PermissionGuard module="pedidos"><Orders /></PermissionGuard></ProtectedRoute>} />
               <Route path="/fornecedores" element={<ProtectedRoute><PermissionGuard module="fornecedores"><Suppliers /></PermissionGuard></ProtectedRoute>} />
@@ -128,25 +142,37 @@ const App = () => (
               <Route path="/cadastros-financeiros" element={<ProtectedRoute><PermissionGuard module="cadastros_financeiros"><CadastrosFinanceiros /></PermissionGuard></ProtectedRoute>} />
               <Route path="/rh" element={<ProtectedRoute><RecursosHumanos /></ProtectedRoute>} />
               <Route path="/producao-operacoes" element={<ProtectedRoute><ProducaoOperacoes /></ProtectedRoute>} />
+
+              {/* Projetos (PT canônico + redirect EN) */}
               <Route path="/projetos" element={<ProtectedRoute><Projetos /></ProtectedRoute>} />
+              <Route path="/projects" element={<Navigate to="/projetos" replace />} />
+
               <Route path="/suprimentos" element={<ProtectedRoute><Suprimentos /></ProtectedRoute>} />
               <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
               <Route path="/atividades" element={<ProtectedRoute><ActivityCenter /></ProtectedRoute>} />
               <Route path="/data-flow" element={<ProtectedRoute><DataFlowMap /></ProtectedRoute>} />
               <Route path="/system-errors" element={<Navigate to="/" replace />} />
               <Route path="/excluidos" element={<Navigate to="/" replace />} />
-              {/* Redirects para rotas removidas */}
+
+              {/* CRM / Leads */}
               <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
               <Route path="/kanban" element={<Navigate to="/" replace />} />
               <Route path="/crm" element={<Navigate to="/crm-comercial" replace />} />
               <Route path="/crm-comercial" element={<ProtectedRoute><CRMCommercial /></ProtectedRoute>} />
-              <Route path="/projects" element={<Navigate to="/" replace />} />
               <Route path="/prospeccao" element={<Navigate to="/" replace />} />
-              <Route path="/metas" element={<Navigate to="/planning" replace />} />
-              <Route path="/planning" element={<ProtectedRoute><Planning /></ProtectedRoute>} />
+
+              {/* Planejamento */}
+              <Route path="/planejamento" element={<ProtectedRoute><Planning /></ProtectedRoute>} />
+              <Route path="/planning" element={<Navigate to="/planejamento" replace />} />
+              <Route path="/metas" element={<Navigate to="/planejamento" replace />} />
+
               <Route path="/executive" element={<ProtectedRoute><ExecutiveCenter /></ProtectedRoute>} />
               <Route path="/governanca" element={<ProtectedRoute><AccessGovernance /></ProtectedRoute>} />
-              <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
+
+              {/* Cobrança (PT canônico + redirect EN) */}
+              <Route path="/cobranca" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
+              <Route path="/billing" element={<Navigate to="/cobranca" replace />} />
+
               <Route path="/customer-lifecycle" element={<ProtectedRoute><CustomerLifecycle /></ProtectedRoute>} />
               <Route path="/customer-success" element={<ProtectedRoute><CustomerSuccessOps /></ProtectedRoute>} />
               <Route path="/support-knowledge" element={<ProtectedRoute><SupportKnowledge /></ProtectedRoute>} />
@@ -178,7 +204,11 @@ const App = () => (
               <Route path="/owner/capacity-load-risk" element={<Navigate to="/owner/capacity-risk" replace />} />
               <Route path="/owner" element={<Navigate to="/owner/control-tower" replace />} />
               <Route path="/multi-company" element={<ProtectedRoute><MultiCompanyIntelligence /></ProtectedRoute>} />
-              <Route path="/dashboards" element={<Navigate to="/" replace />} />
+
+              {/* Painéis (PT canônico + redirect EN) */}
+              <Route path="/paineis" element={<Navigate to="/bi-dashboard" replace />} />
+              <Route path="/dashboards" element={<Navigate to="/paineis" replace />} />
+
               <Route path="/ia-configuracao" element={<Navigate to="/" replace />} />
               <Route path="/compras" element={<Navigate to="/suprimentos" replace />} />
               {/* Rotas dinâmicas */}
