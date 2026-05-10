@@ -66,6 +66,7 @@ import SmartAdmin from "./pages/SmartAdmin";
 import BillingOps from "./pages/BillingOps";
 import TenantLifecycle from "./pages/TenantLifecycle";
 import Benchmarking from "./pages/Benchmarking";
+import Empresas from "./pages/Empresas";
 import OwnerControlTower from "./pages/OwnerControlTower";
 import AutomationCenter from "./pages/AutomationCenter";
 import OwnerEntitlementsCenter from "./pages/OwnerEntitlementsCenter";
