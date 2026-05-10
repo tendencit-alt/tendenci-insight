@@ -26,7 +26,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "users": "Usuários",
   "control-tower": "Control Tower",
   "ai-decision": "Decision Assistant",
-  "multi-company": "Benchmarks",
+  "benchmarking": "Benchmarking",
   "crm-comercial": "CRM",
   "estoque": "Estoque",
   "planning": "Planejamento",

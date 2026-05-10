@@ -172,7 +172,7 @@ const menuGroups: MenuGroup[] = [
     separator: true,
     items: [
       { title: "Control Tower", url: "/control-tower", icon: Landmark },
-      { title: "Benchmarks", url: "/multi-company", icon: PieChart },
+      { title: "Benchmarks", url: "/benchmarking", icon: PieChart },
       { title: "Decision Assistant", url: "/ai-decision", icon: Brain },
       { title: "Educação & Trilhas", url: "/education", icon: GraduationCap },
       { title: "Indicadores Executivos", url: "/executive", icon: LineChart },
@@ -222,7 +222,7 @@ const menuGroups: MenuGroup[] = [
       { title: "Offer Center", url: "/owner/offer-center", icon: Star },
       { title: "Customer Lifecycle", url: "/customer-lifecycle", icon: Users },
       { title: "Customer Success", url: "/customer-success", icon: UserCheck },
-      { title: "Multi-Company", url: "/multi-company", icon: PieChart },
+      { title: "Benchmarking", url: "/benchmarking", icon: PieChart },
       { title: "Entitlements", url: "/owner/entitlements", icon: Tag },
     ],
   },

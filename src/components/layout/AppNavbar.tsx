@@ -209,7 +209,7 @@ const ERP_MODULES: ModuleGroup[] = [
           { label: "Offer Center", route: "/owner/offer-center", icon: "Star", available: true },
           { label: "Customer Lifecycle", route: "/customer-lifecycle", icon: "Users", available: true },
           { label: "Customer Success", route: "/customer-success", icon: "UserCheck", available: true },
-          { label: "Multi-Company", route: "/multi-company", icon: "PieChart", available: true },
+          { label: "Benchmarking", route: "/benchmarking", icon: "PieChart", available: true },
           { label: "Entitlements", route: "/owner/entitlements", icon: "Tag", available: true },
         ],
       },

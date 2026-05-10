@@ -38,7 +38,7 @@ const CONTEXTUAL_ACTIONS: Record<string, { label: string; route: string; reason:
   ],
   "/control-tower": [
     { label: "Decision Assistant", route: "/ai-decision", reason: "Obter recomendações de IA" },
-    { label: "Benchmarks", route: "/multi-company", reason: "Comparar com empresas similares" },
+    { label: "Benchmarks", route: "/benchmarking", reason: "Comparar com empresas similares" },
   ],
   "/cadastros-financeiros": [
     { label: "Ver DRE", route: "/bi-dashboard", reason: "Conferir impacto no resultado" },
