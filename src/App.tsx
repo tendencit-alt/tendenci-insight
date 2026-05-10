@@ -65,7 +65,7 @@ import PermissionDebug from "./pages/PermissionDebug";
 import SmartAdmin from "./pages/SmartAdmin";
 import BillingOps from "./pages/BillingOps";
 import TenantLifecycle from "./pages/TenantLifecycle";
-import MultiCompanyIntelligence from "./pages/MultiCompanyIntelligence";
+import Benchmarking from "./pages/Benchmarking";
 import OwnerControlTower from "./pages/OwnerControlTower";
 import AutomationCenter from "./pages/AutomationCenter";
 import OwnerEntitlementsCenter from "./pages/OwnerEntitlementsCenter";
@@ -205,7 +205,8 @@ const App = () => (
               <Route path="/owner/capacity-risk" element={<ProtectedRoute><OwnerCapacityRisk /></ProtectedRoute>} />
               <Route path="/owner/capacity-load-risk" element={<Navigate to="/owner/capacity-risk" replace />} />
               <Route path="/owner" element={<Navigate to="/owner/control-tower" replace />} />
-              <Route path="/multi-company" element={<ProtectedRoute><MultiCompanyIntelligence /></ProtectedRoute>} />
+              <Route path="/benchmarking" element={<ProtectedRoute><Benchmarking /></ProtectedRoute>} />
+              <Route path="/multi-company" element={<Navigate to="/benchmarking" replace />} />
 
               {/* Painéis (PT canônico + redirect EN) */}
               <Route path="/paineis" element={<Navigate to="/bi-dashboard" replace />} />

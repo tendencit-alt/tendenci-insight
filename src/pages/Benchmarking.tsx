@@ -6,14 +6,14 @@ import { BenchmarkMetricsTab } from '@/components/benchmark/BenchmarkMetricsTab'
 import { BenchmarkPercentilesTab } from '@/components/benchmark/BenchmarkPercentilesTab';
 import { BenchmarkRecommendationsTab } from '@/components/benchmark/BenchmarkRecommendationsTab';
 
-const MultiCompanyIntelligence = () => (
+const Benchmarking = () => (
   <DashboardLayout>
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="space-y-2">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent">
-          📊 Inteligência Multi-Empresa
+          📊 Benchmarking
         </h1>
-        <p className="text-muted-foreground text-lg">Benchmarking anonimizado entre empresas — financeiro, operacional, comercial e maturidade ERP</p>
+        <p className="text-muted-foreground text-lg">Comparativo anonimizado entre empresas — financeiro, operacional, comercial e maturidade ERP</p>
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
@@ -33,4 +33,4 @@ const MultiCompanyIntelligence = () => (
   </DashboardLayout>
 );
 
-export default MultiCompanyIntelligence;
+export default Benchmarking;
