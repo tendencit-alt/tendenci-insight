@@ -12023,6 +12023,7 @@ export type Database = {
           order_id: string | null
           position: number | null
           production_order_id: string | null
+          produto_id: string | null
           project_id: string | null
           quantidade: number
           unidade: string | null
@@ -12044,6 +12045,7 @@ export type Database = {
           order_id?: string | null
           position?: number | null
           production_order_id?: string | null
+          produto_id?: string | null
           project_id?: string | null
           quantidade?: number
           unidade?: string | null
@@ -12065,6 +12067,7 @@ export type Database = {
           order_id?: string | null
           position?: number | null
           production_order_id?: string | null
+          produto_id?: string | null
           project_id?: string | null
           quantidade?: number
           unidade?: string | null
@@ -12084,6 +12087,13 @@ export type Database = {
             columns: ["production_order_id"]
             isOneToOne: false
             referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {
@@ -14948,6 +14958,7 @@ export type Database = {
       products: {
         Row: {
           active: boolean | null
+          ativo_no_catalogo: boolean
           average_cost: number | null
           barcode: string | null
           category_id: string | null
@@ -14958,12 +14969,16 @@ export type Database = {
           cost_price: number | null
           created_at: string | null
           current_stock: number | null
+          descricao_curta: string | null
+          descricao_longa: string | null
           description: string | null
+          dimensoes: Json
           fornecedor_texto: string | null
           galeria: string[] | null
           ia_produto_id: string | null
           id: string
           image_url: string | null
+          imagens: string[]
           item_type: string | null
           last_cost: number | null
           lead_time_days: number | null
@@ -14973,6 +14988,8 @@ export type Database = {
           min_stock: number | null
           name: string
           ncm: string | null
+          peso: number | null
+          prazo_producao_dias: number
           reorder_point: number | null
           reorder_quantity: number | null
           reserved_stock: number | null
@@ -14985,6 +15002,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean | null
+          ativo_no_catalogo?: boolean
           average_cost?: number | null
           barcode?: string | null
           category_id?: string | null
@@ -14995,12 +15013,16 @@ export type Database = {
           cost_price?: number | null
           created_at?: string | null
           current_stock?: number | null
+          descricao_curta?: string | null
+          descricao_longa?: string | null
           description?: string | null
+          dimensoes?: Json
           fornecedor_texto?: string | null
           galeria?: string[] | null
           ia_produto_id?: string | null
           id?: string
           image_url?: string | null
+          imagens?: string[]
           item_type?: string | null
           last_cost?: number | null
           lead_time_days?: number | null
@@ -15010,6 +15032,8 @@ export type Database = {
           min_stock?: number | null
           name: string
           ncm?: string | null
+          peso?: number | null
+          prazo_producao_dias?: number
           reorder_point?: number | null
           reorder_quantity?: number | null
           reserved_stock?: number | null
@@ -15022,6 +15046,7 @@ export type Database = {
         }
         Update: {
           active?: boolean | null
+          ativo_no_catalogo?: boolean
           average_cost?: number | null
           barcode?: string | null
           category_id?: string | null
@@ -15032,12 +15057,16 @@ export type Database = {
           cost_price?: number | null
           created_at?: string | null
           current_stock?: number | null
+          descricao_curta?: string | null
+          descricao_longa?: string | null
           description?: string | null
+          dimensoes?: Json
           fornecedor_texto?: string | null
           galeria?: string[] | null
           ia_produto_id?: string | null
           id?: string
           image_url?: string | null
+          imagens?: string[]
           item_type?: string | null
           last_cost?: number | null
           lead_time_days?: number | null
@@ -15047,6 +15076,8 @@ export type Database = {
           min_stock?: number | null
           name?: string
           ncm?: string | null
+          peso?: number | null
+          prazo_producao_dias?: number
           reorder_point?: number | null
           reorder_quantity?: number | null
           reserved_stock?: number | null
