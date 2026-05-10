@@ -189,7 +189,7 @@ export function ExecutiveKPIPanel({ filters }: Props) {
     // Cash
     const saldoCaixa = cashBalance?.netCash || 0;
     const burnRate = despesaOp + deducao;
-    const runway = burnRate > 0 ? Math.floor(saldoCaixa / burnRate) : 999;
+    const runway = burnRate > 0 ? Math.floor(saldoCaixa / burnRate) : null;
 
     // Projections (simple: avg monthly * months remaining)
     const monthsRemaining = 12 - currentMonth;
@@ -216,7 +216,7 @@ export function ExecutiveKPIPanel({ filters }: Props) {
 
     // Safety balance
     const minSafety = Number(companySettings?.min_safety_balance || 0);
-    const coberturaIdx = minSafety > 0 ? saldoCaixa / minSafety : 999;
+    const coberturaIdx = minSafety > 0 ? saldoCaixa / minSafety : null;
 
     return {
       // Receita block
@@ -301,7 +301,7 @@ export function ExecutiveKPIPanel({ filters }: Props) {
           <KpiRow label="Proj. 90 dias" value={fmtCompact(kpis.saldo90d)} positive={kpis.saldo90d >= 0} />
           <KpiRow label="Proj. 180 dias" value={fmtCompact(kpis.saldo180d)} positive={kpis.saldo180d >= 0} />
           <KpiRow label="Burn Rate" value={fmt(kpis.burnRate)} />
-          <KpiRow label="Runway" value={kpis.runway > 24 ? ">24m" : `${kpis.runway}m`} positive={kpis.runway > 6} />
+          <KpiRow label="Runway" value={kpis.runway == null ? "—" : kpis.runway > 24 ? ">24m" : `${kpis.runway}m`} positive={kpis.runway != null && kpis.runway > 6} />
         </KpiBlock>
 
         {/* Eficiência */}
@@ -313,8 +313,8 @@ export function ExecutiveKPIPanel({ filters }: Props) {
         {/* Risco */}
         <KpiBlock title="Risco Financeiro" icon={ShieldAlert} color="red">
           <KpiRow label="Ponto Equilíbrio" value={fmtCompact(kpis.pontoEquilibrio)} />
-          <KpiRow label="Receita > PE" value={kpis.receitaMes > kpis.pontoEquilibrio ? "Sim ✓" : "Não ✗"} positive={kpis.receitaMes > kpis.pontoEquilibrio} />
-          <KpiRow label="Cobertura Caixa" value={`${kpis.coberturaIdx.toFixed(1)}x`} positive={kpis.coberturaIdx >= 1} />
+          <KpiRow label="Receita > PE" value={kpis.pontoEquilibrio > 0 ? (kpis.receitaMes > kpis.pontoEquilibrio ? "Sim ✓" : "Não ✗") : "—"} positive={kpis.pontoEquilibrio > 0 && kpis.receitaMes > kpis.pontoEquilibrio} />
+          <KpiRow label="Cobertura Caixa" value={kpis.coberturaIdx == null ? "—" : `${kpis.coberturaIdx.toFixed(1)}x`} positive={kpis.coberturaIdx != null && kpis.coberturaIdx >= 1} />
           <KpiRow label="Dep. Recorrente" value={`${kpis.pctDependenciaRecorrente.toFixed(0)}%`} />
         </KpiBlock>
       </div>
