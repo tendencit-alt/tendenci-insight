@@ -25,6 +25,7 @@ import Suppliers from "./pages/Suppliers";
 import Clientes from "./pages/Clientes";
 import Leads from "./pages/Leads";
 import Inventory from "./pages/Inventory";
+import Produtos from "./pages/Produtos";
 
 import ActivityCenter from "./pages/ActivityCenter";
 import Catalogo from "./pages/Catalogo";
