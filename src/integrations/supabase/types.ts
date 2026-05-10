@@ -10846,6 +10846,7 @@ export type Database = {
           request_number: number
           requested_by: string | null
           status: string | null
+          tenant_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -10860,6 +10861,7 @@ export type Database = {
           request_number?: number
           requested_by?: string | null
           status?: string | null
+          tenant_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -10874,6 +10876,7 @@ export type Database = {
           request_number?: number
           requested_by?: string | null
           status?: string | null
+          tenant_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
