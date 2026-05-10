@@ -22,6 +22,7 @@ import Auth from "./pages/Auth";
 import Production from "./pages/Production";
 import Orders from "./pages/Orders";
 import Suppliers from "./pages/Suppliers";
+import Clientes from "./pages/Clientes";
 import Inventory from "./pages/Inventory";
 
 import ActivityCenter from "./pages/ActivityCenter";
