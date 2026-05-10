@@ -40,30 +40,38 @@ export default function Catalogo() {
   const loadProducts = async () => {
     try {
       const { data, error } = await supabase
-        .from('tendenci_ia_produtos')
-        .select('id, nome, descricao, preco_base, categoria, imagem_url, galeria, videos, diferenciais, estoque, largura, comprimento, altura, unidade_medida, ativo')
-        .eq('ativo', true)
-        .order('nome');
+        .from('products')
+        .select('id, name, description, descricao_curta, descricao_longa, sale_price, image_url, imagens, galeria, current_stock, dimensoes, prazo_producao_dias, ativo_no_catalogo, category_id, product_categories(name)')
+        .eq('ativo_no_catalogo', true)
+        .eq('active', true)
+        .order('name');
 
       if (error) throw error;
 
-      const formattedProducts: Product[] = (data || []).map(p => ({
-        id: p.id,
-        nome: p.nome,
-        descricao: p.descricao,
-        preco_base: p.preco_base,
-        categoria: p.categoria,
-        imagem_url: p.imagem_url,
-        galeria: Array.isArray(p.galeria) ? (p.galeria as string[]) : [],
-        videos: Array.isArray(p.videos) ? (p.videos as { url: string }[]).map(v => v.url) : [],
-        diferenciais: Array.isArray(p.diferenciais) ? (p.diferenciais as string[]) : [],
-        estoque: p.estoque,
-        largura: p.largura,
-        comprimento: p.comprimento,
-        altura: p.altura,
-        unidade_medida: p.unidade_medida,
-        ativo: p.ativo
-      }));
+      const formattedProducts: Product[] = (data || []).map((p: any) => {
+        const dim = (p.dimensoes && typeof p.dimensoes === 'object') ? p.dimensoes : {};
+        const imagens = Array.isArray(p.imagens) && p.imagens.length
+          ? p.imagens
+          : Array.isArray(p.galeria) ? p.galeria : [];
+        const cover = p.image_url || imagens[0] || null;
+        return {
+          id: p.id,
+          nome: p.name,
+          descricao: p.descricao_curta || p.description || p.descricao_longa,
+          preco_base: p.sale_price,
+          categoria: p.product_categories?.name || null,
+          imagem_url: cover,
+          galeria: imagens,
+          videos: [],
+          diferenciais: [],
+          estoque: p.current_stock,
+          largura: dim.largura ?? null,
+          comprimento: dim.comprimento ?? null,
+          altura: dim.altura ?? null,
+          unidade_medida: dim.unidade ?? 'cm',
+          ativo: true,
+        };
+      });
 
       setProducts(formattedProducts);
     } catch (error) {
