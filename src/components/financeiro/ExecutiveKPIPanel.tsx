@@ -301,7 +301,7 @@ export function ExecutiveKPIPanel({ filters }: Props) {
           <KpiRow label="Proj. 90 dias" value={fmtCompact(kpis.saldo90d)} positive={kpis.saldo90d >= 0} />
           <KpiRow label="Proj. 180 dias" value={fmtCompact(kpis.saldo180d)} positive={kpis.saldo180d >= 0} />
           <KpiRow label="Burn Rate" value={fmt(kpis.burnRate)} />
-          <KpiRow label="Runway" value={kpis.runway > 24 ? ">24m" : `${kpis.runway}m`} positive={kpis.runway > 6} />
+          <KpiRow label="Runway" value={kpis.runway == null ? "—" : kpis.runway > 24 ? ">24m" : `${kpis.runway}m`} positive={kpis.runway != null && kpis.runway > 6} />
         </KpiBlock>
 
         {/* Eficiência */}
