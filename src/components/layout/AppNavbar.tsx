@@ -837,6 +837,7 @@ export function AppNavbar() {
             <Search className="h-4 w-4" />
           </Button>
 
+          <TenantSwitcher />
           <WorkspaceSelector />
           <ThemeToggle />
           <NotificationBell />
