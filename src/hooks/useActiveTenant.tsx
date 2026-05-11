@@ -13,7 +13,8 @@ export interface TenantMembership {
 }
 
 export function useActiveTenant() {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
+  const queryClient = useQueryClient();
   const [memberships, setMemberships] = useState<TenantMembership[]>([]);
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState(false);
