@@ -366,7 +366,7 @@ export function AppNavbar() {
   useMemo(() => {
     const match = ERP_MODULES.find((g) =>
       g.key !== "owner" &&
-      g.items.some((i) => i.available && (location.pathname === i.route || location.pathname.startsWith(i.route.split("?")[0])))
+      g.items.some((i) => !isComingSoon(i) && (location.pathname === i.route || location.pathname.startsWith(i.route.split("?")[0])))
     );
     if (match && openMainGroup !== match.key) {
       setOpenMainGroup(match.key);
@@ -594,17 +594,16 @@ export function AppNavbar() {
                 )}
 
                 {visibleModules.map((mod) => {
-                  const availableItems = mod.items.filter((item) => {
-                    if (!item.available) return false;
-                    if (item.module && !loading) return hasModuleAccess(item.module as any);
+                  const visibleItems = mod.items.filter((item) => {
+                    if (item.module && !loading && !isComingSoon(item)) return hasModuleAccess(item.module as any);
                     return true;
                   });
-                  if (availableItems.length === 0) return null;
+                  if (visibleItems.length === 0) return null;
 
-                  const sortedItems = sortByUsage(availableItems);
+                  const sortedItems = sortByUsage(visibleItems);
                   const isOpen = openMainGroup === mod.key;
                   const isModuleActive = mod.items.some(
-                    (i) => i.available && (location.pathname === i.route || location.pathname.startsWith(i.route.split("?")[0]))
+                    (i) => !isComingSoon(i) && (location.pathname === i.route || location.pathname.startsWith(i.route.split("?")[0]))
                   );
 
                   return (
