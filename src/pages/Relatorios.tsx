@@ -40,7 +40,7 @@ const SUGGESTIONS: { label: string; group: GroupKey; hint: string }[] = [
   { label: "DRE Mensal", group: "executivo", hint: "Resumo executivo do mês." },
   { label: "Fluxo de Caixa 30d", group: "executivo", hint: "Projeção de caixa." },
   { label: "Pedidos por Vendedor", group: "operacional", hint: "Performance comercial." },
-  { label: "Lançamentos Manuais", group: "auditoria", hint: "Auditoria de edições." },
+  { label: "DRE Gerencial", group: "executivo", hint: "Visão gerencial completa." },
 ];
 
 export default function Relatorios() {
