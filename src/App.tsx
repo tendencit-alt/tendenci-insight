@@ -11,6 +11,7 @@ import { PermissionsProvider } from "@/contexts/PermissionsContext";
 import { PermissionSimulationProvider } from "@/contexts/PermissionSimulationContext";
 import { SimulationBanner } from "@/components/smart-permissions/SimulationBanner";
 import PermissionAuditPage from "./pages/PermissionAuditPage";
+import RlsAudit from "./pages/RlsAudit";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionGuard } from "@/components/auth/PermissionGuard";
@@ -104,6 +105,7 @@ const App = () => (
               <CommandBar />
                <Routes>
               <Route path="/auditoria-permissoes" element={<ProtectedRoute><PermissionAuditPage /></ProtectedRoute>} />
+              <Route path="/auditoria-rls" element={<ProtectedRoute><RlsAudit /></ProtectedRoute>} />
 
               {/* Autenticação (PT canônico + redirects EN) */}
               <Route path="/autenticacao" element={<Auth />} />
