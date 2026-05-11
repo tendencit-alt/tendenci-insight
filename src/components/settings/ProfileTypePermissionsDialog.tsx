@@ -1070,6 +1070,168 @@ export function ProfileTypePermissionsDialog({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <AlertDialog open={applyTemplateOpen} onOpenChange={setApplyTemplateOpen}>
+          <AlertDialogContent className="max-w-2xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <LayoutTemplate className="w-4 h-4 text-primary" />
+                Aplicar template de permissões
+              </AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-2">
+                  <p>
+                    Selecione um template para aplicar a <strong>{profileType.display_name}</strong>.
+                    As permissões atuais dos módulos serão <strong>sobrescritas</strong> pelo template.
+                    Escopos, limites e regras de status não serão alterados. As mudanças só serão
+                    persistidas após clicar em <strong>Salvar Permissões</strong>.
+                  </p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>Template</Label>
+                <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={templatesLoading ? 'Carregando…' : 'Escolha um template'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableTemplates.map(t => (
+                      <SelectItem key={t.id} value={t.id}>
+                        <span className="inline-flex items-center gap-2">
+                          <span
+                            className="inline-block w-2.5 h-2.5 rounded-full"
+                            style={{ backgroundColor: t.color }}
+                          />
+                          {t.name}
+                          {t.is_builtin && (
+                            <Badge variant="secondary" className="text-[10px] ml-1">Padrão</Badge>
+                          )}
+                        </span>
+                      </SelectItem>
+                    ))}
+                    {availableTemplates.length === 0 && !templatesLoading && (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">
+                        Nenhum template disponível.
+                      </div>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {(() => {
+                const tpl = availableTemplates.find(t => t.id === selectedTemplateId);
+                if (!tpl) return null;
+                const diff: Array<{ module: string; flag: keyof ModulePermission; from: boolean; to: boolean }> = [];
+                ALL_MODULES.forEach(module => {
+                  const cur = permissions[module] || emptyModulePermission();
+                  const next = (tpl.permissions?.[module] as ModulePermission) || emptyModulePermission();
+                  ALL_FLAGS.forEach(flag => {
+                    if (!!cur[flag] !== !!next[flag]) {
+                      diff.push({ module, flag, from: !!cur[flag], to: !!next[flag] });
+                    }
+                  });
+                });
+                const byModule = diff.reduce<Record<string, typeof diff>>((acc, r) => {
+                  (acc[r.module] ||= []).push(r);
+                  return acc;
+                }, {});
+                return (
+                  <div className="space-y-2">
+                    {tpl.description && (
+                      <p className="text-xs text-muted-foreground">{tpl.description}</p>
+                    )}
+                    <Alert>
+                      <Sparkles className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        {diff.length === 0
+                          ? 'Nenhuma alteração: o perfil já está alinhado com este template.'
+                          : `${diff.length} flag(s) em ${Object.keys(byModule).length} módulo(s) serão sobrescritos.`}
+                      </AlertDescription>
+                    </Alert>
+                    {diff.length > 0 && (
+                      <ScrollArea className="max-h-[35vh] pr-3 rounded border bg-muted/30">
+                        <div className="p-3 space-y-3">
+                          {Object.entries(byModule).map(([module, rows]) => (
+                            <div key={module} className="space-y-1">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                {MODULE_LABELS[module] || module}
+                              </p>
+                              <ul className="space-y-1">
+                                {rows.map(r => (
+                                  <li key={`${module}-${r.flag}`} className="flex items-center gap-2 text-xs">
+                                    <Badge
+                                      variant={r.to ? 'default' : 'outline'}
+                                      className={`text-[10px] ${r.to ? 'bg-emerald-600 hover:bg-emerald-600' : 'text-muted-foreground'}`}
+                                    >
+                                      {r.to ? '+ Conceder' : '− Revogar'}
+                                    </Badge>
+                                    <span className="font-mono">{r.flag}</span>
+                                    <span className="text-muted-foreground">
+                                      ({FLAG_LABELS[r.flag] || r.flag})
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={!selectedTemplateId}
+                onClick={async () => {
+                  const tpl = availableTemplates.find(t => t.id === selectedTemplateId);
+                  if (!tpl) return;
+                  const next: Record<string, ModulePermission> = {};
+                  ALL_MODULES.forEach(module => {
+                    const src = (tpl.permissions?.[module] as ModulePermission) || emptyModulePermission();
+                    next[module] = { ...emptyModulePermission(), ...src };
+                  });
+                  // Capture diff for audit
+                  const diff: Array<{ module: string; flag: string; from: boolean; to: boolean }> = [];
+                  ALL_MODULES.forEach(module => {
+                    const cur = permissions[module] || emptyModulePermission();
+                    ALL_FLAGS.forEach(flag => {
+                      if (!!cur[flag] !== !!next[module][flag]) {
+                        diff.push({ module, flag, from: !!cur[flag], to: !!next[module][flag] });
+                      }
+                    });
+                  });
+                  await logPermissionAudit('apply_template', {
+                    role_name: profileType.name,
+                    role_display_name: profileType.display_name,
+                    template_id: tpl.id,
+                    template_name: tpl.name,
+                    user_id: user?.id ?? null,
+                    user_email: user?.email ?? null,
+                    timestamp: new Date().toISOString(),
+                    pending_save: true,
+                    flags_changed: diff.length,
+                    diff,
+                  });
+                  setPermissions(next);
+                  setApplyTemplateOpen(false);
+                  toast({
+                    title: 'Template aplicado (não salvo)',
+                    description: `"${tpl.name}" aplicado com ${diff.length} alteração(ões). Clique em Salvar para confirmar.`,
+                  });
+                }}
+              >
+                Aplicar e sobrescrever
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
