@@ -200,7 +200,7 @@ export function GlobalSearch() {
               Nenhum resultado encontrado
             </div>
           )}
-          {(["cliente", "profissional parceiro", "lead"] as ResultKind[]).map((kind) => {
+          {(["cliente", "arquiteto", "lead"] as ResultKind[]).map((kind) => {
             const items = grouped[kind];
             if (items.length === 0) return null;
             const meta = KIND_META[kind];
