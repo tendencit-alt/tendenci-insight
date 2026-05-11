@@ -455,6 +455,9 @@ export function CreateProfileTypeDialog({
                   })
                   .filter(r => r.granted.length > 0);
                 const totalGranted = rows.reduce((s, r) => s + r.granted.length, 0);
+                const completeness = validateTemplateCompleteness(
+                  perms as Record<string, Record<string, boolean>>
+                );
                 return (
                   <div className="mt-3 rounded-lg border bg-muted/30 p-3 space-y-2">
                     <div className="flex items-center justify-between gap-2">
@@ -468,6 +471,22 @@ export function CreateProfileTypeDialog({
                         {totalGranted} permissão(ões) em {rows.length}/{ALL_MODULES.length} módulo(s)
                       </Badge>
                     </div>
+                    {!completeness.isComplete && (
+                      <Alert variant="destructive" className="border-amber-500/60 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-100 py-2">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                        <AlertDescription className="text-[11px] space-y-1">
+                          <p className="font-semibold">Template incompleto</p>
+                          <p>{describeTemplateGaps(completeness)}</p>
+                          <div className="flex flex-wrap gap-1 pt-0.5">
+                            {completeness.incompleteModules.map(m => (
+                              <Badge key={m} variant="outline" className="text-[9px] border-amber-500/50 bg-amber-100/50 dark:bg-amber-900/40">
+                                {TEMPLATE_MODULE_LABELS[m] || m}
+                              </Badge>
+                            ))}
+                          </div>
+                        </AlertDescription>
+                      </Alert>
+                    )}
                     {rows.length === 0 ? (
                       <p className="text-[11px] text-muted-foreground italic">
                         Este template não concede nenhuma permissão.
