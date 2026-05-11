@@ -54,6 +54,7 @@ export function ProfileTypesManager() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [typeToDelete, setTypeToDelete] = useState<ProfileType | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [templatesManagerOpen, setTemplatesManagerOpen] = useState(false);
 
   useEffect(() => {
     fetchProfileTypes();
