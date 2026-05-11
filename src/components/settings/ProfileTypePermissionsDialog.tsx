@@ -1028,7 +1028,7 @@ export function ProfileTypePermissionsDialog({
                       name: tplName.trim(),
                       description: tplDesc.trim() || null,
                       color: tplColor,
-                      icon: profileType.icon || 'user',
+                      icon: (profileType as any).icon || 'user',
                       permissions: permsObj,
                     });
                     toast({
