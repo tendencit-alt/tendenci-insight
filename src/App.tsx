@@ -28,6 +28,7 @@ import Leads from "./pages/Leads";
 import Propostas from "./pages/Propostas";
 import Contratos from "./pages/Contratos";
 import Comissoes from "./pages/Comissoes";
+import Notificacoes from "./pages/Notificacoes";
 import Inventory from "./pages/Inventory";
 import Produtos from "./pages/Produtos";
 
@@ -150,6 +151,7 @@ const App = () => (
               <Route path="/propostas" element={<ProtectedRoute><PermissionGuard module="comercial"><Propostas /></PermissionGuard></ProtectedRoute>} />
               <Route path="/contratos" element={<ProtectedRoute><PermissionGuard module="comercial"><Contratos /></PermissionGuard></ProtectedRoute>} />
               <Route path="/comissoes" element={<ProtectedRoute><PermissionGuard module="comercial"><Comissoes /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/notificacoes" element={<ProtectedRoute><Notificacoes /></ProtectedRoute>} />
               <Route path="/estoque" element={<ProtectedRoute><PermissionGuard module="estoque"><Inventory /></PermissionGuard></ProtectedRoute>} />
               <Route path="/produtos" element={<ProtectedRoute><Produtos /></ProtectedRoute>} />
               <Route path="/financeiro" element={<ProtectedRoute><PermissionGuard module="financeiro"><Financeiro /></PermissionGuard></ProtectedRoute>} />
