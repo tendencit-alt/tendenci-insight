@@ -181,7 +181,8 @@ const App = () => (
               <Route path="/customer-lifecycle" element={<ProtectedRoute><CustomerLifecycle /></ProtectedRoute>} />
               <Route path="/customer-success" element={<ProtectedRoute><CustomerSuccessOps /></ProtectedRoute>} />
               <Route path="/support-knowledge" element={<ProtectedRoute><SupportKnowledge /></ProtectedRoute>} />
-              <Route path="/education" element={<ProtectedRoute><InProductEducation /></ProtectedRoute>} />
+              <Route path="/educacao" element={<ProtectedRoute><InProductEducation /></ProtectedRoute>} />
+              <Route path="/education" element={<Navigate to="/educacao" replace />} />
               <Route path="/ai-decision" element={<ProtectedRoute><AIDecisionAssistant /></ProtectedRoute>} />
               <Route path="/control-tower" element={<ProtectedRoute><ControlTower /></ProtectedRoute>} />
               <Route path="/owner/permission-debug" element={<ProtectedRoute><PermissionDebug /></ProtectedRoute>} />
