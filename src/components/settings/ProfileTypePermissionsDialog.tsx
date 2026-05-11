@@ -260,6 +260,17 @@ export function ProfileTypePermissionsDialog({
   const [scopes, setScopes] = useState<Record<string, ScopeRestriction>>({});
   const [valueLimits, setValueLimits] = useState<Record<string, ValueLimit>>({});
   const [statusRules, setStatusRules] = useState<StatusRule[]>([]);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+
+  const handleResetToDefaults = () => {
+    const baseline = getRoleBaseline(profileType.name);
+    setPermissions(baseline);
+    setResetConfirmOpen(false);
+    toast({
+      title: 'Padrões aplicados',
+      description: `Permissões de módulos redefinidas para o padrão de "${profileType.display_name}". Clique em Salvar para confirmar.`,
+    });
+  };
 
   useEffect(() => {
     if (open && profileType) fetchAll();
