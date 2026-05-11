@@ -65,7 +65,7 @@ interface WhatsAppConnection {
   phone_number: string | null;
 }
 
-interface Profissional Parceiro {
+interface Arquiteto {
   id: string;
   name: string;
   phone: string | null;
@@ -700,7 +700,7 @@ export function CampanhasManager() {
           ? `Disparo programado para ${scheduleConfig.type === 'unico' && scheduleConfig.dataHoraUnica 
               ? format(scheduleConfig.dataHoraUnica, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) 
               : 'período configurado'}`
-          : `${formData.profissionais parceirosSelecionados.length} profissionais parceiros reservados`,
+          : `${formData.arquitetosSelecionados.length} profissionais parceiros reservados`,
       });
     }
 
