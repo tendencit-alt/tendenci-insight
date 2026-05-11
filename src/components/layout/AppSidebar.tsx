@@ -31,6 +31,7 @@ import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
+import { ComingSoonBadge, ComingSoonItem, isComingSoon } from "@/lib/comingSoon";
 
 // ── Types ──
 interface MenuItem {
@@ -627,9 +628,12 @@ export function AppSidebar() {
 
                             return (
                               <SidebarMenuItem key={item.title + item.url}>
-                                <SidebarMenuButton asChild={!item.comingSoon}>
-                                  {item.comingSoon ? (
-                                    <div className="flex items-center gap-2.5 px-3 py-1 ml-5 mr-2 rounded-md text-sidebar-foreground/30 text-[13px] cursor-default select-none">
+                                <SidebarMenuButton asChild={!isComingSoon(item)}>
+                                  {isComingSoon(item) ? (
+                                    <ComingSoonItem
+                                      label={item.title}
+                                      className="flex items-center gap-2.5 px-3 py-1 ml-5 mr-2 rounded-md text-sidebar-foreground text-[13px]"
+                                    >
                                       <item.icon className={cn("h-3.5 w-3.5 flex-shrink-0", isHighlighted && "text-primary/40")} />
                                       <span className={cn("truncate", isHighlighted && "text-primary/40")}>{item.title}</span>
                                       {itemBadge && itemBadge.count > 0 && !isCollapsed && (
@@ -641,11 +645,9 @@ export function AppSidebar() {
                                         </span>
                                       )}
                                       {!itemBadge && !isCollapsed && (
-                                        <Badge variant="outline" className="ml-auto text-[9px] px-1.5 py-0 h-4 border-sidebar-foreground/15 text-sidebar-foreground/25 font-normal">
-                                          Em breve
-                                        </Badge>
+                                        <ComingSoonBadge className="ml-auto" />
                                       )}
-                                    </div>
+                                    </ComingSoonItem>
                                   ) : (
                                     <NavLink
                                       to={item.url}
