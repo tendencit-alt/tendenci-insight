@@ -450,7 +450,7 @@ export function CreateProfileTypeDialog({
                 };
                 const rows = ALL_MODULES
                   .map(m => {
-                    const granted = (Object.keys(perms[m]) as (keyof FlagSet)[]).filter(f => perms[m][f]);
+                    const granted = VISIBLE_FLAGS.filter(f => perms[m][f]);
                     return { module: m, granted };
                   })
                   .filter(r => r.granted.length > 0);
