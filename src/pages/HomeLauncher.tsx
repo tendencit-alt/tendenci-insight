@@ -96,6 +96,9 @@ const SEARCHABLE_ITEMS = [
   { label: "RH", route: "/rh", module: "Pessoas" },
   { label: "Suprimentos", route: "/suprimentos", module: "Operações" },
   { label: "CRM", route: "/crm-comercial", module: "Vendas" },
+  { label: "Leads", route: "/leads", module: "Vendas" },
+  { label: "Clientes", route: "/clientes", module: "Vendas" },
+  { label: "Catálogo", route: "/catalogo", module: "Vendas" },
 ];
 
 // ── Severity helpers ──
