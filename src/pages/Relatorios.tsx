@@ -249,7 +249,6 @@ export default function Relatorios() {
   return (
     <DashboardLayout>
       <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6">
-        <GlobalBreadcrumb />
         <ModuleShell
           moduleKey="relatorios"
           title="Relatórios"
