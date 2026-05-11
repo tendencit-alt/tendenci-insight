@@ -439,10 +439,10 @@ export function CreateProfileTypeDialog({
                 const tpl = allTemplates.find(t => t.id === selectedTemplate);
                 if (!tpl) return null;
                 const perms = tpl.buildPermissions();
-                const FLAG_LABELS: Record<keyof FlagSet, string> = {
+                const FLAG_LABELS: Partial<Record<keyof FlagSet, string>> = {
                   can_view: 'Ver', can_create: 'Criar', can_edit: 'Editar', can_delete: 'Excluir',
-                  can_approve: 'Aprovar', can_conciliate: 'Conciliar', can_export: 'Exportar', can_admin: 'Admin',
                 };
+                const VISIBLE_FLAGS: (keyof FlagSet)[] = ['can_view', 'can_create', 'can_edit', 'can_delete'];
                 const MODULE_LABELS: Record<string, string> = {
                   dashboard_executivo: 'Dashboard Executivo', comercial: 'Comercial', operacional: 'Operacional',
                   financeiro: 'Financeiro', controladoria: 'Controladoria', planejamento: 'Planejamento',
