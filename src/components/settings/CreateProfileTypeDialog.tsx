@@ -182,6 +182,27 @@ export function CreateProfileTypeDialog({
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('blank');
+  const [templatesManagerOpen, setTemplatesManagerOpen] = useState(false);
+  const { data: customTemplates = [] } = useProfileTemplates();
+
+  // Templates customizados convertidos ao formato Template do dialog
+  const customAsTemplates: Template[] = customTemplates.map(t => ({
+    id: `custom_${t.id}`,
+    label: t.name,
+    description: t.description || 'Template personalizado',
+    slug: '', display_name: t.name, color: t.color, icon: t.icon,
+    iconNode: <Sparkles className="w-4 h-4" />,
+    buildPermissions: () => {
+      const out: Record<string, FlagSet> = {};
+      ALL_MODULES.forEach(m => {
+        const f = (t.permissions?.[m] as FlagSet | undefined);
+        out[m] = f ? { ...empty(), ...f } : empty();
+      });
+      return out;
+    },
+  }));
+
+  const allTemplates: Template[] = [...TEMPLATES, ...customAsTemplates];
   const [formData, setFormData] = useState({
     name: '',
     display_name: '',
