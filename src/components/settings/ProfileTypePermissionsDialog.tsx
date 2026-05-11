@@ -176,13 +176,7 @@ export function ProfileTypePermissionsDialog({
       });
       setPermissions(permMap);
 
-      // Critical
-      const critMap: Record<string, boolean> = {};
-      CRITICAL_PERMISSIONS.forEach(cp => {
-        const existing = critRes.data?.find((c: any) => c.permission_key === cp.key);
-        critMap[cp.key] = existing?.allowed || false;
-      });
-      setCriticalPerms(critMap);
+      // Critical permissions removidas da UI — não são mais carregadas/exibidas.
       setSegregationRules((segRes.data || []) as any[]);
 
       // Scopes
