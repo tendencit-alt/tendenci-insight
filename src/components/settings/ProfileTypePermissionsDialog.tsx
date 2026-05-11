@@ -347,6 +347,8 @@ export function ProfileTypePermissionsDialog({
         } : emptyModulePermission();
       });
       setPermissions(permMap);
+      // Snapshot para detectar alterações não salvas (baseline do "Restaurar padrões").
+      setInitialPermissions(JSON.parse(JSON.stringify(permMap)));
 
       // Load-time invariant: warn if DB has rows for unknown modules
       const knownModules = new Set(ALL_MODULES);
