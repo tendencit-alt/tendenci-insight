@@ -139,10 +139,43 @@ const STATUS_OPTIONS = [
   { value: 'recebido', label: 'Recebido' },
 ];
 
+const ALL_FLAGS: (keyof ModulePermission)[] = [
+  'can_view', 'can_create', 'can_edit', 'can_delete',
+  'can_approve', 'can_conciliate', 'can_export', 'can_admin',
+];
+
 const emptyModulePermission = (): ModulePermission => ({
   can_view: false, can_create: false, can_edit: false, can_delete: false,
   can_approve: false, can_conciliate: false, can_export: false, can_admin: false,
 });
+
+/**
+ * Validates that the persisted permissions in the DB match the in-memory state
+ * across ALL 8 flags (including can_export, can_approve, can_conciliate, can_admin
+ * that are now folded into the 4 visible columns).
+ * Returns a list of mismatches; empty array means everything is consistent.
+ */
+const validateModulePermissions = (
+  expected: Record<string, ModulePermission>,
+  persisted: any[] | null | undefined,
+): Array<{ module: string; flag: string; expected: boolean; actual: boolean }> => {
+  const mismatches: Array<{ module: string; flag: string; expected: boolean; actual: boolean }> = [];
+  ALL_MODULES.forEach(module => {
+    const exp = expected[module] || emptyModulePermission();
+    const row = persisted?.find((r: any) => r.module === module);
+    ALL_FLAGS.forEach(flag => {
+      const expectedVal = !!exp[flag];
+      const actualVal = !!(row && row[flag]);
+      // If we deleted (row missing) but expected all-false, that's fine.
+      const isAllFalse = ALL_FLAGS.every(f => !exp[f]);
+      if (!row && isAllFalse) return;
+      if (expectedVal !== actualVal) {
+        mismatches.push({ module, flag, expected: expectedVal, actual: actualVal });
+      }
+    });
+  });
+  return mismatches;
+};
 
 export function ProfileTypePermissionsDialog({
   open, onOpenChange, profileType, onSuccess,
@@ -187,6 +220,13 @@ export function ProfileTypePermissionsDialog({
         } : emptyModulePermission();
       });
       setPermissions(permMap);
+
+      // Load-time invariant: warn if DB has rows for unknown modules
+      const knownModules = new Set(ALL_MODULES);
+      const orphanRows = (modRes.data || []).filter((r: any) => !knownModules.has(r.module));
+      if (orphanRows.length > 0) {
+        console.warn('[Permissions] Orphan module rows ignored:', orphanRows.map((r: any) => r.module));
+      }
 
       // Critical permissions removidas da UI — não são mais carregadas/exibidas.
       setSegregationRules((segRes.data || []) as any[]);
@@ -310,6 +350,23 @@ export function ProfileTypePermissionsDialog({
       if (permissionsToInsert.length > 0) {
         const { error } = await supabase.from('profile_type_permissions').insert(permissionsToInsert);
         if (error) throw error;
+      }
+
+      // Validation: re-read and verify all 8 flags persisted correctly per module
+      const { data: verifyRows, error: verifyErr } = await supabase
+        .from('profile_type_permissions')
+        .select('*')
+        .eq('profile_type_id', profileType.id);
+      if (verifyErr) throw verifyErr;
+      const mismatches = validateModulePermissions(permissions, verifyRows);
+      if (mismatches.length > 0) {
+        console.error('[Permissions] Persistence mismatch:', mismatches);
+        await logPermissionAudit('validation_failed', { mismatches });
+        toast({
+          title: 'Aviso de validação',
+          description: `${mismatches.length} flag(s) divergente(s) após salvar. Verifique o console.`,
+          variant: 'destructive',
+        });
       }
 
       // Permissões críticas removidas da UI — limpa registros antigos.
