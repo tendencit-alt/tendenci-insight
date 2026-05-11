@@ -53,13 +53,31 @@ export function useActiveTenant() {
     load();
   }, [load]);
 
-  const switchTenant = useCallback(async (targetTenantId: string) => {
+  const switchTenant = useCallback(async (targetTenantId: string): Promise<boolean> => {
     setSwitching(true);
     try {
       const { error } = await supabase.rpc("set_active_tenant", {
         target_tenant_id: targetTenantId,
       });
-      if (error) throw error;
+      if (error) {
+        const msg = (error.message ?? "").toLowerCase();
+        const isPermission =
+          msg.includes("not a member") ||
+          msg.includes("permission") ||
+          msg.includes("not allowed") ||
+          msg.includes("forbidden") ||
+          msg.includes("access") ||
+          error.code === "42501" ||
+          error.code === "P0001";
+        toast.error(
+          isPermission
+            ? "Você não tem permissão para acessar essa empresa."
+            : "Não foi possível trocar de empresa.",
+          { description: error.message }
+        );
+        setSwitching(false);
+        return false;
+      }
       // Notify other tabs BEFORE reloading this one.
       try {
         const payload = { tenantId: targetTenantId, ts: Date.now() };
@@ -75,8 +93,13 @@ export function useActiveTenant() {
       }
       // Hard reload to flush all cached queries / RLS-scoped data.
       window.location.reload();
-    } finally {
+      return true;
+    } catch (err: any) {
+      toast.error("Não foi possível trocar de empresa.", {
+        description: err?.message,
+      });
       setSwitching(false);
+      return false;
     }
   }, []);
 
