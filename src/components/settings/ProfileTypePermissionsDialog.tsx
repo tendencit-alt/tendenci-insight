@@ -255,6 +255,14 @@ export function ProfileTypePermissionsDialog({
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState('modules');
   const [permissions, setPermissions] = useState<Record<string, ModulePermission>>({});
+  const [initialPermissions, setInitialPermissions] = useState<Record<string, ModulePermission>>({});
+
+  // Detecta se há alterações não salvas comparando estado atual com o snapshot inicial.
+  const hasUnsavedChanges = ALL_MODULES.some(m => {
+    const cur = permissions[m] || emptyModulePermission();
+    const init = initialPermissions[m] || emptyModulePermission();
+    return ALL_FLAGS.some(f => !!cur[f] !== !!init[f]);
+  });
   // criticalPerms state removido — críticas folded em Editar/Excluir
   const [segregationRules, setSegregationRules] = useState<{ id?: string; blocked_action: string; blocked_module: string; reason: string | null; active: boolean }[]>([]);
   const [scopes, setScopes] = useState<Record<string, ScopeRestriction>>({});
@@ -339,6 +347,8 @@ export function ProfileTypePermissionsDialog({
         } : emptyModulePermission();
       });
       setPermissions(permMap);
+      // Snapshot para detectar alterações não salvas (baseline do "Restaurar padrões").
+      setInitialPermissions(JSON.parse(JSON.stringify(permMap)));
 
       // Load-time invariant: warn if DB has rows for unknown modules
       const knownModules = new Set(ALL_MODULES);
@@ -836,8 +846,13 @@ export function ProfileTypePermissionsDialog({
             type="button"
             variant="outline"
             onClick={() => setResetConfirmOpen(true)}
-            disabled={saving || loading}
+            disabled={saving || loading || !hasUnsavedChanges}
             className="gap-2"
+            title={
+              !hasUnsavedChanges
+                ? 'Nenhuma alteração não salva — modifique algum módulo para habilitar'
+                : 'Restaurar permissões para o padrão recomendado do perfil'
+            }
           >
             <RotateCcw className="h-4 w-4" />
             Restaurar padrões
