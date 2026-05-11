@@ -110,7 +110,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
       return;
     }
 
-    // Query base - buscar tarefas do arquiteto
+    // Query base - buscar tarefas do profissional parceiro
     let query = supabase
       .from("tendenci_prospec_arq_agendamentos")
       .select(`
@@ -244,7 +244,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
           if (!hasRecentActivity) {
             toast({
               title: "⚠️ Atualização na Timeline Obrigatória",
-              description: "Para arquitetos em Contato Iniciado ou Parceiro Ativo, adicione uma atualização na Timeline (últimas 36h) antes de criar tarefas.",
+              description: "Para profissionais parceiros em Contato Iniciado ou Parceiro Ativo, adicione uma atualização na Timeline (últimas 36h) antes de criar tarefas.",
               variant: "destructive",
             });
             return;
@@ -544,7 +544,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
                       } else {
                         toast({
                           title: "Atenção",
-                          description: "Arquiteto não possui número de WhatsApp cadastrado.",
+                          description: "Profissional Parceiro não possui número de WhatsApp cadastrado.",
                           variant: "destructive",
                         });
                       }
@@ -598,7 +598,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
                 <Label htmlFor="task-whatsapp">
                   Número de WhatsApp * 
                   <span className="text-xs text-muted-foreground ml-2">
-                    (Preenchido automaticamente do arquiteto)
+                    (Preenchido automaticamente do profissional parceiro)
                   </span>
                 </Label>
                 <Input
@@ -611,7 +611,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
                 />
                 {architectInfo?.name && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    📱 Arquiteto: {architectInfo.name}
+                    📱 Profissional Parceiro: {architectInfo.name}
                   </p>
                 )}
               </div>

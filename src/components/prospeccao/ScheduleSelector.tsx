@@ -393,7 +393,7 @@ export function ScheduleSelector({ value, onChange, totalArquitetos }: ScheduleS
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Arquitetos por disparo:</span>
+                  <span className="text-muted-foreground">Profissionais Parceiros por disparo:</span>
                   <Badge variant="secondary">{totalArquitetos}</Badge>
                 </div>
                 {value.type === 'recorrente' && (

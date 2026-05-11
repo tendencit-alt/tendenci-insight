@@ -23,12 +23,12 @@ export function ArchitectsAnalysis({ arquitetosVendas, arquitetosResumo }: Archi
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Arquitetos</CardTitle>
+            <CardTitle className="text-sm font-medium">Total de Profissionais Parceiros</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">{arquitetosResumo.total_arquitetos}</div>
-            <p className="text-xs text-muted-foreground">Arquitetos diferentes que geraram vendas</p>
+            <p className="text-xs text-muted-foreground">Profissionais Parceiros diferentes que geraram vendas</p>
           </CardContent>
         </Card>
 
@@ -41,7 +41,7 @@ export function ArchitectsAnalysis({ arquitetosVendas, arquitetosResumo }: Archi
             <div className="text-2xl font-bold text-green-600">
               {formatCurrency(arquitetosResumo.total_vendido_arquitetos)}
             </div>
-            <p className="text-xs text-muted-foreground">Somando todos os arquitetos</p>
+            <p className="text-xs text-muted-foreground">Somando todos os profissionais parceiros</p>
           </CardContent>
         </Card>
 
@@ -59,14 +59,14 @@ export function ArchitectsAnalysis({ arquitetosVendas, arquitetosResumo }: Archi
 
       <Card>
         <CardHeader>
-          <CardTitle>Arquitetos Envolvidos nas Vendas</CardTitle>
+          <CardTitle>Profissionais Parceiros Envolvidos nas Vendas</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Arquiteto</TableHead>
+                  <TableHead>Profissional Parceiro</TableHead>
                   <TableHead className="text-right">Quantidade de Vendas</TableHead>
                   <TableHead className="text-right">Total Vendido</TableHead>
                   <TableHead className="text-right">Ticket Médio</TableHead>
@@ -76,7 +76,7 @@ export function ArchitectsAnalysis({ arquitetosVendas, arquitetosResumo }: Archi
                 {arquitetosVendas?.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center text-muted-foreground">
-                      Nenhuma venda com arquiteto neste período
+                      Nenhuma venda com profissional parceiro neste período
                     </TableCell>
                   </TableRow>
                 ) : (

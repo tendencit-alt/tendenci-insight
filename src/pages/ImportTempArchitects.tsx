@@ -16,14 +16,14 @@ export default function ImportTempArchitects() {
     try {
       const res = await bulkInsertArchitects();
       setResult(res);
-      toast.success(`${res.successCount} arquitetos cadastrados com sucesso!`);
+      toast.success(`${res.successCount} profissionais parceiros cadastrados com sucesso!`);
       
       // Redirecionar após 3 segundos
       setTimeout(() => {
         navigate('/prospeccao');
       }, 3000);
     } catch (error: any) {
-      toast.error('Erro ao importar arquitetos: ' + error.message);
+      toast.error('Erro ao importar profissionais parceiros: ' + error.message);
       setResult({ error: error.message });
     } finally {
       setLoading(false);
@@ -33,12 +33,12 @@ export default function ImportTempArchitects() {
   return (
     <div className="container mx-auto py-8">
       <Card className="p-8 max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">Importação de Arquitetos</h1>
+        <h1 className="text-2xl font-bold mb-4">Importação de Profissionais Parceiros</h1>
         
         {!result && (
           <div className="space-y-4">
             <p className="text-muted-foreground">
-              Clique no botão abaixo para importar todos os arquitetos da planilha.
+              Clique no botão abaixo para importar todos os profissionais parceiros da planilha.
             </p>
             
             <Button

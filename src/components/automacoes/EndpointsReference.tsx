@@ -104,7 +104,7 @@ const endpoints: Endpoint[] = [
   // Prospecção
   {
     name: "Criar Agendamento",
-    description: "Cria um agendamento para arquiteto",
+    description: "Cria um agendamento para profissional parceiro",
     path: "/functions/v1/create-agendamento",
     method: "POST",
     module: "Prospecção",
@@ -136,15 +136,15 @@ const endpoints: Endpoint[] = [
     }
   },
   {
-    name: "Processar Tarefas Arquitetos",
+    name: "Processar Tarefas Profissionais Parceiros",
     description: "Processa tarefas de prospecção pendentes",
     path: "/functions/v1/process-pending-architect-tasks",
     method: "POST",
     module: "Prospecção"
   },
   {
-    name: "Importar Arquitetos",
-    description: "Importa arquitetos de planilha",
+    name: "Importar Profissionais Parceiros",
+    description: "Importa profissionais parceiros de planilha",
     path: "/functions/v1/import-architects",
     method: "POST",
     module: "Prospecção",
@@ -154,7 +154,7 @@ const endpoints: Endpoint[] = [
   },
   {
     name: "Log Interação Prospecção",
-    description: "Registra interação na timeline do arquiteto",
+    description: "Registra interação na timeline do profissional parceiro",
     path: "/functions/v1/log-prospeccao-interaction",
     method: "POST",
     module: "Prospecção",

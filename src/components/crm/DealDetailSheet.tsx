@@ -280,7 +280,7 @@ export function DealDetailSheet({
 
     if (error) {
       toast({
-        title: "Erro ao atualizar arquiteto",
+        title: "Erro ao atualizar profissional parceiro",
         description: error.message,
         variant: "destructive",
       });
@@ -295,8 +295,8 @@ export function DealDetailSheet({
       });
 
       toast({
-        title: "Arquiteto atualizado",
-        description: "O arquiteto foi atualizado com sucesso.",
+        title: "Profissional Parceiro atualizado",
+        description: "O profissional parceiro foi atualizado com sucesso.",
       });
       onSuccess();
     }
@@ -624,12 +624,12 @@ export function DealDetailSheet({
               )}
             </Card>
 
-            {/* Arquiteto */}
+            {/* Profissional Parceiro */}
             <Card className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <User className="h-5 w-5 text-primary" />
-                  <h3 className="font-semibold text-lg">Arquiteto</h3>
+                  <h3 className="font-semibold text-lg">Profissional Parceiro</h3>
                 </div>
                 <Button
                   variant="ghost"
@@ -668,14 +668,14 @@ export function DealDetailSheet({
                 </div>
               ) : !deal.architect && !isEditingArchitect ? (
                 <div className="text-center py-4 text-muted-foreground text-sm">
-                  Cliente sem arquiteto vinculado
+                  Cliente sem profissional parceiro vinculado
                 </div>
               ) : null}
               
               {isEditingArchitect && (
                 <div className="mt-4 space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label>Selecionar Arquiteto</Label>
+                    <Label>Selecionar Profissional Parceiro</Label>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -683,7 +683,7 @@ export function DealDetailSheet({
                       className="h-7 text-xs"
                     >
                       <Plus className="mr-1 h-3 w-3" />
-                      Novo Arquiteto
+                      Novo Profissional Parceiro
                     </Button>
                   </div>
                   <Select
@@ -691,10 +691,10 @@ export function DealDetailSheet({
                     onValueChange={handleArchitectChange}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecionar arquiteto" />
+                      <SelectValue placeholder="Selecionar profissional parceiro" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Cliente sem arquiteto</SelectItem>
+                      <SelectItem value="none">Cliente sem profissional parceiro</SelectItem>
                       {architects.map((arch) => (
                         <SelectItem key={arch.id} value={arch.id}>
                           {arch.name}
@@ -997,7 +997,7 @@ export function DealDetailSheet({
               </Card>
             )}
 
-            {/* Indicação de Arquiteto */}
+            {/* Indicação de Profissional Parceiro */}
             <DealArchitectIndication
               dealId={deal.id}
               dealCategoria={deal.categoria || undefined}

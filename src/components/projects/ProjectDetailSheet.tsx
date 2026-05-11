@@ -381,7 +381,7 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
                   <p className="font-medium">{project.client?.name || "N/A"}</p>
                 </div>
                 <div>
-                  <span className="text-sm text-muted-foreground">Arquiteto</span>
+                  <span className="text-sm text-muted-foreground">Profissional Parceiro</span>
                   <p className="font-medium">{project.architect?.name || "Não atribuído"}</p>
                 </div>
                 <div className="space-y-2">

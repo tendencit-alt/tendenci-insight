@@ -70,7 +70,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
       query = query.in("stage", filters.stages);
     }
 
-    // Filtro de arquiteto
+    // Filtro de profissional parceiro
     if (filters.architect && filters.architect !== "Todos") {
       if (filters.architect === "sem-arquiteto") {
         query = query.is("architect_id", null);
@@ -84,7 +84,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
     if (!error && data) {
       let filteredData = data;
       
-      // Filtro de busca client-side para incluir cliente e arquiteto
+      // Filtro de busca client-side para incluir cliente e profissional parceiro
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
         filteredData = data.filter(p => 

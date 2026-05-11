@@ -41,13 +41,13 @@ function ResolvedValue({ fieldName, value }: { fieldName: string | null; value: 
         return;
       }
       
-      // Resolver architect_id (arquitetos)
+      // Resolver architect_id (profissionais parceiros)
       if (fieldName === 'architect_id') {
         const { data } = await supabase.from('architects').select('name').eq('id', value).maybeSingle();
         if (data?.name) {
           setResolvedValue(data.name);
         } else {
-          setResolvedValue('(arquiteto removido)');
+          setResolvedValue('(profissional parceiro removido)');
         }
         return;
       }

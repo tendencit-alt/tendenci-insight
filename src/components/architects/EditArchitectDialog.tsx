@@ -83,7 +83,7 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
   const fetchProjects = async () => {
     if (!architect) return;
 
-    // Buscar projetos sem arquiteto OU do arquiteto atual
+    // Buscar projetos sem profissional parceiro OU do profissional parceiro atual
     const { data, error } = await supabase
       .from('projects')
       .select('id, name, stage, created_at, architect_id')
@@ -171,7 +171,7 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
       await supabase.from('architect_history').insert({
         architect_id: architect.id,
         event_type: 'sistema',
-        description: 'Dados do arquiteto atualizados'
+        description: 'Dados do profissional parceiro atualizados'
       });
 
       // SYNC: Se as notas foram alteradas, salvar também na architect_timeline
@@ -185,13 +185,13 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
         });
       }
 
-      toast.success("Arquiteto atualizado com sucesso!");
+      toast.success("Profissional Parceiro atualizado com sucesso!");
       
       onSuccess();
       onOpenChange(false);
       
     } catch (error: any) {
-      toast.error(error.message || "Erro ao atualizar arquiteto");
+      toast.error(error.message || "Erro ao atualizar profissional parceiro");
     } finally {
       setLoading(false);
     }
@@ -203,7 +203,7 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Editar Arquiteto</DialogTitle>
+          <DialogTitle className="text-2xl">Editar Profissional Parceiro</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
@@ -362,7 +362,7 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Anotações sobre o arquiteto..."
+                placeholder="Anotações sobre o profissional parceiro..."
                 rows={3}
               />
             </div>

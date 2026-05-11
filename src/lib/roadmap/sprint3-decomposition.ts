@@ -64,7 +64,7 @@ const BLOCK_1: DecompositionBlock = {
         "DealTasks para tarefas vinculadas",
         "DealFileUpload para anexos",
         "DealHistory com log de movimentações",
-        "DealArchitectIndication para vínculo com arquiteto",
+        "DealArchitectIndication para vínculo com profissional parceiro",
         "CRMKPIs e CRMKPIsDashboard com métricas",
         "CRMSLAAlerts para alertas de SLA",
         "CRMFilters com filtros por responsável, pipeline, período",

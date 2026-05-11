@@ -126,13 +126,13 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-architect">Arquiteto</Label>
+              <Label htmlFor="edit-architect">Profissional Parceiro</Label>
               <Select value={formData.architect_id} onValueChange={(v) => setFormData({ ...formData, architect_id: v })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o arquiteto" />
+                  <SelectValue placeholder="Selecione o profissional parceiro" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="sem-arquiteto">Cliente sem arquiteto</SelectItem>
+                  <SelectItem value="sem-arquiteto">Cliente sem profissional parceiro</SelectItem>
                   {architects.map((arch) => (
                     <SelectItem key={arch.id} value={arch.id}>
                       {arch.name}

@@ -65,7 +65,7 @@ export function ArchitectProspeccaoSheet({
   // Verificar permissão de exclusão
   const canDeleteArchitects = hasModuleAccess("configuracoes" as any, "delete");
 
-  // Função para excluir arquiteto permanentemente
+  // Função para excluir profissional parceiro permanentemente
   const handleDeleteArchitect = async () => {
     if (!architectId) return;
     
@@ -77,14 +77,14 @@ export function ArchitectProspeccaoSheet({
       });
 
       if (error) {
-        console.error('Erro ao excluir arquiteto:', error);
+        console.error('Erro ao excluir profissional parceiro:', error);
         
         // Verificar se é erro de registros vinculados
         if (error.message.includes('leads') || error.message.includes('deals') || 
             error.message.includes('orders') || error.message.includes('projects')) {
           toast({
             title: "Não foi possível excluir",
-            description: "Este arquiteto possui registros vinculados (leads, negociações, pedidos ou projetos). Remova-os primeiro.",
+            description: "Este profissional parceiro possui registros vinculados (leads, negociações, pedidos ou projetos). Remova-os primeiro.",
             variant: "destructive",
           });
         } else {
@@ -98,8 +98,8 @@ export function ArchitectProspeccaoSheet({
       }
 
       toast({
-        title: "Arquiteto excluído",
-        description: "O arquiteto foi removido permanentemente do sistema.",
+        title: "Profissional Parceiro excluído",
+        description: "O profissional parceiro foi removido permanentemente do sistema.",
       });
 
       // Fechar sheet e atualizar queries
@@ -111,7 +111,7 @@ export function ArchitectProspeccaoSheet({
       console.error('Exceção ao excluir:', err);
       toast({
         title: "Erro inesperado",
-        description: "Ocorreu um erro ao tentar excluir o arquiteto.",
+        description: "Ocorreu um erro ao tentar excluir o profissional parceiro.",
         variant: "destructive",
       });
     } finally {
@@ -119,7 +119,7 @@ export function ArchitectProspeccaoSheet({
     }
   };
 
-  // Buscar dados do arquiteto usando React Query
+  // Buscar dados do profissional parceiro usando React Query
   const { data: architect } = useQuery({
     queryKey: ["architect-detail", architectId],
     queryFn: async () => {
@@ -138,7 +138,7 @@ export function ArchitectProspeccaoSheet({
     enabled: !!architectId && open,
   });
 
-  // Buscar projetos do arquiteto
+  // Buscar projetos do profissional parceiro
   const { data: projects } = useQuery({
     queryKey: ["architect-projects", architectId],
     queryFn: async () => {
@@ -226,7 +226,7 @@ export function ArchitectProspeccaoSheet({
                     <AlertDialogHeader>
                       <AlertDialogTitle className="flex items-center gap-2">
                         <AlertTriangle className="h-5 w-5 text-destructive" />
-                        Excluir Arquiteto Permanentemente
+                        Excluir Profissional Parceiro Permanentemente
                       </AlertDialogTitle>
                       <AlertDialogDescription className="space-y-2">
                         <p>
@@ -307,7 +307,7 @@ export function ArchitectProspeccaoSheet({
                 <div>
                   <span className="text-muted-foreground">Status no Funil:</span>
                   <Badge className="ml-2 bg-primary text-primary-foreground">
-                    {architect.status_funil || "Novo Arquiteto"}
+                    {architect.status_funil || "Novo Profissional Parceiro"}
                   </Badge>
                 </div>
                 <div>
@@ -388,11 +388,11 @@ export function ArchitectProspeccaoSheet({
               </div>
             </Card>
 
-            {/* Botão para abrir no módulo Arquitetos */}
+            {/* Botão para abrir no módulo Profissionais Parceiros */}
             <Button variant="outline" className="w-full gap-2" asChild>
               <a href={`/architects`}>
                 <ExternalLink className="h-4 w-4" />
-                Abrir no Módulo Arquitetos
+                Abrir no Módulo Profissionais Parceiros
               </a>
             </Button>
           </TabsContent>
@@ -515,7 +515,7 @@ export function ArchitectProspeccaoSheet({
             queryClient.invalidateQueries({ queryKey: ["prospeccao-architects"] });
             toast({
               title: "Sucesso",
-              description: "Arquiteto atualizado com sucesso!",
+              description: "Profissional Parceiro atualizado com sucesso!",
             });
           }}
         />

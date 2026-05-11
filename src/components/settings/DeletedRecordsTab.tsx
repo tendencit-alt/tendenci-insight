@@ -30,7 +30,7 @@ const RECORD_TYPE_OPTIONS = [
   { value: "all", label: "Todos os tipos" },
   { value: "order", label: "Pedidos" },
   { value: "deal", label: "Negócios CRM" },
-  { value: "architect", label: "Arquitetos" },
+  { value: "architect", label: "Profissionais Parceiros" },
   { value: "goal", label: "Metas" },
   { value: "user", label: "Usuários" },
   { value: "bank_account", label: "Contas Bancárias" },
@@ -49,7 +49,7 @@ const RECORD_TYPE_OPTIONS = [
 const RECORD_TYPE_LABELS: Record<string, string> = {
   order: "Pedido",
   deal: "Negócio CRM",
-  architect: "Arquiteto",
+  architect: "Profissional Parceiro",
   goal: "Meta",
   user: "Usuário",
   bank_account: "Conta Bancária",

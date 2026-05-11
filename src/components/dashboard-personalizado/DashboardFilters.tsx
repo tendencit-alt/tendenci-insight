@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface DashboardFiltersData {
   dateRange?: DateRange;
   vendedor?: string;
-  arquiteto?: string;
+  profissional parceiro?: string;
   pipeline?: string;
   categoria?: string;
 }
@@ -40,7 +40,7 @@ export function DashboardFilters({ filters, onChange }: DashboardFiltersProps) {
       .order("full_name");
     if (vendData) setVendedores(vendData);
 
-    // Buscar arquitetos ativos
+    // Buscar profissionais parceiros ativos
     const { data: arqData } = await supabase
       .from("architects")
       .select("id, name")
@@ -129,7 +129,7 @@ export function DashboardFilters({ filters, onChange }: DashboardFiltersProps) {
           </SelectContent>
         </Select>
 
-        {/* Filtro de Arquiteto */}
+        {/* Filtro de Profissional Parceiro */}
         <Select 
           value={filters.arquiteto || "todos"} 
           onValueChange={(value) => onChange({ ...filters, arquiteto: value === "todos" ? undefined : value })}
@@ -138,10 +138,10 @@ export function DashboardFilters({ filters, onChange }: DashboardFiltersProps) {
             "w-[200px] shadow-sm hover:shadow-md transition-all bg-background/50 backdrop-blur-sm border-border/60",
             filters.arquiteto && "border-primary/50 bg-primary/5"
           )}>
-            <SelectValue placeholder="Arquiteto" />
+            <SelectValue placeholder="Profissional Parceiro" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="todos">Todos arquitetos</SelectItem>
+            <SelectItem value="todos">Todos profissionais parceiros</SelectItem>
             {arquitetos.map((a) => (
               <SelectItem key={a.id} value={a.id}>
                 {a.name}

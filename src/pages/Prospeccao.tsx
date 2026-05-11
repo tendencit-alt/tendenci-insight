@@ -44,7 +44,7 @@ export default function Prospeccao() {
             <UserSearch className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Prospecção de Arquitetos</h1>
+            <h1 className="text-3xl font-bold text-foreground">Prospecção de Profissionais Parceiros</h1>
             <p className="text-muted-foreground">CRM completo com IA, campanhas automáticas e agendamentos</p>
           </div>
         </div>
@@ -58,7 +58,7 @@ export default function Prospeccao() {
             </TabsTrigger>
             <TabsTrigger value="crm" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <UserSearch className="h-4 w-4" />
-              CRM de Arquitetos
+              CRM de Profissionais Parceiros
             </TabsTrigger>
             <TabsTrigger value="whatsapp" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <MessageSquare className="h-4 w-4" />
@@ -161,7 +161,7 @@ export default function Prospeccao() {
           onOpenChange={setManageStagesOpen} 
         />
         
-        {/* Sheet para abrir arquiteto via evento global - no nível da página */}
+        {/* Sheet para abrir profissional parceiro via evento global - no nível da página */}
         {eventArchitectId && (
           <ArchitectProspeccaoSheet
             architectId={eventArchitectId}

@@ -85,10 +85,10 @@ export function DashboardFilters({
         </SelectContent>
       </Select>
 
-      {/* Filtro de Arquiteto */}
+      {/* Filtro de Profissional Parceiro */}
       <Select onValueChange={onArchitectChange}>
         <SelectTrigger className="w-[200px] shadow-sm">
-          <SelectValue placeholder="Arquiteto" />
+          <SelectValue placeholder="Profissional Parceiro" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="todos">Todos</SelectItem>

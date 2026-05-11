@@ -95,7 +95,7 @@ export function DealArchitectIndication({
     e.preventDefault();
 
     if (!formData.architect_id) {
-      toast.error("Selecione um arquiteto");
+      toast.error("Selecione um profissional parceiro");
       return;
     }
 
@@ -164,7 +164,7 @@ export function DealArchitectIndication({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Target className="h-5 w-5 text-primary" />
-          <h3 className="font-semibold">Indicação de Arquiteto</h3>
+          <h3 className="font-semibold">Indicação de Profissional Parceiro</h3>
         </div>
         <Button
           size="sm"
@@ -182,13 +182,13 @@ export function DealArchitectIndication({
           <FormSaveIndicator hasRestoredData={hasRestoredData} className="mb-2" />
           
           <div>
-            <Label>Arquiteto *</Label>
+            <Label>Profissional Parceiro *</Label>
             <Select
               value={formData.architect_id}
               onValueChange={(v) => setFormData({ ...formData, architect_id: v })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Selecione o arquiteto" />
+                <SelectValue placeholder="Selecione o profissional parceiro" />
               </SelectTrigger>
               <SelectContent className="bg-popover">
                 {architects.map((arch) => (

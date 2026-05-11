@@ -22,7 +22,7 @@ const perguntasPermitidasOptions = [
   { id: "quantidade", label: "Quantidade", description: "Volume ou tamanho do pedido", icon: Hash },
   { id: "urgencia", label: "Urgência", description: "Nível de prioridade", icon: AlertTriangle },
   { id: "como_conheceu", label: "Como conheceu", description: "Como chegou até nós", icon: Search },
-  { id: "ja_tem_projeto", label: "Já tem projeto", description: "Se já tem projeto/arquiteto", icon: FileText },
+  { id: "ja_tem_projeto", label: "Já tem projeto", description: "Se já tem projeto/profissional parceiro", icon: FileText },
 ];
 
 const podeFazerPerguntasOptions = [
