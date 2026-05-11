@@ -12,7 +12,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Info, Shield, ShieldAlert, Lock, Target, DollarSign, FileCheck, RotateCcw } from 'lucide-react';
+import { Loader2, Info, Shield, ShieldAlert, Lock, Target, DollarSign, FileCheck, RotateCcw, Save } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { useUpsertProfileTemplate } from '@/hooks/useProfileTemplates';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
