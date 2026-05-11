@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ModuleShell } from "@/components/layout/ModuleShell";
-import { GlobalBreadcrumb } from "@/components/layout/GlobalBreadcrumb";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +40,7 @@ const SUGGESTIONS: { label: string; group: GroupKey; hint: string }[] = [
   { label: "DRE Mensal", group: "executivo", hint: "Resumo executivo do mês." },
   { label: "Fluxo de Caixa 30d", group: "executivo", hint: "Projeção de caixa." },
   { label: "Pedidos por Vendedor", group: "operacional", hint: "Performance comercial." },
-  { label: "Lançamentos Manuais", group: "auditoria", hint: "Auditoria de edições." },
+  { label: "DRE Gerencial", group: "executivo", hint: "Visão gerencial completa." },
 ];
 
 export default function Relatorios() {
@@ -250,7 +249,6 @@ export default function Relatorios() {
   return (
     <DashboardLayout>
       <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6">
-        <GlobalBreadcrumb />
         <ModuleShell
           moduleKey="relatorios"
           title="Relatórios"

@@ -6,8 +6,8 @@ export function NextActionSuggestion() {
   const navigate = useNavigate();
   const { nextActions, basePath } = useNavigationIntelligence();
 
-  // Don't show on home/launcher
-  if (basePath === "/" || basePath === "/central-navegacao" || nextActions.length === 0) return null;
+  // Don't show on home/launcher, or on pages that already render their own contextual "Próximo" list
+  if (basePath === "/" || basePath === "/central-navegacao" || basePath === "/relatorios" || nextActions.length === 0) return null;
 
   return (
     <div className="flex items-center gap-2 mb-3 overflow-x-auto scrollbar-none">
