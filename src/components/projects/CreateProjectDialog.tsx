@@ -235,7 +235,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
         .insert({
           name: formData.name,
           client_id: formData.client_id && formData.client_id !== 'none' ? formData.client_id : null,
-          architect_id: formData.architect_id && formData.architect_id !== 'sem-profissional parceiro' ? formData.architect_id : null,
+          architect_id: formData.architect_id && formData.architect_id !== 'sem-arquiteto' ? formData.architect_id : null,
           stage: formData.stage,
           value: formData.value ? parseFloat(formData.value) : 0,
           deadline: formData.deadline || null,
@@ -351,7 +351,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
                       <SelectValue placeholder="Selecione o profissional parceiro" />
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50">
-                      <SelectItem value="sem-profissional parceiro">Cliente sem profissional parceiro</SelectItem>
+                      <SelectItem value="sem-arquiteto">Cliente sem profissional parceiro</SelectItem>
                       {architects.map((arch) => (
                         <SelectItem key={arch.id} value={arch.id}>
                           {arch.name}

@@ -45,7 +45,7 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
       clearPersistedData();
       setFormData({
         name: project.name || "",
-        architect_id: project.architect_id || "sem-profissional parceiro",
+        architect_id: project.architect_id || "sem-arquiteto",
         stage: project.stage || "recebido",
         value: project.value?.toString() || "",
         deadline: project.deadline ? project.deadline.split('T')[0] : ""
@@ -77,7 +77,7 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
         .from("projects")
         .update({
           name: formData.name,
-          architect_id: formData.architect_id && formData.architect_id !== "sem-profissional parceiro" ? formData.architect_id : null,
+          architect_id: formData.architect_id && formData.architect_id !== "sem-arquiteto" ? formData.architect_id : null,
           stage: formData.stage,
           value: formData.value ? parseFloat(formData.value) : 0,
           deadline: formData.deadline ? `${formData.deadline}T00:00:00-03:00` : null
@@ -132,7 +132,7 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
                   <SelectValue placeholder="Selecione o profissional parceiro" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="sem-profissional parceiro">Cliente sem profissional parceiro</SelectItem>
+                  <SelectItem value="sem-arquiteto">Cliente sem profissional parceiro</SelectItem>
                   {architects.map((arch) => (
                     <SelectItem key={arch.id} value={arch.id}>
                       {arch.name}

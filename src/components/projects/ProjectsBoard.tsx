@@ -72,7 +72,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
 
     // Filtro de profissional parceiro
     if (filters.architect && filters.architect !== "Todos") {
-      if (filters.architect === "sem-profissional parceiro") {
+      if (filters.architect === "sem-arquiteto") {
         query = query.is("architect_id", null);
       } else {
         query = query.eq("architect_id", filters.architect);

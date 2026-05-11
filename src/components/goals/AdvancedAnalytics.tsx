@@ -307,7 +307,7 @@ export function AdvancedAnalytics({ refreshTrigger }: { refreshTrigger: number }
                         currency: "BRL",
                       })
                     : `${analytics.companyGoalProgress.quantidade_meta} ${
-                        analytics.companyGoalProgress.tipo_meta === "captacao" ? "profissionais parceiros" : "projetos"
+                        analytics.companyGoalProgress.tipo_meta === "captacao" ? "arquitetos" : "projetos"
                       }`}
                 </p>
               </div>
@@ -320,7 +320,7 @@ export function AdvancedAnalytics({ refreshTrigger }: { refreshTrigger: number }
                         currency: "BRL",
                       })
                     : `${analytics.companyGoalProgress.tendenci_goal_progress?.[0]?.quantidade_alcancada || 0} ${
-                        analytics.companyGoalProgress.tipo_meta === "captacao" ? "profissionais parceiros" : "projetos"
+                        analytics.companyGoalProgress.tipo_meta === "captacao" ? "arquitetos" : "projetos"
                       }`}
                 </p>
               </div>

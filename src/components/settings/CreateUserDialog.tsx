@@ -89,8 +89,8 @@ export function CreateUserDialog({
   const handleProfileTypeChange = (profileTypeId: string) => {
     const selectedType = profileTypes.find(pt => pt.id === profileTypeId);
     // Map profile type name to valid user_role enum value
-    // Only 'admin', 'vendedor', 'profissional parceiro', 'projetista' exist in the enum
-    const validRoles = ['admin', 'vendedor', 'profissional parceiro', 'projetista'];
+    // Only 'admin', 'vendedor', 'arquiteto', 'projetista' exist in the enum
+    const validRoles = ['admin', 'vendedor', 'arquiteto', 'projetista'];
     const mappedRole = selectedType?.name === 'master' ? 'admin' 
       : validRoles.includes(selectedType?.name || '') ? selectedType!.name 
       : 'vendedor';

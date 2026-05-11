@@ -162,7 +162,7 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
 
   // Agrupar profissionais parceiros por status
   const architectsByStatus = stages.reduce((acc, stage) => {
-    acc[stage.slug] = architects?.filter(a => (a.status_funil || "novo_profissional parceiro") === stage.slug) || [];
+    acc[stage.slug] = architects?.filter(a => (a.status_funil || "novo_arquiteto") === stage.slug) || [];
     return acc;
   }, {} as Record<string, any[]>);
 

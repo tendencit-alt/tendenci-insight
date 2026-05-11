@@ -64,7 +64,7 @@ export default function FinalBulkImport() {
             phone,
             birthday,
             categoria: 'metropolitano',
-            status_funil: 'novo_profissional parceiro',
+            status_funil: 'novo_arquiteto',
           });
         }
       }

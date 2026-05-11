@@ -128,7 +128,7 @@ export default function WhatsAppIntegrationDocs() {
                     <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
 {`{
   "campanha_id": "uuid-da-campanha",
-  "arquiteto_id": "uuid-do-profissional parceiro",
+  "arquiteto_id": "uuid-do-arquiteto",
   "nome": "Nome do Profissional Parceiro",
   "telefone": "5511999999999",
   "tipo_envio": "texto",

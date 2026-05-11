@@ -199,7 +199,7 @@ export function CreateDealDialog({
     })), [leads]);
 
   const architectOptions: ComboboxOption[] = useMemo(() => [
-    { value: "sem-profissional parceiro", label: "Cliente sem profissional parceiro" },
+    { value: "sem-arquiteto", label: "Cliente sem profissional parceiro" },
     ...architects.map((arch) => ({
       value: arch.id,
       label: arch.name,
@@ -492,7 +492,7 @@ export function CreateDealDialog({
         title: autoTitle,
         stage_id: formData.stage_id,
         lead_id: formData.lead_id || null,
-        architect_id: formData.architect_id && formData.architect_id !== "sem-profissional parceiro" ? formData.architect_id : null,
+        architect_id: formData.architect_id && formData.architect_id !== "sem-arquiteto" ? formData.architect_id : null,
         owner_id: user?.id || null,
         value: formData.value ? Number(formData.value) : null,
         note: `${formData.observations ? formData.observations + '\n\n' : ''}${formData.note || ''}`.trim() || null,

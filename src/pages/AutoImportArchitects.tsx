@@ -115,7 +115,7 @@ export default function AutoImportArchitects() {
                 phone: arch.phone,
                 birthday: arch.birthday,
                 categoria: arch.categoria,
-                status_funil: 'novo_profissional parceiro',
+                status_funil: 'novo_arquiteto',
               });
             
             if (error) {

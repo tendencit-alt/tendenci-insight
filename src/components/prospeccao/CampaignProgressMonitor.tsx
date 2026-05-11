@@ -108,7 +108,7 @@ export function CampaignProgressMonitor() {
           // Toast quando campanha concluir com sucesso
           if (newDispatch.status === 'concluido' && payload.old.status !== 'concluido') {
             toast.success('Campanha Concluída!', {
-              description: `${newDispatch.total_profissionais parceiros} mensagens processadas. ${newDispatch.enviados_sucesso} sucesso, ${newDispatch.enviados_erro} erro(s).`,
+              description: `${newDispatch.total_arquitetos} mensagens processadas. ${newDispatch.enviados_sucesso} sucesso, ${newDispatch.enviados_erro} erro(s).`,
             });
           }
           

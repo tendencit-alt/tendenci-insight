@@ -52,7 +52,7 @@ export default function BulkImportFinal() {
           email: email || null,
           phone,
           categoria: 'metropolitano',
-          status_funil: 'novo_profissional parceiro',
+          status_funil: 'novo_arquiteto',
         };
       }).filter((a: any) => {
         // Filtrar apenas se tiver nome E telefone válido

@@ -312,7 +312,7 @@ export default function AutomacoesDocumentacao() {
           triggerType: 'event' as const
         },
         {
-          id: 'profissionais parceiros-inativos',
+          id: 'arquitetos-inativos',
           nome: 'Verificar Profissionais Parceiros Inativos (60 dias)',
           descricao: 'Move profissionais parceiros sem atividade para etapa Inativo',
           ativo: true,
@@ -329,7 +329,7 @@ export default function AutomacoesDocumentacao() {
           triggerType: 'event' as const
         },
         {
-          id: 'atualizar-contato-profissional parceiro',
+          id: 'atualizar-contato-arquiteto',
           nome: 'Atualizar Data Último Contato',
           descricao: 'Atualiza data de contato ao interagir',
           ativo: true,

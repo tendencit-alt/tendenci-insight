@@ -520,7 +520,7 @@ export default function N8nTarefasGuide() {
     "origem_modulo": "crm"
   },
   {
-    "id": "uuid-tarefa-profissional parceiro...",
+    "id": "uuid-tarefa-arquiteto...",
     "whatsapp_number": "5521988888888",
     "mensagem": "Olá Profissional Parceiro! Mensagem...",
     "instance_name": "tendenci-vendedor2",
@@ -654,7 +654,7 @@ export default function N8nTarefasGuide() {
                       <strong>A Edge Function faz tudo automaticamente:</strong>
                       <ul className="list-disc ml-4 mt-2 space-y-1">
                         <li>Detecta se é tarefa CRM ou Profissional Parceiro via <code>origem_modulo</code></li>
-                        <li>Busca dados do cliente/profissional parceiro</li>
+                        <li>Busca dados do cliente/arquiteto</li>
                         <li>Identifica instância WhatsApp do vendedor</li>
                         <li>Envia mensagem via Evolution API</li>
                         <li>Atualiza status para "done" ou "concluida"</li>
@@ -747,7 +747,7 @@ export default function N8nTarefasGuide() {
                     <li>Detecta automaticamente se é tarefa CRM ou Profissional Parceiro</li>
                     <li>Busca instância WhatsApp do vendedor responsável</li>
                     <li>Atualiza status na tabela correta (crm_tasks ou tendenci_prospec_arq_agendamentos)</li>
-                    <li>Registra logs na timeline do negócio/profissional parceiro</li>
+                    <li>Registra logs na timeline do negócio/arquiteto</li>
                     <li>Não precisa configurar Evolution API no n8n</li>
                   </ul>
                 </AlertDescription>

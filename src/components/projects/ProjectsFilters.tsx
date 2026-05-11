@@ -204,7 +204,7 @@ export function ProjectsFilters({ filters, onFiltersChange }: ProjectsFiltersPro
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="Todos">Todos Profissionais Parceiros</SelectItem>
-          <SelectItem value="sem-profissional parceiro">Sem Profissional Parceiro</SelectItem>
+          <SelectItem value="sem-arquiteto">Sem Profissional Parceiro</SelectItem>
           {architects.map((arch) => (
             <SelectItem key={arch.id} value={arch.id}>
               {arch.name}

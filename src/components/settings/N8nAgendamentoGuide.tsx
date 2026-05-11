@@ -19,13 +19,13 @@ export function N8nAgendamentoGuide() {
   };
 
   const minimalExample = {
-    architect_id: "uuid-do-profissional parceiro",
+    architect_id: "uuid-do-arquiteto",
     data_agendamento: "2024-12-20T14:30:00",
     canal: "whatsapp"
   };
 
   const completeExample = {
-    architect_id: "uuid-do-profissional parceiro",
+    architect_id: "uuid-do-arquiteto",
     architect_name: "João Silva",
     architect_phone: "+5511999999999",
     client_id: "uuid-do-cliente-opcional",

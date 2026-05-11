@@ -334,7 +334,7 @@ export const AUTOMACOES_DETAILS: Record<string, Omit<AutomacaoDetail, 'id' | 'at
       'Envie lembrete 24h antes'
     ]
   },
-  'profissionais parceiros-inativos': {
+  'arquitetos-inativos': {
     titulo: 'Verificar Profissionais Parceiros Inativos (60 dias)',
     descricao: 'Move profissionais parceiros sem atividade para etapa Inativo',
     oQueFaz: 'Verifica profissionais parceiros na etapa "parceiro_ativo" que não tiveram indicações, projetos ou interações nos últimos 60 dias e move automaticamente para a etapa "inativo".',
@@ -385,7 +385,7 @@ export const AUTOMACOES_DETAILS: Record<string, Omit<AutomacaoDetail, 'id' | 'at
       'Configure revalidação periódica'
     ]
   },
-  'atualizar-contato-profissional parceiro': {
+  'atualizar-contato-arquiteto': {
     titulo: 'Atualizar Data Último Contato',
     descricao: 'Atualiza data de último contato automaticamente',
     oQueFaz: 'Quando uma interação é registrada na timeline do profissional parceiro, atualiza automaticamente o campo data_ultimo_contato.',

@@ -112,7 +112,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
           data_ultimo_contato: formData.ja_contactado && formData.data_ultimo_contato 
             ? formData.data_ultimo_contato 
             : null,
-          status_funil: formData.ja_contactado ? "contato_iniciado" : "novo_profissional parceiro"
+          status_funil: formData.ja_contactado ? "contato_iniciado" : "novo_arquiteto"
         })
         .select()
         .maybeSingle();

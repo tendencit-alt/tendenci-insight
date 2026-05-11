@@ -115,7 +115,7 @@ export function CampanhasManager() {
   const [showBlockingDialog, setShowBlockingDialog] = useState(false);
   
   // Filtro de etapa do kanban
-  const [filtroEtapa, setFiltroEtapa] = useState<string>("novo_profissional parceiro");
+  const [filtroEtapa, setFiltroEtapa] = useState<string>("novo_arquiteto");
   
   // Form state - NOT persisted, stays static when switching tabs
   const [formData, setFormData] = useState({
@@ -263,7 +263,7 @@ export function CampanhasManager() {
     setArquitetosEmOutrasCampanhas(idsJaEmCampanhas.length);
 
     // 5. Buscar profissionais parceiros filtrados pela etapa do kanban selecionada
-    const etapaFiltro = statusFunil || filtroEtapa || 'novo_profissional parceiro';
+    const etapaFiltro = statusFunil || filtroEtapa || 'novo_arquiteto';
     
     let query = supabase
       .from('architects')
@@ -328,8 +328,8 @@ export function CampanhasManager() {
       fetchArquitetosDisponiveis(campanha.id, filtroEtapa);
     } else {
       resetForm();
-      setFiltroEtapa("novo_profissional parceiro"); // Reset para etapa padrão
-      fetchArquitetosDisponiveis(undefined, "novo_profissional parceiro");
+      setFiltroEtapa("novo_arquiteto"); // Reset para etapa padrão
+      fetchArquitetosDisponiveis(undefined, "novo_arquiteto");
     }
     setIsDialogOpen(true);
   };
@@ -859,7 +859,7 @@ export function CampanhasManager() {
 
     const confirmar = window.confirm(
       `⏱️ ATENÇÃO: Esta campanha levará aproximadamente ${tempoEstimado} horas para ser concluída.\n\n` +
-      `📊 Total de mensagens: ${profissionais parceirosValidos.length}\n` +
+      `📊 Total de mensagens: ${arquitetosValidos.length}\n` +
       `⏳ Intervalo entre mensagens: 3 minutos (obrigatório)\n\n` +
       `A campanha será executada em background no servidor. Você pode continuar trabalhando normalmente.\n\n` +
       `Deseja continuar?`
@@ -893,7 +893,7 @@ export function CampanhasManager() {
 
       toast({
         title: "✅ Campanha Enfileirada!",
-        description: `${profissionais parceirosValidosIds.length} mensagens enfileiradas. Tempo estimado: ~${tempoHoras > 0 ? tempoHoras + ' horas' : profissionais parceirosValidosIds.length * 3 + ' minutos'}. Processamento em background.`,
+        description: `${arquitetosValidosIds.length} mensagens enfileiradas. Tempo estimado: ~${tempoHoras > 0 ? tempoHoras + ' horas' : arquitetosValidosIds.length * 3 + ' minutos'}. Processamento em background.`,
       });
 
       setDispatching(false);
