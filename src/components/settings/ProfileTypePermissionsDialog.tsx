@@ -76,9 +76,9 @@ const MODULE_LABELS: Record<string, string> = {
 // Simplificado: 4 permissões essenciais por módulo. As permissões avançadas
 // (Aprovar, Conciliar, Exportar, Admin) são gerenciadas na aba "Críticas".
 const PERMISSION_COLUMNS = [
-  { key: 'can_view', label: 'Ver', description: 'Visualizar registros do módulo' },
-  { key: 'can_create', label: 'Criar', description: 'Criar novos registros' },
-  { key: 'can_edit', label: 'Editar', description: 'Alterar registros existentes' },
+  { key: 'can_view', label: 'Ver', description: 'Apenas leitura' },
+  { key: 'can_create', label: 'Criar', description: 'Adicionar novos' },
+  { key: 'can_edit', label: 'Editar', description: 'Alterar existentes' },
   { key: 'can_delete', label: 'Excluir', description: 'Remover registros' },
 ] as const;
 
