@@ -238,6 +238,49 @@ export default function HomeLauncher() {
         {/* ══ EXECUTIVE STATUS BAR ══ */}
         <ExecutiveStatusBar />
 
+        {/* ══ CAIXA DE ENTRADA COMERCIAL ══ */}
+        <div className="space-y-2">
+          <h2 className="text-sm font-semibold flex items-center gap-2">
+            <ShoppingCart className="h-4 w-4 text-primary" /> Caixa de Entrada Comercial
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {commercialInbox.map((it) => {
+              const count = it.badge?.count ?? 0;
+              const level = it.badge?.level ?? "normal";
+              const tone =
+                level === "bloqueante" ? "border-red-300 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20"
+                : level === "urgente" ? "border-amber-300 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20"
+                : level === "atencao" ? "border-sky-200 dark:border-sky-800 bg-sky-50/50 dark:bg-sky-950/20"
+                : "border-border/60";
+              return (
+                <Card
+                  key={it.key}
+                  className={`cursor-pointer hover:shadow-md transition-shadow ${tone}`}
+                  onClick={() => handleNavigate(it.label, it.route)}
+                >
+                  <CardContent className="p-3 flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-lg bg-background border flex items-center justify-center">
+                      <it.icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{it.label}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {count > 0 ? `${count} ${count === 1 ? "item aguarda" : "itens aguardam"}` : "Nenhuma pendência"}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={count > 0 ? "default" : "outline"}
+                      className="text-[10px] font-mono tabular-nums"
+                    >
+                      {count}
+                    </Badge>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+
         {/* ══ SETUP PRIORITY ══ */}
         <SetupPriorityWidget />
 
