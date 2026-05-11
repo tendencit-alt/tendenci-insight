@@ -284,6 +284,8 @@ export function ProfileTypesManager() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ProfileTemplatesManager open={templatesManagerOpen} onOpenChange={setTemplatesManagerOpen} />
     </>
   );
 }
