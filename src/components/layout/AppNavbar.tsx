@@ -53,6 +53,7 @@ import {
 } from "@/components/ui/collapsible";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { cn } from "@/lib/utils";
+import { GlobalSearch } from "@/components/search/GlobalSearch";
 
 // ── Owner accordion persistence ──
 const OWNER_ACCORDION_KEY = "erp_owner_accordion_open";
@@ -817,19 +818,7 @@ export function AppNavbar() {
             </DropdownMenu>
           )}
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => commandBarStore.open()}
-            className="hidden md:flex items-center gap-2 h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground border-border/60"
-            title="Abrir busca (Ctrl+K)"
-          >
-            <Search className="h-3.5 w-3.5" />
-            <span className="hidden lg:inline">Buscar...</span>
-            <kbd className="hidden lg:inline-flex h-4 items-center gap-0.5 rounded border border-border bg-muted px-1 text-[9px] font-mono">
-              ⌘K
-            </kbd>
-          </Button>
+          <GlobalSearch />
           <Button
             variant="ghost"
             size="icon"
