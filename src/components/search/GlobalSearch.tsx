@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-type ResultKind = "cliente" | "profissional parceiro" | "lead";
+type ResultKind = "cliente" | "arquiteto" | "lead";
 
 interface Result {
   id: string;
