@@ -572,5 +572,7 @@ export function CreateProfileTypeDialog({
         </form>
       </DialogContent>
     </Dialog>
+    <ProfileTemplatesManager open={templatesManagerOpen} onOpenChange={setTemplatesManagerOpen} />
+    </>
   );
 }
