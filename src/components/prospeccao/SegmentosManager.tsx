@@ -498,7 +498,7 @@ export function SegmentosManager() {
                     <div className="border rounded-md max-h-96 overflow-y-auto">
                       {isLoadingArchitects ? (
                         <div className="p-8 text-center text-muted-foreground">
-                          Carregando arquitetos...
+                          Carregando profissionais parceiros...
                         </div>
                       ) : architects && architects.length > 0 ? (
                         <div className="divide-y">

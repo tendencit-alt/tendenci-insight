@@ -160,7 +160,7 @@ export default function BulkImportFinal() {
             <AlertCircle className="h-12 w-12 mx-auto text-red-500" />
             <h2 className="text-xl font-semibold text-red-600">Erro na Importação</h2>
             <p className="text-sm text-muted-foreground">
-              Ocorreu um erro ao importar os arquitetos. Verifique os logs do console.
+              Ocorreu um erro ao importar os profissionais parceiros. Verifique os logs do console.
             </p>
             <Button onClick={() => processAndInsertAll()} variant="outline" className="w-full">
               Tentar Novamente
