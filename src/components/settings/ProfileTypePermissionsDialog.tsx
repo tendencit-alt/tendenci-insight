@@ -291,16 +291,8 @@ export function ProfileTypePermissionsDialog({
         if (error) throw error;
       }
 
-      // Save critical permissions
+      // Permissões críticas removidas da UI — limpa registros antigos.
       await supabase.from('rbac_critical_permissions').delete().eq('profile_type_id', profileType.id);
-      const critToInsert = CRITICAL_PERMISSIONS.map(cp => ({
-        profile_type_id: profileType.id, permission_key: cp.key, permission_label: cp.label,
-        permission_group: cp.group, allowed: criticalPerms[cp.key] || false,
-      }));
-      if (critToInsert.length > 0) {
-        const { error } = await supabase.from('rbac_critical_permissions').insert(critToInsert);
-        if (error) throw error;
-      }
 
       // Save scope restrictions
       await (supabase.from('rbac_scope_restrictions' as any) as any).delete().eq('profile_type_id', profileType.id);
@@ -337,7 +329,7 @@ export function ProfileTypePermissionsDialog({
       // Audit
       await logPermissionAudit('update', {
         modules: permissionsToInsert.length,
-        critical: Object.values(criticalPerms).filter(v => v).length,
+        critical: 0,
         scopes: scopesToInsert,
         value_limits: valsToInsert.length,
         status_rules: statusRules.length,
@@ -356,11 +348,7 @@ export function ProfileTypePermissionsDialog({
 
   const isMasterType = ['master', 'admin', 'owner', 'administrador', 'tenant_owner'].includes(profileType.name);
 
-  const criticalGroups = CRITICAL_PERMISSIONS.reduce((acc, cp) => {
-    if (!acc[cp.group]) acc[cp.group] = [];
-    acc[cp.group].push(cp);
-    return acc;
-  }, {} as Record<string, typeof CRITICAL_PERMISSIONS>);
+  // criticalGroups removido — não há mais aba "Críticas".
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
