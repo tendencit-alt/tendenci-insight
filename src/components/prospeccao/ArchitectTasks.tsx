@@ -611,7 +611,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
                 />
                 {architectInfo?.name && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    📱 Arquiteto: {architectInfo.name}
+                    📱 Profissional Parceiro: {architectInfo.name}
                   </p>
                 )}
               </div>
