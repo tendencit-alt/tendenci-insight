@@ -129,12 +129,13 @@ const menuGroups: MenuGroup[] = [
     separator: true,
     items: [
       { title: "CRM & Pipeline", url: "/crm-comercial", icon: Target },
-      { title: "Pedidos", url: "/pedidos", icon: ShoppingCart },
+      { title: "Leads", url: "/leads", icon: Users },
       { title: "Orçamentos", url: "/propostas", icon: FileText, comingSoon: true },
-      { title: "Clientes", url: "/clientes", icon: Users },
+      { title: "Pedidos", url: "/pedidos", icon: ShoppingCart },
       { title: "Contratos", url: "/contratos", icon: Briefcase, comingSoon: true },
+      { title: "Clientes", url: "/clientes", icon: Users },
+      { title: "Catálogo de Produtos", url: "/catalogo", icon: BookOpen },
       { title: "Comissões", url: "/comissoes", icon: DollarSign, comingSoon: true },
-      { title: "Forecast Comercial", url: "/crm-comercial", icon: TrendingUp },
     ],
   },
   // ── OPERAÇÕES ──
