@@ -26,11 +26,16 @@ export function useProfileTemplates() {
   return useQuery({
     queryKey: ['profile_type_templates'],
     queryFn: async (): Promise<ProfileTypeTemplate[]> => {
-      const { data, error } = await supabase
-        .from('profile_type_templates')
-        .select('*')
-        .order('is_builtin', { ascending: false })
-        .order('name');
+      // Garante cópia local (por empresa) dos templates padrão
+      await supabase.rpc('seed_tenant_profile_templates' as any);
+
+      // Identifica o tenant do usuário para listar apenas os seus
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id' as any);
+
+      let q = supabase.from('profile_type_templates').select('*').order('name');
+      if (tenantId) q = q.eq('tenant_id', tenantId as any);
+
+      const { data, error } = await q;
       if (error) throw error;
       return (data || []) as ProfileTypeTemplate[];
     },
