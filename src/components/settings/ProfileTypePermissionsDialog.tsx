@@ -352,6 +352,23 @@ export function ProfileTypePermissionsDialog({
         if (error) throw error;
       }
 
+      // Validation: re-read and verify all 8 flags persisted correctly per module
+      const { data: verifyRows, error: verifyErr } = await supabase
+        .from('profile_type_permissions')
+        .select('*')
+        .eq('profile_type_id', profileType.id);
+      if (verifyErr) throw verifyErr;
+      const mismatches = validateModulePermissions(permissions, verifyRows);
+      if (mismatches.length > 0) {
+        console.error('[Permissions] Persistence mismatch:', mismatches);
+        await logPermissionAudit('validation_failed', { mismatches });
+        toast({
+          title: 'Aviso de validação',
+          description: `${mismatches.length} flag(s) divergente(s) após salvar. Verifique o console.`,
+          variant: 'destructive',
+        });
+      }
+
       // Permissões críticas removidas da UI — limpa registros antigos.
       await supabase.from('rbac_critical_permissions').delete().eq('profile_type_id', profileType.id);
 
