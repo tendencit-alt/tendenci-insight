@@ -314,8 +314,8 @@ export function ExecutiveKPIPanel({ filters }: Props) {
         {/* Risco */}
         <KpiBlock title="Risco Financeiro" icon={ShieldAlert} color="red">
           <KpiRow label="Ponto Equilíbrio" value={fmtCompact(kpis.pontoEquilibrio)} />
-          <KpiRow label="Receita > PE" value={kpis.pontoEquilibrio > 0 ? (kpis.receitaMes > kpis.pontoEquilibrio ? "Sim ✓" : "Não ✗") : "—"} positive={kpis.pontoEquilibrio > 0 && kpis.receitaMes > kpis.pontoEquilibrio} />
-          <KpiRow label="Cobertura Caixa" value={kpis.coberturaIdx == null ? "—" : `${kpis.coberturaIdx.toFixed(1)}x`} positive={kpis.coberturaIdx != null && kpis.coberturaIdx >= 1} />
+          <KpiRow label="Receita > PE" value={kpis.pontoEquilibrio > 0 ? (kpis.receitaMes > kpis.pontoEquilibrio ? "Sim ✓" : "Não ✗") : KPI_EMPTY} positive={kpis.pontoEquilibrio > 0 && kpis.receitaMes > kpis.pontoEquilibrio} />
+          <KpiRow label="Cobertura Caixa" value={formatKpiNumber(kpis.coberturaIdx, "x", { decimals: 1 })} positive={isKpiValid(kpis.coberturaIdx) && kpis.coberturaIdx >= 1} />
           <KpiRow label="Dep. Recorrente" value={`${kpis.pctDependenciaRecorrente.toFixed(0)}%`} />
         </KpiBlock>
       </div>
