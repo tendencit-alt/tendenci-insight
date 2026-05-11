@@ -169,10 +169,16 @@ export function ProfileTypesManager() {
               Gerencie os tipos de perfil e suas permissões padrão
             </CardDescription>
           </div>
-          <Button onClick={() => { setEditingType(null); setCreateDialogOpen(true); }} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Novo Tipo
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setTemplatesManagerOpen(true)} className="gap-2">
+              <Sparkles className="w-4 h-4" />
+              Templates
+            </Button>
+            <Button onClick={() => { setEditingType(null); setCreateDialogOpen(true); }} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Novo Tipo
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
