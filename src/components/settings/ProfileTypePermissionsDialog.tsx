@@ -141,7 +141,7 @@ export function ProfileTypePermissionsDialog({
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState('modules');
   const [permissions, setPermissions] = useState<Record<string, ModulePermission>>({});
-  const [criticalPerms, setCriticalPerms] = useState<Record<string, boolean>>({});
+  // criticalPerms state removido — críticas folded em Editar/Excluir
   const [segregationRules, setSegregationRules] = useState<{ id?: string; blocked_action: string; blocked_module: string; reason: string | null; active: boolean }[]>([]);
   const [scopes, setScopes] = useState<Record<string, ScopeRestriction>>({});
   const [valueLimits, setValueLimits] = useState<Record<string, ValueLimit>>({});
@@ -212,17 +212,21 @@ export function ProfileTypePermissionsDialog({
     }
   };
 
-  const handlePermissionChange = (module: string, key: string, value: boolean) => {
-    setPermissions(prev => ({ ...prev, [module]: { ...prev[module], [key]: value } }));
-  };
+  const getColumnFlags = (colKey: string): (keyof ModulePermission)[] =>
+    PERMISSION_COLUMNS.find(c => c.key === colKey)?.flags as (keyof ModulePermission)[] ?? [colKey as keyof ModulePermission];
 
-  const handleCriticalChange = (key: string, value: boolean) => {
-    setCriticalPerms(prev => ({ ...prev, [key]: value }));
+  const handleColumnChange = (module: string, colKey: string, value: boolean) => {
+    const flags = getColumnFlags(colKey);
+    setPermissions(prev => {
+      const next = { ...prev[module] };
+      flags.forEach(f => { next[f] = value; });
+      return { ...prev, [module]: next };
+    });
   };
 
   const handleSelectAll = () => {
     const allChecked = ALL_MODULES.every(m =>
-      PERMISSION_COLUMNS.every(col => permissions[m]?.[col.key as keyof ModulePermission])
+      PERMISSION_COLUMNS.every(col => col.flags.every(f => permissions[m]?.[f]))
     );
     const newPerms = { ...permissions };
     ALL_MODULES.forEach(module => {
@@ -234,9 +238,14 @@ export function ProfileTypePermissionsDialog({
   };
 
   const handleSelectColumn = (colKey: string) => {
-    const allChecked = ALL_MODULES.every(m => permissions[m]?.[colKey as keyof ModulePermission]);
+    const flags = getColumnFlags(colKey);
+    const allChecked = ALL_MODULES.every(m => flags.every(f => permissions[m]?.[f]));
     const newPerms = { ...permissions };
-    ALL_MODULES.forEach(module => { newPerms[module] = { ...newPerms[module], [colKey]: !allChecked }; });
+    ALL_MODULES.forEach(module => {
+      const next = { ...newPerms[module] };
+      flags.forEach(f => { next[f] = !allChecked; });
+      newPerms[module] = next;
+    });
     setPermissions(newPerms);
   };
 
