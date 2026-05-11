@@ -80,7 +80,7 @@ export function useActiveTenant() {
         setSwitching(false);
         return false;
       }
-      // Notify other tabs BEFORE reloading this one.
+      // Notify other tabs that the active tenant changed.
       try {
         const payload = { tenantId: targetTenantId, ts: Date.now() };
         if (typeof BroadcastChannel !== "undefined") {
@@ -93,17 +93,21 @@ export function useActiveTenant() {
       } catch {
         /* noop */
       }
-      // Hard reload to flush all cached queries / RLS-scoped data.
-      window.location.reload();
+      // Soft refresh: refetch profile (carries new current_tenant_id) and
+      // invalidate every cached query so RLS-scoped data is re-pulled.
+      await refreshProfile();
+      await queryClient.invalidateQueries();
+      toast.success("Empresa ativa atualizada");
       return true;
     } catch (err: any) {
       toast.error("Não foi possível trocar de empresa.", {
         description: err?.message,
       });
-      setSwitching(false);
       return false;
+    } finally {
+      setSwitching(false);
     }
-  }, []);
+  }, [refreshProfile, queryClient]);
 
   // Listen for tenant switches triggered in other tabs and reload to re-fetch
   // everything under the new RLS context.
