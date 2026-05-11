@@ -284,13 +284,30 @@ export function ProfileTypePermissionsDialog({
     return acc;
   }, {});
 
-  const handleResetToDefaults = () => {
+  const handleResetToDefaults = async () => {
     const baseline = getRoleBaseline(profileType.name);
+    const snapshotDiff = resetDiff.map(d => ({ ...d })); // capture before state change
+    const modulesAffected = Object.keys(resetDiffByModule);
+    const timestamp = new Date().toISOString();
+
+    // Audit BEFORE save: records intent to reset (pending save)
+    await logPermissionAudit('reset_to_defaults', {
+      role_name: profileType.name,
+      role_display_name: profileType.display_name,
+      user_id: user?.id ?? null,
+      user_email: user?.email ?? null,
+      timestamp,
+      pending_save: true,
+      modules_affected: modulesAffected,
+      flags_changed: snapshotDiff.length,
+      diff: snapshotDiff,
+    });
+
     setPermissions(baseline);
     setResetConfirmOpen(false);
     toast({
-      title: 'Padrões aplicados',
-      description: `${resetDiff.length} alteração(ões) em ${Object.keys(resetDiffByModule).length} módulo(s). Clique em Salvar para confirmar.`,
+      title: 'Padrões aplicados (não salvos)',
+      description: `${snapshotDiff.length} alteração(ões) em ${modulesAffected.length} módulo(s) registradas em auditoria. Clique em Salvar para confirmar.`,
     });
   };
 
