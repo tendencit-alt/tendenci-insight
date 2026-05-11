@@ -410,6 +410,7 @@ export function ProfileTypePermissionsDialog({
             {/* MODULES TAB */}
             <TabsContent value="modules" className="mt-3">
               <ScrollArea className="max-h-[50vh] pr-4">
+                <TooltipProvider delayDuration={200}>
                 <div className="space-y-1">
                   <div className="grid gap-2 pb-2 border-b text-[11px] font-semibold text-muted-foreground uppercase tracking-wide"
                     style={{ gridTemplateColumns: '1.4fr repeat(4, 90px)' }}>
@@ -418,15 +419,30 @@ export function ProfileTypePermissionsDialog({
                         className="h-auto p-0 text-[11px] hover:text-foreground uppercase">Módulo</Button>
                     </div>
                     {PERMISSION_COLUMNS.map(col => (
-                      <div key={col.key} className="text-center flex flex-col items-center gap-0.5">
-                        <Button type="button" variant="ghost" size="sm"
-                          onClick={() => handleSelectColumn(col.key)}
-                          className="h-auto p-0 text-[11px] hover:text-foreground"
-                          title={`Marcar/desmarcar coluna "${col.label}" em todos os módulos`}>{col.label}</Button>
-                        <span className="text-[9px] font-normal normal-case tracking-normal text-muted-foreground/70 leading-tight">
-                          {col.description}
-                        </span>
-                      </div>
+                      <Tooltip key={col.key}>
+                        <TooltipTrigger asChild>
+                          <div className="text-center flex flex-col items-center gap-0.5 cursor-help">
+                            <Button type="button" variant="ghost" size="sm"
+                              onClick={() => handleSelectColumn(col.key)}
+                              className="h-auto p-0 text-[11px] hover:text-foreground inline-flex items-center gap-1">
+                              {col.label}
+                              <Info className="h-3 w-3 opacity-60" />
+                            </Button>
+                            <span className="text-[9px] font-normal normal-case tracking-normal text-muted-foreground/70 leading-tight">
+                              {col.description}
+                            </span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <p className="font-semibold mb-1">{col.label} inclui:</p>
+                          <ul className="text-xs space-y-0.5">
+                            {col.flags.map(f => (
+                              <li key={f}>• {FLAG_LABELS[f] || f} <span className="opacity-60">({f})</span></li>
+                            ))}
+                          </ul>
+                          <p className="text-[10px] opacity-70 mt-2">Clique no rótulo para marcar/desmarcar a coluna em todos os módulos.</p>
+                        </TooltipContent>
+                      </Tooltip>
                     ))}
                   </div>
                   {ALL_MODULES.map(module => (
@@ -435,18 +451,28 @@ export function ProfileTypePermissionsDialog({
                       <Label className="font-medium text-sm">{MODULE_LABELS[module] || module}</Label>
                       {PERMISSION_COLUMNS.map(col => {
                         const checked = col.flags.every(f => permissions[module]?.[f]);
+                        const tooltipText = col.flags.map(f => FLAG_LABELS[f] || f).join(' + ');
                         return (
-                          <div key={col.key} className="flex justify-center">
-                            <Checkbox
-                              checked={checked}
-                              onCheckedChange={(v) => handleColumnChange(module, col.key, !!v)}
-                            />
-                          </div>
+                          <Tooltip key={col.key}>
+                            <TooltipTrigger asChild>
+                              <div className="flex justify-center">
+                                <Checkbox
+                                  checked={checked}
+                                  onCheckedChange={(v) => handleColumnChange(module, col.key, !!v)}
+                                />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs">
+                              <p className="font-semibold text-xs mb-1">{col.label}</p>
+                              <p className="text-xs">{tooltipText}</p>
+                            </TooltipContent>
+                          </Tooltip>
                         );
                       })}
                     </div>
                   ))}
                 </div>
+                </TooltipProvider>
               </ScrollArea>
             </TabsContent>
 
