@@ -75,25 +75,34 @@ const MODULE_LABELS: Record<string, string> = {
 
 // Simplificado: 4 permissões essenciais por módulo. As permissões avançadas
 // (Aprovar, Conciliar, Exportar, Admin) são gerenciadas na aba "Críticas".
+// 4 colunas de permissão. Cada coluna controla um conjunto de flags da DB
+// (incluindo permissões avançadas/críticas), simplificando a UX para os admins.
 const PERMISSION_COLUMNS = [
-  { key: 'can_view', label: 'Ver', description: 'Apenas leitura' },
-  { key: 'can_create', label: 'Criar', description: 'Adicionar novos' },
-  { key: 'can_edit', label: 'Editar', description: 'Alterar existentes' },
-  { key: 'can_delete', label: 'Excluir', description: 'Remover registros' },
+  {
+    key: 'can_view',
+    label: 'Ver',
+    description: 'Leitura e exportação',
+    flags: ['can_view', 'can_export'] as (keyof ModulePermission)[],
+  },
+  {
+    key: 'can_create',
+    label: 'Criar',
+    description: 'Adicionar novos',
+    flags: ['can_create'] as (keyof ModulePermission)[],
+  },
+  {
+    key: 'can_edit',
+    label: 'Editar',
+    description: 'Alterar / aprovar / conciliar',
+    flags: ['can_edit', 'can_approve', 'can_conciliate'] as (keyof ModulePermission)[],
+  },
+  {
+    key: 'can_delete',
+    label: 'Excluir',
+    description: 'Remover e ações críticas',
+    flags: ['can_delete', 'can_admin'] as (keyof ModulePermission)[],
+  },
 ] as const;
-
-const CRITICAL_PERMISSIONS = [
-  { key: 'editar_plano_contas', label: 'Editar Plano de Contas', group: 'Estrutura' },
-  { key: 'excluir_lancamento_conciliado', label: 'Excluir Lançamento Conciliado', group: 'Financeiro' },
-  { key: 'editar_lancamento_conciliado', label: 'Editar Lançamento Conciliado', group: 'Financeiro' },
-  { key: 'alterar_regra_automatica', label: 'Alterar Regra Automática', group: 'Automação' },
-  { key: 'alterar_centro_custo_padrao', label: 'Alterar Centro de Custo Padrão', group: 'Estrutura' },
-  { key: 'alterar_meta_global', label: 'Alterar Meta Global', group: 'Planejamento' },
-  { key: 'cancelar_pedido_faturado', label: 'Cancelar Pedido Já Faturado', group: 'Comercial' },
-  { key: 'reabrir_pedido_encerrado', label: 'Reabrir Pedido Encerrado', group: 'Comercial' },
-  { key: 'editar_principal_emprestimo', label: 'Editar Principal de Empréstimo', group: 'Financeiro' },
-  { key: 'excluir_log', label: 'Excluir Log de Auditoria', group: 'Auditoria' },
-];
 
 const SCOPE_TYPES = [
   { key: 'empresa', label: 'Empresa' },
@@ -132,7 +141,7 @@ export function ProfileTypePermissionsDialog({
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState('modules');
   const [permissions, setPermissions] = useState<Record<string, ModulePermission>>({});
-  const [criticalPerms, setCriticalPerms] = useState<Record<string, boolean>>({});
+  // criticalPerms state removido — críticas folded em Editar/Excluir
   const [segregationRules, setSegregationRules] = useState<{ id?: string; blocked_action: string; blocked_module: string; reason: string | null; active: boolean }[]>([]);
   const [scopes, setScopes] = useState<Record<string, ScopeRestriction>>({});
   const [valueLimits, setValueLimits] = useState<Record<string, ValueLimit>>({});
@@ -167,13 +176,7 @@ export function ProfileTypePermissionsDialog({
       });
       setPermissions(permMap);
 
-      // Critical
-      const critMap: Record<string, boolean> = {};
-      CRITICAL_PERMISSIONS.forEach(cp => {
-        const existing = critRes.data?.find((c: any) => c.permission_key === cp.key);
-        critMap[cp.key] = existing?.allowed || false;
-      });
-      setCriticalPerms(critMap);
+      // Critical permissions removidas da UI — não são mais carregadas/exibidas.
       setSegregationRules((segRes.data || []) as any[]);
 
       // Scopes
@@ -209,17 +212,21 @@ export function ProfileTypePermissionsDialog({
     }
   };
 
-  const handlePermissionChange = (module: string, key: string, value: boolean) => {
-    setPermissions(prev => ({ ...prev, [module]: { ...prev[module], [key]: value } }));
-  };
+  const getColumnFlags = (colKey: string): (keyof ModulePermission)[] =>
+    PERMISSION_COLUMNS.find(c => c.key === colKey)?.flags as (keyof ModulePermission)[] ?? [colKey as keyof ModulePermission];
 
-  const handleCriticalChange = (key: string, value: boolean) => {
-    setCriticalPerms(prev => ({ ...prev, [key]: value }));
+  const handleColumnChange = (module: string, colKey: string, value: boolean) => {
+    const flags = getColumnFlags(colKey);
+    setPermissions(prev => {
+      const next = { ...prev[module] };
+      flags.forEach(f => { next[f] = value; });
+      return { ...prev, [module]: next };
+    });
   };
 
   const handleSelectAll = () => {
     const allChecked = ALL_MODULES.every(m =>
-      PERMISSION_COLUMNS.every(col => permissions[m]?.[col.key as keyof ModulePermission])
+      PERMISSION_COLUMNS.every(col => col.flags.every(f => permissions[m]?.[f]))
     );
     const newPerms = { ...permissions };
     ALL_MODULES.forEach(module => {
@@ -231,9 +238,14 @@ export function ProfileTypePermissionsDialog({
   };
 
   const handleSelectColumn = (colKey: string) => {
-    const allChecked = ALL_MODULES.every(m => permissions[m]?.[colKey as keyof ModulePermission]);
+    const flags = getColumnFlags(colKey);
+    const allChecked = ALL_MODULES.every(m => flags.every(f => permissions[m]?.[f]));
     const newPerms = { ...permissions };
-    ALL_MODULES.forEach(module => { newPerms[module] = { ...newPerms[module], [colKey]: !allChecked }; });
+    ALL_MODULES.forEach(module => {
+      const next = { ...newPerms[module] };
+      flags.forEach(f => { next[f] = !allChecked; });
+      newPerms[module] = next;
+    });
     setPermissions(newPerms);
   };
 
@@ -288,16 +300,8 @@ export function ProfileTypePermissionsDialog({
         if (error) throw error;
       }
 
-      // Save critical permissions
+      // Permissões críticas removidas da UI — limpa registros antigos.
       await supabase.from('rbac_critical_permissions').delete().eq('profile_type_id', profileType.id);
-      const critToInsert = CRITICAL_PERMISSIONS.map(cp => ({
-        profile_type_id: profileType.id, permission_key: cp.key, permission_label: cp.label,
-        permission_group: cp.group, allowed: criticalPerms[cp.key] || false,
-      }));
-      if (critToInsert.length > 0) {
-        const { error } = await supabase.from('rbac_critical_permissions').insert(critToInsert);
-        if (error) throw error;
-      }
 
       // Save scope restrictions
       await (supabase.from('rbac_scope_restrictions' as any) as any).delete().eq('profile_type_id', profileType.id);
@@ -334,7 +338,7 @@ export function ProfileTypePermissionsDialog({
       // Audit
       await logPermissionAudit('update', {
         modules: permissionsToInsert.length,
-        critical: Object.values(criticalPerms).filter(v => v).length,
+        critical: 0,
         scopes: scopesToInsert,
         value_limits: valsToInsert.length,
         status_rules: statusRules.length,
@@ -353,11 +357,7 @@ export function ProfileTypePermissionsDialog({
 
   const isMasterType = ['master', 'admin', 'owner', 'administrador', 'tenant_owner'].includes(profileType.name);
 
-  const criticalGroups = CRITICAL_PERMISSIONS.reduce((acc, cp) => {
-    if (!acc[cp.group]) acc[cp.group] = [];
-    acc[cp.group].push(cp);
-    return acc;
-  }, {} as Record<string, typeof CRITICAL_PERMISSIONS>);
+  // criticalGroups removido — não há mais aba "Críticas".
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -387,9 +387,8 @@ export function ProfileTypePermissionsDialog({
           </div>
         ) : (
           <Tabs value={tab} onValueChange={setTab}>
-            <TabsList className="grid grid-cols-6 w-full">
+            <TabsList className="grid grid-cols-5 w-full">
               <TabsTrigger value="modules" className="gap-1 text-xs"><Shield className="h-3.5 w-3.5" />Módulos</TabsTrigger>
-              <TabsTrigger value="critical" className="gap-1 text-xs"><ShieldAlert className="h-3.5 w-3.5" />Críticas</TabsTrigger>
               <TabsTrigger value="scopes" className="gap-1 text-xs"><Target className="h-3.5 w-3.5" />Escopos</TabsTrigger>
               <TabsTrigger value="values" className="gap-1 text-xs"><DollarSign className="h-3.5 w-3.5" />Valores</TabsTrigger>
               <TabsTrigger value="status" className="gap-1 text-xs"><FileCheck className="h-3.5 w-3.5" />Status</TabsTrigger>
@@ -422,44 +421,24 @@ export function ProfileTypePermissionsDialog({
                     <div key={module} className="grid gap-2 py-2 border-b border-border/50 items-center"
                       style={{ gridTemplateColumns: '1.4fr repeat(4, 90px)' }}>
                       <Label className="font-medium text-sm">{MODULE_LABELS[module] || module}</Label>
-                      {PERMISSION_COLUMNS.map(col => (
-                        <div key={col.key} className="flex justify-center">
-                          <Checkbox
-                            checked={permissions[module]?.[col.key as keyof ModulePermission] || false}
-                            onCheckedChange={(checked) => handlePermissionChange(module, col.key, !!checked)}
-                          />
-                        </div>
-                      ))}
+                      {PERMISSION_COLUMNS.map(col => {
+                        const checked = col.flags.every(f => permissions[module]?.[f]);
+                        return (
+                          <div key={col.key} className="flex justify-center">
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={(v) => handleColumnChange(module, col.key, !!v)}
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   ))}
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-3 px-1">
-                  Permissões avançadas (Aprovar, Conciliar, Exportar, Admin) ficam na aba <strong>Críticas</strong>.
-                </p>
               </ScrollArea>
             </TabsContent>
 
-            {/* CRITICAL TAB */}
-            <TabsContent value="critical" className="mt-3">
-              <ScrollArea className="max-h-[50vh] pr-4">
-                <div className="space-y-4">
-                  {Object.entries(criticalGroups).map(([group, perms]) => (
-                    <div key={group}>
-                      <Badge variant="outline" className="mb-2 text-[10px]">{group}</Badge>
-                      <div className="space-y-1">
-                        {perms.map(cp => (
-                          <div key={cp.key} className="flex items-center justify-between py-2 px-3 rounded-lg border border-border/50 hover:bg-accent/30">
-                            <Label className="text-sm font-medium cursor-pointer">{cp.label}</Label>
-                            <Checkbox checked={criticalPerms[cp.key] || false}
-                              onCheckedChange={(checked) => handleCriticalChange(cp.key, !!checked)} />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </TabsContent>
+            {/* CRITICAL TAB removida — críticas folded em Editar/Excluir */}
 
             {/* SCOPES TAB */}
             <TabsContent value="scopes" className="mt-3">
