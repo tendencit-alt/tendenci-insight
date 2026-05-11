@@ -792,13 +792,45 @@ export function ProfileTypePermissionsDialog({
           </Tabs>
         )}
 
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={saving || loading}>
-            {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Salvar Permissões
+        <DialogFooter className="sm:justify-between gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setResetConfirmOpen(true)}
+            disabled={saving || loading}
+            className="gap-2"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Restaurar padrões
           </Button>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
+            <Button onClick={handleSave} disabled={saving || loading}>
+              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Salvar Permissões
+            </Button>
+          </div>
         </DialogFooter>
+
+        <AlertDialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Restaurar permissões padrão?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Isso substituirá todas as permissões de módulo deste perfil pela
+                baseline recomendada para <strong>{profileType.display_name}</strong>.
+                Escopos, limites de valor e regras de status não serão alterados.
+                As mudanças só serão persistidas após clicar em <strong>Salvar Permissões</strong>.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleResetToDefaults}>
+                Aplicar padrões
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
