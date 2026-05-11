@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { formatKpiNumber, isKpiValid, KPI_EMPTY } from "@/lib/formatKpi";
 
 interface Props {
   filters: FinanceiroFiltersState;
@@ -262,7 +263,7 @@ export function ExecutiveKPIPanel({ filters }: Props) {
     { label: "Saldo Caixa", value: fmtCompact(kpis.saldoCaixa), trend: kpis.saldoCaixa >= 0 ? "up" : "down", color: kpis.saldoCaixa >= 0 ? "green" : "red" },
     { label: "Saldo 90 dias", value: fmtCompact(kpis.saldo90d), trend: kpis.saldo90d >= 0 ? "up" : "down", color: kpis.saldo90d >= 0 ? "blue" : "red" },
     { label: "Burn Rate", value: fmtCompact(kpis.burnRate), trend: "stable", color: "amber" },
-    { label: "Runway", value: kpis.runway > 24 ? ">24 meses" : `${kpis.runway} meses`, trend: kpis.runway > 6 ? "up" : "down", color: kpis.runway > 6 ? "green" : "red" },
+    { label: "Runway", value: formatKpiNumber(kpis.runway, " meses", { cap: 24 }), trend: isKpiValid(kpis.runway) && kpis.runway > 6 ? "up" : "down", color: isKpiValid(kpis.runway) && kpis.runway > 6 ? "green" : "red" },
     { label: "Ponto Equilíbrio", value: fmtCompact(kpis.pontoEquilibrio), trend: kpis.receitaMes > kpis.pontoEquilibrio ? "up" : "down", color: kpis.receitaMes > kpis.pontoEquilibrio ? "green" : "red" },
   ];
 
@@ -301,7 +302,7 @@ export function ExecutiveKPIPanel({ filters }: Props) {
           <KpiRow label="Proj. 90 dias" value={fmtCompact(kpis.saldo90d)} positive={kpis.saldo90d >= 0} />
           <KpiRow label="Proj. 180 dias" value={fmtCompact(kpis.saldo180d)} positive={kpis.saldo180d >= 0} />
           <KpiRow label="Burn Rate" value={fmt(kpis.burnRate)} />
-          <KpiRow label="Runway" value={kpis.runway == null ? "—" : kpis.runway > 24 ? ">24m" : `${kpis.runway}m`} positive={kpis.runway != null && kpis.runway > 6} />
+          <KpiRow label="Runway" value={formatKpiNumber(kpis.runway, "m", { cap: 24 })} positive={isKpiValid(kpis.runway) && kpis.runway > 6} />
         </KpiBlock>
 
         {/* Eficiência */}
@@ -313,8 +314,8 @@ export function ExecutiveKPIPanel({ filters }: Props) {
         {/* Risco */}
         <KpiBlock title="Risco Financeiro" icon={ShieldAlert} color="red">
           <KpiRow label="Ponto Equilíbrio" value={fmtCompact(kpis.pontoEquilibrio)} />
-          <KpiRow label="Receita > PE" value={kpis.pontoEquilibrio > 0 ? (kpis.receitaMes > kpis.pontoEquilibrio ? "Sim ✓" : "Não ✗") : "—"} positive={kpis.pontoEquilibrio > 0 && kpis.receitaMes > kpis.pontoEquilibrio} />
-          <KpiRow label="Cobertura Caixa" value={kpis.coberturaIdx == null ? "—" : `${kpis.coberturaIdx.toFixed(1)}x`} positive={kpis.coberturaIdx != null && kpis.coberturaIdx >= 1} />
+          <KpiRow label="Receita > PE" value={kpis.pontoEquilibrio > 0 ? (kpis.receitaMes > kpis.pontoEquilibrio ? "Sim ✓" : "Não ✗") : KPI_EMPTY} positive={kpis.pontoEquilibrio > 0 && kpis.receitaMes > kpis.pontoEquilibrio} />
+          <KpiRow label="Cobertura Caixa" value={formatKpiNumber(kpis.coberturaIdx, "x", { decimals: 1 })} positive={isKpiValid(kpis.coberturaIdx) && kpis.coberturaIdx >= 1} />
           <KpiRow label="Dep. Recorrente" value={`${kpis.pctDependenciaRecorrente.toFixed(0)}%`} />
         </KpiBlock>
       </div>
