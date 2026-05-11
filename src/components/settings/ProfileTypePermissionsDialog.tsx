@@ -872,6 +872,20 @@ export function ProfileTypePermissionsDialog({
               type="button"
               variant="outline"
               onClick={() => {
+                setSelectedTemplateId('');
+                setApplyTemplateOpen(true);
+              }}
+              disabled={saving || loading}
+              className="gap-2"
+              title="Aplicar um template existente sobrescrevendo as permissões atuais"
+            >
+              <LayoutTemplate className="h-4 w-4" />
+              Aplicar template
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
                 setTplName(`${profileType.display_name} (template)`);
                 setTplDesc(`Baseado nas permissões de "${profileType.display_name}"`);
                 setTplColor('#7C3AED');
