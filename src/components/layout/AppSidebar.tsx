@@ -38,6 +38,7 @@ interface MenuItem {
   url: string;
   icon: any;
   comingSoon?: boolean;
+  module?: string;
 }
 
 interface MenuGroup {
@@ -128,14 +129,14 @@ const menuGroups: MenuGroup[] = [
     icon: ShoppingCart,
     separator: true,
     items: [
-      { title: "CRM & Pipeline", url: "/crm-comercial", icon: Target },
-      { title: "Leads", url: "/leads", icon: Users },
-      { title: "Orçamentos", url: "/propostas", icon: FileText, comingSoon: true },
-      { title: "Pedidos", url: "/pedidos", icon: ShoppingCart },
-      { title: "Contratos", url: "/contratos", icon: Briefcase, comingSoon: true },
-      { title: "Clientes", url: "/clientes", icon: Users },
-      { title: "Catálogo de Produtos", url: "/catalogo", icon: BookOpen },
-      { title: "Comissões", url: "/comissoes", icon: DollarSign, comingSoon: true },
+      { title: "CRM & Pipeline", url: "/crm-comercial", icon: Target, module: "comercial" },
+      { title: "Leads", url: "/leads", icon: Users, module: "comercial" },
+      { title: "Orçamentos", url: "/propostas", icon: FileText, comingSoon: true, module: "comercial" },
+      { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, module: "pedidos" },
+      { title: "Contratos", url: "/contratos", icon: Briefcase, comingSoon: true, module: "comercial" },
+      { title: "Clientes", url: "/clientes", icon: Users, module: "comercial" },
+      { title: "Catálogo de Produtos", url: "/catalogo", icon: BookOpen, module: "comercial" },
+      { title: "Comissões", url: "/comissoes", icon: DollarSign, comingSoon: true, module: "comercial" },
     ],
   },
   // ── OPERAÇÕES ──
