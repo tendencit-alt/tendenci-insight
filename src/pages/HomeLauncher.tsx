@@ -20,6 +20,7 @@ import {
   Activity, Zap, Clock, CheckCircle2,
   Brain, Repeat, ArrowRight,
   Users, UserCheck, MessageCircle, Eye, EyeOff,
+  UserPlus, ShoppingCart, FileText,
 } from "lucide-react";
 import {
   useActionItems,
@@ -36,6 +37,7 @@ import { useActionLayer } from "@/hooks/useActionLayer";
 import { useAutomationLayer } from "@/hooks/useAutomationLayer";
 import { useCollaborationLayer, type CollabFilter } from "@/hooks/useCollaborationLayer";
 import { useLearningLayer } from "@/hooks/useLearningLayer";
+import { useAttentionLayer } from "@/hooks/useAttentionLayer";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MiniActivityFeed } from "@/components/activity/ActivityFeed";
 import { NotificationSummaryWidget } from "@/components/notifications/NotificationSummaryWidget";
@@ -142,6 +144,16 @@ export default function HomeLauncher() {
   const { data: collab } = useCollaborationLayer(collabFilter);
   const [showCollabTimeline, setShowCollabTimeline] = useState(false);
   const learning = useLearningLayer();
+  const { getItemBadge } = useAttentionLayer();
+
+  const commercialInbox = useMemo(() => {
+    const items = [
+      { key: "leads", label: "Leads novos", route: "/leads", icon: UserPlus, badge: getItemBadge("/leads") },
+      { key: "orders", label: "Pedidos em aberto", route: "/pedidos", icon: ShoppingCart, badge: getItemBadge("/pedidos") },
+      { key: "proposals", label: "Propostas aguardando", route: "/propostas", icon: FileText, badge: getItemBadge("/propostas") },
+    ];
+    return items;
+  }, [getItemBadge]);
 
   const searchResults = useMemo(() => {
     if (!search.trim()) return [];
