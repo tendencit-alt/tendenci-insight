@@ -398,11 +398,71 @@ export function CreateProfileTypeDialog({
                   );
                 })}
               </div>
-              {selectedTemplate !== 'blank' && (
-                <Badge variant="secondary" className="mt-1 text-[10px]">
-                  Permissões serão aplicadas automaticamente ao criar
-                </Badge>
-              )}
+              {selectedTemplate !== 'blank' && (() => {
+                const tpl = TEMPLATES.find(t => t.id === selectedTemplate);
+                if (!tpl) return null;
+                const perms = tpl.buildPermissions();
+                const FLAG_LABELS: Record<keyof FlagSet, string> = {
+                  can_view: 'Ver', can_create: 'Criar', can_edit: 'Editar', can_delete: 'Excluir',
+                  can_approve: 'Aprovar', can_conciliate: 'Conciliar', can_export: 'Exportar', can_admin: 'Admin',
+                };
+                const MODULE_LABELS: Record<string, string> = {
+                  dashboard_executivo: 'Dashboard Executivo', comercial: 'Comercial', operacional: 'Operacional',
+                  financeiro: 'Financeiro', controladoria: 'Controladoria', planejamento: 'Planejamento',
+                  cadastros: 'Cadastros', relatorios_bi: 'Relatórios & BI', configuracoes: 'Configurações',
+                };
+                const rows = ALL_MODULES
+                  .map(m => {
+                    const granted = (Object.keys(perms[m]) as (keyof FlagSet)[]).filter(f => perms[m][f]);
+                    return { module: m, granted };
+                  })
+                  .filter(r => r.granted.length > 0);
+                const totalGranted = rows.reduce((s, r) => s + r.granted.length, 0);
+                return (
+                  <div className="mt-3 rounded-lg border bg-muted/30 p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-xs font-semibold">
+                          Pré-visualização das permissões
+                        </span>
+                      </div>
+                      <Badge variant="secondary" className="text-[10px]">
+                        {totalGranted} permissão(ões) em {rows.length}/{ALL_MODULES.length} módulo(s)
+                      </Badge>
+                    </div>
+                    {rows.length === 0 ? (
+                      <p className="text-[11px] text-muted-foreground italic">
+                        Este template não concede nenhuma permissão.
+                      </p>
+                    ) : (
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                        {rows.map(({ module, granted }) => (
+                          <div key={module} className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                            <span className="font-medium text-foreground min-w-[140px]">
+                              {MODULE_LABELS[module] || module}
+                            </span>
+                            <div className="flex flex-wrap gap-1">
+                              {granted.map(f => (
+                                <Badge
+                                  key={f}
+                                  variant="outline"
+                                  className="text-[9px] py-0 px-1.5 h-4 bg-primary/5 border-primary/30 text-primary"
+                                >
+                                  {FLAG_LABELS[f]}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-[10px] text-muted-foreground pt-1 border-t border-border/50">
+                      Você poderá ajustar essas permissões depois em "Permissões".
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
