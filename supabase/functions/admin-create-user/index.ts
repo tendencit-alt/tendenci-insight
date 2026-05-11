@@ -36,16 +36,18 @@ serve(async (req) => {
       throw new Error('Usuário não autenticado');
     }
 
-    // Verificar se é admin
+    // Verificar se é admin/owner
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('role')
+      .select('role, is_owner, tenant_id')
       .eq('id', user.id)
       .single();
 
-    if (profileError || profile?.role !== 'admin') {
+    if (profileError || !(profile?.is_owner || ['admin', 'owner', 'tenant_owner'].includes(profile?.role))) {
       throw new Error('Acesso negado. Apenas administradores podem criar usuários.');
     }
+
+    const callerTenantId = profile?.tenant_id ?? null;
 
     // Criar novo usuário
     const { email, password, full_name, username, role, profile_type_id } = await req.json();
