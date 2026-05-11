@@ -407,11 +407,14 @@ export function ProfileTypePermissionsDialog({
                         className="h-auto p-0 text-[11px] hover:text-foreground uppercase">Módulo</Button>
                     </div>
                     {PERMISSION_COLUMNS.map(col => (
-                      <div key={col.key} className="text-center">
+                      <div key={col.key} className="text-center flex flex-col items-center gap-0.5">
                         <Button type="button" variant="ghost" size="sm"
                           onClick={() => handleSelectColumn(col.key)}
                           className="h-auto p-0 text-[11px] hover:text-foreground"
-                          title={col.description}>{col.label}</Button>
+                          title={`Marcar/desmarcar coluna "${col.label}" em todos os módulos`}>{col.label}</Button>
+                        <span className="text-[9px] font-normal normal-case tracking-normal text-muted-foreground/70 leading-tight">
+                          {col.description}
+                        </span>
                       </div>
                     ))}
                   </div>
