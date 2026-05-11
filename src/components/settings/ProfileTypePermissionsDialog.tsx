@@ -378,9 +378,8 @@ export function ProfileTypePermissionsDialog({
           </div>
         ) : (
           <Tabs value={tab} onValueChange={setTab}>
-            <TabsList className="grid grid-cols-6 w-full">
+            <TabsList className="grid grid-cols-5 w-full">
               <TabsTrigger value="modules" className="gap-1 text-xs"><Shield className="h-3.5 w-3.5" />Módulos</TabsTrigger>
-              <TabsTrigger value="critical" className="gap-1 text-xs"><ShieldAlert className="h-3.5 w-3.5" />Críticas</TabsTrigger>
               <TabsTrigger value="scopes" className="gap-1 text-xs"><Target className="h-3.5 w-3.5" />Escopos</TabsTrigger>
               <TabsTrigger value="values" className="gap-1 text-xs"><DollarSign className="h-3.5 w-3.5" />Valores</TabsTrigger>
               <TabsTrigger value="status" className="gap-1 text-xs"><FileCheck className="h-3.5 w-3.5" />Status</TabsTrigger>
@@ -413,44 +412,29 @@ export function ProfileTypePermissionsDialog({
                     <div key={module} className="grid gap-2 py-2 border-b border-border/50 items-center"
                       style={{ gridTemplateColumns: '1.4fr repeat(4, 90px)' }}>
                       <Label className="font-medium text-sm">{MODULE_LABELS[module] || module}</Label>
-                      {PERMISSION_COLUMNS.map(col => (
-                        <div key={col.key} className="flex justify-center">
-                          <Checkbox
-                            checked={permissions[module]?.[col.key as keyof ModulePermission] || false}
-                            onCheckedChange={(checked) => handlePermissionChange(module, col.key, !!checked)}
-                          />
-                        </div>
-                      ))}
+                      {PERMISSION_COLUMNS.map(col => {
+                        const checked = col.flags.every(f => permissions[module]?.[f]);
+                        return (
+                          <div key={col.key} className="flex justify-center">
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={(v) => handleColumnChange(module, col.key, !!v)}
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   ))}
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-3 px-1">
-                  Permissões avançadas (Aprovar, Conciliar, Exportar, Admin) ficam na aba <strong>Críticas</strong>.
-                </p>
               </ScrollArea>
             </TabsContent>
 
-            {/* CRITICAL TAB */}
-            <TabsContent value="critical" className="mt-3">
-              <ScrollArea className="max-h-[50vh] pr-4">
-                <div className="space-y-4">
-                  {Object.entries(criticalGroups).map(([group, perms]) => (
-                    <div key={group}>
-                      <Badge variant="outline" className="mb-2 text-[10px]">{group}</Badge>
-                      <div className="space-y-1">
-                        {perms.map(cp => (
-                          <div key={cp.key} className="flex items-center justify-between py-2 px-3 rounded-lg border border-border/50 hover:bg-accent/30">
-                            <Label className="text-sm font-medium cursor-pointer">{cp.label}</Label>
-                            <Checkbox checked={criticalPerms[cp.key] || false}
-                              onCheckedChange={(checked) => handleCriticalChange(cp.key, !!checked)} />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            {/* CRITICAL TAB removida — críticas folded em Editar/Excluir */}
+            <TabsContent value="critical" className="mt-3 hidden" />
               </ScrollArea>
             </TabsContent>
+
+            {/* (Críticas removida) */}
 
             {/* SCOPES TAB */}
             <TabsContent value="scopes" className="mt-3">
