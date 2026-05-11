@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface DashboardFiltersData {
   dateRange?: DateRange;
   vendedor?: string;
-  profissional parceiro?: string;
+  arquiteto?: string;
   pipeline?: string;
   categoria?: string;
 }
