@@ -221,6 +221,13 @@ export function ProfileTypePermissionsDialog({
       });
       setPermissions(permMap);
 
+      // Load-time invariant: warn if DB has rows for unknown modules
+      const knownModules = new Set(ALL_MODULES);
+      const orphanRows = (modRes.data || []).filter((r: any) => !knownModules.has(r.module));
+      if (orphanRows.length > 0) {
+        console.warn('[Permissions] Orphan module rows ignored:', orphanRows.map((r: any) => r.module));
+      }
+
       // Critical permissions removidas da UI — não são mais carregadas/exibidas.
       setSegregationRules((segRes.data || []) as any[]);
 
