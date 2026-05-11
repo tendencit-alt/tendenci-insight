@@ -119,21 +119,57 @@ export function useAttentionLayer(): AttentionData {
         });
       }
 
-      // 5. Pedidos aguardando ação (status rascunho/negociação)
-      const { count: draftOrders } = await supabase
+      // 5. Pedidos em aberto (não finalizados nem cancelados)
+      const { count: openOrders } = await supabase
         .from("orders")
         .select("id", { count: "exact", head: true })
-        .in("status", ["rascunho", "negociacao"]);
+        .not("status", "in", '("cancelado","concluido","finalizado","entregue")');
 
-      if (draftOrders && draftOrders > 0) {
+      if (openOrders && openOrders > 0) {
         alerts.push({
-          id: "orders-draft",
-          label: "Pedidos em rascunho",
-          count: draftOrders,
-          level: "normal",
+          id: "orders-open",
+          label: "Pedidos em aberto",
+          count: openOrders,
+          level: openOrders > 20 ? "atencao" : "normal",
           route: "/pedidos",
           group: "Comercial",
           itemUrl: "/pedidos",
+        });
+      }
+
+      // 5b. Leads novos aguardando triagem
+      const { count: newLeads } = await supabase
+        .from("leads")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "novo");
+
+      if (newLeads && newLeads > 0) {
+        alerts.push({
+          id: "leads-new",
+          label: "Leads novos",
+          count: newLeads,
+          level: newLeads > 10 ? "urgente" : "atencao",
+          route: "/leads",
+          group: "Comercial",
+          itemUrl: "/leads",
+        });
+      }
+
+      // 5c. Propostas aguardando ação (enviadas/em negociação)
+      const { count: openProposals } = await supabase
+        .from("crm_proposals")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["enviada", "negociacao"]);
+
+      if (openProposals && openProposals > 0) {
+        alerts.push({
+          id: "proposals-pending",
+          label: "Propostas aguardando",
+          count: openProposals,
+          level: "atencao",
+          route: "/propostas",
+          group: "Comercial",
+          itemUrl: "/propostas",
         });
       }
 
