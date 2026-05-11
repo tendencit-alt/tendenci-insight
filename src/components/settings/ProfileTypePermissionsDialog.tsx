@@ -255,6 +255,14 @@ export function ProfileTypePermissionsDialog({
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState('modules');
   const [permissions, setPermissions] = useState<Record<string, ModulePermission>>({});
+  const [initialPermissions, setInitialPermissions] = useState<Record<string, ModulePermission>>({});
+
+  // Detecta se há alterações não salvas comparando estado atual com o snapshot inicial.
+  const hasUnsavedChanges = ALL_MODULES.some(m => {
+    const cur = permissions[m] || emptyModulePermission();
+    const init = initialPermissions[m] || emptyModulePermission();
+    return ALL_FLAGS.some(f => !!cur[f] !== !!init[f]);
+  });
   // criticalPerms state removido — críticas folded em Editar/Excluir
   const [segregationRules, setSegregationRules] = useState<{ id?: string; blocked_action: string; blocked_module: string; reason: string | null; active: boolean }[]>([]);
   const [scopes, setScopes] = useState<Record<string, ScopeRestriction>>({});
