@@ -262,13 +262,35 @@ export function ProfileTypePermissionsDialog({
   const [statusRules, setStatusRules] = useState<StatusRule[]>([]);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
+  // Diff entre estado atual e baseline para a preview do "Restaurar padrões".
+  const resetDiff = (() => {
+    if (!resetConfirmOpen) return [];
+    const baseline = getRoleBaseline(profileType.name);
+    const rows: Array<{ module: string; flag: keyof ModulePermission; from: boolean; to: boolean }> = [];
+    ALL_MODULES.forEach(module => {
+      const cur = permissions[module] || emptyModulePermission();
+      const base = baseline[module] || emptyModulePermission();
+      ALL_FLAGS.forEach(flag => {
+        if (!!cur[flag] !== !!base[flag]) {
+          rows.push({ module, flag, from: !!cur[flag], to: !!base[flag] });
+        }
+      });
+    });
+    return rows;
+  })();
+
+  const resetDiffByModule = resetDiff.reduce<Record<string, typeof resetDiff>>((acc, r) => {
+    (acc[r.module] ||= []).push(r);
+    return acc;
+  }, {});
+
   const handleResetToDefaults = () => {
     const baseline = getRoleBaseline(profileType.name);
     setPermissions(baseline);
     setResetConfirmOpen(false);
     toast({
       title: 'Padrões aplicados',
-      description: `Permissões de módulos redefinidas para o padrão de "${profileType.display_name}". Clique em Salvar para confirmar.`,
+      description: `${resetDiff.length} alteração(ões) em ${Object.keys(resetDiffByModule).length} módulo(s). Clique em Salvar para confirmar.`,
     });
   };
 
