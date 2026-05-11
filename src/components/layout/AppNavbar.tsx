@@ -637,6 +637,19 @@ export function AppNavbar() {
                             <div className="pl-4 ml-3 border-l border-border/40 space-y-0.5 py-1">
                               {sortedItems.map((item) => {
                                 const IconComp = getIconComponent(item.icon);
+                                if (isComingSoon(item)) {
+                                  return (
+                                    <ComingSoonItem
+                                      key={item.route}
+                                      label={item.label}
+                                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm"
+                                    >
+                                      <IconComp className="h-4 w-4 flex-shrink-0" />
+                                      <span className="flex-1">{item.label}</span>
+                                      <ComingSoonBadge />
+                                    </ComingSoonItem>
+                                  );
+                                }
                                 return (
                                   <NavLink
                                     key={item.route}
