@@ -1125,6 +1125,9 @@ export function ProfileTypePermissionsDialog({
               {(() => {
                 const tpl = availableTemplates.find(t => t.id === selectedTemplateId);
                 if (!tpl) return null;
+                const completeness = validateTemplateCompleteness(
+                  tpl.permissions as Record<string, Record<string, boolean>>
+                );
                 const diff: Array<{ module: string; flag: keyof ModulePermission; from: boolean; to: boolean }> = [];
                 ALL_MODULES.forEach(module => {
                   const cur = permissions[module] || emptyModulePermission();
@@ -1143,6 +1146,33 @@ export function ProfileTypePermissionsDialog({
                   <div className="space-y-2">
                     {tpl.description && (
                       <p className="text-xs text-muted-foreground">{tpl.description}</p>
+                    )}
+                    {!completeness.isComplete && (
+                      <Alert variant="destructive" className="border-amber-500/60 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-100">
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                        <AlertDescription className="text-xs space-y-1">
+                          <p className="font-semibold">
+                            Template incompleto — não cobre todos os {completeness.totalRequired} módulos.
+                          </p>
+                          <p>{describeTemplateGaps(completeness)}</p>
+                          {completeness.incompleteModules.length > 0 && (
+                            <div className="flex flex-wrap gap-1 pt-1">
+                              {completeness.incompleteModules.map(m => (
+                                <Badge
+                                  key={m}
+                                  variant="outline"
+                                  className="text-[10px] border-amber-500/50 bg-amber-100/50 dark:bg-amber-900/40"
+                                >
+                                  {TEMPLATE_MODULE_LABELS[m] || m}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          <p className="opacity-80">
+                            Você ainda pode aplicar, mas usuários com este perfil podem ficar sem acesso aos módulos acima.
+                          </p>
+                        </AlertDescription>
+                      </Alert>
                     )}
                     <Alert>
                       <Sparkles className="h-4 w-4" />
