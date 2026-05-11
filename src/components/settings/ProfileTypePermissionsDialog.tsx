@@ -271,6 +271,11 @@ export function ProfileTypePermissionsDialog({
   const [valueLimits, setValueLimits] = useState<Record<string, ValueLimit>>({});
   const [statusRules, setStatusRules] = useState<StatusRule[]>([]);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
+  const [tplName, setTplName] = useState('');
+  const [tplDesc, setTplDesc] = useState('');
+  const [tplColor, setTplColor] = useState('#7C3AED');
+  const upsertTemplate = useUpsertProfileTemplate();
 
   // Diff entre estado atual e baseline para a preview do "Restaurar padrões".
   const resetDiff = (() => {
