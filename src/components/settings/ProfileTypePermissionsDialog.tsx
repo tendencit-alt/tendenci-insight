@@ -76,9 +76,9 @@ const MODULE_LABELS: Record<string, string> = {
 // Simplificado: 4 permissões essenciais por módulo. As permissões avançadas
 // (Aprovar, Conciliar, Exportar, Admin) são gerenciadas na aba "Críticas".
 const PERMISSION_COLUMNS = [
-  { key: 'can_view', label: 'Ver', description: 'Visualizar registros do módulo' },
-  { key: 'can_create', label: 'Criar', description: 'Criar novos registros' },
-  { key: 'can_edit', label: 'Editar', description: 'Alterar registros existentes' },
+  { key: 'can_view', label: 'Ver', description: 'Apenas leitura' },
+  { key: 'can_create', label: 'Criar', description: 'Adicionar novos' },
+  { key: 'can_edit', label: 'Editar', description: 'Alterar existentes' },
   { key: 'can_delete', label: 'Excluir', description: 'Remover registros' },
 ] as const;
 
@@ -407,11 +407,14 @@ export function ProfileTypePermissionsDialog({
                         className="h-auto p-0 text-[11px] hover:text-foreground uppercase">Módulo</Button>
                     </div>
                     {PERMISSION_COLUMNS.map(col => (
-                      <div key={col.key} className="text-center">
+                      <div key={col.key} className="text-center flex flex-col items-center gap-0.5">
                         <Button type="button" variant="ghost" size="sm"
                           onClick={() => handleSelectColumn(col.key)}
                           className="h-auto p-0 text-[11px] hover:text-foreground"
-                          title={col.description}>{col.label}</Button>
+                          title={`Marcar/desmarcar coluna "${col.label}" em todos os módulos`}>{col.label}</Button>
+                        <span className="text-[9px] font-normal normal-case tracking-normal text-muted-foreground/70 leading-tight">
+                          {col.description}
+                        </span>
                       </div>
                     ))}
                   </div>
