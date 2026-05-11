@@ -41,10 +41,6 @@ const FLAGS: { key: keyof TemplateFlagSet; label: string }[] = [
   { key: 'can_create', label: 'Criar' },
   { key: 'can_edit', label: 'Editar' },
   { key: 'can_delete', label: 'Excluir' },
-  { key: 'can_approve', label: 'Aprovar' },
-  { key: 'can_conciliate', label: 'Conciliar' },
-  { key: 'can_export', label: 'Exportar' },
-  { key: 'can_admin', label: 'Admin' },
 ];
 
 const PRESET_COLORS = ['#7C3AED', '#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#EC4899', '#6B7280', '#8B5CF6'];
