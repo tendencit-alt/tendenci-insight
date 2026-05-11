@@ -276,6 +276,9 @@ export function ProfileTypePermissionsDialog({
   const [tplDesc, setTplDesc] = useState('');
   const [tplColor, setTplColor] = useState('#7C3AED');
   const upsertTemplate = useUpsertProfileTemplate();
+  const { data: availableTemplates = [], isLoading: templatesLoading } = useProfileTemplates();
+  const [applyTemplateOpen, setApplyTemplateOpen] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
 
   // Diff entre estado atual e baseline para a preview do "Restaurar padrões".
   const resetDiff = (() => {
