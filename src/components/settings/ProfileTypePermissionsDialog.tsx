@@ -14,7 +14,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Info, Shield, ShieldAlert, Lock, Target, DollarSign, FileCheck } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
+
+const FLAG_LABELS: Record<string, string> = {
+  can_view: 'Visualizar (leitura)',
+  can_export: 'Exportar dados (CSV/Excel/PDF)',
+  can_create: 'Criar novos registros',
+  can_edit: 'Alterar registros existentes',
+  can_approve: 'Aprovar solicitações e fluxos',
+  can_conciliate: 'Conciliar lançamentos financeiros',
+  can_delete: 'Remover registros',
+  can_admin: 'Configurar / ações administrativas críticas',
+};
 
 interface ProfileType {
   id: string;
