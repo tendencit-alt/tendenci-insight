@@ -244,7 +244,7 @@ const Projects = () => {
             📦 Projetos
           </h1>
           <p className="text-muted-foreground text-lg">
-            Gerenciamento de todos os projetos enviados pelos profissionais parceiros parceiros - acompanhe status, prazos e desempenho.
+            Gerenciamento de todos os projetos enviados pelos profissionais parceiros - acompanhe status, prazos e desempenho.
           </p>
         </div>
 

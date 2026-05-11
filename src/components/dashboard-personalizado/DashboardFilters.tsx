@@ -25,7 +25,7 @@ interface DashboardFiltersProps {
 
 export function DashboardFilters({ filters, onChange }: DashboardFiltersProps) {
   const [vendedores, setVendedores] = useState<Array<{ id: string; full_name: string }>>([]);
-  const [profissionais parceiros, setArquitetos] = useState<Array<{ id: string; name: string }>>([]);
+  const [arquitetos, setArquitetos] = useState<Array<{ id: string; name: string }>>([]);
   const [pipelines, setPipelines] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {

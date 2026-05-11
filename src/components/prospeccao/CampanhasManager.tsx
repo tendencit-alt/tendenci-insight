@@ -96,7 +96,7 @@ interface KanbanStage {
 export function CampanhasManager() {
   const { toast } = useToast();
   const [campanhas, setCampanhas] = useState<Campanha[]>([]);
-  const [arquitetosDisponiveis, setArquitetosDisponiveis] = useState<Profissional Parceiro[]>([]);
+  const [arquitetosDisponiveis, setArquitetosDisponiveis] = useState<Arquiteto[]>([]);
   const [whatsappConnections, setWhatsappConnections] = useState<WhatsAppConnection[]>([]);
   const [kanbanStages, setKanbanStages] = useState<KanbanStage[]>([]);
   const [loading, setLoading] = useState(false);
