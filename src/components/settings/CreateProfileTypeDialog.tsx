@@ -14,7 +14,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Sparkles, Check, Briefcase, DollarSign, Calculator, Factory, Eye, User, Shield } from 'lucide-react';
+import { Loader2, Sparkles, Check, Briefcase, DollarSign, Calculator, Factory, Eye, User, Shield, Settings2 } from 'lucide-react';
+import { useProfileTemplates } from '@/hooks/useProfileTemplates';
+import { ProfileTemplatesManager } from './ProfileTemplatesManager';
 
 interface ProfileType {
   id: string;
@@ -180,6 +182,27 @@ export function CreateProfileTypeDialog({
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('blank');
+  const [templatesManagerOpen, setTemplatesManagerOpen] = useState(false);
+  const { data: customTemplates = [] } = useProfileTemplates();
+
+  // Templates customizados convertidos ao formato Template do dialog
+  const customAsTemplates: Template[] = customTemplates.map(t => ({
+    id: `custom_${t.id}`,
+    label: t.name,
+    description: t.description || 'Template personalizado',
+    slug: '', display_name: t.name, color: t.color, icon: t.icon,
+    iconNode: <Sparkles className="w-4 h-4" />,
+    buildPermissions: () => {
+      const out: Record<string, FlagSet> = {};
+      ALL_MODULES.forEach(m => {
+        const f = (t.permissions?.[m] as FlagSet | undefined);
+        out[m] = f ? { ...empty(), ...f } : empty();
+      });
+      return out;
+    },
+  }));
+
+  const allTemplates: Template[] = [...TEMPLATES, ...customAsTemplates];
   const [formData, setFormData] = useState({
     name: '',
     display_name: '',
@@ -232,7 +255,7 @@ export function CreateProfileTypeDialog({
 
   const applyTemplate = (templateId: string) => {
     setSelectedTemplate(templateId);
-    const tpl = TEMPLATES.find(t => t.id === templateId);
+    const tpl = allTemplates.find(t => t.id === templateId);
     if (!tpl || tpl.id === 'blank') return;
     // Prefill form fields with template defaults; user can still tweak before saving.
     setFormData(prev => ({
@@ -300,7 +323,7 @@ export function CreateProfileTypeDialog({
         }
 
         // Seed permissions from selected template (skip "blank")
-        const tpl = TEMPLATES.find(t => t.id === selectedTemplate);
+        const tpl = allTemplates.find(t => t.id === selectedTemplate);
         if (created && tpl && tpl.id !== 'blank') {
           const perms = tpl.buildPermissions();
           const rows = ALL_MODULES
@@ -342,6 +365,7 @@ export function CreateProfileTypeDialog({
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -358,15 +382,26 @@ export function CreateProfileTypeDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isEditing && (
             <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary" />
-                Templates pré-definidos
-              </Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  Templates pré-definidos
+                </Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTemplatesManagerOpen(true)}
+                  className="gap-1 h-7 text-xs"
+                >
+                  <Settings2 className="w-3.5 h-3.5" /> Gerenciar templates
+                </Button>
+              </div>
               <p className="text-xs text-muted-foreground">
                 Selecione um perfil pronto. Nome, cor, ícone e permissões serão preenchidos automaticamente.
               </p>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-                {TEMPLATES.map((tpl) => {
+                {allTemplates.map((tpl) => {
                   const active = selectedTemplate === tpl.id;
                   return (
                     <button
@@ -399,7 +434,7 @@ export function CreateProfileTypeDialog({
                 })}
               </div>
               {selectedTemplate !== 'blank' && (() => {
-                const tpl = TEMPLATES.find(t => t.id === selectedTemplate);
+                const tpl = allTemplates.find(t => t.id === selectedTemplate);
                 if (!tpl) return null;
                 const perms = tpl.buildPermissions();
                 const FLAG_LABELS: Record<keyof FlagSet, string> = {
@@ -537,5 +572,7 @@ export function CreateProfileTypeDialog({
         </form>
       </DialogContent>
     </Dialog>
+    <ProfileTemplatesManager open={templatesManagerOpen} onOpenChange={setTemplatesManagerOpen} />
+    </>
   );
 }

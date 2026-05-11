@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Shield, User, Palette, Ruler, Loader2, Settings2, Trash2, Edit2, Briefcase, Calculator, Factory, DollarSign, Eye } from 'lucide-react';
+import { Plus, Shield, User, Palette, Ruler, Loader2, Settings2, Trash2, Edit2, Briefcase, Calculator, Factory, DollarSign, Eye, Sparkles } from 'lucide-react';
 import { CreateProfileTypeDialog } from './CreateProfileTypeDialog';
 import { ProfileTypePermissionsDialog } from './ProfileTypePermissionsDialog';
+import { ProfileTemplatesManager } from './ProfileTemplatesManager';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,6 +54,7 @@ export function ProfileTypesManager() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [typeToDelete, setTypeToDelete] = useState<ProfileType | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [templatesManagerOpen, setTemplatesManagerOpen] = useState(false);
 
   useEffect(() => {
     fetchProfileTypes();
@@ -167,10 +169,16 @@ export function ProfileTypesManager() {
               Gerencie os tipos de perfil e suas permissões padrão
             </CardDescription>
           </div>
-          <Button onClick={() => { setEditingType(null); setCreateDialogOpen(true); }} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Novo Tipo
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setTemplatesManagerOpen(true)} className="gap-2">
+              <Sparkles className="w-4 h-4" />
+              Templates
+            </Button>
+            <Button onClick={() => { setEditingType(null); setCreateDialogOpen(true); }} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Novo Tipo
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -276,6 +284,8 @@ export function ProfileTypesManager() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ProfileTemplatesManager open={templatesManagerOpen} onOpenChange={setTemplatesManagerOpen} />
     </>
   );
 }
