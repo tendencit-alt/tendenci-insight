@@ -263,7 +263,7 @@ export function ExecutiveKPIPanel({ filters }: Props) {
     { label: "Saldo Caixa", value: fmtCompact(kpis.saldoCaixa), trend: kpis.saldoCaixa >= 0 ? "up" : "down", color: kpis.saldoCaixa >= 0 ? "green" : "red" },
     { label: "Saldo 90 dias", value: fmtCompact(kpis.saldo90d), trend: kpis.saldo90d >= 0 ? "up" : "down", color: kpis.saldo90d >= 0 ? "blue" : "red" },
     { label: "Burn Rate", value: fmtCompact(kpis.burnRate), trend: "stable", color: "amber" },
-    { label: "Runway", value: kpis.runway > 24 ? ">24 meses" : `${kpis.runway} meses`, trend: kpis.runway > 6 ? "up" : "down", color: kpis.runway > 6 ? "green" : "red" },
+    { label: "Runway", value: formatKpiNumber(kpis.runway, " meses", { cap: 24 }), trend: isKpiValid(kpis.runway) && kpis.runway > 6 ? "up" : "down", color: isKpiValid(kpis.runway) && kpis.runway > 6 ? "green" : "red" },
     { label: "Ponto Equilíbrio", value: fmtCompact(kpis.pontoEquilibrio), trend: kpis.receitaMes > kpis.pontoEquilibrio ? "up" : "down", color: kpis.receitaMes > kpis.pontoEquilibrio ? "green" : "red" },
   ];
 
