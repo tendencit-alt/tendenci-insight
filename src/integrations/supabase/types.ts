@@ -22559,6 +22559,7 @@ export type Database = {
       run_capacity_sweep: { Args: never; Returns: Json }
       run_inactive_architects_check: { Args: never; Returns: Json }
       run_predictive_sweep: { Args: never; Returns: Json }
+      seed_tenant_profile_types: { Args: never; Returns: number }
       set_active_tenant: { Args: { target_tenant_id: string }; Returns: string }
       should_show_upgrade_nudge: {
         Args: { _signal_id: string; _tenant_id: string }
