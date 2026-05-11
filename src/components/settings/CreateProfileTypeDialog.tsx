@@ -14,7 +14,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Sparkles, Check, Briefcase, DollarSign, Calculator, Factory, Eye, User, Shield } from 'lucide-react';
+import { Loader2, Sparkles, Check, Briefcase, DollarSign, Calculator, Factory, Eye, User, Shield, Settings2 } from 'lucide-react';
+import { useProfileTemplates } from '@/hooks/useProfileTemplates';
+import { ProfileTemplatesManager } from './ProfileTemplatesManager';
 
 interface ProfileType {
   id: string;
