@@ -835,19 +835,61 @@ export function ProfileTypePermissionsDialog({
         </DialogFooter>
 
         <AlertDialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
-          <AlertDialogContent>
+          <AlertDialogContent className="max-w-2xl">
             <AlertDialogHeader>
               <AlertDialogTitle>Restaurar permissões padrão?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Isso substituirá todas as permissões de módulo deste perfil pela
-                baseline recomendada para <strong>{profileType.display_name}</strong>.
-                Escopos, limites de valor e regras de status não serão alterados.
-                As mudanças só serão persistidas após clicar em <strong>Salvar Permissões</strong>.
+              <AlertDialogDescription asChild>
+                <div className="space-y-2">
+                  <p>
+                    Aplicar a baseline recomendada para <strong>{profileType.display_name}</strong>.
+                    Escopos, limites e regras de status não serão alterados. As mudanças só
+                    serão persistidas após clicar em <strong>Salvar Permissões</strong>.
+                  </p>
+                  <p className="text-xs">
+                    {resetDiff.length === 0
+                      ? 'Nenhuma alteração: o perfil já está alinhado com o padrão.'
+                      : `${resetDiff.length} flag(s) em ${Object.keys(resetDiffByModule).length} módulo(s) serão alterados.`}
+                  </p>
+                </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
+
+            {resetDiff.length > 0 && (
+              <ScrollArea className="max-h-[40vh] pr-3 rounded border bg-muted/30">
+                <div className="p-3 space-y-3">
+                  {Object.entries(resetDiffByModule).map(([module, rows]) => (
+                    <div key={module} className="space-y-1">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {MODULE_LABELS[module] || module}
+                      </p>
+                      <ul className="space-y-1">
+                        {rows.map(r => (
+                          <li key={`${module}-${r.flag}`} className="flex items-center gap-2 text-xs">
+                            <Badge
+                              variant={r.to ? 'default' : 'outline'}
+                              className={`text-[10px] ${r.to ? 'bg-emerald-600 hover:bg-emerald-600' : 'text-muted-foreground'}`}
+                            >
+                              {r.to ? '+ Conceder' : '− Revogar'}
+                            </Badge>
+                            <span className="font-mono">{r.flag}</span>
+                            <span className="text-muted-foreground">
+                              ({FLAG_LABELS[r.flag] || r.flag})
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={handleResetToDefaults}>
+              <AlertDialogAction
+                onClick={handleResetToDefaults}
+                disabled={resetDiff.length === 0}
+              >
                 Aplicar padrões
               </AlertDialogAction>
             </AlertDialogFooter>
