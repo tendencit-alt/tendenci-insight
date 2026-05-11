@@ -846,8 +846,13 @@ export function ProfileTypePermissionsDialog({
             type="button"
             variant="outline"
             onClick={() => setResetConfirmOpen(true)}
-            disabled={saving || loading}
+            disabled={saving || loading || !hasUnsavedChanges}
             className="gap-2"
+            title={
+              !hasUnsavedChanges
+                ? 'Nenhuma alteração não salva — modifique algum módulo para habilitar'
+                : 'Restaurar permissões para o padrão recomendado do perfil'
+            }
           >
             <RotateCcw className="h-4 w-4" />
             Restaurar padrões
