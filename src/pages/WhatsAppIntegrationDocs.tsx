@@ -128,7 +128,7 @@ export default function WhatsAppIntegrationDocs() {
                     <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
 {`{
   "campanha_id": "uuid-da-campanha",
-  "profissional parceiro_id": "uuid-do-profissional parceiro",
+  "arquiteto_id": "uuid-do-profissional parceiro",
   "nome": "Nome do Profissional Parceiro",
   "telefone": "5511999999999",
   "tipo_envio": "texto",
@@ -210,7 +210,7 @@ export default function WhatsAppIntegrationDocs() {
                   <div className="flex items-start gap-3 p-3 bg-muted/50 rounded">
                     <Badge>UUID</Badge>
                     <div className="flex-1">
-                      <p className="font-medium">profissional parceiro_id</p>
+                      <p className="font-medium">arquiteto_id</p>
                       <p className="text-sm text-muted-foreground">ID único do profissional parceiro destinatário</p>
                     </div>
                     <Badge variant="outline">Obrigatório</Badge>
@@ -309,7 +309,7 @@ export default function WhatsAppIntegrationDocs() {
 const payload = $input.item.json.body;
 
 const campanhaId = payload.campanha_id;
-const profissional parceiroId = payload.profissional parceiro_id;
+const arquitetoId = payload.arquiteto_id;
 const nome = payload.nome;
 const telefone = payload.telefone;
 const tipoEnvio = payload.tipo_envio;
@@ -325,7 +325,7 @@ const numeroFormatado = telefone.includes('@')
 return {
   json: {
     campanha_id: campanhaId,
-    profissional parceiro_id: profissional parceiroId,
+    arquiteto_id: arquitetoId,
     nome: nome,
     numero: numeroFormatado,
     tipo_envio: tipoEnvio,
@@ -469,7 +469,7 @@ Body:
   "phoneNumber": "{{$json.numero}}",
   "message": "{{$json.conteudo_texto}}",
   "campaignId": "{{$json.campanha_id}}",
-  "architectId": "{{$json.profissional parceiro_id}}"
+  "architectId": "{{$json.arquiteto_id}}"
 }`}
                     </pre>
                   </div>

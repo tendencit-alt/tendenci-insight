@@ -820,7 +820,7 @@ export default function N8nTarefasGuide() {
 {`{
   "tarefa_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "deal_id": "d4e5f6g7-h8i9-0123-4567-89abcdef0123",
-  "profissional parceiro_id": null,
+  "arquiteto_id": null,
   "titulo": "Follow-up Cliente João",
   "observacoes": "Olá João! Tudo bem? Passando para verificar...",
   "data_agendamento": "2025-01-21T14:30:00Z",
@@ -840,7 +840,7 @@ export default function N8nTarefasGuide() {
 {`{
   "tarefa_id": "b2c3d4e5-f6g7-8901-bcde-f12345678901",
   "deal_id": null,
-  "profissional parceiro_id": "c3d4e5f6-g7h8-9012-cdef-123456789012",
+  "arquiteto_id": "c3d4e5f6-g7h8-9012-cdef-123456789012",
   "titulo": "Follow-up Profissional Parceiro Maria",
   "observacoes": "Olá Maria! Você viu nosso catálogo novo?",
   "data_agendamento": "2025-01-21T15:00:00Z",
