@@ -54,6 +54,7 @@ import {
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { cn } from "@/lib/utils";
 import { GlobalSearch } from "@/components/search/GlobalSearch";
+import { ComingSoonBadge, ComingSoonItem, isComingSoon } from "@/lib/comingSoon";
 
 // ── Owner accordion persistence ──
 const OWNER_ACCORDION_KEY = "erp_owner_accordion_open";
@@ -404,16 +405,16 @@ export function AppNavbar() {
   }, [loading, isMaster, canSeeOwnerMenu, hasModuleAccess]);
 
   const renderMainGroupAccordion = (mod: ModuleGroup) => {
-    const availableItems = mod.items.filter((i) => {
-      if (!i.available) return false;
-      if (i.module && !loading) return hasModuleAccess(i.module as any);
+    const visibleItems = mod.items.filter((i) => {
+      // Keep coming-soon items visible (Core rule). Only hide by permission.
+      if (i.module && !loading && !isComingSoon(i)) return hasModuleAccess(i.module as any);
       return true;
     });
-    if (availableItems.length === 0) return null;
+    if (visibleItems.length === 0) return null;
 
-    const sortedItems = sortByUsage(availableItems);
+    const sortedItems = sortByUsage(visibleItems);
     const isModuleActive = mod.items.some(
-      (i) => i.available && (location.pathname === i.route || location.pathname.startsWith(i.route.split("?")[0]))
+      (i) => !isComingSoon(i) && (location.pathname === i.route || location.pathname.startsWith(i.route.split("?")[0]))
     );
     const isOpen = openMainGroup === mod.key;
 
@@ -456,6 +457,19 @@ export function AppNavbar() {
             <div className="pl-3 pr-1 py-1 space-y-0.5 border-l border-border/40 ml-5 mb-1">
               {sortedItems.map((item) => {
                 const IconComp = getIconComponent(item.icon);
+                if (isComingSoon(item)) {
+                  return (
+                    <ComingSoonItem
+                      key={item.route}
+                      label={item.label}
+                      className="flex items-center gap-2 w-full px-2 py-1.5 text-[13px] rounded-md"
+                    >
+                      <IconComp className="h-3.5 w-3.5" />
+                      <span className="flex-1 truncate">{item.label}</span>
+                      <ComingSoonBadge />
+                    </ComingSoonItem>
+                  );
+                }
                 return (
                   <NavLink
                     key={item.route}
