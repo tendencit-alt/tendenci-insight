@@ -259,7 +259,7 @@ export function SegmentosManager() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Segmentos de Prospecção</h2>
-          <p className="text-muted-foreground">Crie segmentos para organizar seus profissionais parceiros</p>
+          <p className="text-muted-foreground">Crie segmentos para organizar seus parceiros profissionais</p>
         </div>
 
         <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
@@ -281,7 +281,7 @@ export function SegmentosManager() {
                   id="nome"
                   value={formData.nome}
                   onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                  placeholder="Ex: Profissionais Parceiros Tier A de São Paulo"
+                  placeholder="Ex: Parceiros Profissionais Tier A de São Paulo"
                 />
               </div>
 
@@ -422,7 +422,7 @@ export function SegmentosManager() {
                           }
                         />
                         <Label htmlFor="nao_contactados" className="cursor-pointer">
-                          Apenas profissionais parceiros que nunca foram contactados
+                          Apenas parceiros profissionais que nunca foram contactados
                         </Label>
                       </div>
                     </div>
@@ -465,7 +465,7 @@ export function SegmentosManager() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-muted-foreground">
-                        Selecione profissionais parceiros individuais para este segmento
+                        Selecione parceiros profissionais individuais para este segmento
                       </p>
                       <div className="flex gap-2">
                         <Button
@@ -490,7 +490,7 @@ export function SegmentosManager() {
                     {selectedArchitects.length > 0 && (
                       <div className="p-3 bg-muted rounded-md">
                         <p className="text-sm font-medium">
-                          {selectedArchitects.length} profissional parceiro(s) selecionado(s)
+                          {selectedArchitects.length} parceiro profissional(s) selecionado(s)
                         </p>
                       </div>
                     )}
@@ -498,7 +498,7 @@ export function SegmentosManager() {
                     <div className="border rounded-md max-h-96 overflow-y-auto">
                       {isLoadingArchitects ? (
                         <div className="p-8 text-center text-muted-foreground">
-                          Carregando profissionais parceiros...
+                          Carregando parceiros profissionais...
                         </div>
                       ) : architects && architects.length > 0 ? (
                         <div className="divide-y">
@@ -546,7 +546,7 @@ export function SegmentosManager() {
                         </div>
                       ) : (
                         <div className="p-8 text-center text-muted-foreground">
-                          <p>Nenhum profissional parceiro encontrado com os filtros aplicados.</p>
+                          <p>Nenhum parceiro profissional encontrado com os filtros aplicados.</p>
                           <p className="text-sm mt-1">Ajuste os filtros na aba "Por Filtros"</p>
                         </div>
                       )}
@@ -608,7 +608,7 @@ export function SegmentosManager() {
                 <div className="space-y-2">
                   {segment.architect_ids && segment.architect_ids.length > 0 ? (
                     <Badge variant="secondary">
-                      {segment.architect_ids.length} profissional parceiro(s) selecionado(s)
+                      {segment.architect_ids.length} parceiro profissional(s) selecionado(s)
                     </Badge>
                   ) : (
                     <>

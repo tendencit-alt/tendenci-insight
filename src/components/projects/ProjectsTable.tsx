@@ -102,7 +102,7 @@ export function ProjectsTable({ filters }: ProjectsTableProps) {
       query = query.in("stage", filters.stages);
     }
 
-    // Filtro de profissional parceiro
+    // Filtro de parceiro profissional
     if (filters.architect && filters.architect !== "Todos") {
       if (filters.architect === "sem-arquiteto") {
         query = query.is("architect_id", null);
@@ -218,7 +218,7 @@ export function ProjectsTable({ filters }: ProjectsTableProps) {
               <TableRow>
                 <TableHead>Projeto</TableHead>
                 <TableHead>Cliente</TableHead>
-                <TableHead>Profissional Parceiro</TableHead>
+                <TableHead>Parceiro Profissional</TableHead>
                 <TableHead>Estágio</TableHead>
                 <TableHead>Valor (R$)</TableHead>
                 <TableHead>Prazo</TableHead>
@@ -246,7 +246,7 @@ export function ProjectsTable({ filters }: ProjectsTableProps) {
                       <div className="flex items-center gap-2">
                         {project.name || "Sem título"}
                         {!project.architect_id && (
-                          <span title="Sem profissional parceiro">
+                          <span title="Sem parceiro profissional">
                             <AlertTriangle className="w-4 h-4 text-orange-500" />
                           </span>
                         )}

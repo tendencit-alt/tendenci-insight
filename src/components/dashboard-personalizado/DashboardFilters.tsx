@@ -40,7 +40,7 @@ export function DashboardFilters({ filters, onChange }: DashboardFiltersProps) {
       .order("full_name");
     if (vendData) setVendedores(vendData);
 
-    // Buscar profissionais parceiros ativos
+    // Buscar parceiros profissionais ativos
     const { data: arqData } = await supabase
       .from("architects")
       .select("id, name")
@@ -129,7 +129,7 @@ export function DashboardFilters({ filters, onChange }: DashboardFiltersProps) {
           </SelectContent>
         </Select>
 
-        {/* Filtro de Profissional Parceiro */}
+        {/* Filtro de Parceiro Profissional */}
         <Select 
           value={filters.arquiteto || "todos"} 
           onValueChange={(value) => onChange({ ...filters, arquiteto: value === "todos" ? undefined : value })}
@@ -138,10 +138,10 @@ export function DashboardFilters({ filters, onChange }: DashboardFiltersProps) {
             "w-[200px] shadow-sm hover:shadow-md transition-all bg-background/50 backdrop-blur-sm border-border/60",
             filters.arquiteto && "border-primary/50 bg-primary/5"
           )}>
-            <SelectValue placeholder="Profissional Parceiro" />
+            <SelectValue placeholder="Parceiro Profissional" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="todos">Todos profissionais parceiros</SelectItem>
+            <SelectItem value="todos">Todos parceiros profissionais</SelectItem>
             {arquitetos.map((a) => (
               <SelectItem key={a.id} value={a.id}>
                 {a.name}

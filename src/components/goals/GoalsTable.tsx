@@ -201,7 +201,7 @@ export function GoalsTable({ type, refreshTrigger, onRefresh }: GoalsTableProps)
                           currency: "BRL",
                         })
                       ) : (
-                        <span>{quantidadeMeta} {tipoMeta === "captacao" ? "profissionais parceiros" : "projetos"}</span>
+                        <span>{quantidadeMeta} {tipoMeta === "captacao" ? "parceiros profissionais" : "projetos"}</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -217,7 +217,7 @@ export function GoalsTable({ type, refreshTrigger, onRefresh }: GoalsTableProps)
                           currency: "BRL",
                         })
                       ) : (
-                        <span>{quantidadeAlcancada} {tipoMeta === "captacao" ? "profissionais parceiros" : "projetos"}</span>
+                        <span>{quantidadeAlcancada} {tipoMeta === "captacao" ? "parceiros profissionais" : "projetos"}</span>
                       )}
                     </TableCell>
                     <TableCell>

@@ -194,17 +194,17 @@ export function ProjectsFilters({ filters, onFiltersChange }: ProjectsFiltersPro
         </PopoverContent>
       </Popover>
 
-      {/* Filtro de Profissional Parceiro */}
+      {/* Filtro de Parceiro Profissional */}
       <Select 
         value={filters.architect} 
         onValueChange={(v) => onFiltersChange({ ...filters, architect: v })}
       >
         <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Profissional Parceiro" />
+          <SelectValue placeholder="Parceiro Profissional" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="Todos">Todos Profissionais Parceiros</SelectItem>
-          <SelectItem value="sem-arquiteto">Sem Profissional Parceiro</SelectItem>
+          <SelectItem value="Todos">Todos Parceiros Profissionais</SelectItem>
+          <SelectItem value="sem-arquiteto">Sem Parceiro Profissional</SelectItem>
           {architects.map((arch) => (
             <SelectItem key={arch.id} value={arch.id}>
               {arch.name}

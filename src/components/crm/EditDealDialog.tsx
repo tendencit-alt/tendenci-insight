@@ -300,8 +300,8 @@ export function EditDealDialog({
     setFormData({ ...formData, architect_id: architectId });
     setIsArchitectDialogOpen(false);
     toast({
-      title: "Profissional Parceiro criado",
-      description: "O novo profissional parceiro foi criado e selecionado.",
+      title: "Parceiro Profissional criado",
+      description: "O novo parceiro profissional foi criado e selecionado.",
     });
   };
 
@@ -743,7 +743,7 @@ export function EditDealDialog({
     if (!newIndication.architect_id) {
       toast({
         title: "Campo obrigatório",
-        description: "Selecione o profissional parceiro.",
+        description: "Selecione o parceiro profissional.",
         variant: "destructive",
       });
       return;
@@ -756,7 +756,7 @@ export function EditDealDialog({
       {
         ...newIndication,
         product_type: "Indicação",
-        architect_name: architect?.name || "Profissional Parceiro",
+        architect_name: architect?.name || "Parceiro Profissional",
       },
     ]);
 
@@ -980,7 +980,7 @@ export function EditDealDialog({
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="architect">Profissional Parceiro</Label>
+                  <Label htmlFor="architect">Parceiro Profissional</Label>
                   <Button
                     type="button"
                     variant="ghost"
@@ -989,7 +989,7 @@ export function EditDealDialog({
                     className="h-7 text-xs"
                   >
                     <Plus className="mr-1 h-3 w-3" />
-                    Novo Profissional Parceiro
+                    Novo Parceiro Profissional
                   </Button>
                 </div>
                 <SearchableCombobox
@@ -998,9 +998,9 @@ export function EditDealDialog({
                   onValueChange={(value) =>
                     setFormData({ ...formData, architect_id: value === "none" ? "" : value })
                   }
-                  placeholder="Selecione o profissional parceiro"
-                  searchPlaceholder="Buscar profissional parceiro..."
-                  emptyMessage="Nenhum profissional parceiro encontrado."
+                  placeholder="Selecione o parceiro profissional"
+                  searchPlaceholder="Buscar parceiro profissional..."
+                  emptyMessage="Nenhum parceiro profissional encontrado."
                 />
               </div>
 
@@ -1159,12 +1159,12 @@ export function EditDealDialog({
             </div>
           </div>
 
-          {/* Seção: Indicação de Profissional Parceiro */}
+          {/* Seção: Indicação de Parceiro Profissional */}
           <div className="space-y-4 bg-amber-50 dark:bg-amber-950/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
             <div className="flex items-center gap-2">
               <Target className="h-5 w-5 text-amber-600" />
               <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200 uppercase">
-                Indicação de Profissional Parceiro
+                Indicação de Parceiro Profissional
               </h3>
               {(existingIndications.length + pendingIndications.length) > 0 && (
                 <Badge variant="secondary" className="bg-amber-200 text-amber-800">
@@ -1228,7 +1228,7 @@ export function EditDealDialog({
             {/* Formulário para nova indicação */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs">Profissional Parceiro *</Label>
+                <Label className="text-xs">Parceiro Profissional *</Label>
                 <Select
                   value={newIndication.architect_id}
                   onValueChange={(value) => setNewIndication({ ...newIndication, architect_id: value })}

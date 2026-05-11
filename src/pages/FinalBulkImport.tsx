@@ -54,7 +54,7 @@ export default function FinalBulkImport() {
         }
 
         const phone = String(row['Telefone'] || '').replace(/\D/g, '');
-        const name = (row['Profissional Parceiro'] || '').trim();
+        const name = (row['Parceiro Profissional'] || '').trim();
         const email = (row['Email'] || '').trim();
 
         if (name && phone && phone.length >= 8 && !existingPhones.has(phone)) {
@@ -92,7 +92,7 @@ export default function FinalBulkImport() {
         } else {
           successCount += batch.length;
           setProgress(prev => ({ ...prev, current: successCount, success: successCount, errors: errorCount }));
-          toast.success(`${successCount} profissionais parceiros importados`);
+          toast.success(`${successCount} parceiros profissionais importados`);
         }
       }
 
@@ -101,7 +101,7 @@ export default function FinalBulkImport() {
       setProgress(prev => ({ ...prev, success: successCount, errors: errorCount }));
       setStatus('success');
       
-      toast.success(`Importação concluída! ${successCount} profissionais parceiros cadastrados.`);
+      toast.success(`Importação concluída! ${successCount} parceiros profissionais cadastrados.`);
       
       setTimeout(() => {
         navigate('/prospeccao');
@@ -110,7 +110,7 @@ export default function FinalBulkImport() {
     } catch (error) {
       console.error('Import error:', error);
       setStatus('error');
-      toast.error('Erro ao importar profissionais parceiros');
+      toast.error('Erro ao importar parceiros profissionais');
     }
   };
 
@@ -118,7 +118,7 @@ export default function FinalBulkImport() {
     <div className="container mx-auto p-6">
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
-          <CardTitle>Importação Final de Profissionais Parceiros</CardTitle>
+          <CardTitle>Importação Final de Parceiros Profissionais</CardTitle>
         </CardHeader>
         <CardContent>
           {status === 'loading' && (
@@ -132,7 +132,7 @@ export default function FinalBulkImport() {
             <div className="flex flex-col items-center gap-4 py-8">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
               <div className="text-center">
-                <p className="text-lg font-medium mb-2">Importando profissionais parceiros...</p>
+                <p className="text-lg font-medium mb-2">Importando parceiros profissionais...</p>
                 <p className="text-sm text-muted-foreground">
                   {progress.current} de {progress.total}
                 </p>
@@ -154,7 +154,7 @@ export default function FinalBulkImport() {
                   Importação Concluída!
                 </p>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {progress.success} profissionais parceiros importados com sucesso
+                  {progress.success} parceiros profissionais importados com sucesso
                 </p>
                 {progress.errors > 0 && (
                   <p className="text-sm text-amber-600">
@@ -179,7 +179,7 @@ export default function FinalBulkImport() {
                   Erro na Importação
                 </p>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Ocorreu um erro ao importar os profissionais parceiros
+                  Ocorreu um erro ao importar os parceiros profissionais
                 </p>
                 <div className="flex gap-2">
                   <Button 

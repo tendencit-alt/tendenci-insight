@@ -195,7 +195,7 @@ export function N8nAgendamentoGuide() {
           <div>
             <strong className="text-red-600">Obrigatórios:</strong>
             <ul className="list-disc list-inside ml-4 mt-2 space-y-1 text-muted-foreground">
-              <li><code>architect_id</code> (string) - UUID do profissional parceiro</li>
+              <li><code>architect_id</code> (string) - UUID do parceiro profissional</li>
               <li><code>data_agendamento</code> (string) - Data/hora em formato ISO 8601 (ex: "2024-12-20T14:30:00")</li>
               <li><code>canal</code> (string) - whatsapp | telefone | presencial | videochamada</li>
             </ul>
@@ -203,8 +203,8 @@ export function N8nAgendamentoGuide() {
           <div>
             <strong className="text-blue-600">Opcionais:</strong>
             <ul className="list-disc list-inside ml-4 mt-2 space-y-1 text-muted-foreground">
-              <li><code>architect_name</code> (string) - Nome do profissional parceiro (informativo)</li>
-              <li><code>architect_phone</code> (string) - Telefone do profissional parceiro</li>
+              <li><code>architect_name</code> (string) - Nome do parceiro profissional (informativo)</li>
+              <li><code>architect_phone</code> (string) - Telefone do parceiro profissional</li>
               <li><code>client_id</code> (string) - UUID do cliente existente</li>
               <li><code>client_name</code> (string) - Nome do cliente (cria novo se não existir client_id)</li>
               <li><code>client_phone</code> (string) - Telefone do cliente</li>

@@ -418,7 +418,7 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
                 <User className="h-3.5 w-3.5 text-muted-foreground" />
               )}
               <span className="text-sm font-medium truncate">
-                {task.architect?.name || "Profissional Parceiro não encontrado"}
+                {task.architect?.name || "Parceiro Profissional não encontrado"}
               </span>
             </div>
             {task.architect?.company && (
@@ -469,7 +469,7 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
                 <User className="h-3.5 w-3.5 text-muted-foreground" />
               )}
               <span className="text-sm font-medium truncate">
-                {task.architect?.name || "Profissional Parceiro não encontrado"}
+                {task.architect?.name || "Parceiro Profissional não encontrado"}
               </span>
             </div>
             {task.architect?.company && (
@@ -525,7 +525,7 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
   if (loading) {
     return (
       <div className="mb-6">
-        <h3 className="text-lg font-semibold mb-4">Tarefas de Profissionais Parceiros</h3>
+        <h3 className="text-lg font-semibold mb-4">Tarefas de Parceiros Profissionais</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-24" />
@@ -545,7 +545,7 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
 
   return (
     <div className="mb-6 space-y-4">
-      <h3 className="text-lg font-semibold">Tarefas de Profissionais Parceiros</h3>
+      <h3 className="text-lg font-semibold">Tarefas de Parceiros Profissionais</h3>
       
       {/* Métricas Comparativas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

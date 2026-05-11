@@ -212,7 +212,7 @@ export function KPIDetailDialog({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Projeto</TableHead>
-                    <TableHead>Profissional Parceiro</TableHead>
+                    <TableHead>Parceiro Profissional</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
                     <TableHead>Data de Entrada</TableHead>

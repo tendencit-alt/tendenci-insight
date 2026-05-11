@@ -207,7 +207,7 @@ export function CRMKPIsDashboard({
         }
       });
 
-      // Buscar contatos de captação de profissionais parceiros com breakdown por vendedor
+      // Buscar contatos de captação de parceiros profissionais com breakdown por vendedor
       const { data: contatosArquitetos, error: errorArquitetos } = await supabase
         .from("tendenci_prospec_arq_logs")
         .select(`
@@ -218,7 +218,7 @@ export function CRMKPIsDashboard({
         `)
         .eq("tipo", "vendedor");
 
-      // Calcular breakdown por vendedor para contatos de profissionais parceiros
+      // Calcular breakdown por vendedor para contatos de parceiros profissionais
       const contatosArquitetosPorVendedor = new Map<string, number>();
       
       contatosArquitetos?.forEach((contato: any) => {
@@ -226,7 +226,7 @@ export function CRMKPIsDashboard({
         contatosArquitetosPorVendedor.set(sellerName, (contatosArquitetosPorVendedor.get(sellerName) || 0) + 1);
       });
 
-      // Buscar projetos de profissionais parceiros
+      // Buscar projetos de parceiros profissionais
       const { data: projetosArquitetos, error: errorProjetosArq } = await supabase
         .from("architect_projects")
         .select("id, architect_id, created_by");
@@ -268,7 +268,7 @@ export function CRMKPIsDashboard({
 
   const kpiCards = [
     {
-      title: "Contatos Captação Profissionais Parceiros",
+      title: "Contatos Captação Parceiros Profissionais",
       value: kpis.contatos_captacao_arquitetos,
       icon: Users,
       colorClass: "text-blue-500",
@@ -284,14 +284,14 @@ export function CRMKPIsDashboard({
       breakdown: kpis.oportunidades_por_vendedor,
     },
     {
-      title: "Projetos de Profissionais Parceiros",
+      title: "Projetos de Parceiros Profissionais",
       value: kpis.projetos_arquitetos,
       icon: Users,
       colorClass: "text-purple-500",
       bgClass: "bg-purple-500/10",
     },
     {
-      title: "Projetos CRM (Sem Profissional Parceiro)",
+      title: "Projetos CRM (Sem Parceiro Profissional)",
       value: kpis.projetos_crm,
       icon: Building2,
       colorClass: "text-orange-500",

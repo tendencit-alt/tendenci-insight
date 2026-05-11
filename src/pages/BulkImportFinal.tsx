@@ -59,7 +59,7 @@ export default function BulkImportFinal() {
         return a.name && a.phone && a.phone.length >= 8;
       });
 
-      console.log(`Total de profissionais parceiros válidos para inserir: ${architects.length}`);
+      console.log(`Total de parceiros profissionais válidos para inserir: ${architects.length}`);
       
       // Buscar telefones já existentes para evitar duplicatas
       const { data: existingArchitects } = await supabase
@@ -70,19 +70,19 @@ export default function BulkImportFinal() {
       const existingPhones = new Set(existingArchitects?.map(a => a.phone) || []);
       console.log(`Telefones já existentes no banco: ${existingPhones.size}`);
       
-      // Filtrar profissionais parceiros que ainda não existem
+      // Filtrar parceiros profissionais que ainda não existem
       const newArchitects = architects.filter((a: any) => !existingPhones.has(a.phone));
-      console.log(`Novos profissionais parceiros a inserir: ${newArchitects.length}`);
+      console.log(`Novos parceiros profissionais a inserir: ${newArchitects.length}`);
       
       if (newArchitects.length === 0) {
-        console.log('Todos os profissionais parceiros já existem no banco!');
+        console.log('Todos os parceiros profissionais já existem no banco!');
         setResult({
           total: architects.length,
           inserted: 0,
           skipped: architects.length
         });
         setStatus('success');
-        toast.success('Todos os profissionais parceiros já existem no banco!');
+        toast.success('Todos os parceiros profissionais já existem no banco!');
         setTimeout(() => navigate('/prospeccao'), 2000);
         return;
       }
@@ -115,7 +115,7 @@ export default function BulkImportFinal() {
       });
       
       setStatus('success');
-      toast.success(`${totalInserted} profissionais parceiros importados com sucesso!`);
+      toast.success(`${totalInserted} parceiros profissionais importados com sucesso!`);
       
       console.log('Importação concluída!');
       setTimeout(() => navigate('/prospeccao'), 3000);
@@ -123,7 +123,7 @@ export default function BulkImportFinal() {
     } catch (error) {
       console.error('Erro na importação:', error);
       setStatus('error');
-      toast.error('Erro ao importar profissionais parceiros');
+      toast.error('Erro ao importar parceiros profissionais');
     }
   };
 
@@ -135,7 +135,7 @@ export default function BulkImportFinal() {
             <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
             <h2 className="text-xl font-semibold">Processando importação massiva...</h2>
             <p className="text-sm text-muted-foreground">
-              Inserindo todos os profissionais parceiros do arquivo Metropolitano_01.xlsx
+              Inserindo todos os parceiros profissionais do arquivo Metropolitano_01.xlsx
             </p>
           </div>
         )}
@@ -160,7 +160,7 @@ export default function BulkImportFinal() {
             <AlertCircle className="h-12 w-12 mx-auto text-red-500" />
             <h2 className="text-xl font-semibold text-red-600">Erro na Importação</h2>
             <p className="text-sm text-muted-foreground">
-              Ocorreu um erro ao importar os profissionais parceiros. Verifique os logs do console.
+              Ocorreu um erro ao importar os parceiros profissionais. Verifique os logs do console.
             </p>
             <Button onClick={() => processAndInsertAll()} variant="outline" className="w-full">
               Tentar Novamente

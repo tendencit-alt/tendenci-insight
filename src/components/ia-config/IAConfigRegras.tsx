@@ -222,7 +222,7 @@ export default function IAConfigRegras({ config, onSave, saving }: Props) {
           <Input
             value={novaExcecao}
             onChange={(e) => setNovaExcecao(e.target.value)}
-            placeholder="Ex: Profissionais Parceiros tier A podem ter desconto extra de 5%"
+            placeholder="Ex: Parceiros Profissionais tier A podem ter desconto extra de 5%"
             onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addItem("excecoes", novaExcecao, setNovaExcecao))}
           />
           <Button type="button" onClick={() => addItem("excecoes", novaExcecao, setNovaExcecao)} variant="outline">

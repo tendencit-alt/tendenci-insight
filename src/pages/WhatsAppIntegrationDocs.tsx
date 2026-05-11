@@ -55,7 +55,7 @@ export default function WhatsAppIntegrationDocs() {
                 </div>
                 <div className="flex-1">
                   <p className="font-medium">1. Lovable CRM (Frontend)</p>
-                  <p className="text-sm text-muted-foreground">Disparo da campanha com dados dos profissionais parceiros</p>
+                  <p className="text-sm text-muted-foreground">Disparo da campanha com dados dos parceiros profissionais</p>
                 </div>
               </div>
               
@@ -84,7 +84,7 @@ export default function WhatsAppIntegrationDocs() {
                   <CheckCircle2 className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium">4. Profissional Parceiro (Cliente)</p>
+                  <p className="font-medium">4. Parceiro Profissional (Cliente)</p>
                   <p className="text-sm text-muted-foreground">Recebe a mensagem no WhatsApp</p>
                 </div>
               </div>
@@ -118,7 +118,7 @@ export default function WhatsAppIntegrationDocs() {
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Cada profissional parceiro selecionado na campanha recebe um POST individual com este payload
+                    Cada parceiro profissional selecionado na campanha recebe um POST individual com este payload
                   </AlertDescription>
                 </Alert>
 
@@ -129,7 +129,7 @@ export default function WhatsAppIntegrationDocs() {
 {`{
   "campanha_id": "uuid-da-campanha",
   "arquiteto_id": "uuid-do-arquiteto",
-  "nome": "Nome do Profissional Parceiro",
+  "nome": "Nome do Parceiro Profissional",
   "telefone": "5511999999999",
   "tipo_envio": "texto",
   "conteudo_texto": "Mensagem em texto...",
@@ -211,7 +211,7 @@ export default function WhatsAppIntegrationDocs() {
                     <Badge>UUID</Badge>
                     <div className="flex-1">
                       <p className="font-medium">arquiteto_id</p>
-                      <p className="text-sm text-muted-foreground">ID único do profissional parceiro destinatário</p>
+                      <p className="text-sm text-muted-foreground">ID único do parceiro profissional destinatário</p>
                     </div>
                     <Badge variant="outline">Obrigatório</Badge>
                   </div>
@@ -220,7 +220,7 @@ export default function WhatsAppIntegrationDocs() {
                     <Badge>String</Badge>
                     <div className="flex-1">
                       <p className="font-medium">nome</p>
-                      <p className="text-sm text-muted-foreground">Nome do profissional parceiro</p>
+                      <p className="text-sm text-muted-foreground">Nome do parceiro profissional</p>
                     </div>
                     <Badge variant="outline">Obrigatório</Badge>
                   </div>
@@ -536,7 +536,7 @@ Body:
                     <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
 {`SELECT 
   pal.created_at,
-  a.name as profissional parceiro,
+  a.name as parceiro profissional,
   c.nome as campanha,
   pal.mensagem
 FROM tendenci_prospec_arq_logs pal
@@ -556,7 +556,7 @@ LIMIT 20;`}
                     <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
 {`SELECT 
   d.enviado_em,
-  a.name as profissional parceiro,
+  a.name as parceiro profissional,
   a.phone,
   d.status,
   d.mensagem_erro
@@ -568,9 +568,9 @@ ORDER BY d.enviado_em DESC;`}
                   </div>
 
                   <div className="border-l-4 border-purple-500 pl-4">
-                    <h3 className="font-semibold mb-2">Status dos Profissionais Parceiros</h3>
+                    <h3 className="font-semibold mb-2">Status dos Parceiros Profissionais</h3>
                     <p className="text-sm text-muted-foreground mb-2">
-                      Após envio bem-sucedido, profissionais parceiros são automaticamente movidos para:
+                      Após envio bem-sucedido, parceiros profissionais são automaticamente movidos para:
                     </p>
                     <div className="flex items-center gap-2 mt-2">
                       <Badge>status_funil</Badge>
@@ -591,7 +591,7 @@ ORDER BY d.enviado_em DESC;`}
                       <li>Status da campanha: "enviado"</li>
                       <li>Status do dispatch: "sucesso"</li>
                       <li>Registro criado em tendenci_prospec_arq_logs</li>
-                      <li>Profissional Parceiro movido para "contato_iniciado"</li>
+                      <li>Parceiro Profissional movido para "contato_iniciado"</li>
                     </ul>
                   </AlertDescription>
                 </Alert>
@@ -660,7 +660,7 @@ ORDER BY d.enviado_em DESC;`}
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    <strong>Dica:</strong> Sempre teste suas campanhas com um ou dois profissionais parceiros antes de disparar para toda a lista
+                    <strong>Dica:</strong> Sempre teste suas campanhas com um ou dois parceiros profissionais antes de disparar para toda a lista
                   </AlertDescription>
                 </Alert>
               </CardContent>

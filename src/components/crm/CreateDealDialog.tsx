@@ -199,7 +199,7 @@ export function CreateDealDialog({
     })), [leads]);
 
   const architectOptions: ComboboxOption[] = useMemo(() => [
-    { value: "sem-arquiteto", label: "Cliente sem profissional parceiro" },
+    { value: "sem-arquiteto", label: "Cliente sem parceiro profissional" },
     ...architects.map((arch) => ({
       value: arch.id,
       label: arch.name,
@@ -245,7 +245,7 @@ export function CreateDealDialog({
     }
     toast({
       title: "Sucesso",
-      description: "Profissional Parceiro criado e selecionado!",
+      description: "Parceiro Profissional criado e selecionado!",
     });
   };
 
@@ -626,9 +626,9 @@ export function CreateDealDialog({
         <FormSaveIndicator hasRestoredData={hasRestoredData} className="mb-4" />
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Seção: Lead e Profissional Parceiro */}
+          {/* Seção: Lead e Parceiro Profissional */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase">Lead e Profissional Parceiro</h3>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase">Lead e Parceiro Profissional</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -699,7 +699,7 @@ export function CreateDealDialog({
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="architect">Profissional Parceiro *</Label>
+                  <Label htmlFor="architect">Parceiro Profissional *</Label>
                   <Button
                     type="button"
                     variant="ghost"
@@ -708,7 +708,7 @@ export function CreateDealDialog({
                     className="h-7 text-xs"
                   >
                     <Plus className="mr-1 h-3 w-3" />
-                    Novo Profissional Parceiro
+                    Novo Parceiro Profissional
                   </Button>
                 </div>
                 <SearchableCombobox
@@ -717,9 +717,9 @@ export function CreateDealDialog({
                   onValueChange={(value) =>
                     setFormData({ ...formData, architect_id: value })
                   }
-                  placeholder="Selecione o profissional parceiro"
-                  searchPlaceholder="Buscar profissional parceiro..."
-                  emptyMessage="Nenhum profissional parceiro encontrado."
+                  placeholder="Selecione o parceiro profissional"
+                  searchPlaceholder="Buscar parceiro profissional..."
+                  emptyMessage="Nenhum parceiro profissional encontrado."
                 />
               </div>
             </div>
@@ -755,13 +755,13 @@ export function CreateDealDialog({
             </div>
           </div>
 
-          {/* Seção: Indicação de Profissional Parceiro */}
+          {/* Seção: Indicação de Parceiro Profissional */}
           <div className="space-y-4 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-900">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Target className="h-4 w-4 text-amber-600" />
                 <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200 uppercase">
-                  Indicação de Profissional Parceiro
+                  Indicação de Parceiro Profissional
                 </h3>
                 {pendingIndications.length > 0 && (
                   <span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">
@@ -812,7 +812,7 @@ export function CreateDealDialog({
               <div className="space-y-3 p-3 bg-white dark:bg-background rounded border">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label className="text-xs">Profissional Parceiro *</Label>
+                    <Label className="text-xs">Parceiro Profissional *</Label>
                     <Select
                       value={newIndication.architect_id}
                       onValueChange={(value) => setNewIndication(prev => ({ ...prev, architect_id: value }))}
@@ -890,7 +890,7 @@ export function CreateDealDialog({
                       if (!newIndication.architect_id || !newIndication.product_type) {
                         toast({
                           title: "Campos obrigatórios",
-                          description: "Selecione o profissional parceiro e o tipo de produto.",
+                          description: "Selecione o parceiro profissional e o tipo de produto.",
                           variant: "destructive",
                         });
                         return;
@@ -898,7 +898,7 @@ export function CreateDealDialog({
                       const arch = architects.find(a => a.id === newIndication.architect_id);
                       setPendingIndications(prev => [...prev, {
                         ...newIndication,
-                        architect_name: arch?.name || "Profissional Parceiro"
+                        architect_name: arch?.name || "Parceiro Profissional"
                       }]);
                       setNewIndication({ architect_id: "", product_type: "", value: "", notes: "" });
                       setShowIndicationForm(false);

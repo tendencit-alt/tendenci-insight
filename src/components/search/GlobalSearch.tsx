@@ -19,7 +19,7 @@ interface Result {
 
 const KIND_META: Record<ResultKind, { label: string; icon: typeof Users; color: string }> = {
   cliente: { label: "Cliente", icon: Users, color: "text-sky-500" },
-  arquiteto: { label: "Profissional Parceiro", icon: Compass, color: "text-violet-500" },
+  arquiteto: { label: "Parceiro Profissional", icon: Compass, color: "text-violet-500" },
   lead: { label: "Lead", icon: UserPlus, color: "text-amber-500" },
 };
 
@@ -92,7 +92,7 @@ export function GlobalSearch() {
         merged.push({
           id: `arquiteto:${a.id}`,
           kind: "arquiteto",
-          title: a.name || "Profissional Parceiro",
+          title: a.name || "Parceiro Profissional",
           subtitle: [a.company, a.city].filter(Boolean).join(" • "),
           route: `/crm-comercial?tab=architects&focus=${a.id}`,
         });
@@ -159,7 +159,7 @@ export function GlobalSearch() {
           title="Busca global (Ctrl+K)"
         >
           <Search className="h-3.5 w-3.5" />
-          <span className="flex-1 text-left">Buscar clientes, profissionais parceiros, leads...</span>
+          <span className="flex-1 text-left">Buscar clientes, parceiros profissionais, leads...</span>
           <kbd className="hidden lg:inline-flex h-4 items-center gap-0.5 rounded border border-border bg-muted px-1 text-[9px] font-mono">
             ⌘K
           </kbd>

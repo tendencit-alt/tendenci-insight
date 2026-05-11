@@ -310,19 +310,19 @@ export function CreateWonDealDialog({
               </div>
             </div>
 
-            {/* Profissional Parceiro */}
+            {/* Parceiro Profissional */}
             <div className="space-y-2">
-              <Label>Profissional Parceiro</Label>
+              <Label>Parceiro Profissional</Label>
               <div className="flex gap-2">
                 <Select
                   value={formData.architect_id || "_none"}
                   onValueChange={(v) => setFormData(prev => ({ ...prev, architect_id: v === "_none" ? "" : v }))}
                 >
                   <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Sem profissional parceiro" />
+                    <SelectValue placeholder="Sem parceiro profissional" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="_none">Sem profissional parceiro</SelectItem>
+                    <SelectItem value="_none">Sem parceiro profissional</SelectItem>
                     {architects.map((arch) => (
                       <SelectItem key={arch.id} value={arch.id}>
                         {arch.name} {arch.company && `- ${arch.company}`}

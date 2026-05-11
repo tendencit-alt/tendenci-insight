@@ -118,14 +118,14 @@ export function PerformanceCharts({ evolucaoDiaria, origemLeads, produtosVendido
 
       <Card className="col-span-2">
         <CardHeader>
-          <CardTitle>Profissionais Parceiros que Geraram Vendas</CardTitle>
+          <CardTitle>Parceiros Profissionais que Geraram Vendas</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={arquitetosVendas || []} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" tickFormatter={(value) => formatCurrency(value)} />
-              <YAxis type="category" dataKey="profissional parceiro" width={150} />
+              <YAxis type="category" dataKey="parceiro profissional" width={150} />
               <Tooltip 
                 formatter={(value: number) => formatCurrency(value)}
                 contentStyle={{ 

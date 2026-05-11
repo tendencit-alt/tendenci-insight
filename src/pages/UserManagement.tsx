@@ -149,7 +149,7 @@ const UserManagement = () => {
     ) : user.role === 'arquiteto' ? (
       <Badge variant="outline">
         <User className="w-3 h-3 mr-1" />
-        Profissional Parceiro
+        Parceiro Profissional
       </Badge>
     ) : user.role === 'projetista' ? (
       <Badge variant="outline" className="border-blue-500 text-blue-500">

@@ -83,7 +83,7 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
   const fetchProjects = async () => {
     if (!architect) return;
 
-    // Buscar projetos sem profissional parceiro OU do profissional parceiro atual
+    // Buscar projetos sem parceiro profissional OU do parceiro profissional atual
     const { data, error } = await supabase
       .from('projects')
       .select('id, name, stage, created_at, architect_id')
@@ -171,7 +171,7 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
       await supabase.from('architect_history').insert({
         architect_id: architect.id,
         event_type: 'sistema',
-        description: 'Dados do profissional parceiro atualizados'
+        description: 'Dados do parceiro profissional atualizados'
       });
 
       // SYNC: Se as notas foram alteradas, salvar também na architect_timeline
@@ -185,13 +185,13 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
         });
       }
 
-      toast.success("Profissional Parceiro atualizado com sucesso!");
+      toast.success("Parceiro Profissional atualizado com sucesso!");
       
       onSuccess();
       onOpenChange(false);
       
     } catch (error: any) {
-      toast.error(error.message || "Erro ao atualizar profissional parceiro");
+      toast.error(error.message || "Erro ao atualizar parceiro profissional");
     } finally {
       setLoading(false);
     }
@@ -203,7 +203,7 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Editar Profissional Parceiro</DialogTitle>
+          <DialogTitle className="text-2xl">Editar Parceiro Profissional</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
@@ -362,7 +362,7 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Anotações sobre o profissional parceiro..."
+                placeholder="Anotações sobre o parceiro profissional..."
                 rows={3}
               />
             </div>

@@ -244,7 +244,7 @@ const Projects = () => {
             📦 Projetos
           </h1>
           <p className="text-muted-foreground text-lg">
-            Gerenciamento de todos os projetos enviados pelos profissionais parceiros - acompanhe status, prazos e desempenho.
+            Gerenciamento de todos os projetos enviados pelos parceiros profissionais - acompanhe status, prazos e desempenho.
           </p>
         </div>
 
@@ -394,7 +394,7 @@ const Projects = () => {
             </TabsTrigger>
             <TabsTrigger value="performance" className="gap-2">
               <TrendingUp className="w-4 h-4" />
-              Desempenho dos Profissionais Parceiros
+              Desempenho dos Parceiros Profissionais
             </TabsTrigger>
           </TabsList>
 

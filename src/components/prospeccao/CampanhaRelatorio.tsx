@@ -117,7 +117,7 @@ export function CampanhaRelatorio({ campanhaId }: RelatorioProps) {
                     <div className="flex items-center gap-3">
                       <User className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <p className="font-medium">{dispatch.architects?.name || 'Profissional Parceiro não encontrado'}</p>
+                        <p className="font-medium">{dispatch.architects?.name || 'Parceiro Profissional não encontrado'}</p>
                         <p className="text-sm text-muted-foreground">
                           {dispatch.architects?.phone || 'Sem telefone'}
                         </p>

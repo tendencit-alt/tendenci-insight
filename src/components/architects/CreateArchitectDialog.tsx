@@ -67,7 +67,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
     
     // Validação com mensagens detalhadas
     const validationRules: ValidationRule[] = [
-      { field: "name", label: "Nome do Profissional Parceiro", required: true, minLength: 2 },
+      { field: "name", label: "Nome do Parceiro Profissional", required: true, minLength: 2 },
       { field: "phone", label: "WhatsApp", required: true, pattern: ValidationPatterns.phone, patternMessage: ValidationMessages.phone },
     ];
 
@@ -133,7 +133,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
         });
       }
 
-      toast.success("Profissional Parceiro criado com sucesso!");
+      toast.success("Parceiro Profissional criado com sucesso!");
       
       clearPersistedData();
       onSuccess(data?.id);
@@ -156,7 +156,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
       
     } catch (error: any) {
       const errorMsg = formatDatabaseError(error);
-      toast.error("Erro ao criar profissional parceiro", {
+      toast.error("Erro ao criar parceiro profissional", {
         description: errorMsg,
       });
     } finally {
@@ -168,7 +168,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Novo Profissional Parceiro</DialogTitle>
+          <DialogTitle className="text-2xl">Novo Parceiro Profissional</DialogTitle>
         </DialogHeader>
 
         <FormSaveIndicator hasRestoredData={hasRestoredData} className="mb-4" />
@@ -176,7 +176,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2 col-span-2">
-              <Label htmlFor="name">Nome do Profissional Parceiro *</Label>
+              <Label htmlFor="name">Nome do Parceiro Profissional *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -250,7 +250,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="ja_contactado" className="text-base">Já foi contactado?</Label>
-                <p className="text-sm text-muted-foreground">Marque se este profissional parceiro já teve contato com a empresa</p>
+                <p className="text-sm text-muted-foreground">Marque se este parceiro profissional já teve contato com a empresa</p>
               </div>
               <Switch
                 id="ja_contactado"
@@ -299,7 +299,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
                     Indicação de Oportunidade
                   </Label>
                   <p className="text-sm text-amber-700 dark:text-amber-300">
-                    Vincule este profissional parceiro a uma oportunidade existente
+                    Vincule este parceiro profissional a uma oportunidade existente
                   </p>
                 </div>
               </div>
