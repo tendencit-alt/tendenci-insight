@@ -952,6 +952,107 @@ export function ProfileTypePermissionsDialog({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <Dialog open={saveTemplateOpen} onOpenChange={setSaveTemplateOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Save className="w-4 h-4 text-primary" />
+                Salvar como template
+              </DialogTitle>
+              <DialogDescription>
+                Cria um novo template reutilizável a partir das permissões atualmente exibidas neste perfil.
+                {hasUnsavedChanges && (
+                  <span className="block mt-1 text-warning font-medium">
+                    Atenção: as alterações ainda não salvas serão incluídas no template.
+                  </span>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="tpl-name">Nome do template *</Label>
+                <Input
+                  id="tpl-name"
+                  value={tplName}
+                  onChange={(e) => setTplName(e.target.value)}
+                  placeholder="Ex: Vendedor Pleno"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="tpl-desc">Descrição</Label>
+                <Textarea
+                  id="tpl-desc"
+                  value={tplDesc}
+                  onChange={(e) => setTplDesc(e.target.value)}
+                  rows={2}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Cor</Label>
+                <div className="flex flex-wrap gap-2">
+                  {['#7C3AED','#10B981','#3B82F6','#F59E0B','#EF4444','#EC4899','#6B7280','#8B5CF6'].map(c => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setTplColor(c)}
+                      className={`w-7 h-7 rounded-full border-2 transition-all ${tplColor === c ? 'border-foreground scale-110' : 'border-transparent'}`}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-md border bg-muted/30 p-2 text-xs text-muted-foreground">
+                {(() => {
+                  const granted = ALL_MODULES.reduce(
+                    (acc, m) => acc + ALL_FLAGS.filter(f => permissions[m]?.[f]).length, 0
+                  );
+                  const usedModules = ALL_MODULES.filter(
+                    m => ALL_FLAGS.some(f => permissions[m]?.[f])
+                  ).length;
+                  return `Será salvo: ${granted} permissão(ões) em ${usedModules} módulo(s).`;
+                })()}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSaveTemplateOpen(false)} disabled={upsertTemplate.isPending}>
+                Cancelar
+              </Button>
+              <Button
+                disabled={upsertTemplate.isPending || !tplName.trim()}
+                onClick={async () => {
+                  try {
+                    const permsObj: Record<string, any> = {};
+                    ALL_MODULES.forEach(m => { permsObj[m] = { ...permissions[m] }; });
+                    await upsertTemplate.mutateAsync({
+                      name: tplName.trim(),
+                      description: tplDesc.trim() || null,
+                      color: tplColor,
+                      icon: profileType.icon || 'user',
+                      permissions: permsObj,
+                    });
+                    toast({
+                      title: 'Template salvo',
+                      description: `"${tplName.trim()}" disponível em "Templates".`,
+                    });
+                    setSaveTemplateOpen(false);
+                  } catch (e: any) {
+                    toast({
+                      title: 'Erro ao salvar template',
+                      description: e?.message?.includes('duplicate')
+                        ? 'Já existe um template com esse nome.'
+                        : (e?.message || 'Falha ao salvar.'),
+                      variant: 'destructive',
+                    });
+                  }
+                }}
+              >
+                {upsertTemplate.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                Salvar template
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   );
