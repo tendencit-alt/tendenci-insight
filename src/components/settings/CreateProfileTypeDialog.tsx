@@ -255,7 +255,7 @@ export function CreateProfileTypeDialog({
 
   const applyTemplate = (templateId: string) => {
     setSelectedTemplate(templateId);
-    const tpl = TEMPLATES.find(t => t.id === templateId);
+    const tpl = allTemplates.find(t => t.id === templateId);
     if (!tpl || tpl.id === 'blank') return;
     // Prefill form fields with template defaults; user can still tweak before saving.
     setFormData(prev => ({
@@ -323,7 +323,7 @@ export function CreateProfileTypeDialog({
         }
 
         // Seed permissions from selected template (skip "blank")
-        const tpl = TEMPLATES.find(t => t.id === selectedTemplate);
+        const tpl = allTemplates.find(t => t.id === selectedTemplate);
         if (created && tpl && tpl.id !== 'blank') {
           const perms = tpl.buildPermissions();
           const rows = ALL_MODULES
@@ -389,7 +389,7 @@ export function CreateProfileTypeDialog({
                 Selecione um perfil pronto. Nome, cor, ícone e permissões serão preenchidos automaticamente.
               </p>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-                {TEMPLATES.map((tpl) => {
+                {allTemplates.map((tpl) => {
                   const active = selectedTemplate === tpl.id;
                   return (
                     <button
@@ -422,7 +422,7 @@ export function CreateProfileTypeDialog({
                 })}
               </div>
               {selectedTemplate !== 'blank' && (() => {
-                const tpl = TEMPLATES.find(t => t.id === selectedTemplate);
+                const tpl = allTemplates.find(t => t.id === selectedTemplate);
                 if (!tpl) return null;
                 const perms = tpl.buildPermissions();
                 const FLAG_LABELS: Record<keyof FlagSet, string> = {
