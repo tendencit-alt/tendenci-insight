@@ -239,6 +239,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.location.href = '/autenticacao';
   };
 
+  const refreshProfile = async () => {
+    if (user?.id) await fetchProfile(user.id);
+  };
+
   const value = {
     user,
     session,
@@ -247,6 +251,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signUp,
     signOut,
+    refreshProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
