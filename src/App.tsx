@@ -104,6 +104,7 @@ const App = () => (
               <SimulationBanner />
               <CommandBar />
                <Routes>
+              <Route path="/auditoria-permissoes" element={<ProtectedRoute><PermissionAuditPage /></ProtectedRoute>} />
               <Route path="/auditoria-rls" element={<ProtectedRoute><RlsAudit /></ProtectedRoute>} />
 
               {/* Autenticação (PT canônico + redirects EN) */}
