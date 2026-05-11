@@ -143,10 +143,13 @@ const App = () => (
               <Route path="/producao" element={<ProtectedRoute><PermissionGuard module="producao"><Production /></PermissionGuard></ProtectedRoute>} />
               <Route path="/pedidos" element={<ProtectedRoute><PermissionGuard module="pedidos"><Orders /></PermissionGuard></ProtectedRoute>} />
               <Route path="/fornecedores" element={<ProtectedRoute><PermissionGuard module="fornecedores"><Suppliers /></PermissionGuard></ProtectedRoute>} />
-              <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
-              <Route path="/propostas" element={<ProtectedRoute><Propostas /></ProtectedRoute>} />
-              <Route path="/contratos" element={<ProtectedRoute><Contratos /></ProtectedRoute>} />
-              <Route path="/comissoes" element={<ProtectedRoute><Comissoes /></ProtectedRoute>} />
+              <Route path="/clientes" element={<ProtectedRoute><PermissionGuard module="comercial"><Clientes /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/leads" element={<ProtectedRoute><PermissionGuard module="comercial"><Leads /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/crm-comercial" element={<ProtectedRoute><PermissionGuard module="comercial"><CRMCommercial /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/catalogo-comercial" element={<ProtectedRoute><PermissionGuard module="comercial"><Catalogo /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/propostas" element={<ProtectedRoute><PermissionGuard module="comercial"><Propostas /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/contratos" element={<ProtectedRoute><PermissionGuard module="comercial"><Contratos /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/comissoes" element={<ProtectedRoute><PermissionGuard module="comercial"><Comissoes /></PermissionGuard></ProtectedRoute>} />
               <Route path="/estoque" element={<ProtectedRoute><PermissionGuard module="estoque"><Inventory /></PermissionGuard></ProtectedRoute>} />
               <Route path="/produtos" element={<ProtectedRoute><Produtos /></ProtectedRoute>} />
               <Route path="/financeiro" element={<ProtectedRoute><PermissionGuard module="financeiro"><Financeiro /></PermissionGuard></ProtectedRoute>} />
