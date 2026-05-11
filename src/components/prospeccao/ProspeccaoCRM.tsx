@@ -24,8 +24,8 @@ export function ProspeccaoCRM({ onManageStages }: ProspeccaoCRMProps) {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold">CRM de Profissionais Parceiros</h2>
-        <p className="text-muted-foreground">Gerencie o funil de prospecção dos profissionais parceiros</p>
+        <h2 className="text-2xl font-bold">CRM de Parceiros Profissionais</h2>
+        <p className="text-muted-foreground">Gerencie o funil de prospecção dos parceiros profissionais</p>
       </div>
 
       {/* Toggle de visualização */}
@@ -69,7 +69,7 @@ export function ProspeccaoCRM({ onManageStages }: ProspeccaoCRMProps) {
         onToggleNaoContactados={() => setShowNaoContactados(!showNaoContactados)}
       />
 
-      {/* 🚨 Painel de Profissionais Parceiros Sem Tarefa - Destaque Visual */}
+      {/* 🚨 Painel de Parceiros Profissionais Sem Tarefa - Destaque Visual */}
       <ArchitectsWithoutTasksPanel />
 
       {/* Tasks Panel - após filtros */}

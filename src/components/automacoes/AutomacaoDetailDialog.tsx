@@ -234,11 +234,11 @@ export const AUTOMACOES_DETAILS: Record<string, Omit<AutomacaoDetail, 'id' | 'at
   // ============== PROSPECÇÃO ==============
   'campanhas-whatsapp': {
     titulo: 'Campanhas WhatsApp',
-    descricao: 'Disparo em massa de mensagens para profissionais parceiros',
-    oQueFaz: 'Permite criar e executar campanhas de WhatsApp em massa para segmentos de profissionais parceiros, com controle de velocidade, status de entrega e relatórios.',
+    descricao: 'Disparo em massa de mensagens para parceiros profissionais',
+    oQueFaz: 'Permite criar e executar campanhas de WhatsApp em massa para segmentos de parceiros profissionais, com controle de velocidade, status de entrega e relatórios.',
     comoFunciona: [
-      'Usuário cria campanha selecionando segmento de profissionais parceiros',
-      'Sistema filtra profissionais parceiros elegíveis (WhatsApp válido, ativos)',
+      'Usuário cria campanha selecionando segmento de parceiros profissionais',
+      'Sistema filtra parceiros profissionais elegíveis (WhatsApp válido, ativos)',
       'Disparo é iniciado com delay entre mensagens (evitar bloqueio)',
       'Cada envio é registrado individualmente',
       'Status é atualizado em tempo real',
@@ -249,14 +249,14 @@ export const AUTOMACOES_DETAILS: Record<string, Omit<AutomacaoDetail, 'id' | 'at
     endpoint: '/functions/v1/dispatch-campaign',
     dependencias: [
       'Evolution API configurada e conectada',
-      'Profissionais Parceiros com WhatsApp válido cadastrado',
+      'Parceiros Profissionais com WhatsApp válido cadastrado',
       'Segmentos configurados (opcional)'
     ],
     dicas: [
       'Limite campanhas a 100-200 contatos por vez',
       'Use delay mínimo de 3-5 segundos entre mensagens',
       'Evite horários fora do comercial',
-      'Personalize mensagens com variáveis do profissional parceiro'
+      'Personalize mensagens com variáveis do parceiro profissional'
     ]
   },
   'sequencias-ia': {
@@ -264,11 +264,11 @@ export const AUTOMACOES_DETAILS: Record<string, Omit<AutomacaoDetail, 'id' | 'at
     descricao: 'Fluxos automatizados de mensagens com IA',
     oQueFaz: 'Cria sequências de mensagens automatizadas que são enviadas ao longo do tempo, com respostas geradas por I.A. baseadas no contexto da conversa.',
     comoFunciona: [
-      'Profissional Parceiro é adicionado a uma sequência',
+      'Parceiro Profissional é adicionado a uma sequência',
       'Sistema agenda próximo passo da sequência',
       'I.A. gera mensagem personalizada quando devido',
       'Mensagem é enviada via WhatsApp',
-      'Se profissional parceiro responde, sequência pode pausar',
+      'Se parceiro profissional responde, sequência pode pausar',
       'Logs são registrados para análise'
     ],
     quandoExecuta: 'Agendado conforme configuração da sequência',
@@ -286,20 +286,20 @@ export const AUTOMACOES_DETAILS: Record<string, Omit<AutomacaoDetail, 'id' | 'at
   },
   'tarefas-prospeccao': {
     titulo: 'Tarefas de Prospecção',
-    descricao: 'Gerenciamento de tarefas de prospecção de profissionais parceiros',
-    oQueFaz: 'Gerencia tarefas específicas de prospecção como ligações, visitas, envio de materiais, acompanhando o funil de relacionamento com profissionais parceiros.',
+    descricao: 'Gerenciamento de tarefas de prospecção de parceiros profissionais',
+    oQueFaz: 'Gerencia tarefas específicas de prospecção como ligações, visitas, envio de materiais, acompanhando o funil de relacionamento com parceiros profissionais.',
     comoFunciona: [
       'Tarefas são criadas automaticamente ou manualmente',
-      'Sistema agrupa por profissional parceiro e tipo',
+      'Sistema agrupa por parceiro profissional e tipo',
       'Alertas são gerados para tarefas vencidas',
       'Ao completar, histórico é registrado na timeline',
-      'Profissional Parceiro pode mudar de etapa no funil'
+      'Parceiro Profissional pode mudar de etapa no funil'
     ],
     quandoExecuta: 'Contínuo - tarefas são processadas conforme criadas',
     triggerType: 'event',
     endpoint: '/functions/v1/process-pending-architect-tasks',
     dependencias: [
-      'Profissionais Parceiros cadastrados',
+      'Parceiros Profissionais cadastrados',
       'Funil de prospecção configurado'
     ],
     dicas: [
@@ -318,7 +318,7 @@ export const AUTOMACOES_DETAILS: Record<string, Omit<AutomacaoDetail, 'id' | 'at
       'Extrai data, hora e contexto',
       'Cria agendamento na tabela apropriada',
       'Notifica vendedor responsável',
-      'Confirma com profissional parceiro via WhatsApp'
+      'Confirma com parceiro profissional via WhatsApp'
     ],
     quandoExecuta: 'Evento - quando I.A. detecta intenção',
     triggerType: 'event',
@@ -335,12 +335,12 @@ export const AUTOMACOES_DETAILS: Record<string, Omit<AutomacaoDetail, 'id' | 'at
     ]
   },
   'arquitetos-inativos': {
-    titulo: 'Verificar Profissionais Parceiros Inativos (60 dias)',
-    descricao: 'Move profissionais parceiros sem atividade para etapa Inativo',
-    oQueFaz: 'Verifica profissionais parceiros na etapa "parceiro_ativo" que não tiveram indicações, projetos ou interações nos últimos 60 dias e move automaticamente para a etapa "inativo".',
+    titulo: 'Verificar Parceiros Profissionais Inativos (60 dias)',
+    descricao: 'Move parceiros profissionais sem atividade para etapa Inativo',
+    oQueFaz: 'Verifica parceiros profissionais na etapa "parceiro_ativo" que não tiveram indicações, projetos ou interações nos últimos 60 dias e move automaticamente para a etapa "inativo".',
     comoFunciona: [
       'Função RPC run_inactive_architects_check é executada',
-      'Busca profissionais parceiros em "parceiro_ativo"',
+      'Busca parceiros profissionais em "parceiro_ativo"',
       'Verifica data_ultimo_contato e ultimo_projeto_data',
       'Se ambos > 60 dias, marca como inativo',
       'Atualiza status_funil para "inativo"',
@@ -352,7 +352,7 @@ export const AUTOMACOES_DETAILS: Record<string, Omit<AutomacaoDetail, 'id' | 'at
     endpoint: 'RPC: run_inactive_architects_check',
     dependencias: [
       'Etapa "inativo" configurada no funil',
-      'Profissionais Parceiros com datas de contato preenchidas',
+      'Parceiros Profissionais com datas de contato preenchidas',
       'Função RPC criada no banco'
     ],
     dicas: [
@@ -364,7 +364,7 @@ export const AUTOMACOES_DETAILS: Record<string, Omit<AutomacaoDetail, 'id' | 'at
   },
   'validar-whatsapp': {
     titulo: 'Validação de WhatsApp',
-    descricao: 'Valida números de WhatsApp dos profissionais parceiros',
+    descricao: 'Valida números de WhatsApp dos parceiros profissionais',
     oQueFaz: 'Verifica se os números de telefone cadastrados são válidos para WhatsApp, marcando o campo whatsapp_valido como true ou false.',
     comoFunciona: [
       'Trigger de banco ao inserir/atualizar telefone',
@@ -388,10 +388,10 @@ export const AUTOMACOES_DETAILS: Record<string, Omit<AutomacaoDetail, 'id' | 'at
   'atualizar-contato-arquiteto': {
     titulo: 'Atualizar Data Último Contato',
     descricao: 'Atualiza data de último contato automaticamente',
-    oQueFaz: 'Quando uma interação é registrada na timeline do profissional parceiro, atualiza automaticamente o campo data_ultimo_contato.',
+    oQueFaz: 'Quando uma interação é registrada na timeline do parceiro profissional, atualiza automaticamente o campo data_ultimo_contato.',
     comoFunciona: [
       'Trigger monitora INSERT em architect_timeline',
-      'Atualiza data_ultimo_contato no profissional parceiro',
+      'Atualiza data_ultimo_contato no parceiro profissional',
       'Mantém histórico de interações atualizado'
     ],
     quandoExecuta: 'Trigger de banco - ao criar timeline',

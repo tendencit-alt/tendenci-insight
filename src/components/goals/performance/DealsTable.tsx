@@ -37,8 +37,8 @@ export function DealsTable({ deals }: DealsTableProps) {
       "Tipo Produto",
       "Categoria",
       "Centro de Custo",
-      "Possui Profissional Parceiro",
-      "Nome Profissional Parceiro",
+      "Possui Parceiro Profissional",
+      "Nome Parceiro Profissional",
       "Observações"
     ];
 
@@ -94,7 +94,7 @@ export function DealsTable({ deals }: DealsTableProps) {
                 <TableHead>Tipo Produto</TableHead>
                 <TableHead>Categoria</TableHead>
                 <TableHead>Centro Custo</TableHead>
-                <TableHead>Profissional Parceiro</TableHead>
+                <TableHead>Parceiro Profissional</TableHead>
                 <TableHead>Observações</TableHead>
               </TableRow>
             </TableHeader>

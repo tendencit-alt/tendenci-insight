@@ -34,7 +34,7 @@ export function ArchitectsWithoutTasksPanel() {
         setArquitetosSemTarefa(result.arquitetos_sem_tarefa || []);
       }
     } catch (err) {
-      console.error('Erro ao buscar profissionais parceiros sem tarefa:', err);
+      console.error('Erro ao buscar parceiros profissionais sem tarefa:', err);
     } finally {
       setLoading(false);
     }
@@ -63,7 +63,7 @@ export function ArchitectsWithoutTasksPanel() {
     };
   }, []);
 
-  // Não mostrar se não há profissionais parceiros sem tarefa
+  // Não mostrar se não há parceiros profissionais sem tarefa
   if (!loading && arquitetosSemTarefa.length === 0) {
     return null;
   }
@@ -77,7 +77,7 @@ export function ArchitectsWithoutTasksPanel() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-400">
                   <AlertTriangle className="h-4 w-4" />
-                  <span>Profissionais Parceiros Sem Tarefa Agendada</span>
+                  <span>Parceiros Profissionais Sem Tarefa Agendada</span>
                   <Badge variant="destructive" className="ml-2 text-xs">
                     {loading ? "..." : arquitetosSemTarefa.length}
                   </Badge>
@@ -94,7 +94,7 @@ export function ArchitectsWithoutTasksPanel() {
           <CollapsibleContent>
             <CardContent className="pt-0 pb-3 px-4">
               <p className="text-xs text-muted-foreground mb-3">
-                Profissionais Parceiros em <strong>Contato Iniciado</strong> ou <strong>Parceiro Ativo</strong> que precisam de tarefas futuras para desbloquear campanhas.
+                Parceiros Profissionais em <strong>Contato Iniciado</strong> ou <strong>Parceiro Ativo</strong> que precisam de tarefas futuras para desbloquear campanhas.
               </p>
               
               {loading ? (

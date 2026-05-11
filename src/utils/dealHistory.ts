@@ -62,7 +62,7 @@ function getFieldLabel(fieldName: string): string {
     'owner_id': 'Vendedor Responsável',
     'status': 'Status',
     'note': 'Observação',
-    'architect_id': 'Profissional Parceiro',
+    'architect_id': 'Parceiro Profissional',
     'scheduled_call': 'Ligação Agendada',
     'last_interaction': 'Última Interação',
     'lost_reason': 'Motivo da Perda',

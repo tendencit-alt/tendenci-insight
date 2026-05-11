@@ -114,7 +114,7 @@ export function DeadlineAlerts({ refreshKey, onProjectClick }: DeadlineAlertsPro
                     <h4 className="font-semibold text-base">{alert.name}</h4>
                     <div className="text-sm text-muted-foreground space-y-1 mt-1">
                       <p>Cliente: <span className="font-medium">{alert.client_name || 'Não informado'}</span></p>
-                      <p>Profissional Parceiro: <span className="font-medium">{alert.architect_name || 'Não informado'}</span></p>
+                      <p>Parceiro Profissional: <span className="font-medium">{alert.architect_name || 'Não informado'}</span></p>
                       <p>Prazo: <span className="font-medium">
                         {format(new Date(alert.deadline), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                       </span></p>

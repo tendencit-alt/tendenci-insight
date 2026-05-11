@@ -81,7 +81,7 @@ export function AdvancedAnalytics({ refreshTrigger }: { refreshTrigger: number }
       const sellersBelowAvg = progressValues.filter((p: number) => p < avgProgress).length;
       const sellersMetGoal = progressValues.filter((p: number) => p >= 100).length;
 
-      // Total de vendas, profissionais parceiros e projetos
+      // Total de vendas, parceiros profissionais e projetos
       const totalSalesValue = (sellerGoals || [])
         .filter((g: any) => g.tipo_meta === "vendas")
         .reduce((sum: number, g: any) => sum + (g.tendenci_goal_progress?.[0]?.valor_vendido || 0), 0);
@@ -227,7 +227,7 @@ export function AdvancedAnalytics({ refreshTrigger }: { refreshTrigger: number }
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium">Profissionais Parceiros Captados</CardTitle>
+            <CardTitle className="text-sm font-medium">Parceiros Profissionais Captados</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{analytics.totalArchitects}</div>
@@ -307,7 +307,7 @@ export function AdvancedAnalytics({ refreshTrigger }: { refreshTrigger: number }
                         currency: "BRL",
                       })
                     : `${analytics.companyGoalProgress.quantidade_meta} ${
-                        analytics.companyGoalProgress.tipo_meta === "captacao" ? "profissionais parceiros" : "projetos"
+                        analytics.companyGoalProgress.tipo_meta === "captacao" ? "parceiros profissionais" : "projetos"
                       }`}
                 </p>
               </div>
@@ -320,7 +320,7 @@ export function AdvancedAnalytics({ refreshTrigger }: { refreshTrigger: number }
                         currency: "BRL",
                       })
                     : `${analytics.companyGoalProgress.tendenci_goal_progress?.[0]?.quantidade_alcancada || 0} ${
-                        analytics.companyGoalProgress.tipo_meta === "captacao" ? "profissionais parceiros" : "projetos"
+                        analytics.companyGoalProgress.tipo_meta === "captacao" ? "parceiros profissionais" : "projetos"
                       }`}
                 </p>
               </div>

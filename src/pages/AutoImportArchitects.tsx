@@ -68,8 +68,8 @@ export default function AutoImportArchitects() {
         // Processar telefone
         const phone = String(row['Telefone'] || '').replace(/\D/g, '');
         
-        // Nome do profissional parceiro
-        const name = String(row['Profissional Parceiro'] || '').trim();
+        // Nome do parceiro profissional
+        const name = String(row['Parceiro Profissional'] || '').trim();
 
         return {
           name,
@@ -87,7 +87,7 @@ export default function AutoImportArchitects() {
         return isValid;
       });
 
-      console.log(`Total de profissionais parceiros válidos: ${architects.length}`);
+      console.log(`Total de parceiros profissionais válidos: ${architects.length}`);
       
       setProgress({ current: 0, total: architects.length, success: 0, errors: 0 });
 
@@ -125,7 +125,7 @@ export default function AutoImportArchitects() {
               successCount++;
             }
           } else {
-            console.log(`Profissional Parceiro já existe: ${arch.name}`);
+            console.log(`Parceiro Profissional já existe: ${arch.name}`);
             errorCount++;
           }
         } catch (err: any) {
@@ -145,7 +145,7 @@ export default function AutoImportArchitects() {
       }
       
       setStatus('success');
-      toast.success(`${successCount} profissionais parceiros cadastrados com sucesso!`);
+      toast.success(`${successCount} parceiros profissionais cadastrados com sucesso!`);
       
       // Redirecionar após 3 segundos
       setTimeout(() => {
@@ -173,7 +173,7 @@ export default function AutoImportArchitects() {
           {status === 'processing' && (
             <>
               <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
-              <h2 className="text-2xl font-bold">Importando Profissionais Parceiros</h2>
+              <h2 className="text-2xl font-bold">Importando Parceiros Profissionais</h2>
               
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">

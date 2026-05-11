@@ -81,7 +81,7 @@ export function ArchitectPerformance() {
           <p className="text-3xl font-bold text-blue-600">
             {avgApprovalRate.toFixed(1)}%
           </p>
-          <p className="text-xs text-muted-foreground">Média de todos os profissionais parceiros</p>
+          <p className="text-xs text-muted-foreground">Média de todos os parceiros profissionais</p>
         </Card>
       </div>
 
@@ -94,7 +94,7 @@ export function ArchitectPerformance() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <p className="text-sm text-muted-foreground">Profissional Parceiro</p>
+              <p className="text-sm text-muted-foreground">Parceiro Profissional</p>
               <p className="text-lg font-bold">{topPerformer.architect_name}</p>
               <Badge variant={topPerformer.categoria === 'metropolitano' ? 'default' : 'secondary'}>
                 {topPerformer.categoria}
@@ -158,7 +158,7 @@ export function ArchitectPerformance() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">#</TableHead>
-              <TableHead>Profissional Parceiro</TableHead>
+              <TableHead>Parceiro Profissional</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead className="text-center">Projetos Enviados</TableHead>
               <TableHead className="text-center">Aprovados</TableHead>

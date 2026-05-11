@@ -71,7 +71,7 @@ export function BirthdayAlerts({ refreshKey }: BirthdayAlertsProps) {
             <div>
               <h3 className="text-lg font-semibold">🎂 Aniversariantes do Mês</h3>
               <p className="text-sm text-muted-foreground">
-                {birthdays.length} profissionais parceiros aniversariantes
+                {birthdays.length} parceiros profissionais aniversariantes
               </p>
             </div>
           </div>

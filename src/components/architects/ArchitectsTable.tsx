@@ -54,7 +54,7 @@ export function ArchitectsTable({ refreshKey, onEdit, onView, onDelete }: Archit
   const fetchArchitects = async () => {
     setLoading(true);
     
-    // Buscar profissionais parceiros com todos os campos necessários
+    // Buscar parceiros profissionais com todos os campos necessários
     let query = supabase
       .from('architects')
       .select('*');
@@ -71,7 +71,7 @@ export function ArchitectsTable({ refreshKey, onEdit, onView, onDelete }: Archit
       return;
     }
 
-    // Para cada profissional parceiro, buscar contagem e última data de projeto
+    // Para cada parceiro profissional, buscar contagem e última data de projeto
     const architectsWithStats = await Promise.all(
       architectsData.map(async (arch) => {
         const { data: projects, error: projError } = await supabase
@@ -108,7 +108,7 @@ export function ArchitectsTable({ refreshKey, onEdit, onView, onDelete }: Archit
     });
 
     if (error) {
-      toast.error('Erro ao excluir profissional parceiro: ' + error.message);
+      toast.error('Erro ao excluir parceiro profissional: ' + error.message);
     } else if (data) {
       const result = data as { success: boolean; error?: string; details?: { leads: number; deals: number; projetos: number; pedidos: number } };
       if (!result.success) {
@@ -120,12 +120,12 @@ export function ArchitectsTable({ refreshKey, onEdit, onView, onDelete }: Archit
           if (details.deals > 0) blockers.push(`${details.deals} deal(s)`);
           if (details.projetos > 0) blockers.push(`${details.projetos} projeto(s)`);
           if (details.pedidos > 0) blockers.push(`${details.pedidos} pedido(s)`);
-          toast.error(`Não é possível excluir: profissional parceiro possui ${blockers.join(', ')} vinculados`);
+          toast.error(`Não é possível excluir: parceiro profissional possui ${blockers.join(', ')} vinculados`);
         } else {
-          toast.error(result.error || 'Erro ao excluir profissional parceiro');
+          toast.error(result.error || 'Erro ao excluir parceiro profissional');
         }
       } else {
-        toast.success('Profissional Parceiro excluído com sucesso');
+        toast.success('Parceiro Profissional excluído com sucesso');
         fetchArchitects();
         onDelete?.();
       }
@@ -158,9 +158,9 @@ export function ArchitectsTable({ refreshKey, onEdit, onView, onDelete }: Archit
         <div className="p-6 border-b bg-gradient-to-r from-background to-muted/20">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-xl font-semibold">Todos os Profissionais Parceiros</h2>
+              <h2 className="text-xl font-semibold">Todos os Parceiros Profissionais</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                {architects.length} profissionais parceiros cadastrados
+                {architects.length} parceiros profissionais cadastrados
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -182,7 +182,7 @@ export function ArchitectsTable({ refreshKey, onEdit, onView, onDelete }: Archit
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome do Profissional Parceiro</TableHead>
+                <TableHead>Nome do Parceiro Profissional</TableHead>
                 <TableHead>Empresa</TableHead>
                 <TableHead>Categoria</TableHead>
                 <TableHead>WhatsApp</TableHead>
@@ -298,7 +298,7 @@ export function ArchitectsTable({ refreshKey, onEdit, onView, onDelete }: Archit
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
-              <p>Tem certeza que deseja excluir este profissional parceiro?</p>
+              <p>Tem certeza que deseja excluir este parceiro profissional?</p>
               <p className="text-sm text-muted-foreground">
                 Todos os dados relacionados (tarefas, campanhas, histórico) serão removidos permanentemente.
               </p>

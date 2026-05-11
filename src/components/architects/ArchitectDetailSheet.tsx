@@ -43,7 +43,7 @@ export function ArchitectDetailSheet({ open, onOpenChange, architectId }: Archit
     
     setLoading(true);
 
-    // Buscar dados do profissional parceiro
+    // Buscar dados do parceiro profissional
     const { data: archData } = await supabase
       .from('architects')
       .select('*')
@@ -54,7 +54,7 @@ export function ArchitectDetailSheet({ open, onOpenChange, architectId }: Archit
       setArchitect(archData);
     }
 
-    // Buscar projetos do profissional parceiro
+    // Buscar projetos do parceiro profissional
     const { data: projectsData } = await supabase
       .from('projects')
       .select(`
@@ -126,7 +126,7 @@ export function ArchitectDetailSheet({ open, onOpenChange, architectId }: Archit
           <Card className="p-6 space-y-4">
             <h3 className="font-semibold text-lg flex items-center gap-2">
               <Calendar className="w-5 h-5" />
-              Informações do Profissional Parceiro
+              Informações do Parceiro Profissional
             </h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>

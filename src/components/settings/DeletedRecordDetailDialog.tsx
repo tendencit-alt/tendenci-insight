@@ -27,7 +27,7 @@ interface DeletedRecordDetailDialogProps {
 const RECORD_TYPE_LABELS: Record<string, string> = {
   order: "Pedido",
   deal: "Negócio CRM",
-  architect: "Profissional Parceiro",
+  architect: "Parceiro Profissional",
   goal: "Meta",
   user: "Usuário",
   bank_account: "Conta Bancária",

@@ -188,7 +188,7 @@ export function CampanhasManager() {
     checkDispatchAllowed();
   }, []);
   
-  // Recarregar profissionais parceiros quando etapa mudar
+  // Recarregar parceiros profissionais quando etapa mudar
   useEffect(() => {
     if (isDialogOpen) {
       fetchArquitetosDisponiveis(editingCampanha?.id, filtroEtapa);
@@ -224,18 +224,18 @@ export function CampanhasManager() {
   const [arquitetosComErroTelefone, setArquitetosComErroTelefone] = useState(0);
 
   const fetchArquitetosDisponiveis = async (editingCampaignId?: string, statusFunil?: string) => {
-    // 1. Buscar TODOS os IDs de profissionais parceiros que estão RESERVADOS ou JÁ ENVIADOS (pendente, enviando, enviado)
-    // Isso impede que um profissional parceiro seja selecionado para múltiplas campanhas
+    // 1. Buscar TODOS os IDs de parceiros profissionais que estão RESERVADOS ou JÁ ENVIADOS (pendente, enviando, enviado)
+    // Isso impede que um parceiro profissional seja selecionado para múltiplas campanhas
     const { data: jaEmCampanhas } = await supabase
       .from('tendenci_prospec_arq_campaign_architects')
       .select('architect_id, status')
       .in('status', ['pendente', 'enviando', 'enviado']); // ✅ CRÍTICO: Incluir 'pendente' e 'enviando'
 
-    // 2. Se estiver editando, não excluir profissionais parceiros da PRÓPRIA campanha
+    // 2. Se estiver editando, não excluir parceiros profissionais da PRÓPRIA campanha
     let idsJaEmCampanhas = [...new Set(jaEmCampanhas?.map(d => d.architect_id) || [])];
     
     if (editingCampaignId) {
-      // Buscar profissionais parceiros da campanha sendo editada para NÃO excluí-los
+      // Buscar parceiros profissionais da campanha sendo editada para NÃO excluí-los
       const { data: arquitetosDaCampanha } = await supabase
         .from('tendenci_prospec_arq_campaign_architects')
         .select('architect_id')
@@ -245,7 +245,7 @@ export function CampanhasManager() {
       idsJaEmCampanhas = idsJaEmCampanhas.filter(id => !idsDaCampanhaEditando.includes(id));
     }
 
-    // 3. Buscar IDs de profissionais parceiros com ERROS de telefone
+    // 3. Buscar IDs de parceiros profissionais com ERROS de telefone
     const { data: arquitetosComErros } = await supabase
       .from('tendenci_prospec_arq_logs')
       .select('architect_id')
@@ -258,11 +258,11 @@ export function CampanhasManager() {
     // 4. Combinar listas de exclusão
     const todosIdsParaExcluir = [...new Set([...idsJaEmCampanhas, ...idsComErroTelefone])];
 
-    console.log(`🚫 Profissionais Parceiros reservados/enviados em campanhas: ${idsJaEmCampanhas.length}`);
-    console.log(`📵 Profissionais Parceiros com erro de telefone: ${idsComErroTelefone.length}`);
+    console.log(`🚫 Parceiros Profissionais reservados/enviados em campanhas: ${idsJaEmCampanhas.length}`);
+    console.log(`📵 Parceiros Profissionais com erro de telefone: ${idsComErroTelefone.length}`);
     setArquitetosEmOutrasCampanhas(idsJaEmCampanhas.length);
 
-    // 5. Buscar profissionais parceiros filtrados pela etapa do kanban selecionada
+    // 5. Buscar parceiros profissionais filtrados pela etapa do kanban selecionada
     const etapaFiltro = statusFunil || filtroEtapa || 'novo_arquiteto';
     
     let query = supabase
@@ -278,7 +278,7 @@ export function CampanhasManager() {
     const { data, error } = await query.order('name');
 
     if (!error && data) {
-      console.log(`✅ Profissionais Parceiros disponíveis para campanha (etapa: ${etapaFiltro}): ${data.length}`);
+      console.log(`✅ Parceiros Profissionais disponíveis para campanha (etapa: ${etapaFiltro}): ${data.length}`);
       setArquitetosDisponiveis(data);
     }
   };
@@ -324,7 +324,7 @@ export function CampanhasManager() {
         dataInicio: campanha.data_inicio ? new Date(campanha.data_inicio) : null,
         dataFim: campanha.data_fim ? new Date(campanha.data_fim) : null,
       });
-      // Recarregar profissionais parceiros disponíveis considerando esta campanha em edição
+      // Recarregar parceiros profissionais disponíveis considerando esta campanha em edição
       fetchArquitetosDisponiveis(campanha.id, filtroEtapa);
     } else {
       resetForm();
@@ -495,7 +495,7 @@ export function CampanhasManager() {
     if (formData.arquitetosSelecionados.length === 0) {
       toast({
         title: "Erro",
-        description: "Selecione pelo menos um profissional parceiro",
+        description: "Selecione pelo menos um parceiro profissional",
         variant: "destructive",
       });
       return;
@@ -603,8 +603,8 @@ export function CampanhasManager() {
         return;
       }
 
-      // ✅ NOVO: Atualizar profissionais parceiros reservados (remover os que foram desmarcados, adicionar novos)
-      // Primeiro, buscar profissionais parceiros já existentes na campanha
+      // ✅ NOVO: Atualizar parceiros profissionais reservados (remover os que foram desmarcados, adicionar novos)
+      // Primeiro, buscar parceiros profissionais já existentes na campanha
       const { data: arquitetosExistentes } = await supabase
         .from('tendenci_prospec_arq_campaign_architects')
         .select('architect_id')
@@ -613,10 +613,10 @@ export function CampanhasManager() {
       const idsExistentes = arquitetosExistentes?.map(a => a.architect_id) || [];
       const idsNovos = formData.arquitetosSelecionados;
 
-      // Profissionais Parceiros a remover (estavam na campanha mas foram desmarcados)
+      // Parceiros Profissionais a remover (estavam na campanha mas foram desmarcados)
       const idsParaRemover = idsExistentes.filter(id => !idsNovos.includes(id));
       
-      // Profissionais Parceiros a adicionar (novos selecionados que não estavam na campanha)
+      // Parceiros Profissionais a adicionar (novos selecionados que não estavam na campanha)
       const idsParaAdicionar = idsNovos.filter(id => !idsExistentes.includes(id));
 
       if (idsParaRemover.length > 0) {
@@ -667,8 +667,8 @@ export function CampanhasManager() {
         return;
       }
 
-      // ✅ NOVO: Registrar TODOS os profissionais parceiros como "pendente" IMEDIATAMENTE
-      // Isso "reserva" os profissionais parceiros e impede que outra campanha os selecione
+      // ✅ NOVO: Registrar TODOS os parceiros profissionais como "pendente" IMEDIATAMENTE
+      // Isso "reserva" os parceiros profissionais e impede que outra campanha os selecione
       if (formData.arquitetosSelecionados.length > 0) {
         const registros = formData.arquitetosSelecionados.map(archId => ({
           campanha_id: novaCampanha.id,
@@ -682,15 +682,15 @@ export function CampanhasManager() {
           .insert(registros);
 
         if (reserveError) {
-          console.error('Erro ao reservar profissionais parceiros:', reserveError);
+          console.error('Erro ao reservar parceiros profissionais:', reserveError);
           // Não bloquear por isso, mas logar o erro
           toast({
             title: "Aviso",
-            description: "Campanha criada, mas alguns profissionais parceiros podem não ter sido reservados. Verifique antes de disparar.",
+            description: "Campanha criada, mas alguns parceiros profissionais podem não ter sido reservados. Verifique antes de disparar.",
             variant: "destructive",
           });
         } else {
-          console.log(`✅ ${registros.length} profissionais parceiros reservados para campanha ${novaCampanha.id}`);
+          console.log(`✅ ${registros.length} parceiros profissionais reservados para campanha ${novaCampanha.id}`);
         }
       }
 
@@ -700,12 +700,12 @@ export function CampanhasManager() {
           ? `Disparo programado para ${scheduleConfig.type === 'unico' && scheduleConfig.dataHoraUnica 
               ? format(scheduleConfig.dataHoraUnica, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) 
               : 'período configurado'}`
-          : `${formData.arquitetosSelecionados.length} profissionais parceiros reservados`,
+          : `${formData.arquitetosSelecionados.length} parceiros profissionais reservados`,
       });
     }
 
     await fetchCampanhas();
-    await fetchArquitetosDisponiveis(undefined, filtroEtapa); // Recarregar lista de profissionais parceiros disponíveis
+    await fetchArquitetosDisponiveis(undefined, filtroEtapa); // Recarregar lista de parceiros profissionais disponíveis
     handleCloseDialog();
     setLoading(false);
   };
@@ -784,7 +784,7 @@ export function CampanhasManager() {
       return;
     }
 
-    // 🚫 TRAVA: Verificar se há profissionais parceiros sem tarefas em "Contato Iniciado" ou "Ativado"
+    // 🚫 TRAVA: Verificar se há parceiros profissionais sem tarefas em "Contato Iniciado" ou "Ativado"
     await checkDispatchAllowed();
     
     const { data: dispatchCheck } = await supabase.rpc('check_campaign_dispatch_allowed');
@@ -794,7 +794,7 @@ export function CampanhasManager() {
         setShowBlockingDialog(true);
         toast({
           title: "🚫 Disparo Bloqueado",
-          description: `Existem ${result.total_sem_tarefa} profissionais parceiros sem tarefas futuras. Veja o popup para detalhes.`,
+          description: `Existem ${result.total_sem_tarefa} parceiros profissionais sem tarefas futuras. Veja o popup para detalhes.`,
           variant: "destructive",
         });
         return;
@@ -827,7 +827,7 @@ export function CampanhasManager() {
 
     const arquitetosSelecionados = campanha.arquitetos_selecionados || [];
     
-    // Buscar dados atualizados dos profissionais parceiros diretamente do banco
+    // Buscar dados atualizados dos parceiros profissionais diretamente do banco
     const { data: arquitetosData, error: arquitetosError } = await supabase
       .from('architects')
       .select('id, name, phone')
@@ -836,7 +836,7 @@ export function CampanhasManager() {
     if (arquitetosError || !arquitetosData) {
       toast({
         title: "Erro",
-        description: "Erro ao buscar dados dos profissionais parceiros",
+        description: "Erro ao buscar dados dos parceiros profissionais",
         variant: "destructive",
       });
       return;
@@ -849,7 +849,7 @@ export function CampanhasManager() {
     if (arquitetosValidos.length === 0) {
       toast({
         title: "Erro",
-        description: "Nenhum profissional parceiro com telefone válido selecionado",
+        description: "Nenhum parceiro profissional com telefone válido selecionado",
         variant: "destructive",
       });
       return;
@@ -973,13 +973,13 @@ export function CampanhasManager() {
             <AlertTitle className="text-amber-700 font-semibold">⚠️ Lembrete Importante</AlertTitle>
             <AlertDescription className="text-amber-600">
               Tarefas com data/hora <strong>vencida</strong> são consideradas como "realizadas". 
-              Se a data da tarefa já passou, o profissional parceiro volta a ter status de 
+              Se a data da tarefa já passou, o parceiro profissional volta a ter status de 
               <strong> sem tarefa agendada</strong> e precisa de nova tarefa.
             </AlertDescription>
           </Alert>
           
           <p className="text-sm mb-4">
-            Existem <strong className="text-destructive">{arquitetosSemTarefa.length}</strong> profissionais parceiros em 
+            Existem <strong className="text-destructive">{arquitetosSemTarefa.length}</strong> parceiros profissionais em 
             "Contato Iniciado" ou "Ativado" que precisam de tarefas futuras:
           </p>
           
@@ -1000,7 +1000,7 @@ export function CampanhasManager() {
                     className="h-7 px-2 gap-1 text-xs"
                     onClick={() => {
                       setShowBlockingDialog(false);
-                      // Navegar para aba CRM e abrir sheet do profissional parceiro
+                      // Navegar para aba CRM e abrir sheet do parceiro profissional
                       window.dispatchEvent(new CustomEvent('open-architect-sheet', { detail: { architectId: arq.id } }));
                     }}
                   >
@@ -1013,7 +1013,7 @@ export function CampanhasManager() {
           </ScrollArea>
           
           <p className="text-sm text-muted-foreground mt-2">
-            📌 Clique em <strong>"Abrir"</strong> para acessar o card do profissional parceiro e agendar uma tarefa.
+            📌 Clique em <strong>"Abrir"</strong> para acessar o card do parceiro profissional e agendar uma tarefa.
           </p>
           
           <DialogFooter>
@@ -1033,7 +1033,7 @@ export function CampanhasManager() {
           className="gap-2"
         >
           <ShieldAlert className="h-4 w-4" />
-          {arquitetosSemTarefa.length} Profissionais Parceiros Sem Tarefa
+          {arquitetosSemTarefa.length} Parceiros Profissionais Sem Tarefa
         </Button>
       )}
 
@@ -1041,7 +1041,7 @@ export function CampanhasManager() {
         <div>
           <h2 className="text-2xl font-bold">Campanhas Personalizáveis</h2>
           <p className="text-muted-foreground">
-            Crie e gerencie campanhas de WhatsApp para profissionais parceiros
+            Crie e gerencie campanhas de WhatsApp para parceiros profissionais
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -1293,12 +1293,12 @@ export function CampanhasManager() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Selecione a etapa do kanban para filtrar profissionais parceiros disponíveis
+                Selecione a etapa do kanban para filtrar parceiros profissionais disponíveis
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label>Profissionais Parceiros da Etapa: "{kanbanStages.find(s => s.slug === filtroEtapa)?.nome || filtroEtapa}" *</Label>
+              <Label>Parceiros Profissionais da Etapa: "{kanbanStages.find(s => s.slug === filtroEtapa)?.nome || filtroEtapa}" *</Label>
               {(arquitetosEmOutrasCampanhas > 0 || arquitetosComErroTelefone > 0) && (
                 <Card className="border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-950/20">
                   <CardContent className="p-3 space-y-1">
@@ -1306,7 +1306,7 @@ export function CampanhasManager() {
                       <div className="flex items-center gap-2">
                         <AlertTriangle className="w-4 h-4 text-orange-600 dark:text-orange-400" />
                         <p className="text-sm text-orange-800 dark:text-orange-200">
-                          {arquitetosEmOutrasCampanhas} profissional parceiro(s) estão em outras campanhas pendentes.
+                          {arquitetosEmOutrasCampanhas} parceiro profissional(s) estão em outras campanhas pendentes.
                         </p>
                       </div>
                     )}
@@ -1314,7 +1314,7 @@ export function CampanhasManager() {
                       <div className="flex items-center gap-2">
                         <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
                         <p className="text-sm text-red-800 dark:text-red-200">
-                          {arquitetosComErroTelefone} profissional parceiro(s) com telefone inválido/inexistente foram excluídos.
+                          {arquitetosComErroTelefone} parceiro profissional(s) com telefone inválido/inexistente foram excluídos.
                         </p>
                       </div>
                     )}
@@ -1325,7 +1325,7 @@ export function CampanhasManager() {
                 <Card className="border-yellow-200 bg-yellow-50/50 dark:border-yellow-800 dark:bg-yellow-950/20">
                   <CardContent className="p-4">
                     <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                      Nenhum profissional parceiro disponível na etapa "{kanbanStages.find(s => s.slug === filtroEtapa)?.nome || filtroEtapa}".
+                      Nenhum parceiro profissional disponível na etapa "{kanbanStages.find(s => s.slug === filtroEtapa)?.nome || filtroEtapa}".
                     </p>
                   </CardContent>
                 </Card>
@@ -1394,7 +1394,7 @@ export function CampanhasManager() {
                 </>
               )}
               <p className="text-sm font-medium text-primary">
-                {formData.arquitetosSelecionados.length} profissional parceiro(s) selecionado(s)
+                {formData.arquitetosSelecionados.length} parceiro profissional(s) selecionado(s)
               </p>
             </div>
 
@@ -1522,7 +1522,7 @@ export function CampanhasManager() {
                             <Clock className="w-4 h-4" />
                             <span>Próximo: {proximoDisparo}</span>
                           </div>
-                          <span>{campanha.arquitetos_selecionados?.length || 0} profissionais parceiros</span>
+                          <span>{campanha.arquitetos_selecionados?.length || 0} parceiros profissionais</span>
                           {campanha.tipo_agendamento === 'recorrente' && campanha.data_fim && (
                             <span className="text-xs">
                               Até: {format(new Date(campanha.data_fim), "dd/MM/yyyy", { locale: ptBR })}
@@ -1588,7 +1588,7 @@ export function CampanhasManager() {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {campanha.arquitetos_selecionados?.length || 0} profissionais parceiros selecionados
+                        {campanha.arquitetos_selecionados?.length || 0} parceiros profissionais selecionados
                       </p>
                     </div>
                     <Button
@@ -1632,7 +1632,7 @@ export function CampanhasManager() {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {campanha.arquitetos_selecionados?.length || 0} profissionais parceiros
+                        {campanha.arquitetos_selecionados?.length || 0} parceiros profissionais
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -1682,7 +1682,7 @@ export function CampanhasManager() {
                         {getStatusBadge(campanha.status)}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {campanha.arquitetos_selecionados?.length || 0} profissionais parceiros selecionados
+                        {campanha.arquitetos_selecionados?.length || 0} parceiros profissionais selecionados
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -1728,7 +1728,7 @@ export function CampanhasManager() {
                         {getStatusBadge(campanha.status)}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {campanha.arquitetos_selecionados?.length || 0} profissionais parceiros
+                        {campanha.arquitetos_selecionados?.length || 0} parceiros profissionais
                       </p>
                     </div>
                     <Button

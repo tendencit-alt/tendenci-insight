@@ -18,7 +18,7 @@ export default function N8nTarefasGuide() {
 
   const downloadWorkflowJSON = () => {
     const workflowJSON = {
-      "name": "Tarefas Automatizadas WhatsApp (CRM + Profissionais Parceiros)",
+      "name": "Tarefas Automatizadas WhatsApp (CRM + Parceiros Profissionais)",
       "nodes": [
         {
           "parameters": {
@@ -222,7 +222,7 @@ export default function N8nTarefasGuide() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-4">Integração n8n - Tarefas Automatizadas</h1>
           <p className="text-lg text-muted-foreground">
-            Documentação completa para configurar o envio automático de mensagens WhatsApp via n8n baseado em tarefas agendadas no CRM e módulo de Profissionais Parceiros
+            Documentação completa para configurar o envio automático de mensagens WhatsApp via n8n baseado em tarefas agendadas no CRM e módulo de Parceiros Profissionais
           </p>
         </div>
 
@@ -252,10 +252,10 @@ export default function N8nTarefasGuide() {
               <div className="p-4 bg-background rounded-lg border">
                 <div className="flex items-center gap-2 mb-2">
                   <Badge variant="secondary">Prospecção</Badge>
-                  <span className="font-medium">Tarefas de Profissionais Parceiros</span>
+                  <span className="font-medium">Tarefas de Parceiros Profissionais</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Tarefas criadas para profissionais parceiros no módulo de prospecção. Tabela: <code className="text-xs bg-muted px-1 py-0.5 rounded">tendenci_prospec_arq_agendamentos</code>
+                  Tarefas criadas para parceiros profissionais no módulo de prospecção. Tabela: <code className="text-xs bg-muted px-1 py-0.5 rounded">tendenci_prospec_arq_agendamentos</code>
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   origem_modulo: <code className="bg-muted px-1 py-0.5 rounded">"prospeccao"</code>
@@ -281,7 +281,7 @@ export default function N8nTarefasGuide() {
                 <div>
                   <p className="font-medium">Criação da Tarefa Automatizada</p>
                   <p className="text-sm text-muted-foreground">
-                    Usuário cria uma tarefa com tipo "Tarefa Automatizada" no CRM (negócios) ou no módulo de Profissionais Parceiros, definindo data/hora, número WhatsApp e mensagem
+                    Usuário cria uma tarefa com tipo "Tarefa Automatizada" no CRM (negócios) ou no módulo de Parceiros Profissionais, definindo data/hora, número WhatsApp e mensagem
                   </p>
                 </div>
               </div>
@@ -290,7 +290,7 @@ export default function N8nTarefasGuide() {
                 <div>
                   <p className="font-medium">Armazenamento no Banco</p>
                   <p className="text-sm text-muted-foreground">
-                    Tarefa é salva na tabela correspondente: <code className="text-xs bg-muted px-1 py-0.5 rounded">crm_tasks</code> (CRM) ou <code className="text-xs bg-muted px-1 py-0.5 rounded">tendenci_prospec_arq_agendamentos</code> (Profissionais Parceiros)
+                    Tarefa é salva na tabela correspondente: <code className="text-xs bg-muted px-1 py-0.5 rounded">crm_tasks</code> (CRM) ou <code className="text-xs bg-muted px-1 py-0.5 rounded">tendenci_prospec_arq_agendamentos</code> (Parceiros Profissionais)
                   </p>
                 </div>
               </div>
@@ -317,7 +317,7 @@ export default function N8nTarefasGuide() {
                 <div>
                   <p className="font-medium">Disparo e Atualização</p>
                   <p className="text-sm text-muted-foreground">
-                    Mensagem enviada via Evolution API WhatsApp, status atualizado e log registrado na timeline do profissional parceiro (se aplicável)
+                    Mensagem enviada via Evolution API WhatsApp, status atualizado e log registrado na timeline do parceiro profissional (se aplicável)
                   </p>
                 </div>
               </div>
@@ -358,7 +358,7 @@ export default function N8nTarefasGuide() {
               </h4>
               <div className="bg-muted p-4 rounded-lg font-mono text-sm space-y-2">
                 <div><span className="text-primary">id</span> <span className="text-muted-foreground">UUID</span> - Identificador único da tarefa</div>
-                <div><span className="text-primary">architect_id</span> <span className="text-muted-foreground">UUID</span> - Referência ao profissional parceiro</div>
+                <div><span className="text-primary">architect_id</span> <span className="text-muted-foreground">UUID</span> - Referência ao parceiro profissional</div>
                 <div><span className="text-primary">observacoes</span> <span className="text-muted-foreground">JSONB</span> - JSON com título e nota (mensagem)</div>
                 <div><span className="text-primary">data_agendamento</span> <span className="text-muted-foreground">TIMESTAMP</span> - Data e hora para envio</div>
                 <div><span className="text-primary">status</span> <span className="text-muted-foreground">TEXT</span> - Status: "pendente" ou "concluida"</div>
@@ -372,7 +372,7 @@ export default function N8nTarefasGuide() {
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription className="text-xs">
-                <strong>Diferenças de Status:</strong> CRM usa "open"/"done", Profissionais Parceiros usa "pendente"/"concluida". A RPC unifica isso automaticamente.
+                <strong>Diferenças de Status:</strong> CRM usa "open"/"done", Parceiros Profissionais usa "pendente"/"concluida". A RPC unifica isso automaticamente.
               </AlertDescription>
             </Alert>
           </CardContent>
@@ -522,7 +522,7 @@ export default function N8nTarefasGuide() {
   {
     "id": "uuid-tarefa-arquiteto...",
     "whatsapp_number": "5521988888888",
-    "mensagem": "Olá Profissional Parceiro! Mensagem...",
+    "mensagem": "Olá Parceiro Profissional! Mensagem...",
     "instance_name": "tendenci-vendedor2",
     "instance_id": "67890",
     "due_at": "2025-01-15T11:00:00Z",
@@ -535,7 +535,7 @@ export default function N8nTarefasGuide() {
                   <Alert className="mt-3">
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
-                      <strong>✨ RPC Unificada:</strong> A função <code>get_pending_automated_tasks</code> usa UNION ALL para retornar tarefas de AMBOS os módulos (CRM e Profissionais Parceiros), com o campo <code>origem_modulo</code> para identificação. Cada tarefa usa automaticamente a instância WhatsApp específica do vendedor que a criou.
+                      <strong>✨ RPC Unificada:</strong> A função <code>get_pending_automated_tasks</code> usa UNION ALL para retornar tarefas de AMBOS os módulos (CRM e Parceiros Profissionais), com o campo <code>origem_modulo</code> para identificação. Cada tarefa usa automaticamente a instância WhatsApp específica do vendedor que a criou.
                     </AlertDescription>
                   </Alert>
                 </div>
@@ -618,7 +618,7 @@ export default function N8nTarefasGuide() {
                   <Alert className="mb-3">
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
-                      <strong>✨ Método Recomendado:</strong> Use a Edge Function <code>process-automated-task</code> que processa automaticamente tarefas de AMBOS os módulos (CRM e Profissionais Parceiros).
+                      <strong>✨ Método Recomendado:</strong> Use a Edge Function <code>process-automated-task</code> que processa automaticamente tarefas de AMBOS os módulos (CRM e Parceiros Profissionais).
                     </AlertDescription>
                   </Alert>
 
@@ -639,12 +639,12 @@ export default function N8nTarefasGuide() {
                   <Alert className="mt-3 border-destructive bg-destructive/10">
                     <AlertCircle className="h-4 w-4 text-destructive" />
                     <AlertDescription className="text-xs">
-                      <strong className="text-destructive">⚠️ CRÍTICO:</strong> O campo <code>origem_modulo</code> é <strong>OBRIGATÓRIO</strong> para tarefas de profissionais parceiros!
+                      <strong className="text-destructive">⚠️ CRÍTICO:</strong> O campo <code>origem_modulo</code> é <strong>OBRIGATÓRIO</strong> para tarefas de parceiros profissionais!
                       <ul className="list-disc ml-4 mt-2 space-y-1">
                         <li><code>tarefa_id</code> - ID da tarefa (campo unificado da RPC)</li>
                         <li><code>origem_modulo</code> - "crm" ou "prospeccao" (identifica o módulo)</li>
                       </ul>
-                      Sem <code>origem_modulo</code>, tarefas de profissionais parceiros serão processadas incorretamente como CRM e falharão com <code>architect_id = null</code>.
+                      Sem <code>origem_modulo</code>, tarefas de parceiros profissionais serão processadas incorretamente como CRM e falharão com <code>architect_id = null</code>.
                     </AlertDescription>
                   </Alert>
 
@@ -653,12 +653,12 @@ export default function N8nTarefasGuide() {
                     <AlertDescription className="text-xs">
                       <strong>A Edge Function faz tudo automaticamente:</strong>
                       <ul className="list-disc ml-4 mt-2 space-y-1">
-                        <li>Detecta se é tarefa CRM ou Profissional Parceiro via <code>origem_modulo</code></li>
-                        <li>Busca dados do cliente/profissional parceiro</li>
+                        <li>Detecta se é tarefa CRM ou Parceiro Profissional via <code>origem_modulo</code></li>
+                        <li>Busca dados do cliente/parceiro profissional</li>
                         <li>Identifica instância WhatsApp do vendedor</li>
                         <li>Envia mensagem via Evolution API</li>
                         <li>Atualiza status para "done" ou "concluida"</li>
-                        <li>Registra log na timeline (profissionais parceiros)</li>
+                        <li>Registra log na timeline (parceiros profissionais)</li>
                       </ul>
                       <strong className="mt-2 block">Fallback:</strong> Se <code>origem_modulo</code> não for enviado, a função tenta detectar automaticamente verificando em qual tabela a tarefa existe.
                     </AlertDescription>
@@ -710,7 +710,7 @@ export default function N8nTarefasGuide() {
               </p>
               <ul className="list-disc ml-6 text-sm space-y-1 text-muted-foreground">
                 <li>Schedule Trigger configurado para executar a cada minuto</li>
-                <li><strong className="text-primary">RPC Unificada</strong> - Busca tarefas de CRM e Profissionais Parceiros em uma única query</li>
+                <li><strong className="text-primary">RPC Unificada</strong> - Busca tarefas de CRM e Parceiros Profissionais em uma única query</li>
                 <li>Loop para processar tarefas individualmente</li>
                 <li><strong className="text-primary">Edge Function</strong> - Processa envio, atualiza status e registra logs automaticamente</li>
                 <li>Delay de 3 segundos entre tarefas para evitar rate limiting</li>
@@ -744,10 +744,10 @@ export default function N8nTarefasGuide() {
                 <AlertDescription className="text-xs">
                   <strong>Vantagens da Edge Function:</strong>
                   <ul className="list-disc ml-4 mt-2 space-y-1">
-                    <li>Detecta automaticamente se é tarefa CRM ou Profissional Parceiro</li>
+                    <li>Detecta automaticamente se é tarefa CRM ou Parceiro Profissional</li>
                     <li>Busca instância WhatsApp do vendedor responsável</li>
                     <li>Atualiza status na tabela correta (crm_tasks ou tendenci_prospec_arq_agendamentos)</li>
-                    <li>Registra logs na timeline do negócio/profissional parceiro</li>
+                    <li>Registra logs na timeline do negócio/parceiro profissional</li>
                     <li>Não precisa configurar Evolution API no n8n</li>
                   </ul>
                 </AlertDescription>
@@ -835,13 +835,13 @@ export default function N8nTarefasGuide() {
             </div>
 
             <div>
-              <h3 className="font-semibold mb-2 text-sm">Dados da RPC - <Badge variant="secondary">Profissional Parceiro</Badge>:</h3>
+              <h3 className="font-semibold mb-2 text-sm">Dados da RPC - <Badge variant="secondary">Parceiro Profissional</Badge>:</h3>
               <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
 {`{
   "tarefa_id": "b2c3d4e5-f6g7-8901-bcde-f12345678901",
   "deal_id": null,
   "arquiteto_id": "c3d4e5f6-g7h8-9012-cdef-123456789012",
-  "titulo": "Follow-up Profissional Parceiro Maria",
+  "titulo": "Follow-up Parceiro Profissional Maria",
   "observacoes": "Olá Maria! Você viu nosso catálogo novo?",
   "data_agendamento": "2025-01-21T15:00:00Z",
   "telefone": "5511988888888",

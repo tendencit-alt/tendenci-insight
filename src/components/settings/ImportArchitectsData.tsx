@@ -54,7 +54,7 @@ export const ImportArchitectsData = () => {
         };
       }).filter(arch => arch.name); // Remover linhas sem nome
 
-      console.log(`Enviando ${architects.length} profissionais parceiros para importação`);
+      console.log(`Enviando ${architects.length} parceiros profissionais para importação`);
 
       // Enviar para Edge Function
       const { data: result, error } = await supabase.functions.invoke('import-architects', {
@@ -75,7 +75,7 @@ export const ImportArchitectsData = () => {
 
       toast({
         title: "Importação concluída!",
-        description: `${result.inserted} profissionais parceiros importados, ${result.skipped} duplicados ignorados, ${result.errors} erros.`,
+        description: `${result.inserted} parceiros profissionais importados, ${result.skipped} duplicados ignorados, ${result.errors} erros.`,
       });
     } catch (error) {
       console.error("Erro ao processar arquivo:", error);
@@ -119,10 +119,10 @@ export const ImportArchitectsData = () => {
       <div className="space-y-2">
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <Upload className="w-6 h-6" />
-          Importação de Profissionais Parceiros
+          Importação de Parceiros Profissionais
         </h2>
         <p className="text-muted-foreground">
-          Importe profissionais parceiros em massa a partir de planilhas Excel
+          Importe parceiros profissionais em massa a partir de planilhas Excel
         </p>
       </div>
 
@@ -216,10 +216,10 @@ export const ImportArchitectsData = () => {
           <p className="font-medium text-sm">Formato esperado da planilha:</p>
           <ul className="text-sm space-y-1 list-disc list-inside">
             <li><strong>Empresa</strong> - Nome da empresa (opcional)</li>
-            <li><strong>Nome do Profissional</strong> - Nome do profissional parceiro (obrigatório)</li>
+            <li><strong>Nome do Profissional</strong> - Nome do parceiro profissional (obrigatório)</li>
             <li><strong>Telefone</strong> - Telefone com DDD</li>
             <li><strong>E-mail</strong> - E-mail de contato</li>
-            <li><strong>Categoria</strong> - Categoria do profissional parceiro</li>
+            <li><strong>Categoria</strong> - Categoria do parceiro profissional</li>
           </ul>
         </div>
 
@@ -231,7 +231,7 @@ export const ImportArchitectsData = () => {
                 Importante:
               </p>
               <p className="text-sm text-blue-800 dark:text-blue-200">
-                Profissionais Parceiros duplicados (mesmo telefone ou e-mail) serão automaticamente ignorados durante a importação.
+                Parceiros Profissionais duplicados (mesmo telefone ou e-mail) serão automaticamente ignorados durante a importação.
               </p>
             </div>
           </div>

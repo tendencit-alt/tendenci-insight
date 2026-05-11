@@ -76,7 +76,7 @@ export function CampaignErrorDetails({
       return;
     }
 
-    // Agrupar por profissional parceiro e contar tentativas
+    // Agrupar por parceiro profissional e contar tentativas
     const architectErrors: Record<string, { count: number; tipo: string; mensagem: string | null }> = {};
     errorLogs?.forEach(log => {
       if (log.architect_id) {
@@ -91,7 +91,7 @@ export function CampaignErrorDetails({
       }
     });
 
-    // Buscar detalhes dos profissionais parceiros
+    // Buscar detalhes dos parceiros profissionais
     const architectIds = Object.keys(architectErrors);
     if (architectIds.length > 0) {
       const { data: architects, error: architectsError } = await supabase
@@ -100,7 +100,7 @@ export function CampaignErrorDetails({
         .in('id', architectIds);
 
       if (architectsError) {
-        console.error('Erro ao buscar detalhes dos profissionais parceiros:', architectsError);
+        console.error('Erro ao buscar detalhes dos parceiros profissionais:', architectsError);
       }
 
       // Combinar dados
@@ -142,7 +142,7 @@ export function CampaignErrorDetails({
 
       if (error) throw error;
 
-      toast.success('Profissional Parceiro marcado como WhatsApp inválido');
+      toast.success('Parceiro Profissional marcado como WhatsApp inválido');
       
       // Atualizar lista local
       setErrorArchitects(prev => prev.map(a => 
@@ -151,7 +151,7 @@ export function CampaignErrorDetails({
       
     } catch (error) {
       console.error('Erro ao marcar como inválido:', error);
-      toast.error('Erro ao atualizar profissional parceiro');
+      toast.error('Erro ao atualizar parceiro profissional');
     } finally {
       setMarkingInvalid(null);
     }
@@ -183,7 +183,7 @@ export function CampaignErrorDetails({
         throw new Error('Campanha não encontrada');
       }
 
-      // Buscar detalhes do profissional parceiro
+      // Buscar detalhes do parceiro profissional
       const { data: architect } = await supabase
         .from('architects')
         .select('name, phone')
@@ -191,7 +191,7 @@ export function CampaignErrorDetails({
         .single();
 
       if (!architect) {
-        throw new Error('Profissional Parceiro não encontrado');
+        throw new Error('Parceiro Profissional não encontrado');
       }
 
       // Buscar detalhes da instância WhatsApp
@@ -276,7 +276,7 @@ export function CampaignErrorDetails({
             Detalhes dos Erros
           </SheetTitle>
           <SheetDescription>
-            Lista de profissionais parceiros que falharam no envio da campanha
+            Lista de parceiros profissionais que falharam no envio da campanha
           </SheetDescription>
         </SheetHeader>
 
@@ -399,7 +399,7 @@ export function CampaignErrorDetails({
                       onClick={() => window.open(`/prospeccao?architect=${error.architect_id}`, '_blank')}
                     >
                       <ExternalLink className="w-4 h-4 mr-1" />
-                      Ver Profissional Parceiro
+                      Ver Parceiro Profissional
                     </Button>
                   </div>
                 </div>

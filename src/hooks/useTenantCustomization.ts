@@ -24,7 +24,7 @@ const DEFAULT_MODULE_NAMES: Record<string, string> = {
   projetos: 'Projetos',
   relatorios: 'Relatórios',
   crm: 'CRM',
-  arquitetos: 'Profissionais Parceiros',
+  arquitetos: 'Parceiros Profissionais',
   compras: 'Compras',
   configuracoes: 'Configurações',
 };
@@ -55,11 +55,11 @@ const SEGMENT_TEMPLATES: Record<string, Partial<TenantCustomization>> = {
   },
   arquitetura: {
     kpi_priorities: ['ticket_medio', 'margem_contribuicao', 'resultado_economico', 'fluxo_caixa_futuro'],
-    sidebar_config: { order: ['projetos', 'profissionais parceiros', 'pedidos', 'financeiro'], hidden: [] },
+    sidebar_config: { order: ['projetos', 'parceiros profissionais', 'pedidos', 'financeiro'], hidden: [] },
   },
   moveis_planejados: {
     kpi_priorities: ['margem_contribuicao', 'ebitda', 'ticket_medio', 'fluxo_caixa_futuro'],
-    sidebar_config: { order: ['pedidos', 'producao', 'financeiro', 'profissionais parceiros'], hidden: [] },
+    sidebar_config: { order: ['pedidos', 'producao', 'financeiro', 'parceiros profissionais'], hidden: [] },
   },
 };
 

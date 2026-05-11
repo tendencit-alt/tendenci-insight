@@ -82,7 +82,7 @@ export function SellerGoalCards({ salesGoal, captationGoal, architectsGoal }: Se
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Meta:</span>
-                <span className="font-medium">{captationGoal.target} profissionais parceiros</span>
+                <span className="font-medium">{captationGoal.target} parceiros profissionais</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Captados:</span>
@@ -103,14 +103,14 @@ export function SellerGoalCards({ salesGoal, captationGoal, architectsGoal }: Se
         </Card>
       )}
 
-      {/* Meta de Profissionais Parceiros Efetivados */}
+      {/* Meta de Parceiros Profissionais Efetivados */}
       {architectsGoal && (
         <Card className="shadow-card hover:shadow-hover transition-shadow">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Users className="h-5 w-5 text-warning" />
-                Profissionais Parceiros Efetivados
+                Parceiros Profissionais Efetivados
               </CardTitle>
             </div>
           </CardHeader>

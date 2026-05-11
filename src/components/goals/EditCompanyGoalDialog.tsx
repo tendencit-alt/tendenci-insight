@@ -93,7 +93,7 @@ export function EditCompanyGoalDialog({ open, onOpenChange, goal, onSuccess }: E
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="vendas">Vendas (Valor em R$)</SelectItem>
-                <SelectItem value="captacao">Captação (Quantidade de Profissionais Parceiros)</SelectItem>
+                <SelectItem value="captacao">Captação (Quantidade de Parceiros Profissionais)</SelectItem>
                 <SelectItem value="efetivacao">Efetivação (Quantidade de Projetos)</SelectItem>
               </SelectContent>
             </Select>
@@ -115,7 +115,7 @@ export function EditCompanyGoalDialog({ open, onOpenChange, goal, onSuccess }: E
           ) : (
             <div className="space-y-2">
               <Label htmlFor="quantidade_meta">
-                {formData.tipo_meta === "captacao" ? "Quantidade Total de Profissionais Parceiros *" : "Quantidade Total de Projetos *"}
+                {formData.tipo_meta === "captacao" ? "Quantidade Total de Parceiros Profissionais *" : "Quantidade Total de Projetos *"}
               </Label>
               <Input
                 id="quantidade_meta"

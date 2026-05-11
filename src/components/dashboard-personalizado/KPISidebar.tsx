@@ -22,7 +22,7 @@ const availableKPIs: KPI[] = [
   { id: "crm_conquistado", name: "Conquistados", description: "Negócios ganhos", type: "numeric", icon: CheckCircle, category: "CRM" },
   { id: "crm_valor_conquistado", name: "Valor Conquistado", description: "Valor total ganho", type: "numeric", icon: DollarSign, category: "CRM" },
   { id: "projetos_aprovado", name: "Projetos Aprovados", description: "Total aprovados", type: "numeric", icon: CheckCircle, category: "Projetos" },
-  { id: "arquitetos_ativos", name: "Profissionais Parceiros Ativos", description: "Total ativos", type: "numeric", icon: Users, category: "Profissionais Parceiros" },
+  { id: "arquitetos_ativos", name: "Parceiros Profissionais Ativos", description: "Total ativos", type: "numeric", icon: Users, category: "Parceiros Profissionais" },
 ];
 
 interface KPISidebarProps {

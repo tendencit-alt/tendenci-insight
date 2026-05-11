@@ -250,7 +250,7 @@ const FASE2_ITEMS: RoadmapItem[] = [
     dependencies: ["mvp-contas-pagar"] },
   { id: "f2-comissoes-avancadas", name: "Comissões avançadas", module: "Comercial", phase: "fase_2", category: "regra",
     fechaFluxoPrincipal: false, geraValorImediato: true, dependeDeOutraBase: true, obrigacaoOuDiferencial: "diferencial",
-    description: "Comissões por vendedor, profissional parceiro, produção com regras e apuração",
+    description: "Comissões por vendedor, parceiro profissional, produção com regras e apuração",
     dependencies: ["mvp-pedidos"] },
   { id: "f2-recebimento-compra", name: "Recebimento de compra completo", module: "Compras", phase: "fase_2", category: "entidade",
     fechaFluxoPrincipal: false, geraValorImediato: true, dependeDeOutraBase: true, obrigacaoOuDiferencial: "diferencial",
@@ -260,9 +260,9 @@ const FASE2_ITEMS: RoadmapItem[] = [
     fechaFluxoPrincipal: false, geraValorImediato: true, dependeDeOutraBase: true, obrigacaoOuDiferencial: "diferencial",
     description: "Kanban com cadências, follow-up automático, métricas de conversão",
     dependencies: ["mvp-clientes"] },
-  { id: "f2-gestao-profissionais parceiros", name: "Gestão de profissionais parceiros/indicadores", module: "Comercial", phase: "fase_2", category: "entidade",
+  { id: "f2-gestao-parceiros profissionais", name: "Gestão de parceiros profissionais/indicadores", module: "Comercial", phase: "fase_2", category: "entidade",
     fechaFluxoPrincipal: false, geraValorImediato: true, dependeDeOutraBase: true, obrigacaoOuDiferencial: "diferencial",
-    description: "Cadastro de profissionais parceiros, indicações, projetos, timeline, comissões",
+    description: "Cadastro de parceiros profissionais, indicações, projetos, timeline, comissões",
     dependencies: ["mvp-clientes", "mvp-pedidos"] },
 ];
 
