@@ -160,7 +160,7 @@ export function ArchitectsTable({ refreshKey, onEdit, onView, onDelete }: Archit
             <div>
               <h2 className="text-xl font-semibold">Todos os Profissionais Parceiros</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                {architects.length} arquitetos cadastrados
+                {architects.length} profissionais parceiros cadastrados
               </p>
             </div>
             <div className="flex items-center gap-2">

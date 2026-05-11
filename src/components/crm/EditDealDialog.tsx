@@ -989,7 +989,7 @@ export function EditDealDialog({
                     className="h-7 text-xs"
                   >
                     <Plus className="mr-1 h-3 w-3" />
-                    Novo Arquiteto
+                    Novo Profissional Parceiro
                   </Button>
                 </div>
                 <SearchableCombobox
@@ -1164,7 +1164,7 @@ export function EditDealDialog({
             <div className="flex items-center gap-2">
               <Target className="h-5 w-5 text-amber-600" />
               <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200 uppercase">
-                Indicação de Arquiteto
+                Indicação de Profissional Parceiro
               </h3>
               {(existingIndications.length + pendingIndications.length) > 0 && (
                 <Badge variant="secondary" className="bg-amber-200 text-amber-800">

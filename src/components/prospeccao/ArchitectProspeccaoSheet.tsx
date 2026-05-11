@@ -226,7 +226,7 @@ export function ArchitectProspeccaoSheet({
                     <AlertDialogHeader>
                       <AlertDialogTitle className="flex items-center gap-2">
                         <AlertTriangle className="h-5 w-5 text-destructive" />
-                        Excluir Arquiteto Permanentemente
+                        Excluir Profissional Parceiro Permanentemente
                       </AlertDialogTitle>
                       <AlertDialogDescription className="space-y-2">
                         <p>
@@ -392,7 +392,7 @@ export function ArchitectProspeccaoSheet({
             <Button variant="outline" className="w-full gap-2" asChild>
               <a href={`/architects`}>
                 <ExternalLink className="h-4 w-4" />
-                Abrir no Módulo Arquitetos
+                Abrir no Módulo Profissionais Parceiros
               </a>
             </Button>
           </TabsContent>

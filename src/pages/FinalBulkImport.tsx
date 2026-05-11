@@ -154,7 +154,7 @@ export default function FinalBulkImport() {
                   Importação Concluída!
                 </p>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {progress.success} arquitetos importados com sucesso
+                  {progress.success} profissionais parceiros importados com sucesso
                 </p>
                 {progress.errors > 0 && (
                   <p className="text-sm text-amber-600">
@@ -179,7 +179,7 @@ export default function FinalBulkImport() {
                   Erro na Importação
                 </p>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Ocorreu um erro ao importar os arquitetos
+                  Ocorreu um erro ao importar os profissionais parceiros
                 </p>
                 <div className="flex gap-2">
                   <Button 

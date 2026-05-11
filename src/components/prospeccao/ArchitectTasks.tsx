@@ -598,7 +598,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
                 <Label htmlFor="task-whatsapp">
                   Número de WhatsApp * 
                   <span className="text-xs text-muted-foreground ml-2">
-                    (Preenchido automaticamente do arquiteto)
+                    (Preenchido automaticamente do profissional parceiro)
                   </span>
                 </Label>
                 <Input

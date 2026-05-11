@@ -94,7 +94,7 @@ export function ArchitectsWithoutTasksPanel() {
           <CollapsibleContent>
             <CardContent className="pt-0 pb-3 px-4">
               <p className="text-xs text-muted-foreground mb-3">
-                Arquitetos em <strong>Contato Iniciado</strong> ou <strong>Parceiro Ativo</strong> que precisam de tarefas futuras para desbloquear campanhas.
+                Profissionais Parceiros em <strong>Contato Iniciado</strong> ou <strong>Parceiro Ativo</strong> que precisam de tarefas futuras para desbloquear campanhas.
               </p>
               
               {loading ? (

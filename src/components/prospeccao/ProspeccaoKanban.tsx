@@ -408,7 +408,7 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
 
                 {architectsByStatus[stage.slug]?.length === 0 && (
                   <div className="text-center py-6 sm:py-8 text-muted-foreground text-[10px] sm:text-sm">
-                    Nenhum arquiteto nesta etapa
+                    Nenhum profissional parceiro nesta etapa
                   </div>
                 )}
               </div>

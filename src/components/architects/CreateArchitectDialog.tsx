@@ -299,7 +299,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
                     Indicação de Oportunidade
                   </Label>
                   <p className="text-sm text-amber-700 dark:text-amber-300">
-                    Vincule este arquiteto a uma oportunidade existente
+                    Vincule este profissional parceiro a uma oportunidade existente
                   </p>
                 </div>
               </div>

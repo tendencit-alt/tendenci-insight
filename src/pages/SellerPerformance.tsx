@@ -126,7 +126,7 @@ export default function SellerPerformance() {
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="graficos">Gráficos</TabsTrigger>
             <TabsTrigger value="negocios">Negócios Ganhos</TabsTrigger>
-            <TabsTrigger value="arquitetos">Profissionais Parceiros</TabsTrigger>
+            <TabsTrigger value="profissionais parceiros">Profissionais Parceiros</TabsTrigger>
             <TabsTrigger value="produtos">Produtos</TabsTrigger>
             <TabsTrigger value="conversao">Conversão</TabsTrigger>
           </TabsList>
@@ -145,7 +145,7 @@ export default function SellerPerformance() {
             <DealsTable deals={data.negocios_ganhos_detalhes || []} />
           </TabsContent>
 
-          <TabsContent value="arquitetos">
+          <TabsContent value="profissionais parceiros">
             <ArchitectsAnalysis
               arquitetosVendas={data.arquitetos_vendas}
               arquitetosResumo={data.arquitetos_resumo}

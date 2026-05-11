@@ -76,7 +76,7 @@ export function ArchitectsAnalysis({ arquitetosVendas, arquitetosResumo }: Archi
                 {arquitetosVendas?.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center text-muted-foreground">
-                      Nenhuma venda com arquiteto neste período
+                      Nenhuma venda com profissional parceiro neste período
                     </TableCell>
                   </TableRow>
                 ) : (

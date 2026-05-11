@@ -70,7 +70,7 @@ export function InactiveArchitects({ refreshKey }: InactiveArchitectsProps) {
             <div>
               <h3 className="text-lg font-semibold">🕒 Profissionais Parceiros Inativos + de 60 Dias que já enviaram projetos</h3>
               <p className="text-sm text-muted-foreground">
-                {inactive.length} arquitetos precisam de atenção
+                {inactive.length} profissionais parceiros precisam de atenção
               </p>
             </div>
           </div>

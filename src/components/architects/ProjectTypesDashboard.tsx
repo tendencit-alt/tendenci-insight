@@ -113,7 +113,7 @@ export function ProjectTypesDashboard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Award className="h-5 w-5" />
-            Ranking de Arquitetos
+            Ranking de Profissionais Parceiros
           </CardTitle>
         </CardHeader>
         <CardContent>

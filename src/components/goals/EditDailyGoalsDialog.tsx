@@ -162,7 +162,7 @@ export function EditDailyGoalsDialog({ open, onOpenChange, onSuccess }: EditDail
             Editar Metas Diárias de Captação
           </DialogTitle>
           <DialogDescription>
-            Defina a meta diária de captação de arquitetos para cada vendedor. A meta padrão é de 30 captações por dia.
+            Defina a meta diária de captação de profissionais parceiros para cada vendedor. A meta padrão é de 30 captações por dia.
           </DialogDescription>
         </DialogHeader>
 

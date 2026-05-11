@@ -65,7 +65,7 @@ interface WhatsAppConnection {
   phone_number: string | null;
 }
 
-interface Arquiteto {
+interface Profissional Parceiro {
   id: string;
   name: string;
   phone: string | null;
@@ -96,7 +96,7 @@ interface KanbanStage {
 export function CampanhasManager() {
   const { toast } = useToast();
   const [campanhas, setCampanhas] = useState<Campanha[]>([]);
-  const [arquitetosDisponiveis, setArquitetosDisponiveis] = useState<Arquiteto[]>([]);
+  const [arquitetosDisponiveis, setArquitetosDisponiveis] = useState<Profissional Parceiro[]>([]);
   const [whatsappConnections, setWhatsappConnections] = useState<WhatsAppConnection[]>([]);
   const [kanbanStages, setKanbanStages] = useState<KanbanStage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -973,13 +973,13 @@ export function CampanhasManager() {
             <AlertTitle className="text-amber-700 font-semibold">⚠️ Lembrete Importante</AlertTitle>
             <AlertDescription className="text-amber-600">
               Tarefas com data/hora <strong>vencida</strong> são consideradas como "realizadas". 
-              Se a data da tarefa já passou, o arquiteto volta a ter status de 
+              Se a data da tarefa já passou, o profissional parceiro volta a ter status de 
               <strong> sem tarefa agendada</strong> e precisa de nova tarefa.
             </AlertDescription>
           </Alert>
           
           <p className="text-sm mb-4">
-            Existem <strong className="text-destructive">{arquitetosSemTarefa.length}</strong> arquitetos em 
+            Existem <strong className="text-destructive">{arquitetosSemTarefa.length}</strong> profissionais parceiros em 
             "Contato Iniciado" ou "Ativado" que precisam de tarefas futuras:
           </p>
           
@@ -1013,7 +1013,7 @@ export function CampanhasManager() {
           </ScrollArea>
           
           <p className="text-sm text-muted-foreground mt-2">
-            📌 Clique em <strong>"Abrir"</strong> para acessar o card do arquiteto e agendar uma tarefa.
+            📌 Clique em <strong>"Abrir"</strong> para acessar o card do profissional parceiro e agendar uma tarefa.
           </p>
           
           <DialogFooter>
@@ -1033,7 +1033,7 @@ export function CampanhasManager() {
           className="gap-2"
         >
           <ShieldAlert className="h-4 w-4" />
-          {arquitetosSemTarefa.length} Arquitetos Sem Tarefa
+          {arquitetosSemTarefa.length} Profissionais Parceiros Sem Tarefa
         </Button>
       )}
 
@@ -1041,7 +1041,7 @@ export function CampanhasManager() {
         <div>
           <h2 className="text-2xl font-bold">Campanhas Personalizáveis</h2>
           <p className="text-muted-foreground">
-            Crie e gerencie campanhas de WhatsApp para arquitetos
+            Crie e gerencie campanhas de WhatsApp para profissionais parceiros
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -1293,12 +1293,12 @@ export function CampanhasManager() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Selecione a etapa do kanban para filtrar arquitetos disponíveis
+                Selecione a etapa do kanban para filtrar profissionais parceiros disponíveis
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label>Arquitetos da Etapa: "{kanbanStages.find(s => s.slug === filtroEtapa)?.nome || filtroEtapa}" *</Label>
+              <Label>Profissionais Parceiros da Etapa: "{kanbanStages.find(s => s.slug === filtroEtapa)?.nome || filtroEtapa}" *</Label>
               {(arquitetosEmOutrasCampanhas > 0 || arquitetosComErroTelefone > 0) && (
                 <Card className="border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-950/20">
                   <CardContent className="p-3 space-y-1">
@@ -1306,7 +1306,7 @@ export function CampanhasManager() {
                       <div className="flex items-center gap-2">
                         <AlertTriangle className="w-4 h-4 text-orange-600 dark:text-orange-400" />
                         <p className="text-sm text-orange-800 dark:text-orange-200">
-                          {arquitetosEmOutrasCampanhas} arquiteto(s) estão em outras campanhas pendentes.
+                          {arquitetosEmOutrasCampanhas} profissional parceiro(s) estão em outras campanhas pendentes.
                         </p>
                       </div>
                     )}
@@ -1314,7 +1314,7 @@ export function CampanhasManager() {
                       <div className="flex items-center gap-2">
                         <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
                         <p className="text-sm text-red-800 dark:text-red-200">
-                          {arquitetosComErroTelefone} arquiteto(s) com telefone inválido/inexistente foram excluídos.
+                          {arquitetosComErroTelefone} profissional parceiro(s) com telefone inválido/inexistente foram excluídos.
                         </p>
                       </div>
                     )}
@@ -1325,7 +1325,7 @@ export function CampanhasManager() {
                 <Card className="border-yellow-200 bg-yellow-50/50 dark:border-yellow-800 dark:bg-yellow-950/20">
                   <CardContent className="p-4">
                     <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                      Nenhum arquiteto disponível na etapa "{kanbanStages.find(s => s.slug === filtroEtapa)?.nome || filtroEtapa}".
+                      Nenhum profissional parceiro disponível na etapa "{kanbanStages.find(s => s.slug === filtroEtapa)?.nome || filtroEtapa}".
                     </p>
                   </CardContent>
                 </Card>
@@ -1394,7 +1394,7 @@ export function CampanhasManager() {
                 </>
               )}
               <p className="text-sm font-medium text-primary">
-                {formData.arquitetosSelecionados.length} arquiteto(s) selecionado(s)
+                {formData.arquitetosSelecionados.length} profissional parceiro(s) selecionado(s)
               </p>
             </div>
 
@@ -1522,7 +1522,7 @@ export function CampanhasManager() {
                             <Clock className="w-4 h-4" />
                             <span>Próximo: {proximoDisparo}</span>
                           </div>
-                          <span>{campanha.arquitetos_selecionados?.length || 0} arquitetos</span>
+                          <span>{campanha.arquitetos_selecionados?.length || 0} profissionais parceiros</span>
                           {campanha.tipo_agendamento === 'recorrente' && campanha.data_fim && (
                             <span className="text-xs">
                               Até: {format(new Date(campanha.data_fim), "dd/MM/yyyy", { locale: ptBR })}
@@ -1588,7 +1588,7 @@ export function CampanhasManager() {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {campanha.arquitetos_selecionados?.length || 0} arquitetos selecionados
+                        {campanha.arquitetos_selecionados?.length || 0} profissionais parceiros selecionados
                       </p>
                     </div>
                     <Button
@@ -1632,7 +1632,7 @@ export function CampanhasManager() {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {campanha.arquitetos_selecionados?.length || 0} arquitetos
+                        {campanha.arquitetos_selecionados?.length || 0} profissionais parceiros
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -1682,7 +1682,7 @@ export function CampanhasManager() {
                         {getStatusBadge(campanha.status)}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {campanha.arquitetos_selecionados?.length || 0} arquitetos selecionados
+                        {campanha.arquitetos_selecionados?.length || 0} profissionais parceiros selecionados
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -1728,7 +1728,7 @@ export function CampanhasManager() {
                         {getStatusBadge(campanha.status)}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {campanha.arquitetos_selecionados?.length || 0} arquitetos
+                        {campanha.arquitetos_selecionados?.length || 0} profissionais parceiros
                       </p>
                     </div>
                     <Button

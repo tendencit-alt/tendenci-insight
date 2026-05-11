@@ -118,7 +118,7 @@ export default function WhatsAppIntegrationDocs() {
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Cada arquiteto selecionado na campanha recebe um POST individual com este payload
+                    Cada profissional parceiro selecionado na campanha recebe um POST individual com este payload
                   </AlertDescription>
                 </Alert>
 
@@ -570,7 +570,7 @@ ORDER BY d.enviado_em DESC;`}
                   <div className="border-l-4 border-purple-500 pl-4">
                     <h3 className="font-semibold mb-2">Status dos Profissionais Parceiros</h3>
                     <p className="text-sm text-muted-foreground mb-2">
-                      Após envio bem-sucedido, arquitetos são automaticamente movidos para:
+                      Após envio bem-sucedido, profissionais parceiros são automaticamente movidos para:
                     </p>
                     <div className="flex items-center gap-2 mt-2">
                       <Badge>status_funil</Badge>
@@ -660,7 +660,7 @@ ORDER BY d.enviado_em DESC;`}
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    <strong>Dica:</strong> Sempre teste suas campanhas com um ou dois arquitetos antes de disparar para toda a lista
+                    <strong>Dica:</strong> Sempre teste suas campanhas com um ou dois profissionais parceiros antes de disparar para toda a lista
                   </AlertDescription>
                 </Alert>
               </CardContent>

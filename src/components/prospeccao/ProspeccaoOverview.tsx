@@ -93,7 +93,7 @@ export function ProspeccaoOverview() {
         </Button>
         <Button onClick={() => setIsCreateOpen(true)} className="gap-2 shadow-lg shadow-primary/25">
           <Plus className="w-4 h-4" />
-          Novo Arquiteto
+          Novo Profissional Parceiro
         </Button>
       </div>
 

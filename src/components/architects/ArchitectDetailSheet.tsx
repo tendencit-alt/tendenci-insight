@@ -126,7 +126,7 @@ export function ArchitectDetailSheet({ open, onOpenChange, architectId }: Archit
           <Card className="p-6 space-y-4">
             <h3 className="font-semibold text-lg flex items-center gap-2">
               <Calendar className="w-5 h-5" />
-              Informações do Arquiteto
+              Informações do Profissional Parceiro
             </h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>

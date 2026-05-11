@@ -141,7 +141,7 @@ export function DailyArchitectGoals() {
           />
 
           <div className="text-xs text-muted-foreground">
-            💡 Meta fixa: 30 captações de arquitetos por dia útil (segunda a sexta)
+            💡 Meta fixa: 30 captações de profissionais parceiros por dia útil (segunda a sexta)
           </div>
         </CardContent>
       </Card>

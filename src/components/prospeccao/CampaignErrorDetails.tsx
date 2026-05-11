@@ -276,7 +276,7 @@ export function CampaignErrorDetails({
             Detalhes dos Erros
           </SheetTitle>
           <SheetDescription>
-            Lista de arquitetos que falharam no envio da campanha
+            Lista de profissionais parceiros que falharam no envio da campanha
           </SheetDescription>
         </SheetHeader>
 
@@ -399,7 +399,7 @@ export function CampaignErrorDetails({
                       onClick={() => window.open(`/prospeccao?architect=${error.architect_id}`, '_blank')}
                     >
                       <ExternalLink className="w-4 h-4 mr-1" />
-                      Ver Arquiteto
+                      Ver Profissional Parceiro
                     </Button>
                   </div>
                 </div>

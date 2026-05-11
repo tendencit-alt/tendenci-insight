@@ -708,7 +708,7 @@ export function CreateDealDialog({
                     className="h-7 text-xs"
                   >
                     <Plus className="mr-1 h-3 w-3" />
-                    Novo Arquiteto
+                    Novo Profissional Parceiro
                   </Button>
                 </div>
                 <SearchableCombobox
@@ -761,7 +761,7 @@ export function CreateDealDialog({
               <div className="flex items-center gap-2">
                 <Target className="h-4 w-4 text-amber-600" />
                 <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200 uppercase">
-                  Indicação de Arquiteto
+                  Indicação de Profissional Parceiro
                 </h3>
                 {pendingIndications.length > 0 && (
                   <span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">

@@ -668,7 +668,7 @@ export function DealDetailSheet({
                 </div>
               ) : !deal.architect && !isEditingArchitect ? (
                 <div className="text-center py-4 text-muted-foreground text-sm">
-                  Cliente sem arquiteto vinculado
+                  Cliente sem profissional parceiro vinculado
                 </div>
               ) : null}
               
@@ -683,7 +683,7 @@ export function DealDetailSheet({
                       className="h-7 text-xs"
                     >
                       <Plus className="mr-1 h-3 w-3" />
-                      Novo Arquiteto
+                      Novo Profissional Parceiro
                     </Button>
                   </div>
                   <Select

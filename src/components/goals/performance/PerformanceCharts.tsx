@@ -125,7 +125,7 @@ export function PerformanceCharts({ evolucaoDiaria, origemLeads, produtosVendido
             <BarChart data={arquitetosVendas || []} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" tickFormatter={(value) => formatCurrency(value)} />
-              <YAxis type="category" dataKey="arquiteto" width={150} />
+              <YAxis type="category" dataKey="profissional parceiro" width={150} />
               <Tooltip 
                 formatter={(value: number) => formatCurrency(value)}
                 contentStyle={{ 

@@ -38,7 +38,7 @@ export default function ImportTempArchitects() {
         {!result && (
           <div className="space-y-4">
             <p className="text-muted-foreground">
-              Clique no botão abaixo para importar todos os arquitetos da planilha.
+              Clique no botão abaixo para importar todos os profissionais parceiros da planilha.
             </p>
             
             <Button

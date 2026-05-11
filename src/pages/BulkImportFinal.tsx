@@ -135,7 +135,7 @@ export default function BulkImportFinal() {
             <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
             <h2 className="text-xl font-semibold">Processando importação massiva...</h2>
             <p className="text-sm text-muted-foreground">
-              Inserindo todos os arquitetos do arquivo Metropolitano_01.xlsx
+              Inserindo todos os profissionais parceiros do arquivo Metropolitano_01.xlsx
             </p>
           </div>
         )}

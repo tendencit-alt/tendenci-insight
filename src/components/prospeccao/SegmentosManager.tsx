@@ -422,7 +422,7 @@ export function SegmentosManager() {
                           }
                         />
                         <Label htmlFor="nao_contactados" className="cursor-pointer">
-                          Apenas arquitetos que nunca foram contactados
+                          Apenas profissionais parceiros que nunca foram contactados
                         </Label>
                       </div>
                     </div>
@@ -465,7 +465,7 @@ export function SegmentosManager() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-muted-foreground">
-                        Selecione arquitetos individuais para este segmento
+                        Selecione profissionais parceiros individuais para este segmento
                       </p>
                       <div className="flex gap-2">
                         <Button
@@ -490,7 +490,7 @@ export function SegmentosManager() {
                     {selectedArchitects.length > 0 && (
                       <div className="p-3 bg-muted rounded-md">
                         <p className="text-sm font-medium">
-                          {selectedArchitects.length} arquiteto(s) selecionado(s)
+                          {selectedArchitects.length} profissional parceiro(s) selecionado(s)
                         </p>
                       </div>
                     )}
@@ -608,7 +608,7 @@ export function SegmentosManager() {
                 <div className="space-y-2">
                   {segment.architect_ids && segment.architect_ids.length > 0 ? (
                     <Badge variant="secondary">
-                      {segment.architect_ids.length} arquiteto(s) selecionado(s)
+                      {segment.architect_ids.length} profissional parceiro(s) selecionado(s)
                     </Badge>
                   ) : (
                     <>

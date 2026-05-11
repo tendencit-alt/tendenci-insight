@@ -58,7 +58,7 @@ export default function Prospeccao() {
             </TabsTrigger>
             <TabsTrigger value="crm" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <UserSearch className="h-4 w-4" />
-              CRM de Arquitetos
+              CRM de Profissionais Parceiros
             </TabsTrigger>
             <TabsTrigger value="whatsapp" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <MessageSquare className="h-4 w-4" />

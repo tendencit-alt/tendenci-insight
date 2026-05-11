@@ -222,7 +222,7 @@ export default function N8nTarefasGuide() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-4">Integração n8n - Tarefas Automatizadas</h1>
           <p className="text-lg text-muted-foreground">
-            Documentação completa para configurar o envio automático de mensagens WhatsApp via n8n baseado em tarefas agendadas no CRM e módulo de Arquitetos
+            Documentação completa para configurar o envio automático de mensagens WhatsApp via n8n baseado em tarefas agendadas no CRM e módulo de Profissionais Parceiros
           </p>
         </div>
 
@@ -255,7 +255,7 @@ export default function N8nTarefasGuide() {
                   <span className="font-medium">Tarefas de Profissionais Parceiros</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Tarefas criadas para arquitetos no módulo de prospecção. Tabela: <code className="text-xs bg-muted px-1 py-0.5 rounded">tendenci_prospec_arq_agendamentos</code>
+                  Tarefas criadas para profissionais parceiros no módulo de prospecção. Tabela: <code className="text-xs bg-muted px-1 py-0.5 rounded">tendenci_prospec_arq_agendamentos</code>
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   origem_modulo: <code className="bg-muted px-1 py-0.5 rounded">"prospeccao"</code>
@@ -281,7 +281,7 @@ export default function N8nTarefasGuide() {
                 <div>
                   <p className="font-medium">Criação da Tarefa Automatizada</p>
                   <p className="text-sm text-muted-foreground">
-                    Usuário cria uma tarefa com tipo "Tarefa Automatizada" no CRM (negócios) ou no módulo de Arquitetos, definindo data/hora, número WhatsApp e mensagem
+                    Usuário cria uma tarefa com tipo "Tarefa Automatizada" no CRM (negócios) ou no módulo de Profissionais Parceiros, definindo data/hora, número WhatsApp e mensagem
                   </p>
                 </div>
               </div>
@@ -290,7 +290,7 @@ export default function N8nTarefasGuide() {
                 <div>
                   <p className="font-medium">Armazenamento no Banco</p>
                   <p className="text-sm text-muted-foreground">
-                    Tarefa é salva na tabela correspondente: <code className="text-xs bg-muted px-1 py-0.5 rounded">crm_tasks</code> (CRM) ou <code className="text-xs bg-muted px-1 py-0.5 rounded">tendenci_prospec_arq_agendamentos</code> (Arquitetos)
+                    Tarefa é salva na tabela correspondente: <code className="text-xs bg-muted px-1 py-0.5 rounded">crm_tasks</code> (CRM) ou <code className="text-xs bg-muted px-1 py-0.5 rounded">tendenci_prospec_arq_agendamentos</code> (Profissionais Parceiros)
                   </p>
                 </div>
               </div>
@@ -317,7 +317,7 @@ export default function N8nTarefasGuide() {
                 <div>
                   <p className="font-medium">Disparo e Atualização</p>
                   <p className="text-sm text-muted-foreground">
-                    Mensagem enviada via Evolution API WhatsApp, status atualizado e log registrado na timeline do arquiteto (se aplicável)
+                    Mensagem enviada via Evolution API WhatsApp, status atualizado e log registrado na timeline do profissional parceiro (se aplicável)
                   </p>
                 </div>
               </div>
@@ -372,7 +372,7 @@ export default function N8nTarefasGuide() {
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription className="text-xs">
-                <strong>Diferenças de Status:</strong> CRM usa "open"/"done", Arquitetos usa "pendente"/"concluida". A RPC unifica isso automaticamente.
+                <strong>Diferenças de Status:</strong> CRM usa "open"/"done", Profissionais Parceiros usa "pendente"/"concluida". A RPC unifica isso automaticamente.
               </AlertDescription>
             </Alert>
           </CardContent>
@@ -618,7 +618,7 @@ export default function N8nTarefasGuide() {
                   <Alert className="mb-3">
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
-                      <strong>✨ Método Recomendado:</strong> Use a Edge Function <code>process-automated-task</code> que processa automaticamente tarefas de AMBOS os módulos (CRM e Arquitetos).
+                      <strong>✨ Método Recomendado:</strong> Use a Edge Function <code>process-automated-task</code> que processa automaticamente tarefas de AMBOS os módulos (CRM e Profissionais Parceiros).
                     </AlertDescription>
                   </Alert>
 
@@ -639,7 +639,7 @@ export default function N8nTarefasGuide() {
                   <Alert className="mt-3 border-destructive bg-destructive/10">
                     <AlertCircle className="h-4 w-4 text-destructive" />
                     <AlertDescription className="text-xs">
-                      <strong className="text-destructive">⚠️ CRÍTICO:</strong> O campo <code>origem_modulo</code> é <strong>OBRIGATÓRIO</strong> para tarefas de arquitetos!
+                      <strong className="text-destructive">⚠️ CRÍTICO:</strong> O campo <code>origem_modulo</code> é <strong>OBRIGATÓRIO</strong> para tarefas de profissionais parceiros!
                       <ul className="list-disc ml-4 mt-2 space-y-1">
                         <li><code>tarefa_id</code> - ID da tarefa (campo unificado da RPC)</li>
                         <li><code>origem_modulo</code> - "crm" ou "prospeccao" (identifica o módulo)</li>
@@ -654,7 +654,7 @@ export default function N8nTarefasGuide() {
                       <strong>A Edge Function faz tudo automaticamente:</strong>
                       <ul className="list-disc ml-4 mt-2 space-y-1">
                         <li>Detecta se é tarefa CRM ou Profissional Parceiro via <code>origem_modulo</code></li>
-                        <li>Busca dados do cliente/arquiteto</li>
+                        <li>Busca dados do cliente/profissional parceiro</li>
                         <li>Identifica instância WhatsApp do vendedor</li>
                         <li>Envia mensagem via Evolution API</li>
                         <li>Atualiza status para "done" ou "concluida"</li>
@@ -747,7 +747,7 @@ export default function N8nTarefasGuide() {
                     <li>Detecta automaticamente se é tarefa CRM ou Profissional Parceiro</li>
                     <li>Busca instância WhatsApp do vendedor responsável</li>
                     <li>Atualiza status na tabela correta (crm_tasks ou tendenci_prospec_arq_agendamentos)</li>
-                    <li>Registra logs na timeline do negócio/arquiteto</li>
+                    <li>Registra logs na timeline do negócio/profissional parceiro</li>
                     <li>Não precisa configurar Evolution API no n8n</li>
                   </ul>
                 </AlertDescription>

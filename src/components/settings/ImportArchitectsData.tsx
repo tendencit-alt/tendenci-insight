@@ -119,10 +119,10 @@ export const ImportArchitectsData = () => {
       <div className="space-y-2">
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <Upload className="w-6 h-6" />
-          Importação de Arquitetos
+          Importação de Profissionais Parceiros
         </h2>
         <p className="text-muted-foreground">
-          Importe arquitetos em massa a partir de planilhas Excel
+          Importe profissionais parceiros em massa a partir de planilhas Excel
         </p>
       </div>
 
@@ -231,7 +231,7 @@ export const ImportArchitectsData = () => {
                 Importante:
               </p>
               <p className="text-sm text-blue-800 dark:text-blue-200">
-                Arquitetos duplicados (mesmo telefone ou e-mail) serão automaticamente ignorados durante a importação.
+                Profissionais Parceiros duplicados (mesmo telefone ou e-mail) serão automaticamente ignorados durante a importação.
               </p>
             </div>
           </div>
