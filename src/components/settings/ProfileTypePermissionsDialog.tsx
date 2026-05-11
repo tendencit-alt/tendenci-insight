@@ -848,22 +848,40 @@ export function ProfileTypePermissionsDialog({
           </Tabs>
         )}
 
-        <DialogFooter className="sm:justify-between gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setResetConfirmOpen(true)}
-            disabled={saving || loading || !hasUnsavedChanges}
-            className="gap-2"
-            title={
-              !hasUnsavedChanges
-                ? 'Nenhuma alteração não salva — modifique algum módulo para habilitar'
-                : 'Restaurar permissões para o padrão recomendado do perfil'
-            }
-          >
-            <RotateCcw className="h-4 w-4" />
-            Restaurar padrões
-          </Button>
+        <DialogFooter className="sm:justify-between gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setResetConfirmOpen(true)}
+              disabled={saving || loading || !hasUnsavedChanges}
+              className="gap-2"
+              title={
+                !hasUnsavedChanges
+                  ? 'Nenhuma alteração não salva — modifique algum módulo para habilitar'
+                  : 'Restaurar permissões para o padrão recomendado do perfil'
+              }
+            >
+              <RotateCcw className="h-4 w-4" />
+              Restaurar padrões
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setTplName(`${profileType.display_name} (template)`);
+                setTplDesc(`Baseado nas permissões de "${profileType.display_name}"`);
+                setTplColor('#7C3AED');
+                setSaveTemplateOpen(true);
+              }}
+              disabled={saving || loading}
+              className="gap-2"
+              title="Salvar a configuração atual de permissões como um template reutilizável"
+            >
+              <Save className="h-4 w-4" />
+              Salvar como template
+            </Button>
+          </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
             <Button onClick={handleSave} disabled={saving || loading}>
