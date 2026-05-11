@@ -430,11 +430,6 @@ export function ProfileTypePermissionsDialog({
             </TabsContent>
 
             {/* CRITICAL TAB removida — críticas folded em Editar/Excluir */}
-            <TabsContent value="critical" className="mt-3 hidden" />
-              </ScrollArea>
-            </TabsContent>
-
-            {/* (Críticas removida) */}
 
             {/* SCOPES TAB */}
             <TabsContent value="scopes" className="mt-3">
