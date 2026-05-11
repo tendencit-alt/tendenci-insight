@@ -45,7 +45,7 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
       clearPersistedData();
       setFormData({
         name: project.name || "",
-        architect_id: project.architect_id || "sem-arquiteto",
+        architect_id: project.architect_id || "sem-profissional parceiro",
         stage: project.stage || "recebido",
         value: project.value?.toString() || "",
         deadline: project.deadline ? project.deadline.split('T')[0] : ""
@@ -77,7 +77,7 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
         .from("projects")
         .update({
           name: formData.name,
-          architect_id: formData.architect_id && formData.architect_id !== "sem-arquiteto" ? formData.architect_id : null,
+          architect_id: formData.architect_id && formData.architect_id !== "sem-profissional parceiro" ? formData.architect_id : null,
           stage: formData.stage,
           value: formData.value ? parseFloat(formData.value) : 0,
           deadline: formData.deadline ? `${formData.deadline}T00:00:00-03:00` : null
@@ -126,13 +126,13 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-architect">Arquiteto</Label>
+              <Label htmlFor="edit-architect">Profissional Parceiro</Label>
               <Select value={formData.architect_id} onValueChange={(v) => setFormData({ ...formData, architect_id: v })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o arquiteto" />
+                  <SelectValue placeholder="Selecione o profissional parceiro" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="sem-arquiteto">Cliente sem arquiteto</SelectItem>
+                  <SelectItem value="sem-profissional parceiro">Cliente sem profissional parceiro</SelectItem>
                   {architects.map((arch) => (
                     <SelectItem key={arch.id} value={arch.id}>
                       {arch.name}

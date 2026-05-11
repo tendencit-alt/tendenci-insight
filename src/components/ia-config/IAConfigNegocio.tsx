@@ -127,7 +127,7 @@ export default function IAConfigNegocio({ config, onSave, saving }: Props) {
         label="Público-Alvo"
         value={form.publico_alvo}
         onChange={(value) => setForm({ ...form, publico_alvo: value })}
-        placeholder="Quem são seus clientes ideais. Ex: Arquitetos especificadores, construtoras de médio e grande porte, clientes finais classe A/B que buscam qualidade e personalização..."
+        placeholder="Quem são seus clientes ideais. Ex: Profissionais Parceiros especificadores, construtoras de médio e grande porte, clientes finais classe A/B que buscam qualidade e personalização..."
         rows={4}
         context="Público-alvo e perfil de cliente ideal para adaptar a abordagem"
       />

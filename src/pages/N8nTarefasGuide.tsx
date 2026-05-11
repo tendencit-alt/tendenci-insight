@@ -18,7 +18,7 @@ export default function N8nTarefasGuide() {
 
   const downloadWorkflowJSON = () => {
     const workflowJSON = {
-      "name": "Tarefas Automatizadas WhatsApp (CRM + Arquitetos)",
+      "name": "Tarefas Automatizadas WhatsApp (CRM + Profissionais Parceiros)",
       "nodes": [
         {
           "parameters": {
@@ -252,7 +252,7 @@ export default function N8nTarefasGuide() {
               <div className="p-4 bg-background rounded-lg border">
                 <div className="flex items-center gap-2 mb-2">
                   <Badge variant="secondary">Prospecção</Badge>
-                  <span className="font-medium">Tarefas de Arquitetos</span>
+                  <span className="font-medium">Tarefas de Profissionais Parceiros</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Tarefas criadas para arquitetos no módulo de prospecção. Tabela: <code className="text-xs bg-muted px-1 py-0.5 rounded">tendenci_prospec_arq_agendamentos</code>
@@ -358,7 +358,7 @@ export default function N8nTarefasGuide() {
               </h4>
               <div className="bg-muted p-4 rounded-lg font-mono text-sm space-y-2">
                 <div><span className="text-primary">id</span> <span className="text-muted-foreground">UUID</span> - Identificador único da tarefa</div>
-                <div><span className="text-primary">architect_id</span> <span className="text-muted-foreground">UUID</span> - Referência ao arquiteto</div>
+                <div><span className="text-primary">architect_id</span> <span className="text-muted-foreground">UUID</span> - Referência ao profissional parceiro</div>
                 <div><span className="text-primary">observacoes</span> <span className="text-muted-foreground">JSONB</span> - JSON com título e nota (mensagem)</div>
                 <div><span className="text-primary">data_agendamento</span> <span className="text-muted-foreground">TIMESTAMP</span> - Data e hora para envio</div>
                 <div><span className="text-primary">status</span> <span className="text-muted-foreground">TEXT</span> - Status: "pendente" ou "concluida"</div>
@@ -520,9 +520,9 @@ export default function N8nTarefasGuide() {
     "origem_modulo": "crm"
   },
   {
-    "id": "uuid-tarefa-arquiteto...",
+    "id": "uuid-tarefa-profissional parceiro...",
     "whatsapp_number": "5521988888888",
-    "mensagem": "Olá Arquiteto! Mensagem...",
+    "mensagem": "Olá Profissional Parceiro! Mensagem...",
     "instance_name": "tendenci-vendedor2",
     "instance_id": "67890",
     "due_at": "2025-01-15T11:00:00Z",
@@ -535,7 +535,7 @@ export default function N8nTarefasGuide() {
                   <Alert className="mt-3">
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
-                      <strong>✨ RPC Unificada:</strong> A função <code>get_pending_automated_tasks</code> usa UNION ALL para retornar tarefas de AMBOS os módulos (CRM e Arquitetos), com o campo <code>origem_modulo</code> para identificação. Cada tarefa usa automaticamente a instância WhatsApp específica do vendedor que a criou.
+                      <strong>✨ RPC Unificada:</strong> A função <code>get_pending_automated_tasks</code> usa UNION ALL para retornar tarefas de AMBOS os módulos (CRM e Profissionais Parceiros), com o campo <code>origem_modulo</code> para identificação. Cada tarefa usa automaticamente a instância WhatsApp específica do vendedor que a criou.
                     </AlertDescription>
                   </Alert>
                 </div>
@@ -644,7 +644,7 @@ export default function N8nTarefasGuide() {
                         <li><code>tarefa_id</code> - ID da tarefa (campo unificado da RPC)</li>
                         <li><code>origem_modulo</code> - "crm" ou "prospeccao" (identifica o módulo)</li>
                       </ul>
-                      Sem <code>origem_modulo</code>, tarefas de arquitetos serão processadas incorretamente como CRM e falharão com <code>architect_id = null</code>.
+                      Sem <code>origem_modulo</code>, tarefas de profissionais parceiros serão processadas incorretamente como CRM e falharão com <code>architect_id = null</code>.
                     </AlertDescription>
                   </Alert>
 
@@ -653,12 +653,12 @@ export default function N8nTarefasGuide() {
                     <AlertDescription className="text-xs">
                       <strong>A Edge Function faz tudo automaticamente:</strong>
                       <ul className="list-disc ml-4 mt-2 space-y-1">
-                        <li>Detecta se é tarefa CRM ou Arquiteto via <code>origem_modulo</code></li>
-                        <li>Busca dados do cliente/arquiteto</li>
+                        <li>Detecta se é tarefa CRM ou Profissional Parceiro via <code>origem_modulo</code></li>
+                        <li>Busca dados do cliente/profissional parceiro</li>
                         <li>Identifica instância WhatsApp do vendedor</li>
                         <li>Envia mensagem via Evolution API</li>
                         <li>Atualiza status para "done" ou "concluida"</li>
-                        <li>Registra log na timeline (arquitetos)</li>
+                        <li>Registra log na timeline (profissionais parceiros)</li>
                       </ul>
                       <strong className="mt-2 block">Fallback:</strong> Se <code>origem_modulo</code> não for enviado, a função tenta detectar automaticamente verificando em qual tabela a tarefa existe.
                     </AlertDescription>
@@ -710,7 +710,7 @@ export default function N8nTarefasGuide() {
               </p>
               <ul className="list-disc ml-6 text-sm space-y-1 text-muted-foreground">
                 <li>Schedule Trigger configurado para executar a cada minuto</li>
-                <li><strong className="text-primary">RPC Unificada</strong> - Busca tarefas de CRM e Arquitetos em uma única query</li>
+                <li><strong className="text-primary">RPC Unificada</strong> - Busca tarefas de CRM e Profissionais Parceiros em uma única query</li>
                 <li>Loop para processar tarefas individualmente</li>
                 <li><strong className="text-primary">Edge Function</strong> - Processa envio, atualiza status e registra logs automaticamente</li>
                 <li>Delay de 3 segundos entre tarefas para evitar rate limiting</li>
@@ -744,10 +744,10 @@ export default function N8nTarefasGuide() {
                 <AlertDescription className="text-xs">
                   <strong>Vantagens da Edge Function:</strong>
                   <ul className="list-disc ml-4 mt-2 space-y-1">
-                    <li>Detecta automaticamente se é tarefa CRM ou Arquiteto</li>
+                    <li>Detecta automaticamente se é tarefa CRM ou Profissional Parceiro</li>
                     <li>Busca instância WhatsApp do vendedor responsável</li>
                     <li>Atualiza status na tabela correta (crm_tasks ou tendenci_prospec_arq_agendamentos)</li>
-                    <li>Registra logs na timeline do negócio/arquiteto</li>
+                    <li>Registra logs na timeline do negócio/profissional parceiro</li>
                     <li>Não precisa configurar Evolution API no n8n</li>
                   </ul>
                 </AlertDescription>
@@ -820,7 +820,7 @@ export default function N8nTarefasGuide() {
 {`{
   "tarefa_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "deal_id": "d4e5f6g7-h8i9-0123-4567-89abcdef0123",
-  "arquiteto_id": null,
+  "profissional parceiro_id": null,
   "titulo": "Follow-up Cliente João",
   "observacoes": "Olá João! Tudo bem? Passando para verificar...",
   "data_agendamento": "2025-01-21T14:30:00Z",
@@ -835,13 +835,13 @@ export default function N8nTarefasGuide() {
             </div>
 
             <div>
-              <h3 className="font-semibold mb-2 text-sm">Dados da RPC - <Badge variant="secondary">Arquiteto</Badge>:</h3>
+              <h3 className="font-semibold mb-2 text-sm">Dados da RPC - <Badge variant="secondary">Profissional Parceiro</Badge>:</h3>
               <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
 {`{
   "tarefa_id": "b2c3d4e5-f6g7-8901-bcde-f12345678901",
   "deal_id": null,
-  "arquiteto_id": "c3d4e5f6-g7h8-9012-cdef-123456789012",
-  "titulo": "Follow-up Arquiteto Maria",
+  "profissional parceiro_id": "c3d4e5f6-g7h8-9012-cdef-123456789012",
+  "titulo": "Follow-up Profissional Parceiro Maria",
   "observacoes": "Olá Maria! Você viu nosso catálogo novo?",
   "data_agendamento": "2025-01-21T15:00:00Z",
   "telefone": "5511988888888",

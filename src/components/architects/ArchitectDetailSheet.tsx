@@ -43,7 +43,7 @@ export function ArchitectDetailSheet({ open, onOpenChange, architectId }: Archit
     
     setLoading(true);
 
-    // Buscar dados do arquiteto
+    // Buscar dados do profissional parceiro
     const { data: archData } = await supabase
       .from('architects')
       .select('*')
@@ -54,7 +54,7 @@ export function ArchitectDetailSheet({ open, onOpenChange, architectId }: Archit
       setArchitect(archData);
     }
 
-    // Buscar projetos do arquiteto
+    // Buscar projetos do profissional parceiro
     const { data: projectsData } = await supabase
       .from('projects')
       .select(`

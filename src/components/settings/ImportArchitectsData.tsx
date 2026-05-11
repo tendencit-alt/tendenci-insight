@@ -54,7 +54,7 @@ export const ImportArchitectsData = () => {
         };
       }).filter(arch => arch.name); // Remover linhas sem nome
 
-      console.log(`Enviando ${architects.length} arquitetos para importação`);
+      console.log(`Enviando ${architects.length} profissionais parceiros para importação`);
 
       // Enviar para Edge Function
       const { data: result, error } = await supabase.functions.invoke('import-architects', {
@@ -75,7 +75,7 @@ export const ImportArchitectsData = () => {
 
       toast({
         title: "Importação concluída!",
-        description: `${result.inserted} arquitetos importados, ${result.skipped} duplicados ignorados, ${result.errors} erros.`,
+        description: `${result.inserted} profissionais parceiros importados, ${result.skipped} duplicados ignorados, ${result.errors} erros.`,
       });
     } catch (error) {
       console.error("Erro ao processar arquivo:", error);
@@ -216,10 +216,10 @@ export const ImportArchitectsData = () => {
           <p className="font-medium text-sm">Formato esperado da planilha:</p>
           <ul className="text-sm space-y-1 list-disc list-inside">
             <li><strong>Empresa</strong> - Nome da empresa (opcional)</li>
-            <li><strong>Nome do Profissional</strong> - Nome do arquiteto (obrigatório)</li>
+            <li><strong>Nome do Profissional</strong> - Nome do profissional parceiro (obrigatório)</li>
             <li><strong>Telefone</strong> - Telefone com DDD</li>
             <li><strong>E-mail</strong> - E-mail de contato</li>
-            <li><strong>Categoria</strong> - Categoria do arquiteto</li>
+            <li><strong>Categoria</strong> - Categoria do profissional parceiro</li>
           </ul>
         </div>
 

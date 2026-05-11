@@ -52,14 +52,14 @@ export default function BulkImportFinal() {
           email: email || null,
           phone,
           categoria: 'metropolitano',
-          status_funil: 'novo_arquiteto',
+          status_funil: 'novo_profissional parceiro',
         };
       }).filter((a: any) => {
         // Filtrar apenas se tiver nome E telefone válido
         return a.name && a.phone && a.phone.length >= 8;
       });
 
-      console.log(`Total de arquitetos válidos para inserir: ${architects.length}`);
+      console.log(`Total de profissionais parceiros válidos para inserir: ${architects.length}`);
       
       // Buscar telefones já existentes para evitar duplicatas
       const { data: existingArchitects } = await supabase
@@ -70,19 +70,19 @@ export default function BulkImportFinal() {
       const existingPhones = new Set(existingArchitects?.map(a => a.phone) || []);
       console.log(`Telefones já existentes no banco: ${existingPhones.size}`);
       
-      // Filtrar arquitetos que ainda não existem
+      // Filtrar profissionais parceiros que ainda não existem
       const newArchitects = architects.filter((a: any) => !existingPhones.has(a.phone));
-      console.log(`Novos arquitetos a inserir: ${newArchitects.length}`);
+      console.log(`Novos profissionais parceiros a inserir: ${newArchitects.length}`);
       
       if (newArchitects.length === 0) {
-        console.log('Todos os arquitetos já existem no banco!');
+        console.log('Todos os profissionais parceiros já existem no banco!');
         setResult({
           total: architects.length,
           inserted: 0,
           skipped: architects.length
         });
         setStatus('success');
-        toast.success('Todos os arquitetos já existem no banco!');
+        toast.success('Todos os profissionais parceiros já existem no banco!');
         setTimeout(() => navigate('/prospeccao'), 2000);
         return;
       }
@@ -115,7 +115,7 @@ export default function BulkImportFinal() {
       });
       
       setStatus('success');
-      toast.success(`${totalInserted} arquitetos importados com sucesso!`);
+      toast.success(`${totalInserted} profissionais parceiros importados com sucesso!`);
       
       console.log('Importação concluída!');
       setTimeout(() => navigate('/prospeccao'), 3000);
@@ -123,7 +123,7 @@ export default function BulkImportFinal() {
     } catch (error) {
       console.error('Erro na importação:', error);
       setStatus('error');
-      toast.error('Erro ao importar arquitetos');
+      toast.error('Erro ao importar profissionais parceiros');
     }
   };
 

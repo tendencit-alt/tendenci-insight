@@ -54,7 +54,7 @@ export default function FinalBulkImport() {
         }
 
         const phone = String(row['Telefone'] || '').replace(/\D/g, '');
-        const name = (row['Arquiteto'] || '').trim();
+        const name = (row['Profissional Parceiro'] || '').trim();
         const email = (row['Email'] || '').trim();
 
         if (name && phone && phone.length >= 8 && !existingPhones.has(phone)) {
@@ -64,7 +64,7 @@ export default function FinalBulkImport() {
             phone,
             birthday,
             categoria: 'metropolitano',
-            status_funil: 'novo_arquiteto',
+            status_funil: 'novo_profissional parceiro',
           });
         }
       }
@@ -92,7 +92,7 @@ export default function FinalBulkImport() {
         } else {
           successCount += batch.length;
           setProgress(prev => ({ ...prev, current: successCount, success: successCount, errors: errorCount }));
-          toast.success(`${successCount} arquitetos importados`);
+          toast.success(`${successCount} profissionais parceiros importados`);
         }
       }
 
@@ -101,7 +101,7 @@ export default function FinalBulkImport() {
       setProgress(prev => ({ ...prev, success: successCount, errors: errorCount }));
       setStatus('success');
       
-      toast.success(`Importação concluída! ${successCount} arquitetos cadastrados.`);
+      toast.success(`Importação concluída! ${successCount} profissionais parceiros cadastrados.`);
       
       setTimeout(() => {
         navigate('/prospeccao');
@@ -110,7 +110,7 @@ export default function FinalBulkImport() {
     } catch (error) {
       console.error('Import error:', error);
       setStatus('error');
-      toast.error('Erro ao importar arquitetos');
+      toast.error('Erro ao importar profissionais parceiros');
     }
   };
 
@@ -118,7 +118,7 @@ export default function FinalBulkImport() {
     <div className="container mx-auto p-6">
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
-          <CardTitle>Importação Final de Arquitetos</CardTitle>
+          <CardTitle>Importação Final de Profissionais Parceiros</CardTitle>
         </CardHeader>
         <CardContent>
           {status === 'loading' && (
@@ -132,7 +132,7 @@ export default function FinalBulkImport() {
             <div className="flex flex-col items-center gap-4 py-8">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
               <div className="text-center">
-                <p className="text-lg font-medium mb-2">Importando arquitetos...</p>
+                <p className="text-lg font-medium mb-2">Importando profissionais parceiros...</p>
                 <p className="text-sm text-muted-foreground">
                   {progress.current} de {progress.total}
                 </p>

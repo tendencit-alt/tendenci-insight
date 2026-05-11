@@ -30,7 +30,7 @@ interface UserProfile {
   email: string;
   username: string;
   full_name?: string;
-  role: 'owner' | 'tenant_owner' | 'admin' | 'vendedor' | 'arquiteto' | 'projetista';
+  role: 'owner' | 'tenant_owner' | 'admin' | 'vendedor' | 'profissional parceiro' | 'projetista';
   profile_type_id?: string | null;
   profile_type?: ProfileType | null;
   created_at: string;
@@ -146,7 +146,7 @@ const UserManagement = () => {
         <Shield className="w-3 h-3 mr-1" />
         Master
       </Badge>
-    ) : user.role === 'arquiteto' ? (
+    ) : user.role === 'profissional parceiro' ? (
       <Badge variant="outline">
         <User className="w-3 h-3 mr-1" />
         Arquiteto

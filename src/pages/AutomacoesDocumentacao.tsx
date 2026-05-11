@@ -275,7 +275,7 @@ export default function AutomacoesDocumentacao() {
         {
           id: 'campanhas-whatsapp',
           nome: 'Campanhas WhatsApp',
-          descricao: 'Disparo em massa de mensagens para arquitetos',
+          descricao: 'Disparo em massa de mensagens para profissionais parceiros',
           ativo: campanhasAtivas > 0,
           ultimaExecucao: campaigns?.[0]?.updated_at,
           sucessos: campanhasConcluidas,
@@ -296,7 +296,7 @@ export default function AutomacoesDocumentacao() {
         {
           id: 'tarefas-prospeccao',
           nome: 'Tarefas de Prospecção',
-          descricao: 'Processa tarefas de arquitetos automaticamente',
+          descricao: 'Processa tarefas de profissionais parceiros automaticamente',
           ativo: true,
           ultimaExecucao: null,
           endpoint: '/functions/v1/process-pending-architect-tasks',
@@ -312,9 +312,9 @@ export default function AutomacoesDocumentacao() {
           triggerType: 'event' as const
         },
         {
-          id: 'arquitetos-inativos',
-          nome: 'Verificar Arquitetos Inativos (60 dias)',
-          descricao: 'Move arquitetos sem atividade para etapa Inativo',
+          id: 'profissionais parceiros-inativos',
+          nome: 'Verificar Profissionais Parceiros Inativos (60 dias)',
+          descricao: 'Move profissionais parceiros sem atividade para etapa Inativo',
           ativo: true,
           ultimaExecucao: null,
           endpoint: 'RPC: run_inactive_architects_check',
@@ -323,13 +323,13 @@ export default function AutomacoesDocumentacao() {
         {
           id: 'validar-whatsapp',
           nome: 'Validação de WhatsApp',
-          descricao: 'Valida números de WhatsApp dos arquitetos',
+          descricao: 'Valida números de WhatsApp dos profissionais parceiros',
           ativo: true,
           ultimaExecucao: null,
           triggerType: 'event' as const
         },
         {
-          id: 'atualizar-contato-arquiteto',
+          id: 'atualizar-contato-profissional parceiro',
           nome: 'Atualizar Data Último Contato',
           descricao: 'Atualiza data de contato ao interagir',
           ativo: true,

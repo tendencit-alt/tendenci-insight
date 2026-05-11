@@ -19,13 +19,13 @@ export function N8nAgendamentoGuide() {
   };
 
   const minimalExample = {
-    architect_id: "uuid-do-arquiteto",
+    architect_id: "uuid-do-profissional parceiro",
     data_agendamento: "2024-12-20T14:30:00",
     canal: "whatsapp"
   };
 
   const completeExample = {
-    architect_id: "uuid-do-arquiteto",
+    architect_id: "uuid-do-profissional parceiro",
     architect_name: "João Silva",
     architect_phone: "+5511999999999",
     client_id: "uuid-do-cliente-opcional",
@@ -195,7 +195,7 @@ export function N8nAgendamentoGuide() {
           <div>
             <strong className="text-red-600">Obrigatórios:</strong>
             <ul className="list-disc list-inside ml-4 mt-2 space-y-1 text-muted-foreground">
-              <li><code>architect_id</code> (string) - UUID do arquiteto</li>
+              <li><code>architect_id</code> (string) - UUID do profissional parceiro</li>
               <li><code>data_agendamento</code> (string) - Data/hora em formato ISO 8601 (ex: "2024-12-20T14:30:00")</li>
               <li><code>canal</code> (string) - whatsapp | telefone | presencial | videochamada</li>
             </ul>
@@ -203,8 +203,8 @@ export function N8nAgendamentoGuide() {
           <div>
             <strong className="text-blue-600">Opcionais:</strong>
             <ul className="list-disc list-inside ml-4 mt-2 space-y-1 text-muted-foreground">
-              <li><code>architect_name</code> (string) - Nome do arquiteto (informativo)</li>
-              <li><code>architect_phone</code> (string) - Telefone do arquiteto</li>
+              <li><code>architect_name</code> (string) - Nome do profissional parceiro (informativo)</li>
+              <li><code>architect_phone</code> (string) - Telefone do profissional parceiro</li>
               <li><code>client_id</code> (string) - UUID do cliente existente</li>
               <li><code>client_name</code> (string) - Nome do cliente (cria novo se não existir client_id)</li>
               <li><code>client_phone</code> (string) - Telefone do cliente</li>

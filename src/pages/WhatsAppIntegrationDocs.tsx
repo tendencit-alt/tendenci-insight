@@ -55,7 +55,7 @@ export default function WhatsAppIntegrationDocs() {
                 </div>
                 <div className="flex-1">
                   <p className="font-medium">1. Lovable CRM (Frontend)</p>
-                  <p className="text-sm text-muted-foreground">Disparo da campanha com dados dos arquitetos</p>
+                  <p className="text-sm text-muted-foreground">Disparo da campanha com dados dos profissionais parceiros</p>
                 </div>
               </div>
               
@@ -84,7 +84,7 @@ export default function WhatsAppIntegrationDocs() {
                   <CheckCircle2 className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium">4. Arquiteto (Cliente)</p>
+                  <p className="font-medium">4. Profissional Parceiro (Cliente)</p>
                   <p className="text-sm text-muted-foreground">Recebe a mensagem no WhatsApp</p>
                 </div>
               </div>
@@ -128,8 +128,8 @@ export default function WhatsAppIntegrationDocs() {
                     <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
 {`{
   "campanha_id": "uuid-da-campanha",
-  "arquiteto_id": "uuid-do-arquiteto",
-  "nome": "Nome do Arquiteto",
+  "profissional parceiro_id": "uuid-do-profissional parceiro",
+  "nome": "Nome do Profissional Parceiro",
   "telefone": "5511999999999",
   "tipo_envio": "texto",
   "conteudo_texto": "Mensagem em texto...",
@@ -210,8 +210,8 @@ export default function WhatsAppIntegrationDocs() {
                   <div className="flex items-start gap-3 p-3 bg-muted/50 rounded">
                     <Badge>UUID</Badge>
                     <div className="flex-1">
-                      <p className="font-medium">arquiteto_id</p>
-                      <p className="text-sm text-muted-foreground">ID único do arquiteto destinatário</p>
+                      <p className="font-medium">profissional parceiro_id</p>
+                      <p className="text-sm text-muted-foreground">ID único do profissional parceiro destinatário</p>
                     </div>
                     <Badge variant="outline">Obrigatório</Badge>
                   </div>
@@ -220,7 +220,7 @@ export default function WhatsAppIntegrationDocs() {
                     <Badge>String</Badge>
                     <div className="flex-1">
                       <p className="font-medium">nome</p>
-                      <p className="text-sm text-muted-foreground">Nome do arquiteto</p>
+                      <p className="text-sm text-muted-foreground">Nome do profissional parceiro</p>
                     </div>
                     <Badge variant="outline">Obrigatório</Badge>
                   </div>
@@ -309,7 +309,7 @@ export default function WhatsAppIntegrationDocs() {
 const payload = $input.item.json.body;
 
 const campanhaId = payload.campanha_id;
-const arquitetoId = payload.arquiteto_id;
+const profissional parceiroId = payload.profissional parceiro_id;
 const nome = payload.nome;
 const telefone = payload.telefone;
 const tipoEnvio = payload.tipo_envio;
@@ -325,7 +325,7 @@ const numeroFormatado = telefone.includes('@')
 return {
   json: {
     campanha_id: campanhaId,
-    arquiteto_id: arquitetoId,
+    profissional parceiro_id: profissional parceiroId,
     nome: nome,
     numero: numeroFormatado,
     tipo_envio: tipoEnvio,
@@ -469,7 +469,7 @@ Body:
   "phoneNumber": "{{$json.numero}}",
   "message": "{{$json.conteudo_texto}}",
   "campaignId": "{{$json.campanha_id}}",
-  "architectId": "{{$json.arquiteto_id}}"
+  "architectId": "{{$json.profissional parceiro_id}}"
 }`}
                     </pre>
                   </div>
@@ -536,7 +536,7 @@ Body:
                     <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
 {`SELECT 
   pal.created_at,
-  a.name as arquiteto,
+  a.name as profissional parceiro,
   c.nome as campanha,
   pal.mensagem
 FROM tendenci_prospec_arq_logs pal
@@ -556,7 +556,7 @@ LIMIT 20;`}
                     <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
 {`SELECT 
   d.enviado_em,
-  a.name as arquiteto,
+  a.name as profissional parceiro,
   a.phone,
   d.status,
   d.mensagem_erro
@@ -568,7 +568,7 @@ ORDER BY d.enviado_em DESC;`}
                   </div>
 
                   <div className="border-l-4 border-purple-500 pl-4">
-                    <h3 className="font-semibold mb-2">Status dos Arquitetos</h3>
+                    <h3 className="font-semibold mb-2">Status dos Profissionais Parceiros</h3>
                     <p className="text-sm text-muted-foreground mb-2">
                       Após envio bem-sucedido, arquitetos são automaticamente movidos para:
                     </p>
@@ -591,7 +591,7 @@ ORDER BY d.enviado_em DESC;`}
                       <li>Status da campanha: "enviado"</li>
                       <li>Status do dispatch: "sucesso"</li>
                       <li>Registro criado em tendenci_prospec_arq_logs</li>
-                      <li>Arquiteto movido para "contato_iniciado"</li>
+                      <li>Profissional Parceiro movido para "contato_iniciado"</li>
                     </ul>
                   </AlertDescription>
                 </Alert>

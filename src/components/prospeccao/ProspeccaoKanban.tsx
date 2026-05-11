@@ -43,7 +43,7 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
     },
   });
 
-  // Buscar arquitetos usando RPC otimizado
+  // Buscar profissionais parceiros usando RPC otimizado
   const { data: architects, isLoading } = useQuery({
     queryKey: ["prospeccao-architects", filters, showNaoContactados],
     queryFn: async () => {
@@ -76,7 +76,7 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
     },
   });
 
-  // Atualizar status do arquiteto
+  // Atualizar status do profissional parceiro
   const updateStatusMutation = useMutation({
     mutationFn: async ({ architectId, newStatus }: { architectId: string; newStatus: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -102,13 +102,13 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
       queryClient.invalidateQueries({ queryKey: ["prospeccao-architects"] });
       toast({
         title: "Sucesso",
-        description: "Status do arquiteto atualizado!",
+        description: "Status do profissional parceiro atualizado!",
       });
     },
     onError: () => {
       toast({
         title: "Erro",
-        description: "Erro ao atualizar status do arquiteto.",
+        description: "Erro ao atualizar status do profissional parceiro.",
         variant: "destructive",
       });
     },
@@ -160,9 +160,9 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
     );
   }
 
-  // Agrupar arquitetos por status
+  // Agrupar profissionais parceiros por status
   const architectsByStatus = stages.reduce((acc, stage) => {
-    acc[stage.slug] = architects?.filter(a => (a.status_funil || "novo_arquiteto") === stage.slug) || [];
+    acc[stage.slug] = architects?.filter(a => (a.status_funil || "novo_profissional parceiro") === stage.slug) || [];
     return acc;
   }, {} as Record<string, any[]>);
 
@@ -195,7 +195,7 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                       variant="ghost"
                       className="h-6 w-6 sm:h-7 sm:w-7 p-0"
                       onClick={() => setIsCreateArchitectOpen(true)}
-                      title="Adicionar novo arquiteto"
+                      title="Adicionar novo profissional parceiro"
                     >
                       <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
@@ -434,7 +434,7 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
           queryClient.invalidateQueries({ queryKey: ["prospeccao-architects"] });
           toast({
             title: "Sucesso",
-            description: "Projeto criado e arquiteto movido para Parceiro Ativo!",
+            description: "Projeto criado e profissional parceiro movido para Parceiro Ativo!",
           });
         }}
       />
@@ -446,7 +446,7 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
           queryClient.invalidateQueries({ queryKey: ["prospeccao-architects"] });
           toast({
             title: "Sucesso",
-            description: "Arquiteto adicionado com sucesso!",
+            description: "Profissional Parceiro adicionado com sucesso!",
           });
         }}
       />

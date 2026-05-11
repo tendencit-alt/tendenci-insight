@@ -199,7 +199,7 @@ export function CreateDealDialog({
     })), [leads]);
 
   const architectOptions: ComboboxOption[] = useMemo(() => [
-    { value: "sem-arquiteto", label: "Cliente sem arquiteto" },
+    { value: "sem-profissional parceiro", label: "Cliente sem profissional parceiro" },
     ...architects.map((arch) => ({
       value: arch.id,
       label: arch.name,
@@ -245,7 +245,7 @@ export function CreateDealDialog({
     }
     toast({
       title: "Sucesso",
-      description: "Arquiteto criado e selecionado!",
+      description: "Profissional Parceiro criado e selecionado!",
     });
   };
 
@@ -492,7 +492,7 @@ export function CreateDealDialog({
         title: autoTitle,
         stage_id: formData.stage_id,
         lead_id: formData.lead_id || null,
-        architect_id: formData.architect_id && formData.architect_id !== "sem-arquiteto" ? formData.architect_id : null,
+        architect_id: formData.architect_id && formData.architect_id !== "sem-profissional parceiro" ? formData.architect_id : null,
         owner_id: user?.id || null,
         value: formData.value ? Number(formData.value) : null,
         note: `${formData.observations ? formData.observations + '\n\n' : ''}${formData.note || ''}`.trim() || null,
@@ -626,9 +626,9 @@ export function CreateDealDialog({
         <FormSaveIndicator hasRestoredData={hasRestoredData} className="mb-4" />
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Seção: Lead e Arquiteto */}
+          {/* Seção: Lead e Profissional Parceiro */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase">Lead e Arquiteto</h3>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase">Lead e Profissional Parceiro</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -699,7 +699,7 @@ export function CreateDealDialog({
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="architect">Arquiteto *</Label>
+                  <Label htmlFor="architect">Profissional Parceiro *</Label>
                   <Button
                     type="button"
                     variant="ghost"
@@ -717,9 +717,9 @@ export function CreateDealDialog({
                   onValueChange={(value) =>
                     setFormData({ ...formData, architect_id: value })
                   }
-                  placeholder="Selecione o arquiteto"
-                  searchPlaceholder="Buscar arquiteto..."
-                  emptyMessage="Nenhum arquiteto encontrado."
+                  placeholder="Selecione o profissional parceiro"
+                  searchPlaceholder="Buscar profissional parceiro..."
+                  emptyMessage="Nenhum profissional parceiro encontrado."
                 />
               </div>
             </div>
@@ -755,7 +755,7 @@ export function CreateDealDialog({
             </div>
           </div>
 
-          {/* Seção: Indicação de Arquiteto */}
+          {/* Seção: Indicação de Profissional Parceiro */}
           <div className="space-y-4 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-900">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -812,7 +812,7 @@ export function CreateDealDialog({
               <div className="space-y-3 p-3 bg-white dark:bg-background rounded border">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label className="text-xs">Arquiteto *</Label>
+                    <Label className="text-xs">Profissional Parceiro *</Label>
                     <Select
                       value={newIndication.architect_id}
                       onValueChange={(value) => setNewIndication(prev => ({ ...prev, architect_id: value }))}
@@ -890,7 +890,7 @@ export function CreateDealDialog({
                       if (!newIndication.architect_id || !newIndication.product_type) {
                         toast({
                           title: "Campos obrigatórios",
-                          description: "Selecione o arquiteto e o tipo de produto.",
+                          description: "Selecione o profissional parceiro e o tipo de produto.",
                           variant: "destructive",
                         });
                         return;
@@ -898,7 +898,7 @@ export function CreateDealDialog({
                       const arch = architects.find(a => a.id === newIndication.architect_id);
                       setPendingIndications(prev => [...prev, {
                         ...newIndication,
-                        architect_name: arch?.name || "Arquiteto"
+                        architect_name: arch?.name || "Profissional Parceiro"
                       }]);
                       setNewIndication({ architect_id: "", product_type: "", value: "", notes: "" });
                       setShowIndicationForm(false);

@@ -34,7 +34,7 @@ export function ArchitectsWithoutTasksPanel() {
         setArquitetosSemTarefa(result.arquitetos_sem_tarefa || []);
       }
     } catch (err) {
-      console.error('Erro ao buscar arquitetos sem tarefa:', err);
+      console.error('Erro ao buscar profissionais parceiros sem tarefa:', err);
     } finally {
       setLoading(false);
     }
@@ -63,7 +63,7 @@ export function ArchitectsWithoutTasksPanel() {
     };
   }, []);
 
-  // Não mostrar se não há arquitetos sem tarefa
+  // Não mostrar se não há profissionais parceiros sem tarefa
   if (!loading && arquitetosSemTarefa.length === 0) {
     return null;
   }
@@ -77,7 +77,7 @@ export function ArchitectsWithoutTasksPanel() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-400">
                   <AlertTriangle className="h-4 w-4" />
-                  <span>Arquitetos Sem Tarefa Agendada</span>
+                  <span>Profissionais Parceiros Sem Tarefa Agendada</span>
                   <Badge variant="destructive" className="ml-2 text-xs">
                     {loading ? "..." : arquitetosSemTarefa.length}
                   </Badge>

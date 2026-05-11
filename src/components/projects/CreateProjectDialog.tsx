@@ -51,7 +51,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
     if (open) {
       fetchLeads();
       fetchArchitects();
-      // Pré-selecionar arquiteto se fornecido
+      // Pré-selecionar profissional parceiro se fornecido
       if (preSelectedArchitectId) {
         setFormData(prev => ({ ...prev, architect_id: preSelectedArchitectId }));
       }
@@ -76,7 +76,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
       .order('name');
     
     if (!error && data) {
-      // Filtrar apenas arquitetos (não vendedores)
+      // Filtrar apenas profissionais parceiros (não vendedores)
       setArchitects(data);
     }
   };
@@ -235,7 +235,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
         .insert({
           name: formData.name,
           client_id: formData.client_id && formData.client_id !== 'none' ? formData.client_id : null,
-          architect_id: formData.architect_id && formData.architect_id !== 'sem-arquiteto' ? formData.architect_id : null,
+          architect_id: formData.architect_id && formData.architect_id !== 'sem-profissional parceiro' ? formData.architect_id : null,
           stage: formData.stage,
           value: formData.value ? parseFloat(formData.value) : 0,
           deadline: formData.deadline || null,
@@ -344,14 +344,14 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="architect">Arquiteto</Label>
+                <Label htmlFor="architect">Profissional Parceiro</Label>
                 <div className="flex gap-2">
                   <Select value={formData.architect_id} onValueChange={(v) => setFormData({ ...formData, architect_id: v })}>
                     <SelectTrigger className="bg-background">
-                      <SelectValue placeholder="Selecione o arquiteto" />
+                      <SelectValue placeholder="Selecione o profissional parceiro" />
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50">
-                      <SelectItem value="sem-arquiteto">Cliente sem arquiteto</SelectItem>
+                      <SelectItem value="sem-profissional parceiro">Cliente sem profissional parceiro</SelectItem>
                       {architects.map((arch) => (
                         <SelectItem key={arch.id} value={arch.id}>
                           {arch.name}

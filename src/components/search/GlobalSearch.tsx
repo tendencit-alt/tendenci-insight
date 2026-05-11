@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-type ResultKind = "cliente" | "arquiteto" | "lead";
+type ResultKind = "cliente" | "profissional parceiro" | "lead";
 
 interface Result {
   id: string;
@@ -19,7 +19,7 @@ interface Result {
 
 const KIND_META: Record<ResultKind, { label: string; icon: typeof Users; color: string }> = {
   cliente: { label: "Cliente", icon: Users, color: "text-sky-500" },
-  arquiteto: { label: "Arquiteto", icon: Compass, color: "text-violet-500" },
+  arquiteto: { label: "Profissional Parceiro", icon: Compass, color: "text-violet-500" },
   lead: { label: "Lead", icon: UserPlus, color: "text-amber-500" },
 };
 
@@ -90,9 +90,9 @@ export function GlobalSearch() {
       });
       (architectsRes.data || []).forEach((a: any) => {
         merged.push({
-          id: `arquiteto:${a.id}`,
-          kind: "arquiteto",
-          title: a.name || "Arquiteto",
+          id: `profissional parceiro:${a.id}`,
+          kind: "profissional parceiro",
+          title: a.name || "Profissional Parceiro",
           subtitle: [a.company, a.city].filter(Boolean).join(" • "),
           route: `/crm-comercial?tab=architects&focus=${a.id}`,
         });
@@ -159,7 +159,7 @@ export function GlobalSearch() {
           title="Busca global (Ctrl+K)"
         >
           <Search className="h-3.5 w-3.5" />
-          <span className="flex-1 text-left">Buscar clientes, arquitetos, leads...</span>
+          <span className="flex-1 text-left">Buscar clientes, profissionais parceiros, leads...</span>
           <kbd className="hidden lg:inline-flex h-4 items-center gap-0.5 rounded border border-border bg-muted px-1 text-[9px] font-mono">
             ⌘K
           </kbd>
@@ -200,7 +200,7 @@ export function GlobalSearch() {
               Nenhum resultado encontrado
             </div>
           )}
-          {(["cliente", "arquiteto", "lead"] as ResultKind[]).map((kind) => {
+          {(["cliente", "profissional parceiro", "lead"] as ResultKind[]).map((kind) => {
             const items = grouped[kind];
             if (items.length === 0) return null;
             const meta = KIND_META[kind];

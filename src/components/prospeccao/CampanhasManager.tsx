@@ -115,7 +115,7 @@ export function CampanhasManager() {
   const [showBlockingDialog, setShowBlockingDialog] = useState(false);
   
   // Filtro de etapa do kanban
-  const [filtroEtapa, setFiltroEtapa] = useState<string>("novo_arquiteto");
+  const [filtroEtapa, setFiltroEtapa] = useState<string>("novo_profissional parceiro");
   
   // Form state - NOT persisted, stays static when switching tabs
   const [formData, setFormData] = useState({
@@ -188,7 +188,7 @@ export function CampanhasManager() {
     checkDispatchAllowed();
   }, []);
   
-  // Recarregar arquitetos quando etapa mudar
+  // Recarregar profissionais parceiros quando etapa mudar
   useEffect(() => {
     if (isDialogOpen) {
       fetchArquitetosDisponiveis(editingCampanha?.id, filtroEtapa);
@@ -224,18 +224,18 @@ export function CampanhasManager() {
   const [arquitetosComErroTelefone, setArquitetosComErroTelefone] = useState(0);
 
   const fetchArquitetosDisponiveis = async (editingCampaignId?: string, statusFunil?: string) => {
-    // 1. Buscar TODOS os IDs de arquitetos que estão RESERVADOS ou JÁ ENVIADOS (pendente, enviando, enviado)
-    // Isso impede que um arquiteto seja selecionado para múltiplas campanhas
+    // 1. Buscar TODOS os IDs de profissionais parceiros que estão RESERVADOS ou JÁ ENVIADOS (pendente, enviando, enviado)
+    // Isso impede que um profissional parceiro seja selecionado para múltiplas campanhas
     const { data: jaEmCampanhas } = await supabase
       .from('tendenci_prospec_arq_campaign_architects')
       .select('architect_id, status')
       .in('status', ['pendente', 'enviando', 'enviado']); // ✅ CRÍTICO: Incluir 'pendente' e 'enviando'
 
-    // 2. Se estiver editando, não excluir arquitetos da PRÓPRIA campanha
+    // 2. Se estiver editando, não excluir profissionais parceiros da PRÓPRIA campanha
     let idsJaEmCampanhas = [...new Set(jaEmCampanhas?.map(d => d.architect_id) || [])];
     
     if (editingCampaignId) {
-      // Buscar arquitetos da campanha sendo editada para NÃO excluí-los
+      // Buscar profissionais parceiros da campanha sendo editada para NÃO excluí-los
       const { data: arquitetosDaCampanha } = await supabase
         .from('tendenci_prospec_arq_campaign_architects')
         .select('architect_id')
@@ -245,7 +245,7 @@ export function CampanhasManager() {
       idsJaEmCampanhas = idsJaEmCampanhas.filter(id => !idsDaCampanhaEditando.includes(id));
     }
 
-    // 3. Buscar IDs de arquitetos com ERROS de telefone
+    // 3. Buscar IDs de profissionais parceiros com ERROS de telefone
     const { data: arquitetosComErros } = await supabase
       .from('tendenci_prospec_arq_logs')
       .select('architect_id')
@@ -258,12 +258,12 @@ export function CampanhasManager() {
     // 4. Combinar listas de exclusão
     const todosIdsParaExcluir = [...new Set([...idsJaEmCampanhas, ...idsComErroTelefone])];
 
-    console.log(`🚫 Arquitetos reservados/enviados em campanhas: ${idsJaEmCampanhas.length}`);
-    console.log(`📵 Arquitetos com erro de telefone: ${idsComErroTelefone.length}`);
+    console.log(`🚫 Profissionais Parceiros reservados/enviados em campanhas: ${idsJaEmCampanhas.length}`);
+    console.log(`📵 Profissionais Parceiros com erro de telefone: ${idsComErroTelefone.length}`);
     setArquitetosEmOutrasCampanhas(idsJaEmCampanhas.length);
 
-    // 5. Buscar arquitetos filtrados pela etapa do kanban selecionada
-    const etapaFiltro = statusFunil || filtroEtapa || 'novo_arquiteto';
+    // 5. Buscar profissionais parceiros filtrados pela etapa do kanban selecionada
+    const etapaFiltro = statusFunil || filtroEtapa || 'novo_profissional parceiro';
     
     let query = supabase
       .from('architects')
@@ -278,7 +278,7 @@ export function CampanhasManager() {
     const { data, error } = await query.order('name');
 
     if (!error && data) {
-      console.log(`✅ Arquitetos disponíveis para campanha (etapa: ${etapaFiltro}): ${data.length}`);
+      console.log(`✅ Profissionais Parceiros disponíveis para campanha (etapa: ${etapaFiltro}): ${data.length}`);
       setArquitetosDisponiveis(data);
     }
   };
@@ -324,12 +324,12 @@ export function CampanhasManager() {
         dataInicio: campanha.data_inicio ? new Date(campanha.data_inicio) : null,
         dataFim: campanha.data_fim ? new Date(campanha.data_fim) : null,
       });
-      // Recarregar arquitetos disponíveis considerando esta campanha em edição
+      // Recarregar profissionais parceiros disponíveis considerando esta campanha em edição
       fetchArquitetosDisponiveis(campanha.id, filtroEtapa);
     } else {
       resetForm();
-      setFiltroEtapa("novo_arquiteto"); // Reset para etapa padrão
-      fetchArquitetosDisponiveis(undefined, "novo_arquiteto");
+      setFiltroEtapa("novo_profissional parceiro"); // Reset para etapa padrão
+      fetchArquitetosDisponiveis(undefined, "novo_profissional parceiro");
     }
     setIsDialogOpen(true);
   };
@@ -495,7 +495,7 @@ export function CampanhasManager() {
     if (formData.arquitetosSelecionados.length === 0) {
       toast({
         title: "Erro",
-        description: "Selecione pelo menos um arquiteto",
+        description: "Selecione pelo menos um profissional parceiro",
         variant: "destructive",
       });
       return;
@@ -603,8 +603,8 @@ export function CampanhasManager() {
         return;
       }
 
-      // ✅ NOVO: Atualizar arquitetos reservados (remover os que foram desmarcados, adicionar novos)
-      // Primeiro, buscar arquitetos já existentes na campanha
+      // ✅ NOVO: Atualizar profissionais parceiros reservados (remover os que foram desmarcados, adicionar novos)
+      // Primeiro, buscar profissionais parceiros já existentes na campanha
       const { data: arquitetosExistentes } = await supabase
         .from('tendenci_prospec_arq_campaign_architects')
         .select('architect_id')
@@ -613,10 +613,10 @@ export function CampanhasManager() {
       const idsExistentes = arquitetosExistentes?.map(a => a.architect_id) || [];
       const idsNovos = formData.arquitetosSelecionados;
 
-      // Arquitetos a remover (estavam na campanha mas foram desmarcados)
+      // Profissionais Parceiros a remover (estavam na campanha mas foram desmarcados)
       const idsParaRemover = idsExistentes.filter(id => !idsNovos.includes(id));
       
-      // Arquitetos a adicionar (novos selecionados que não estavam na campanha)
+      // Profissionais Parceiros a adicionar (novos selecionados que não estavam na campanha)
       const idsParaAdicionar = idsNovos.filter(id => !idsExistentes.includes(id));
 
       if (idsParaRemover.length > 0) {
@@ -667,8 +667,8 @@ export function CampanhasManager() {
         return;
       }
 
-      // ✅ NOVO: Registrar TODOS os arquitetos como "pendente" IMEDIATAMENTE
-      // Isso "reserva" os arquitetos e impede que outra campanha os selecione
+      // ✅ NOVO: Registrar TODOS os profissionais parceiros como "pendente" IMEDIATAMENTE
+      // Isso "reserva" os profissionais parceiros e impede que outra campanha os selecione
       if (formData.arquitetosSelecionados.length > 0) {
         const registros = formData.arquitetosSelecionados.map(archId => ({
           campanha_id: novaCampanha.id,
@@ -682,15 +682,15 @@ export function CampanhasManager() {
           .insert(registros);
 
         if (reserveError) {
-          console.error('Erro ao reservar arquitetos:', reserveError);
+          console.error('Erro ao reservar profissionais parceiros:', reserveError);
           // Não bloquear por isso, mas logar o erro
           toast({
             title: "Aviso",
-            description: "Campanha criada, mas alguns arquitetos podem não ter sido reservados. Verifique antes de disparar.",
+            description: "Campanha criada, mas alguns profissionais parceiros podem não ter sido reservados. Verifique antes de disparar.",
             variant: "destructive",
           });
         } else {
-          console.log(`✅ ${registros.length} arquitetos reservados para campanha ${novaCampanha.id}`);
+          console.log(`✅ ${registros.length} profissionais parceiros reservados para campanha ${novaCampanha.id}`);
         }
       }
 
@@ -700,12 +700,12 @@ export function CampanhasManager() {
           ? `Disparo programado para ${scheduleConfig.type === 'unico' && scheduleConfig.dataHoraUnica 
               ? format(scheduleConfig.dataHoraUnica, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) 
               : 'período configurado'}`
-          : `${formData.arquitetosSelecionados.length} arquitetos reservados`,
+          : `${formData.profissionais parceirosSelecionados.length} profissionais parceiros reservados`,
       });
     }
 
     await fetchCampanhas();
-    await fetchArquitetosDisponiveis(undefined, filtroEtapa); // Recarregar lista de arquitetos disponíveis
+    await fetchArquitetosDisponiveis(undefined, filtroEtapa); // Recarregar lista de profissionais parceiros disponíveis
     handleCloseDialog();
     setLoading(false);
   };
@@ -784,7 +784,7 @@ export function CampanhasManager() {
       return;
     }
 
-    // 🚫 TRAVA: Verificar se há arquitetos sem tarefas em "Contato Iniciado" ou "Ativado"
+    // 🚫 TRAVA: Verificar se há profissionais parceiros sem tarefas em "Contato Iniciado" ou "Ativado"
     await checkDispatchAllowed();
     
     const { data: dispatchCheck } = await supabase.rpc('check_campaign_dispatch_allowed');
@@ -794,7 +794,7 @@ export function CampanhasManager() {
         setShowBlockingDialog(true);
         toast({
           title: "🚫 Disparo Bloqueado",
-          description: `Existem ${result.total_sem_tarefa} arquitetos sem tarefas futuras. Veja o popup para detalhes.`,
+          description: `Existem ${result.total_sem_tarefa} profissionais parceiros sem tarefas futuras. Veja o popup para detalhes.`,
           variant: "destructive",
         });
         return;
@@ -827,7 +827,7 @@ export function CampanhasManager() {
 
     const arquitetosSelecionados = campanha.arquitetos_selecionados || [];
     
-    // Buscar dados atualizados dos arquitetos diretamente do banco
+    // Buscar dados atualizados dos profissionais parceiros diretamente do banco
     const { data: arquitetosData, error: arquitetosError } = await supabase
       .from('architects')
       .select('id, name, phone')
@@ -836,7 +836,7 @@ export function CampanhasManager() {
     if (arquitetosError || !arquitetosData) {
       toast({
         title: "Erro",
-        description: "Erro ao buscar dados dos arquitetos",
+        description: "Erro ao buscar dados dos profissionais parceiros",
         variant: "destructive",
       });
       return;
@@ -849,7 +849,7 @@ export function CampanhasManager() {
     if (arquitetosValidos.length === 0) {
       toast({
         title: "Erro",
-        description: "Nenhum arquiteto com telefone válido selecionado",
+        description: "Nenhum profissional parceiro com telefone válido selecionado",
         variant: "destructive",
       });
       return;
@@ -859,7 +859,7 @@ export function CampanhasManager() {
 
     const confirmar = window.confirm(
       `⏱️ ATENÇÃO: Esta campanha levará aproximadamente ${tempoEstimado} horas para ser concluída.\n\n` +
-      `📊 Total de mensagens: ${arquitetosValidos.length}\n` +
+      `📊 Total de mensagens: ${profissionais parceirosValidos.length}\n` +
       `⏳ Intervalo entre mensagens: 3 minutos (obrigatório)\n\n` +
       `A campanha será executada em background no servidor. Você pode continuar trabalhando normalmente.\n\n` +
       `Deseja continuar?`
@@ -893,7 +893,7 @@ export function CampanhasManager() {
 
       toast({
         title: "✅ Campanha Enfileirada!",
-        description: `${arquitetosValidosIds.length} mensagens enfileiradas. Tempo estimado: ~${tempoHoras > 0 ? tempoHoras + ' horas' : arquitetosValidosIds.length * 3 + ' minutos'}. Processamento em background.`,
+        description: `${profissionais parceirosValidosIds.length} mensagens enfileiradas. Tempo estimado: ~${tempoHoras > 0 ? tempoHoras + ' horas' : profissionais parceirosValidosIds.length * 3 + ' minutos'}. Processamento em background.`,
       });
 
       setDispatching(false);
@@ -1000,7 +1000,7 @@ export function CampanhasManager() {
                     className="h-7 px-2 gap-1 text-xs"
                     onClick={() => {
                       setShowBlockingDialog(false);
-                      // Navegar para aba CRM e abrir sheet do arquiteto
+                      // Navegar para aba CRM e abrir sheet do profissional parceiro
                       window.dispatchEvent(new CustomEvent('open-architect-sheet', { detail: { architectId: arq.id } }));
                     }}
                   >

@@ -259,7 +259,7 @@ export function SegmentosManager() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Segmentos de Prospecção</h2>
-          <p className="text-muted-foreground">Crie segmentos para organizar seus arquitetos</p>
+          <p className="text-muted-foreground">Crie segmentos para organizar seus profissionais parceiros</p>
         </div>
 
         <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
@@ -281,7 +281,7 @@ export function SegmentosManager() {
                   id="nome"
                   value={formData.nome}
                   onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                  placeholder="Ex: Arquitetos Tier A de São Paulo"
+                  placeholder="Ex: Profissionais Parceiros Tier A de São Paulo"
                 />
               </div>
 
@@ -546,7 +546,7 @@ export function SegmentosManager() {
                         </div>
                       ) : (
                         <div className="p-8 text-center text-muted-foreground">
-                          <p>Nenhum arquiteto encontrado com os filtros aplicados.</p>
+                          <p>Nenhum profissional parceiro encontrado com os filtros aplicados.</p>
                           <p className="text-sm mt-1">Ajuste os filtros na aba "Por Filtros"</p>
                         </div>
                       )}

@@ -122,8 +122,8 @@ export function ProspeccaoTable({ filters = {}, showNaoContactados = false }: Pr
                   {architect.vendedor?.full_name || architect.vendedor?.email || "-"}
                 </TableCell>
                 <TableCell>
-                  <Badge className={stageMap[architect.status_funil || "novo_arquiteto"]?.cor || "bg-gray-500"}>
-                    {stageMap[architect.status_funil || "novo_arquiteto"]?.nome || "Novo Arquiteto"}
+                  <Badge className={stageMap[architect.status_funil || "novo_profissional parceiro"]?.cor || "bg-gray-500"}>
+                    {stageMap[architect.status_funil || "novo_profissional parceiro"]?.nome || "Novo Profissional Parceiro"}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-center">{architect.projects?.length || 0}</TableCell>

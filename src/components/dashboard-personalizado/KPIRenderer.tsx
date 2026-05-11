@@ -120,11 +120,11 @@ export function KPIRenderer({ kpiId, type, config, filters }: KPIRendererProps) 
         const totalProj = proj4?.reduce((acc, p) => acc + (p.value || 0), 0) || 0;
         return { value: totalProj, label: "Valor Aprovado", isCurrency: true };
 
-      case "arquitetos_ativos":
+      case "profissionais parceiros_ativos":
         const { data: arch1 } = await supabase.from("architects").select("id", { count: "exact" }).eq("active", true);
         return { value: arch1?.length || 0, label: "Ativos" };
 
-      case "arquitetos_aniversarios":
+      case "profissionais parceiros_aniversarios":
         const { data: birthdays } = await supabase.from("architects").select("name, birthday").not("birthday", "is", null).eq("active", true).limit(10);
         return { type: "table", data: birthdays || [], columns: ["name", "birthday"] };
 

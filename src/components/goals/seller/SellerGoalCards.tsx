@@ -103,7 +103,7 @@ export function SellerGoalCards({ salesGoal, captationGoal, architectsGoal }: Se
         </Card>
       )}
 
-      {/* Meta de Arquitetos Efetivados */}
+      {/* Meta de Profissionais Parceiros Efetivados */}
       {architectsGoal && (
         <Card className="shadow-card hover:shadow-hover transition-shadow">
           <CardHeader className="pb-3">

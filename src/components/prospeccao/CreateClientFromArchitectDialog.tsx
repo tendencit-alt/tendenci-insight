@@ -144,7 +144,7 @@ export function CreateClientFromArchitectDialog({
 
       if (clientError) throw clientError;
 
-      // 2. Criar lead vinculado ao cliente e arquiteto
+      // 2. Criar lead vinculado ao cliente e profissional parceiro
       const { data: lead, error: leadError } = await supabase
         .from("leads")
         .insert({
@@ -193,11 +193,11 @@ export function CreateClientFromArchitectDialog({
         }
       }
 
-      // 5. Registrar no histórico do arquiteto
+      // 5. Registrar no histórico do profissional parceiro
       await supabase.from("architect_history").insert({
         architect_id: architectId,
         event_type: "cliente_cadastrado",
-        description: `Cliente ${formData.name} cadastrado e vinculado ao arquiteto`,
+        description: `Cliente ${formData.name} cadastrado e vinculado ao profissional parceiro`,
       });
 
       toast({

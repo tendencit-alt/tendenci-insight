@@ -68,8 +68,8 @@ export default function AutoImportArchitects() {
         // Processar telefone
         const phone = String(row['Telefone'] || '').replace(/\D/g, '');
         
-        // Nome do arquiteto
-        const name = String(row['Arquiteto'] || '').trim();
+        // Nome do profissional parceiro
+        const name = String(row['Profissional Parceiro'] || '').trim();
 
         return {
           name,
@@ -87,7 +87,7 @@ export default function AutoImportArchitects() {
         return isValid;
       });
 
-      console.log(`Total de arquitetos válidos: ${architects.length}`);
+      console.log(`Total de profissionais parceiros válidos: ${architects.length}`);
       
       setProgress({ current: 0, total: architects.length, success: 0, errors: 0 });
 
@@ -115,7 +115,7 @@ export default function AutoImportArchitects() {
                 phone: arch.phone,
                 birthday: arch.birthday,
                 categoria: arch.categoria,
-                status_funil: 'novo_arquiteto',
+                status_funil: 'novo_profissional parceiro',
               });
             
             if (error) {
@@ -125,7 +125,7 @@ export default function AutoImportArchitects() {
               successCount++;
             }
           } else {
-            console.log(`Arquiteto já existe: ${arch.name}`);
+            console.log(`Profissional Parceiro já existe: ${arch.name}`);
             errorCount++;
           }
         } catch (err: any) {
@@ -145,7 +145,7 @@ export default function AutoImportArchitects() {
       }
       
       setStatus('success');
-      toast.success(`${successCount} arquitetos cadastrados com sucesso!`);
+      toast.success(`${successCount} profissionais parceiros cadastrados com sucesso!`);
       
       // Redirecionar após 3 segundos
       setTimeout(() => {
@@ -173,7 +173,7 @@ export default function AutoImportArchitects() {
           {status === 'processing' && (
             <>
               <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
-              <h2 className="text-2xl font-bold">Importando Arquitetos</h2>
+              <h2 className="text-2xl font-bold">Importando Profissionais Parceiros</h2>
               
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">

@@ -11,7 +11,7 @@ export const ImportDataGuide = () => {
     if (type === 'clients') {
       csvContent = `nome,telefone,email,cidade,estado,observacoes
 João Silva,11987654321,joao@email.com,São Paulo,SP,Cliente importante
-Maria Santos,21987654321,maria@email.com,Rio de Janeiro,RJ,Indicação de arquiteto`;
+Maria Santos,21987654321,maria@email.com,Rio de Janeiro,RJ,Indicação de profissional parceiro`;
       filename = 'template_clientes.csv';
     } else if (type === 'leads') {
       csvContent = `nome_cliente,telefone,email,origem,temperatura,status,cidade,estado

@@ -47,7 +47,7 @@ export function ArchitectKPIs({ refreshKey }: ArchitectKPIsProps) {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-blue-500">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-muted-foreground">Arquitetos Ativos</span>
+            <span className="text-sm font-medium text-muted-foreground">Profissionais Parceiros Ativos</span>
             <Users className="w-5 h-5 text-blue-600" />
           </div>
           <p className="text-3xl font-bold text-blue-600">{metrics.active_count}</p>

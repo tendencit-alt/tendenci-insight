@@ -64,7 +64,7 @@ export function AgendamentosManager() {
     },
   });
 
-  // Buscar arquitetos para select
+  // Buscar profissionais parceiros para select
   const { data: architects } = useQuery({
     queryKey: ["architects-select"],
     queryFn: async () => {
@@ -273,13 +273,13 @@ export function AgendamentosManager() {
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="architect">Arquiteto *</Label>
+                <Label htmlFor="architect">Profissional Parceiro *</Label>
                 <Select
                   value={formData.architect_id}
                   onValueChange={(value) => setFormData({ ...formData, architect_id: value })}
                 >
                   <SelectTrigger id="architect">
-                    <SelectValue placeholder="Selecione um arquiteto" />
+                    <SelectValue placeholder="Selecione um profissional parceiro" />
                   </SelectTrigger>
                   <SelectContent>
                     {architects?.map((arch) => (

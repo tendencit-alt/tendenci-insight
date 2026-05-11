@@ -125,7 +125,7 @@ const Projects = () => {
     // Stages filter removed - RPC now handles all stages internally
 
     if (filters.architect && filters.architect !== "Todos") {
-      if (filters.architect === "sem-arquiteto") {
+      if (filters.architect === "sem-profissional parceiro") {
         params.p_architect_id = "00000000-0000-0000-0000-000000000000";
       } else {
         params.p_architect_id = filters.architect;

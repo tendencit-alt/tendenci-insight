@@ -504,7 +504,7 @@ export function AppNavbar() {
     const labels: Record<string, string> = {
       admin: "Admin",
       vendedor: "Vendedor",
-      arquiteto: "Arquiteto",
+      arquiteto: "Profissional Parceiro",
       owner: "Owner",
       tenant_owner: "Owner",
     };

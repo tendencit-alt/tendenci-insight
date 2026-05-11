@@ -60,15 +60,15 @@ export function ProspeccaoOverview() {
       const result = data as { success: boolean; architects_moved: number; executed_at: string };
       
       if (result.architects_moved > 0) {
-        toast.success(`${result.architects_moved} arquiteto(s) movido(s) para Inativo`);
+        toast.success(`${result.architects_moved} profissional parceiro(s) movido(s) para Inativo`);
       } else {
-        toast.info('Nenhum arquiteto inativo encontrado');
+        toast.info('Nenhum profissional parceiro inativo encontrado');
       }
       
       handleRefresh();
     } catch (error) {
       console.error('Erro ao verificar inativos:', error);
-      toast.error('Erro ao verificar arquitetos inativos');
+      toast.error('Erro ao verificar profissionais parceiros inativos');
     } finally {
       setCheckingInactive(false);
     }
@@ -100,16 +100,16 @@ export function ProspeccaoOverview() {
       {/* KPIs */}
       <ArchitectKPIs refreshKey={refreshKey} />
 
-      {/* Alerts Grid - Próximos Aniversários e Arquitetos Inativos */}
+      {/* Alerts Grid - Próximos Aniversários e Profissionais Parceiros Inativos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <BirthdayAlerts refreshKey={refreshKey} />
         <InactiveArchitects refreshKey={refreshKey} />
       </div>
 
-      {/* Tabs - Tabela de Arquitetos e Análises */}
+      {/* Tabs - Tabela de Profissionais Parceiros e Análises */}
       <Tabs defaultValue="table" className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="table">Tabela de Arquitetos</TabsTrigger>
+          <TabsTrigger value="table">Tabela de Profissionais Parceiros</TabsTrigger>
           <TabsTrigger value="analytics">Análises de Projetos</TabsTrigger>
         </TabsList>
         
