@@ -362,7 +362,7 @@ const LEVEL_GROUP_BORDER: Record<AttentionLevel, string> = {
 export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
-  const { userLevel } = usePermissions();
+  const { userLevel, hasModuleAccess, loading: permsLoading } = usePermissions();
   const { user } = useAuth();
   const { data: companySettings } = useCompanySettings();
   const companyLogo = companySettings?.logo_url;
@@ -618,7 +618,9 @@ export function AppSidebar() {
                     <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
                       <SidebarGroupContent>
                         <SidebarMenu>
-                          {group.items.map((item) => {
+                          {group.items
+                            .filter((item) => !item.module || permsLoading || hasModuleAccess(item.module as any))
+                            .map((item) => {
                             const isHighlighted = highlightSet.has(item.url);
                             const itemBadge = getItemBadge(item.url);
                             const favored = isFavorite(item.url);
