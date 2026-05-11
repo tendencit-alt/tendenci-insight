@@ -232,17 +232,14 @@ export function ProfileTypesManager() {
                       <Edit2 className="w-4 h-4" />
                     </Button>
                   )}
-                  {/* Apenas tipos não-sistema podem ser excluídos */}
-                  {!profileType.is_system && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(profileType)}
-                      className="gap-2"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDelete(profileType)}
+                    className="gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
             ))}
