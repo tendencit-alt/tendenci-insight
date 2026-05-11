@@ -22625,6 +22625,10 @@ export type Database = {
         Args: { required_role: Database["public"]["Enums"]["user_role"] }
         Returns: boolean
       }
+      validate_profile_template_completeness: {
+        Args: { perms: Json }
+        Returns: Json
+      }
       verify_post_recovery_stability: {
         Args: {
           p_incident_id?: string

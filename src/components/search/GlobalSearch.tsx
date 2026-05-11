@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-type ResultKind = "cliente" | "profissional parceiro" | "lead";
+type ResultKind = "cliente" | "arquiteto" | "lead";
 
 interface Result {
   id: string;
@@ -91,7 +91,7 @@ export function GlobalSearch() {
       (architectsRes.data || []).forEach((a: any) => {
         merged.push({
           id: `arquiteto:${a.id}`,
-          kind: "profissional parceiro",
+          kind: "arquiteto",
           title: a.name || "Profissional Parceiro",
           subtitle: [a.company, a.city].filter(Boolean).join(" • "),
           route: `/crm-comercial?tab=architects&focus=${a.id}`,

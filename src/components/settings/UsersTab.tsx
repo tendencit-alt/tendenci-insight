@@ -26,7 +26,7 @@ interface UserProfile {
   email: string;
   username: string;
   full_name?: string;
-  role: 'owner' | 'tenant_owner' | 'admin' | 'vendedor' | 'profissional parceiro' | 'projetista';
+  role: 'owner' | 'tenant_owner' | 'admin' | 'vendedor' | 'arquiteto' | 'projetista';
   profile_type_id?: string | null;
   profile_type?: ProfileType | null;
   created_at: string;
@@ -97,7 +97,7 @@ export function UsersTab() {
         <Shield className="w-3 h-3 mr-1" />
         Master
       </Badge>
-    ) : user.role === 'profissional parceiro' ? (
+    ) : user.role === 'arquiteto' ? (
       <Badge variant="outline">
         <User className="w-3 h-3 mr-1" />
         Profissional Parceiro

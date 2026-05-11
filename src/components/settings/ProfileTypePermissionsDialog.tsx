@@ -12,7 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Info, Shield, ShieldAlert, Lock, Target, DollarSign, FileCheck, RotateCcw, Save, LayoutTemplate, Sparkles } from 'lucide-react';
+import { Loader2, Info, Shield, ShieldAlert, Lock, Target, DollarSign, FileCheck, RotateCcw, Save, LayoutTemplate, Sparkles, AlertTriangle } from 'lucide-react';
+import { validateTemplateCompleteness, TEMPLATE_MODULE_LABELS, describeTemplateGaps } from '@/lib/profileTemplateValidation';
 import { Textarea } from '@/components/ui/textarea';
 import { useUpsertProfileTemplate, useProfileTemplates } from '@/hooks/useProfileTemplates';
 import {
@@ -1124,6 +1125,9 @@ export function ProfileTypePermissionsDialog({
               {(() => {
                 const tpl = availableTemplates.find(t => t.id === selectedTemplateId);
                 if (!tpl) return null;
+                const completeness = validateTemplateCompleteness(
+                  tpl.permissions as Record<string, Record<string, boolean>>
+                );
                 const diff: Array<{ module: string; flag: keyof ModulePermission; from: boolean; to: boolean }> = [];
                 ALL_MODULES.forEach(module => {
                   const cur = permissions[module] || emptyModulePermission();
@@ -1142,6 +1146,33 @@ export function ProfileTypePermissionsDialog({
                   <div className="space-y-2">
                     {tpl.description && (
                       <p className="text-xs text-muted-foreground">{tpl.description}</p>
+                    )}
+                    {!completeness.isComplete && (
+                      <Alert variant="destructive" className="border-amber-500/60 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-100">
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                        <AlertDescription className="text-xs space-y-1">
+                          <p className="font-semibold">
+                            Template incompleto — não cobre todos os {completeness.totalRequired} módulos.
+                          </p>
+                          <p>{describeTemplateGaps(completeness)}</p>
+                          {completeness.incompleteModules.length > 0 && (
+                            <div className="flex flex-wrap gap-1 pt-1">
+                              {completeness.incompleteModules.map(m => (
+                                <Badge
+                                  key={m}
+                                  variant="outline"
+                                  className="text-[10px] border-amber-500/50 bg-amber-100/50 dark:bg-amber-900/40"
+                                >
+                                  {TEMPLATE_MODULE_LABELS[m] || m}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          <p className="opacity-80">
+                            Você ainda pode aplicar, mas usuários com este perfil podem ficar sem acesso aos módulos acima.
+                          </p>
+                        </AlertDescription>
+                      </Alert>
                     )}
                     <Alert>
                       <Sparkles className="h-4 w-4" />
@@ -1192,6 +1223,43 @@ export function ProfileTypePermissionsDialog({
                 onClick={async () => {
                   const tpl = availableTemplates.find(t => t.id === selectedTemplateId);
                   if (!tpl) return;
+
+                  // Backend validation: cross-check completeness with the DB function
+                  // so a server-side rule can flag the same gaps the UI shows.
+                  let serverIncomplete: string[] = [];
+                  try {
+                    const { data: vData, error: vErr } = await supabase.rpc(
+                      'validate_profile_template_completeness',
+                      { perms: tpl.permissions as any }
+                    );
+                    if (!vErr && vData && typeof vData === 'object') {
+                      const v: any = vData;
+                      serverIncomplete = [
+                        ...(v.missing_modules || []),
+                        ...(v.empty_modules || []),
+                        ...(v.no_view_modules || []),
+                      ];
+                    }
+                  } catch (e) {
+                    console.warn('Validação backend de template falhou:', e);
+                  }
+
+                  const clientCheck = validateTemplateCompleteness(
+                    tpl.permissions as Record<string, Record<string, boolean>>
+                  );
+                  const isIncomplete = !clientCheck.isComplete || serverIncomplete.length > 0;
+
+                  if (isIncomplete) {
+                    const confirm = window.confirm(
+                      `Atenção: o template "${tpl.name}" está incompleto.\n\n` +
+                      `${describeTemplateGaps(clientCheck)}\n\n` +
+                      `Módulos afetados: ${(serverIncomplete.length ? serverIncomplete : clientCheck.incompleteModules)
+                        .map(m => TEMPLATE_MODULE_LABELS[m] || m).join(', ')}\n\n` +
+                      `Deseja aplicar mesmo assim?`
+                    );
+                    if (!confirm) return;
+                  }
+
                   const next: Record<string, ModulePermission> = {};
                   ALL_MODULES.forEach(module => {
                     const src = (tpl.permissions?.[module] as ModulePermission) || emptyModulePermission();
@@ -1218,12 +1286,17 @@ export function ProfileTypePermissionsDialog({
                     pending_save: true,
                     flags_changed: diff.length,
                     diff,
+                    template_incomplete: isIncomplete,
+                    incomplete_modules: serverIncomplete.length ? serverIncomplete : clientCheck.incompleteModules,
                   });
                   setPermissions(next);
                   setApplyTemplateOpen(false);
                   toast({
-                    title: 'Template aplicado (não salvo)',
+                    title: isIncomplete
+                      ? 'Template incompleto aplicado (não salvo)'
+                      : 'Template aplicado (não salvo)',
                     description: `"${tpl.name}" aplicado com ${diff.length} alteração(ões). Clique em Salvar para confirmar.`,
+                    variant: isIncomplete ? 'destructive' : 'default',
                   });
                 }}
               >
