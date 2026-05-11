@@ -381,10 +381,21 @@ export function CreateProfileTypeDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isEditing && (
             <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary" />
-                Templates pré-definidos
-              </Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  Templates pré-definidos
+                </Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTemplatesManagerOpen(true)}
+                  className="gap-1 h-7 text-xs"
+                >
+                  <Settings2 className="w-3.5 h-3.5" /> Gerenciar templates
+                </Button>
+              </div>
               <p className="text-xs text-muted-foreground">
                 Selecione um perfil pronto. Nome, cor, ícone e permissões serão preenchidos automaticamente.
               </p>
