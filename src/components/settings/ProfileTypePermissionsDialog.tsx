@@ -75,25 +75,34 @@ const MODULE_LABELS: Record<string, string> = {
 
 // Simplificado: 4 permissões essenciais por módulo. As permissões avançadas
 // (Aprovar, Conciliar, Exportar, Admin) são gerenciadas na aba "Críticas".
+// 4 colunas de permissão. Cada coluna controla um conjunto de flags da DB
+// (incluindo permissões avançadas/críticas), simplificando a UX para os admins.
 const PERMISSION_COLUMNS = [
-  { key: 'can_view', label: 'Ver', description: 'Apenas leitura' },
-  { key: 'can_create', label: 'Criar', description: 'Adicionar novos' },
-  { key: 'can_edit', label: 'Editar', description: 'Alterar existentes' },
-  { key: 'can_delete', label: 'Excluir', description: 'Remover registros' },
+  {
+    key: 'can_view',
+    label: 'Ver',
+    description: 'Leitura e exportação',
+    flags: ['can_view', 'can_export'] as (keyof ModulePermission)[],
+  },
+  {
+    key: 'can_create',
+    label: 'Criar',
+    description: 'Adicionar novos',
+    flags: ['can_create'] as (keyof ModulePermission)[],
+  },
+  {
+    key: 'can_edit',
+    label: 'Editar',
+    description: 'Alterar / aprovar / conciliar',
+    flags: ['can_edit', 'can_approve', 'can_conciliate'] as (keyof ModulePermission)[],
+  },
+  {
+    key: 'can_delete',
+    label: 'Excluir',
+    description: 'Remover e ações críticas',
+    flags: ['can_delete', 'can_admin'] as (keyof ModulePermission)[],
+  },
 ] as const;
-
-const CRITICAL_PERMISSIONS = [
-  { key: 'editar_plano_contas', label: 'Editar Plano de Contas', group: 'Estrutura' },
-  { key: 'excluir_lancamento_conciliado', label: 'Excluir Lançamento Conciliado', group: 'Financeiro' },
-  { key: 'editar_lancamento_conciliado', label: 'Editar Lançamento Conciliado', group: 'Financeiro' },
-  { key: 'alterar_regra_automatica', label: 'Alterar Regra Automática', group: 'Automação' },
-  { key: 'alterar_centro_custo_padrao', label: 'Alterar Centro de Custo Padrão', group: 'Estrutura' },
-  { key: 'alterar_meta_global', label: 'Alterar Meta Global', group: 'Planejamento' },
-  { key: 'cancelar_pedido_faturado', label: 'Cancelar Pedido Já Faturado', group: 'Comercial' },
-  { key: 'reabrir_pedido_encerrado', label: 'Reabrir Pedido Encerrado', group: 'Comercial' },
-  { key: 'editar_principal_emprestimo', label: 'Editar Principal de Empréstimo', group: 'Financeiro' },
-  { key: 'excluir_log', label: 'Excluir Log de Auditoria', group: 'Auditoria' },
-];
 
 const SCOPE_TYPES = [
   { key: 'empresa', label: 'Empresa' },
