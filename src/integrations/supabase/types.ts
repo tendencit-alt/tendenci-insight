@@ -21362,6 +21362,10 @@ export type Database = {
       }
     }
     Functions: {
+      _tenant_rls_audit_whitelist: {
+        Args: { _policy: string; _table: string }
+        Returns: boolean
+      }
       acquire_message_lock: {
         Args: { p_instance: string; p_phone: string }
         Returns: {
@@ -21434,6 +21438,28 @@ export type Database = {
       }
       architects_aggregates: { Args: never; Returns: Json }
       architecture_health_summary: { Args: never; Returns: Json }
+      audit_tenant_rls_direct_profile_reads: {
+        Args: never
+        Returns: {
+          cmd: string
+          policyname: string
+          schemaname: string
+          snippet: string
+          tablename: string
+        }[]
+      }
+      audit_tenant_rls_policies: {
+        Args: never
+        Returns: {
+          cmd: string
+          policyname: string
+          qual: string
+          reason: string
+          schemaname: string
+          tablename: string
+          with_check: string
+        }[]
+      }
       calc_owner_control_tower_kpis: { Args: never; Returns: string }
       calc_system_health_snapshot: { Args: never; Returns: string }
       calc_tenant_activation_score: {
