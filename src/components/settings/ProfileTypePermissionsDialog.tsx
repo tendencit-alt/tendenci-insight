@@ -149,6 +149,71 @@ const emptyModulePermission = (): ModulePermission => ({
   can_approve: false, can_conciliate: false, can_export: false, can_admin: false,
 });
 
+const fullModulePermission = (): ModulePermission => ({
+  can_view: true, can_create: true, can_edit: true, can_delete: true,
+  can_approve: true, can_conciliate: true, can_export: true, can_admin: true,
+});
+
+const readOnlyPermission = (): ModulePermission => ({
+  ...emptyModulePermission(), can_view: true, can_export: true,
+});
+
+const editorPermission = (): ModulePermission => ({
+  ...emptyModulePermission(),
+  can_view: true, can_create: true, can_edit: true, can_export: true,
+});
+
+/**
+ * Recommended baseline per profile role. Falls back to read-only for unknown roles.
+ * Each baseline assigns one of the helpers above to each of ALL_MODULES.
+ */
+const getRoleBaseline = (roleName: string): Record<string, ModulePermission> => {
+  const r = (roleName || '').toLowerCase();
+  const baseline: Record<string, ModulePermission> = {};
+
+  const apply = (fn: (m: string) => ModulePermission) => {
+    ALL_MODULES.forEach(m => { baseline[m] = fn(m); });
+  };
+
+  if (['master', 'admin', 'owner', 'administrador', 'tenant_owner'].includes(r)) {
+    apply(() => fullModulePermission());
+  } else if (['gerente', 'manager', 'diretor'].includes(r)) {
+    apply(m => {
+      const p = editorPermission();
+      if (['financeiro', 'controladoria', 'planejamento'].includes(m)) p.can_approve = true;
+      if (m === 'configuracoes') return readOnlyPermission();
+      return p;
+    });
+  } else if (['financeiro', 'controller', 'controladoria', 'finance'].includes(r)) {
+    apply(m => {
+      if (['financeiro', 'controladoria', 'planejamento', 'relatorios_bi'].includes(m)) {
+        return { ...editorPermission(), can_approve: true, can_conciliate: true };
+      }
+      if (m === 'configuracoes') return emptyModulePermission();
+      return readOnlyPermission();
+    });
+  } else if (['vendedor', 'comercial', 'seller', 'sales'].includes(r)) {
+    apply(m => {
+      if (m === 'comercial') return editorPermission();
+      if (['dashboard_executivo', 'relatorios_bi'].includes(m)) return readOnlyPermission();
+      return emptyModulePermission();
+    });
+  } else if (['producao', 'production', 'operacional', 'operations'].includes(r)) {
+    apply(m => {
+      if (['operacional', 'cadastros'].includes(m)) return editorPermission();
+      if (['dashboard_executivo', 'relatorios_bi'].includes(m)) return readOnlyPermission();
+      return emptyModulePermission();
+    });
+  } else if (['visualizador', 'viewer', 'consulta', 'auditor'].includes(r)) {
+    apply(() => readOnlyPermission());
+  } else {
+    // Default fallback: read-only across the board
+    apply(() => readOnlyPermission());
+  }
+
+  return baseline;
+};
+
 /**
  * Validates that the persisted permissions in the DB match the in-memory state
  * across ALL 8 flags (including can_export, can_approve, can_conciliate, can_admin
