@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -12,7 +13,8 @@ export interface TenantMembership {
 }
 
 export function useActiveTenant() {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
+  const queryClient = useQueryClient();
   const [memberships, setMemberships] = useState<TenantMembership[]>([]);
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState(false);
@@ -78,7 +80,7 @@ export function useActiveTenant() {
         setSwitching(false);
         return false;
       }
-      // Notify other tabs BEFORE reloading this one.
+      // Notify other tabs that the active tenant changed.
       try {
         const payload = { tenantId: targetTenantId, ts: Date.now() };
         if (typeof BroadcastChannel !== "undefined") {
@@ -91,30 +93,37 @@ export function useActiveTenant() {
       } catch {
         /* noop */
       }
-      // Hard reload to flush all cached queries / RLS-scoped data.
-      window.location.reload();
+      // Soft refresh: refetch profile (carries new current_tenant_id) and
+      // invalidate every cached query so RLS-scoped data is re-pulled.
+      await refreshProfile();
+      await queryClient.invalidateQueries();
+      toast.success("Empresa ativa atualizada");
       return true;
     } catch (err: any) {
       toast.error("Não foi possível trocar de empresa.", {
         description: err?.message,
       });
-      setSwitching(false);
       return false;
+    } finally {
+      setSwitching(false);
     }
-  }, []);
+  }, [refreshProfile, queryClient]);
 
-  // Listen for tenant switches triggered in other tabs and reload to re-fetch
-  // everything under the new RLS context.
+  // Listen for tenant switches triggered in other tabs and soft-refresh
+  // (refetch profile + invalidate all queries) so RLS reflects immediately.
   useEffect(() => {
     if (!user) return;
     let bc: BroadcastChannel | null = null;
-    const reload = () => window.location.reload();
+    const softRefresh = async () => {
+      await refreshProfile();
+      await queryClient.invalidateQueries();
+    };
 
     if (typeof BroadcastChannel !== "undefined") {
       bc = new BroadcastChannel("active-tenant");
       bc.onmessage = (ev) => {
         const next = ev.data?.tenantId;
-        if (next && next !== activeTenantId) reload();
+        if (next && next !== activeTenantId) softRefresh();
       };
     }
 
@@ -122,7 +131,7 @@ export function useActiveTenant() {
       if (e.key !== "active-tenant-switch" || !e.newValue) return;
       try {
         const { tenantId } = JSON.parse(e.newValue);
-        if (tenantId && tenantId !== activeTenantId) reload();
+        if (tenantId && tenantId !== activeTenantId) softRefresh();
       } catch {
         /* noop */
       }
@@ -133,7 +142,7 @@ export function useActiveTenant() {
       bc?.close();
       window.removeEventListener("storage", onStorage);
     };
-  }, [user, activeTenantId]);
+  }, [user, activeTenantId, refreshProfile, queryClient]);
 
   return {
     memberships,
