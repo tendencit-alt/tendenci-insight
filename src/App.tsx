@@ -116,7 +116,7 @@ const App = () => (
               <Route path="/redefinir-senha" element={<ResetPassword />} />
               <Route path="/reset-password" element={<Navigate to="/redefinir-senha" replace />} />
 
-              <Route path="/catalogo" element={<Catalogo />} />
+              <Route path="/catalogo" element={<ProtectedRoute><PermissionGuard module="comercial"><Catalogo /></PermissionGuard></ProtectedRoute>} />
               <Route path="/" element={<ProtectedRoute><Navigate to="/central-navegacao" replace /></ProtectedRoute>} />
               <Route path="/central-navegacao" element={<ProtectedRoute><HomeLauncher /></ProtectedRoute>} />
 
@@ -146,7 +146,7 @@ const App = () => (
               <Route path="/clientes" element={<ProtectedRoute><PermissionGuard module="comercial"><Clientes /></PermissionGuard></ProtectedRoute>} />
               <Route path="/leads" element={<ProtectedRoute><PermissionGuard module="comercial"><Leads /></PermissionGuard></ProtectedRoute>} />
               <Route path="/crm-comercial" element={<ProtectedRoute><PermissionGuard module="comercial"><CRMCommercial /></PermissionGuard></ProtectedRoute>} />
-              <Route path="/catalogo-comercial" element={<ProtectedRoute><PermissionGuard module="comercial"><Catalogo /></PermissionGuard></ProtectedRoute>} />
+              
               <Route path="/propostas" element={<ProtectedRoute><PermissionGuard module="comercial"><Propostas /></PermissionGuard></ProtectedRoute>} />
               <Route path="/contratos" element={<ProtectedRoute><PermissionGuard module="comercial"><Contratos /></PermissionGuard></ProtectedRoute>} />
               <Route path="/comissoes" element={<ProtectedRoute><PermissionGuard module="comercial"><Comissoes /></PermissionGuard></ProtectedRoute>} />
@@ -168,11 +168,9 @@ const App = () => (
               <Route path="/system-errors" element={<Navigate to="/" replace />} />
               <Route path="/excluidos" element={<Navigate to="/" replace />} />
 
-              {/* CRM / Leads */}
-              <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
+              {/* CRM / Leads (canonical routes are above with PermissionGuard) */}
               <Route path="/kanban" element={<Navigate to="/" replace />} />
               <Route path="/crm" element={<Navigate to="/crm-comercial" replace />} />
-              <Route path="/crm-comercial" element={<ProtectedRoute><CRMCommercial /></ProtectedRoute>} />
               <Route path="/prospeccao" element={<Navigate to="/" replace />} />
 
               {/* Planejamento */}
