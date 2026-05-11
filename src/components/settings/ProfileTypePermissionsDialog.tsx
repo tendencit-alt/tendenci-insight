@@ -404,10 +404,23 @@ export function ProfileTypePermissionsDialog({
         await (supabase.from('rbac_status_rules' as any) as any).insert(statusToInsert);
       }
 
-      // Audit
+      // Audit — count "critical" flags folded into Editar/Excluir columns
+      // (can_approve, can_conciliate, can_admin) granted across all modules.
+      const CRITICAL_FLAGS: (keyof ModulePermission)[] = ['can_approve', 'can_conciliate', 'can_admin'];
+      const criticalBreakdown: Record<string, number> = { can_approve: 0, can_conciliate: 0, can_admin: 0 };
+      let criticalTotal = 0;
+      ALL_MODULES.forEach(module => {
+        const p = permissions[module];
+        if (!p) return;
+        CRITICAL_FLAGS.forEach(f => {
+          if (p[f]) { criticalBreakdown[f]++; criticalTotal++; }
+        });
+      });
+
       await logPermissionAudit('update', {
         modules: permissionsToInsert.length,
-        critical: 0,
+        critical: criticalTotal,
+        critical_breakdown: criticalBreakdown,
         scopes: scopesToInsert,
         value_limits: valsToInsert.length,
         status_rules: statusRules.length,
