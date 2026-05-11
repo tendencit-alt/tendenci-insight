@@ -73,15 +73,13 @@ const MODULE_LABELS: Record<string, string> = {
   cadastros: 'Cadastros', relatorios_bi: 'Relatórios & BI', configuracoes: 'Configurações',
 };
 
+// Simplificado: 4 permissões essenciais por módulo. As permissões avançadas
+// (Aprovar, Conciliar, Exportar, Admin) são gerenciadas na aba "Críticas".
 const PERMISSION_COLUMNS = [
-  { key: 'can_view', label: 'Ver', short: 'V' },
-  { key: 'can_create', label: 'Criar', short: 'C' },
-  { key: 'can_edit', label: 'Editar', short: 'E' },
-  { key: 'can_delete', label: 'Excluir', short: 'X' },
-  { key: 'can_approve', label: 'Aprovar', short: 'A' },
-  { key: 'can_conciliate', label: 'Conciliar', short: 'Co' },
-  { key: 'can_export', label: 'Exportar', short: 'Ex' },
-  { key: 'can_admin', label: 'Admin', short: 'Ad' },
+  { key: 'can_view', label: 'Ver', description: 'Visualizar registros do módulo' },
+  { key: 'can_create', label: 'Criar', description: 'Criar novos registros' },
+  { key: 'can_edit', label: 'Editar', description: 'Alterar registros existentes' },
+  { key: 'can_delete', label: 'Excluir', description: 'Remover registros' },
 ] as const;
 
 const CRITICAL_PERMISSIONS = [
@@ -402,23 +400,24 @@ export function ProfileTypePermissionsDialog({
             <TabsContent value="modules" className="mt-3">
               <ScrollArea className="max-h-[50vh] pr-4">
                 <div className="space-y-1">
-                  <div className="grid gap-1 pb-2 border-b text-[10px] font-medium text-muted-foreground uppercase tracking-wide"
-                    style={{ gridTemplateColumns: '1fr repeat(8, 50px)' }}>
+                  <div className="grid gap-2 pb-2 border-b text-[11px] font-semibold text-muted-foreground uppercase tracking-wide"
+                    style={{ gridTemplateColumns: '1.4fr repeat(4, 90px)' }}>
                     <div>
                       <Button type="button" variant="ghost" size="sm" onClick={handleSelectAll}
-                        className="h-auto p-0 text-[10px] hover:text-foreground uppercase">Módulo</Button>
+                        className="h-auto p-0 text-[11px] hover:text-foreground uppercase">Módulo</Button>
                     </div>
                     {PERMISSION_COLUMNS.map(col => (
                       <div key={col.key} className="text-center">
                         <Button type="button" variant="ghost" size="sm"
                           onClick={() => handleSelectColumn(col.key)}
-                          className="h-auto p-0 text-[10px] hover:text-foreground" title={col.label}>{col.short}</Button>
+                          className="h-auto p-0 text-[11px] hover:text-foreground"
+                          title={col.description}>{col.label}</Button>
                       </div>
                     ))}
                   </div>
                   {ALL_MODULES.map(module => (
-                    <div key={module} className="grid gap-1 py-2 border-b border-border/50 items-center"
-                      style={{ gridTemplateColumns: '1fr repeat(8, 50px)' }}>
+                    <div key={module} className="grid gap-2 py-2 border-b border-border/50 items-center"
+                      style={{ gridTemplateColumns: '1.4fr repeat(4, 90px)' }}>
                       <Label className="font-medium text-sm">{MODULE_LABELS[module] || module}</Label>
                       {PERMISSION_COLUMNS.map(col => (
                         <div key={col.key} className="flex justify-center">
@@ -431,6 +430,9 @@ export function ProfileTypePermissionsDialog({
                     </div>
                   ))}
                 </div>
+                <p className="text-[11px] text-muted-foreground mt-3 px-1">
+                  Permissões avançadas (Aprovar, Conciliar, Exportar, Admin) ficam na aba <strong>Críticas</strong>.
+                </p>
               </ScrollArea>
             </TabsContent>
 
