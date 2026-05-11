@@ -109,18 +109,21 @@ export function useActiveTenant() {
     }
   }, [refreshProfile, queryClient]);
 
-  // Listen for tenant switches triggered in other tabs and reload to re-fetch
-  // everything under the new RLS context.
+  // Listen for tenant switches triggered in other tabs and soft-refresh
+  // (refetch profile + invalidate all queries) so RLS reflects immediately.
   useEffect(() => {
     if (!user) return;
     let bc: BroadcastChannel | null = null;
-    const reload = () => window.location.reload();
+    const softRefresh = async () => {
+      await refreshProfile();
+      await queryClient.invalidateQueries();
+    };
 
     if (typeof BroadcastChannel !== "undefined") {
       bc = new BroadcastChannel("active-tenant");
       bc.onmessage = (ev) => {
         const next = ev.data?.tenantId;
-        if (next && next !== activeTenantId) reload();
+        if (next && next !== activeTenantId) softRefresh();
       };
     }
 
@@ -128,7 +131,7 @@ export function useActiveTenant() {
       if (e.key !== "active-tenant-switch" || !e.newValue) return;
       try {
         const { tenantId } = JSON.parse(e.newValue);
-        if (tenantId && tenantId !== activeTenantId) reload();
+        if (tenantId && tenantId !== activeTenantId) softRefresh();
       } catch {
         /* noop */
       }
@@ -139,7 +142,7 @@ export function useActiveTenant() {
       bc?.close();
       window.removeEventListener("storage", onStorage);
     };
-  }, [user, activeTenantId]);
+  }, [user, activeTenantId, refreshProfile, queryClient]);
 
   return {
     memberships,
