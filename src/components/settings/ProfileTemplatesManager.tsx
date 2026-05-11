@@ -238,8 +238,7 @@ export function ProfileTemplatesManager({ open, onOpenChange }: Props) {
                             size="sm"
                             variant="outline"
                             onClick={() => startEdit(tpl)}
-                            disabled={tpl.is_builtin}
-                            title={tpl.is_builtin ? 'Templates do sistema não podem ser editados' : 'Editar'}
+                            title="Editar"
                           >
                             <Edit2 className="w-4 h-4" />
                           </Button>
