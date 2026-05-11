@@ -12,7 +12,11 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Info, Shield, ShieldAlert, Lock, Target, DollarSign, FileCheck } from 'lucide-react';
+import { Loader2, Info, Shield, ShieldAlert, Lock, Target, DollarSign, FileCheck, RotateCcw } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
@@ -149,6 +153,71 @@ const emptyModulePermission = (): ModulePermission => ({
   can_approve: false, can_conciliate: false, can_export: false, can_admin: false,
 });
 
+const fullModulePermission = (): ModulePermission => ({
+  can_view: true, can_create: true, can_edit: true, can_delete: true,
+  can_approve: true, can_conciliate: true, can_export: true, can_admin: true,
+});
+
+const readOnlyPermission = (): ModulePermission => ({
+  ...emptyModulePermission(), can_view: true, can_export: true,
+});
+
+const editorPermission = (): ModulePermission => ({
+  ...emptyModulePermission(),
+  can_view: true, can_create: true, can_edit: true, can_export: true,
+});
+
+/**
+ * Recommended baseline per profile role. Falls back to read-only for unknown roles.
+ * Each baseline assigns one of the helpers above to each of ALL_MODULES.
+ */
+const getRoleBaseline = (roleName: string): Record<string, ModulePermission> => {
+  const r = (roleName || '').toLowerCase();
+  const baseline: Record<string, ModulePermission> = {};
+
+  const apply = (fn: (m: string) => ModulePermission) => {
+    ALL_MODULES.forEach(m => { baseline[m] = fn(m); });
+  };
+
+  if (['master', 'admin', 'owner', 'administrador', 'tenant_owner'].includes(r)) {
+    apply(() => fullModulePermission());
+  } else if (['gerente', 'manager', 'diretor'].includes(r)) {
+    apply(m => {
+      const p = editorPermission();
+      if (['financeiro', 'controladoria', 'planejamento'].includes(m)) p.can_approve = true;
+      if (m === 'configuracoes') return readOnlyPermission();
+      return p;
+    });
+  } else if (['financeiro', 'controller', 'controladoria', 'finance'].includes(r)) {
+    apply(m => {
+      if (['financeiro', 'controladoria', 'planejamento', 'relatorios_bi'].includes(m)) {
+        return { ...editorPermission(), can_approve: true, can_conciliate: true };
+      }
+      if (m === 'configuracoes') return emptyModulePermission();
+      return readOnlyPermission();
+    });
+  } else if (['vendedor', 'comercial', 'seller', 'sales'].includes(r)) {
+    apply(m => {
+      if (m === 'comercial') return editorPermission();
+      if (['dashboard_executivo', 'relatorios_bi'].includes(m)) return readOnlyPermission();
+      return emptyModulePermission();
+    });
+  } else if (['producao', 'production', 'operacional', 'operations'].includes(r)) {
+    apply(m => {
+      if (['operacional', 'cadastros'].includes(m)) return editorPermission();
+      if (['dashboard_executivo', 'relatorios_bi'].includes(m)) return readOnlyPermission();
+      return emptyModulePermission();
+    });
+  } else if (['visualizador', 'viewer', 'consulta', 'auditor'].includes(r)) {
+    apply(() => readOnlyPermission());
+  } else {
+    // Default fallback: read-only across the board
+    apply(() => readOnlyPermission());
+  }
+
+  return baseline;
+};
+
 /**
  * Validates that the persisted permissions in the DB match the in-memory state
  * across ALL 8 flags (including can_export, can_approve, can_conciliate, can_admin
@@ -191,6 +260,17 @@ export function ProfileTypePermissionsDialog({
   const [scopes, setScopes] = useState<Record<string, ScopeRestriction>>({});
   const [valueLimits, setValueLimits] = useState<Record<string, ValueLimit>>({});
   const [statusRules, setStatusRules] = useState<StatusRule[]>([]);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+
+  const handleResetToDefaults = () => {
+    const baseline = getRoleBaseline(profileType.name);
+    setPermissions(baseline);
+    setResetConfirmOpen(false);
+    toast({
+      title: 'Padrões aplicados',
+      description: `Permissões de módulos redefinidas para o padrão de "${profileType.display_name}". Clique em Salvar para confirmar.`,
+    });
+  };
 
   useEffect(() => {
     if (open && profileType) fetchAll();
@@ -712,13 +792,45 @@ export function ProfileTypePermissionsDialog({
           </Tabs>
         )}
 
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={saving || loading}>
-            {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Salvar Permissões
+        <DialogFooter className="sm:justify-between gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setResetConfirmOpen(true)}
+            disabled={saving || loading}
+            className="gap-2"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Restaurar padrões
           </Button>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
+            <Button onClick={handleSave} disabled={saving || loading}>
+              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Salvar Permissões
+            </Button>
+          </div>
         </DialogFooter>
+
+        <AlertDialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Restaurar permissões padrão?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Isso substituirá todas as permissões de módulo deste perfil pela
+                baseline recomendada para <strong>{profileType.display_name}</strong>.
+                Escopos, limites de valor e regras de status não serão alterados.
+                As mudanças só serão persistidas após clicar em <strong>Salvar Permissões</strong>.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleResetToDefaults}>
+                Aplicar padrões
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
