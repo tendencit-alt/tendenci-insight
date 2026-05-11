@@ -246,8 +246,7 @@ export function ProfileTemplatesManager({ open, onOpenChange }: Props) {
                             size="sm"
                             variant="destructive"
                             onClick={() => setConfirmDelete(tpl)}
-                            disabled={tpl.is_builtin}
-                            title={tpl.is_builtin ? 'Templates do sistema não podem ser excluídos' : 'Excluir'}
+                            title="Excluir"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
