@@ -565,7 +565,7 @@ function NewProductDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Novo Produto</DialogTitle>
+          <DialogTitle>{isEdit ? "Editar Produto" : "Novo Produto"}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
