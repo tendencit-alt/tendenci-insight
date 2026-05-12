@@ -177,6 +177,30 @@ export default function Produtos() {
     queryClient.invalidateQueries({ queryKey: ["produtos-list"] });
   };
 
+  const duplicateProduct = async (p: ProductRow) => {
+    const { id, created_at, ...rest } = p as any;
+    const payload = { ...rest, name: `${p.name} (cópia)`, code: p.code ? `${p.code}-COPY` : null };
+    const { error } = await supabase.from("products").insert(payload);
+    if (error) return toast.error("Erro ao duplicar: " + error.message);
+    toast.success("Produto duplicado");
+    queryClient.invalidateQueries({ queryKey: ["produtos-list"] });
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingProduct) return;
+    const { error } = await supabase
+      .from("products")
+      .update({ active: false, ativo_no_catalogo: false })
+      .eq("id", deletingProduct.id);
+    if (error) {
+      toast.error("Erro ao excluir: " + error.message);
+      return;
+    }
+    toast.success("Produto excluído");
+    setDeletingProduct(null);
+    queryClient.invalidateQueries({ queryKey: ["produtos-list"] });
+  };
+
   const handleExport = () => {
     if (!filtered.length) return toast.error("Nada para exportar");
     const headers = [
