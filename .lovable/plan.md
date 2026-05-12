@@ -1,50 +1,63 @@
+# Plano: Correção de 5 bugs E2E (Pedidos, Catálogo, Produtos, Clientes, DOM)
 
-## Diagnóstico atual
+## Ordem de execução (priorizada)
 
-Hoje a navegação mostra inconsistências entre **AppNavbar** (menu superior) e **AppSidebar** (lateral, grupo "Vendas"):
+### BUG #17 — Select dentro de Modal não renderiza (CRÍTICO)
+- Auditar `src/components/orders/CreateOrderDialog.tsx` e wizards relacionados
+- Garantir que TODO `<SelectContent>` use `position="popper"` + classe `z-[100]` (acima do Dialog `z-50`)
+- Mesmo fix em Selects de: item picker, categoria, status, vendedor, centro de custo
+- Aplicar também em Clientes/Produtos/Leads modals
+- Atalho: ajustar globalmente `src/components/ui/select.tsx` adicionando `z-[100]` ao SelectContent (resolve em todo o sistema)
 
-| Item               | AppNavbar (Comercial) | AppSidebar (Vendas)        | Rota existe? |
-|--------------------|------------------------|----------------------------|--------------|
-| CRM & Pipeline     | ❌ ausente             | ✅ ativo                    | `/crm-comercial` |
-| Pedidos            | ✅ único ativo         | ✅ ativo                    | `/pedidos` |
-| Clientes           | 🔒 Coming Soon         | ✅ ativo                    | `/clientes` |
-| Leads              | ❌ ausente             | ❌ ausente                  | `/leads` (existe!) |
-| Catálogo Produtos  | ❌ ausente             | ❌ ausente                  | `/catalogo` (existe!) |
-| Orçamentos/Propostas | 🔒 Coming Soon       | 🔒 Coming Soon              | não |
-| Contratos          | 🔒 Coming Soon         | 🔒 Coming Soon              | não |
-| Comissões          | 🔒 Coming Soon         | 🔒 Coming Soon              | não |
-| Forecast Comercial | ❌ ausente             | ✅ (alias /crm-comercial)   | aba em CRM |
+### BUG #13 — Google Translate quebra DOM
+- Adicionar `<meta name="google" content="notranslate">` em `index.html`
+- Adicionar `<meta name="robots" content="notranslate">` por segurança
+- Adicionar `translate="no"` no `<html>` raiz
 
-> Por isso, dentro do menu **Comercial** do AppNavbar, o usuário só vê **Pedidos** habilitado.
+### BUG #16 — Modais não fecham após salvar
+- Auditar `CreateClientDialog`, `CreateProductDialog`, `CreateLeadDialog`
+- Garantir `onOpenChange(false)` no `onSuccess` da mutation, após `invalidateQueries`
 
-## Estrutura proposta (Comercial — 7 abas canônicas)
+### BUG #15 — Falta editar/excluir em /produtos e /clientes
+- Adicionar coluna "Ações" com DropdownMenu (Editar | Duplicar | Excluir)
+- Reutilizar Create dialog em modo edição (passar `initialData`)
+- AlertDialog de confirmação para exclusão (soft-delete `active=false` ou `ativo=false`)
 
-Ordem segue o ciclo de vida da venda (topo do funil → pós-venda):
+### BUG #14 — White-label do /catalogo
+- Migration: tabela `tenant_catalogo_settings` (tenant_id PK, logo_url, hero_title, hero_subtitle, footer_company_name, footer_copyright, whatsapp_url, instagram_url, primary_color)
+- RLS: tenant_rls_check; SELECT público para uso no storefront
+- Bucket Storage `tenant-assets` (público) com policies
+- Refatorar `src/pages/Catalogo.tsx` para ler settings via `useQuery` (com fallback ao nome do tenant)
+- Nova página `/configuracoes/catalogo` com formulário de edição + upload de logo
+- Adicionar entrada na navegação de configurações
 
-1. **CRM & Pipeline** — `/crm-comercial` (já existe, com sub-abas Pipeline / Propostas / Forecast / Analytics)
-2. **Leads** — `/leads` (já existe, hoje órfão da navegação)
-3. **Orçamentos / Propostas** — `/propostas` (Coming Soon, mantém visível desabilitado)
-4. **Pedidos** — `/pedidos` (ativo)
-5. **Contratos** — `/contratos` (Coming Soon)
-6. **Clientes** — `/clientes` (ativo, promover ao menu superior)
-7. **Catálogo de Produtos** — `/catalogo` (já existe, hoje órfão)
-8. **Comissões** — `/comissoes` (Coming Soon — integra com Order Responsibles e Plano de Contas 2.4)
+## Detalhes técnicos
 
-Itens "Coming Soon" permanecem visíveis com baixa opacidade (regra de UI Visibility).
+**Z-index Dialog Radix**: `DialogOverlay` é `z-50`, `DialogContent` é `z-50`. Subindo `SelectContent` para `z-[100]` resolve sem mexer em portal.
 
-## Mudanças concretas
+**Tabela `tenant_catalogo_settings`**:
+```sql
+CREATE TABLE public.tenant_catalogo_settings (
+  tenant_id uuid PRIMARY KEY REFERENCES public.tenants(id) ON DELETE CASCADE,
+  logo_url text,
+  hero_title text,
+  hero_subtitle text,
+  footer_company_name text,
+  footer_copyright text,
+  whatsapp_url text,
+  instagram_url text,
+  primary_color text DEFAULT '#C41E3A',
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+```
+RLS: SELECT permitido a `anon`+`authenticated` (storefront público); INSERT/UPDATE/DELETE só admin/owner do tenant.
 
-**`src/components/layout/AppNavbar.tsx`** — substituir `items` do grupo `comercial` pela lista acima, marcando `available: true` para CRM, Leads, Pedidos, Clientes e Catálogo; demais como `available: false`.
+**Bucket `tenant-assets`**: público, upload restrito a usuários autenticados do tenant (path prefix = tenant_id).
 
-**`src/components/layout/AppSidebar.tsx`** — alinhar grupo "Vendas" com a mesma ordem e nomes; adicionar **Leads** e **Catálogo de Produtos** (faltantes); remover duplicação "Forecast Comercial" (já é aba interna do CRM).
+**Validação E2E final**: rodar manualmente após deploy seguindo os 4 passos do usuário.
 
-**`src/pages/HomeLauncher.tsx`** — adicionar entradas rápidas no grupo "Vendas": Leads, Catálogo, Orçamento (quando disponível).
-
-## Pontos a confirmar com você
-
-- **Leads vs CRM**: Leads pode virar uma aba dentro de `/crm-comercial` em vez de menu separado. Prefere consolidar ou manter separado?
-- **Catálogo**: ele é produto (Operações) ou venda (Comercial)? Atualmente está acessível por `/catalogo` mas sem menu — proponho duplicar atalho em ambos.
-- **Forecast Comercial**: manter apenas como aba interna de CRM (recomendado) ou expor no menu superior?
-- **Comissões**: priorizar como próximo módulo a sair do "Coming Soon" (já temos Order Responsibles + plano de contas 2.4 prontos)?
-
-Após sua aprovação, implemento as 3 alterações de navegação e podemos abrir uma sequência de tarefas para tirar Comissões/Orçamentos do Coming Soon.
+## Riscos
+- Mudar `select.tsx` global pode afetar muitos componentes — apenas elevar z-index é seguro.
+- Catálogo público precisa SELECT anon — confirmar que isso é desejado (é, é storefront público).
+- Soft-delete em produtos/clientes: confirmar nome da coluna (`active` em products, `ativo` em outros).
