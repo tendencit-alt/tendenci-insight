@@ -407,8 +407,122 @@ export default function Clientes() {
               queryClient.invalidateQueries({ queryKey: ["clients-list"] })
             }
           />
+
+          <EditClientDialog
+            client={editingClient}
+            onClose={() => setEditingClient(null)}
+            onSaved={() => queryClient.invalidateQueries({ queryKey: ["clients-list"] })}
+          />
+
+          <AlertDialog open={!!deletingClient} onOpenChange={(v) => !v && setDeletingClient(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  O cliente "{deletingClient?.nome_fantasia || deletingClient?.name}" será removido permanentemente.
+                  Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={async () => {
+                    if (!deletingClient) return;
+                    const { error } = await supabase.from("clients").delete().eq("id", deletingClient.id);
+                    if (error) {
+                      toast.error("Erro ao excluir: " + error.message);
+                      return;
+                    }
+                    toast.success("Cliente excluído");
+                    setDeletingClient(null);
+                    queryClient.invalidateQueries({ queryKey: ["clients-list"] });
+                  }}
+                >
+                  Excluir
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </DashboardLayout>
     </ProtectedRoute>
+  );
+}
+
+function EditClientDialog({
+  client,
+  onClose,
+  onSaved,
+}: {
+  client: ClientRow | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [form, setForm] = useState({ name: "", cpf_cnpj: "", email: "", phone: "" });
+  const [saving, setSaving] = useState(false);
+
+  useMemo(() => {
+    if (client) {
+      setForm({
+        name: client.name || "",
+        cpf_cnpj: client.cpf_cnpj || "",
+        email: client.email || "",
+        phone: client.phone || "",
+      });
+    }
+  }, [client?.id]);
+
+  const submit = async () => {
+    if (!client) return;
+    if (!form.name.trim()) return toast.error("Nome obrigatório");
+    setSaving(true);
+    const { error } = await supabase
+      .from("clients")
+      .update({
+        name: form.name.trim(),
+        cpf_cnpj: form.cpf_cnpj || null,
+        email: form.email || null,
+        phone: form.phone || null,
+      })
+      .eq("id", client.id);
+    setSaving(false);
+    if (error) return toast.error("Erro: " + error.message);
+    toast.success("Cliente atualizado");
+    onSaved();
+    onClose();
+  };
+
+  return (
+    <Dialog open={!!client} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Editar Cliente</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>Nome *</Label>
+            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label>CPF/CNPJ</Label>
+            <Input value={form.cpf_cnpj} onChange={(e) => setForm({ ...form, cpf_cnpj: e.target.value })} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Telefone</Label>
+              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <BtnUI variant="outline" onClick={onClose}>Cancelar</BtnUI>
+          <BtnUI onClick={submit} disabled={saving}>{saving ? "Salvando..." : "Salvar"}</BtnUI>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
