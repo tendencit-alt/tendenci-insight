@@ -5,28 +5,46 @@ interface CatalogoHeaderProps {
   categories: string[];
   selectedCategory: string | null;
   onSelectCategory: (category: string | null) => void;
+  logoUrl?: string | null;
+  brandName?: string;
 }
 
-export function CatalogoHeader({ categories, selectedCategory, onSelectCategory }: CatalogoHeaderProps) {
+export function CatalogoHeader({
+  categories,
+  selectedCategory,
+  onSelectCategory,
+  logoUrl,
+  brandName,
+}: CatalogoHeaderProps) {
+  const showCustomLogo = !!logoUrl;
   return (
     <header className="sticky top-0 z-50">
-      {/* Logo section with black background */}
       <div className="bg-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center py-6">
-            <img
-              src={logoTendenci}
-              alt="Tendenci"
-              className="h-12 md:h-16 object-contain"
-            />
+            {showCustomLogo ? (
+              <img
+                src={logoUrl!}
+                alt={brandName || "Logo"}
+                className="h-12 md:h-16 object-contain"
+              />
+            ) : brandName ? (
+              <span className="text-white text-2xl md:text-3xl font-bold tracking-wide">
+                {brandName}
+              </span>
+            ) : (
+              <img
+                src={logoTendenci}
+                alt="Logo"
+                className="h-12 md:h-16 object-contain"
+              />
+            )}
           </div>
         </div>
       </div>
-      
-      {/* Categories section with white background */}
+
       <div className="bg-white/95 backdrop-blur-md border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Categories */}
           <nav className="py-4">
             <div className="flex items-center justify-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
               <button
@@ -34,7 +52,7 @@ export function CatalogoHeader({ categories, selectedCategory, onSelectCategory 
                 className={cn(
                   "px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200",
                   selectedCategory === null
-                    ? "bg-[#C41E3A] text-white shadow-md"
+                    ? "bg-[var(--catalog-primary,#C41E3A)] text-white shadow-md"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 )}
               >
@@ -47,7 +65,7 @@ export function CatalogoHeader({ categories, selectedCategory, onSelectCategory 
                   className={cn(
                     "px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200",
                     selectedCategory === category
-                      ? "bg-[#C41E3A] text-white shadow-md"
+                      ? "bg-[var(--catalog-primary,#C41E3A)] text-white shadow-md"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   )}
                 >
