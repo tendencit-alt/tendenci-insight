@@ -483,13 +483,16 @@ function NewProductDialog({
   onOpenChange,
   categories,
   onCreated,
+  product,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   categories: { id: string; name: string }[];
   onCreated: () => void;
+  product?: ProductRow | null;
 }) {
-  const [form, setForm] = useState({
+  const isEdit = !!product;
+  const emptyForm = {
     code: "",
     name: "",
     descricao_curta: "",
@@ -501,8 +504,31 @@ function NewProductDialog({
     prazo_producao_dias: 0,
     peso: 0,
     ativo_no_catalogo: false,
-  });
+  };
+  const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+
+  // Sync form when product/open changes
+  useMemo(() => {
+    if (open && product) {
+      setForm({
+        code: product.code || "",
+        name: product.name || "",
+        descricao_curta: product.descricao_curta || "",
+        description: product.description || "",
+        category_id: product.category_id || "",
+        item_type: product.item_type || "produto_acabado",
+        cost_price: product.cost_price || 0,
+        sale_price: product.sale_price || 0,
+        prazo_producao_dias: product.prazo_producao_dias || 0,
+        peso: 0,
+        ativo_no_catalogo: !!product.ativo_no_catalogo,
+      });
+    } else if (open && !product) {
+      setForm(emptyForm);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, product?.id]);
 
   const submit = async () => {
     if (!form.name.trim()) return toast.error("Nome obrigatório");
@@ -519,15 +545,20 @@ function NewProductDialog({
       prazo_producao_dias: form.prazo_producao_dias,
       peso: form.peso || null,
       ativo_no_catalogo: form.ativo_no_catalogo,
-      active: true,
     };
-    const { error } = await supabase.from("products").insert(payload);
+    let error;
+    if (isEdit && product) {
+      ({ error } = await supabase.from("products").update(payload).eq("id", product.id));
+    } else {
+      payload.active = true;
+      ({ error } = await supabase.from("products").insert(payload));
+    }
     setSaving(false);
     if (error) return toast.error("Erro: " + error.message);
-    toast.success("Produto criado");
+    toast.success(isEdit ? "Produto atualizado" : "Produto criado");
     onCreated();
     onOpenChange(false);
-    setForm({ ...form, code: "", name: "", descricao_curta: "", description: "" });
+    if (!isEdit) setForm(emptyForm);
   };
 
   return (
