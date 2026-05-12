@@ -345,6 +345,7 @@ export default function Produtos() {
               <TableHead className="text-right">Venda</TableHead>
               <TableHead className="text-right">Estoque</TableHead>
               <TableHead>Catálogo</TableHead>
+              <TableHead className="w-[60px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
