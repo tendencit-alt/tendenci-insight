@@ -658,7 +658,7 @@ function NewProductDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={submit} disabled={saving}>{saving ? "Salvando..." : "Criar"}</Button>
+          <Button onClick={submit} disabled={saving}>{saving ? "Salvando..." : isEdit ? "Salvar" : "Criar"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
