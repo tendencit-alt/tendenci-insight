@@ -33,7 +33,29 @@ import {
   Search,
   Building2,
   User as UserIcon,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button as BtnUI } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { QuickCreateClientDialog } from "@/components/financeiro/QuickCreateClientDialog";
 import { useCostCenters } from "@/hooks/useCostCenters";
 
@@ -55,6 +77,8 @@ export default function Clientes() {
   const queryClient = useQueryClient();
   const { costCenters } = useCostCenters();
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<ClientRow | null>(null);
+  const [deletingClient, setDeletingClient] = useState<ClientRow | null>(null);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({
     tipo: "all",
@@ -278,26 +302,27 @@ export default function Clientes() {
               <TableHead>E-mail</TableHead>
               <TableHead>Telefone</TableHead>
               <TableHead>Cidade/UF</TableHead>
+              <TableHead className="w-[60px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell colSpan={6}>
+                  <TableCell colSpan={7}>
                     <Skeleton className="h-6 w-full" />
                   </TableCell>
                 </TableRow>
               ))
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
                   Nenhum cliente encontrado
                 </TableCell>
               </TableRow>
             ) : (
               filtered.map((c) => (
-                <TableRow key={c.id}>
+                <TableRow key={c.id} className="cursor-pointer" onClick={() => setEditingClient(c)}>
                   <TableCell className="font-medium">
                     {c.nome_fantasia || c.name}
                   </TableCell>
@@ -316,6 +341,26 @@ export default function Clientes() {
                   <TableCell>{c.phone || "—"}</TableCell>
                   <TableCell>
                     {[c.city, c.state].filter(Boolean).join("/") || "—"}
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <BtnUI variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </BtnUI>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setEditingClient(c)}>
+                          <Pencil className="h-4 w-4 mr-2" /> Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setDeletingClient(c)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
@@ -362,8 +407,122 @@ export default function Clientes() {
               queryClient.invalidateQueries({ queryKey: ["clients-list"] })
             }
           />
+
+          <EditClientDialog
+            client={editingClient}
+            onClose={() => setEditingClient(null)}
+            onSaved={() => queryClient.invalidateQueries({ queryKey: ["clients-list"] })}
+          />
+
+          <AlertDialog open={!!deletingClient} onOpenChange={(v) => !v && setDeletingClient(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  O cliente "{deletingClient?.nome_fantasia || deletingClient?.name}" será removido permanentemente.
+                  Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={async () => {
+                    if (!deletingClient) return;
+                    const { error } = await supabase.from("clients").delete().eq("id", deletingClient.id);
+                    if (error) {
+                      toast.error("Erro ao excluir: " + error.message);
+                      return;
+                    }
+                    toast.success("Cliente excluído");
+                    setDeletingClient(null);
+                    queryClient.invalidateQueries({ queryKey: ["clients-list"] });
+                  }}
+                >
+                  Excluir
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </DashboardLayout>
     </ProtectedRoute>
+  );
+}
+
+function EditClientDialog({
+  client,
+  onClose,
+  onSaved,
+}: {
+  client: ClientRow | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [form, setForm] = useState({ name: "", cpf_cnpj: "", email: "", phone: "" });
+  const [saving, setSaving] = useState(false);
+
+  useMemo(() => {
+    if (client) {
+      setForm({
+        name: client.name || "",
+        cpf_cnpj: client.cpf_cnpj || "",
+        email: client.email || "",
+        phone: client.phone || "",
+      });
+    }
+  }, [client?.id]);
+
+  const submit = async () => {
+    if (!client) return;
+    if (!form.name.trim()) return toast.error("Nome obrigatório");
+    setSaving(true);
+    const { error } = await supabase
+      .from("clients")
+      .update({
+        name: form.name.trim(),
+        cpf_cnpj: form.cpf_cnpj || null,
+        email: form.email || null,
+        phone: form.phone || null,
+      })
+      .eq("id", client.id);
+    setSaving(false);
+    if (error) return toast.error("Erro: " + error.message);
+    toast.success("Cliente atualizado");
+    onSaved();
+    onClose();
+  };
+
+  return (
+    <Dialog open={!!client} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Editar Cliente</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>Nome *</Label>
+            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label>CPF/CNPJ</Label>
+            <Input value={form.cpf_cnpj} onChange={(e) => setForm({ ...form, cpf_cnpj: e.target.value })} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Telefone</Label>
+              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <BtnUI variant="outline" onClick={onClose}>Cancelar</BtnUI>
+          <BtnUI onClick={submit} disabled={saving}>{saving ? "Salvando..." : "Salvar"}</BtnUI>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

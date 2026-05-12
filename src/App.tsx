@@ -19,6 +19,7 @@ import { DynamicRouteHandler } from "@/components/routing/DynamicRouteHandler";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ProjectSettings from "./pages/ProjectSettings";
 import UserManagement from "./pages/UserManagement";
+import ConfiguracoesCatalogo from "./pages/ConfiguracoesCatalogo";
 import Auth from "./pages/Auth";
 import Production from "./pages/Production";
 import Orders from "./pages/Orders";
@@ -138,6 +139,7 @@ const App = () => (
               {/* Configurações (PT canônico + redirects EN) */}
               <Route path="/configuracoes" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ProjectSettings /></PermissionGuard></ProtectedRoute>} />
               <Route path="/configuracoes/usuarios" element={<ProtectedRoute><PermissionGuard module="configuracoes"><UserManagement /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/configuracoes/catalogo" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ConfiguracoesCatalogo /></PermissionGuard></ProtectedRoute>} />
               <Route path="/settings" element={<Navigate to="/configuracoes" replace />} />
               <Route path="/settings/users" element={<Navigate to="/configuracoes/usuarios" replace />} />
 

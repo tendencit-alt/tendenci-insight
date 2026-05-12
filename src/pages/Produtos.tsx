@@ -43,7 +43,27 @@ import {
   Search,
   Eye,
   EyeOff,
+  MoreHorizontal,
+  Pencil,
+  Copy,
+  Trash2,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ProductRow {
   id: string;
@@ -72,6 +92,8 @@ const fmtBRL = (n: number | null | undefined) =>
 export default function Produtos() {
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<ProductRow | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState<ProductRow | null>(null);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({
     tipo: "all",
@@ -152,6 +174,30 @@ export default function Produtos() {
     toast.success(
       !p.ativo_no_catalogo ? "Publicado no catálogo" : "Removido do catálogo"
     );
+    queryClient.invalidateQueries({ queryKey: ["produtos-list"] });
+  };
+
+  const duplicateProduct = async (p: ProductRow) => {
+    const { id, created_at, ...rest } = p as any;
+    const payload = { ...rest, name: `${p.name} (cópia)`, code: p.code ? `${p.code}-COPY` : null };
+    const { error } = await supabase.from("products").insert(payload);
+    if (error) return toast.error("Erro ao duplicar: " + error.message);
+    toast.success("Produto duplicado");
+    queryClient.invalidateQueries({ queryKey: ["produtos-list"] });
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingProduct) return;
+    const { error } = await supabase
+      .from("products")
+      .update({ active: false, ativo_no_catalogo: false })
+      .eq("id", deletingProduct.id);
+    if (error) {
+      toast.error("Erro ao excluir: " + error.message);
+      return;
+    }
+    toast.success("Produto excluído");
+    setDeletingProduct(null);
     queryClient.invalidateQueries({ queryKey: ["produtos-list"] });
   };
 
@@ -299,24 +345,25 @@ export default function Produtos() {
               <TableHead className="text-right">Venda</TableHead>
               <TableHead className="text-right">Estoque</TableHead>
               <TableHead>Catálogo</TableHead>
+              <TableHead className="w-[60px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell colSpan={7}><Skeleton className="h-6 w-full" /></TableCell>
+                  <TableCell colSpan={8}><Skeleton className="h-6 w-full" /></TableCell>
                 </TableRow>
               ))
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
                   Nenhum produto encontrado
                 </TableCell>
               </TableRow>
             ) : (
               filtered.map((p) => (
-                <TableRow key={p.id}>
+                <TableRow key={p.id} className="cursor-pointer" onClick={() => setEditingProduct(p)}>
                   <TableCell className="font-mono text-xs">{p.code || "—"}</TableCell>
                   <TableCell className="font-medium">{p.name}</TableCell>
                   <TableCell>
@@ -325,7 +372,7 @@ export default function Produtos() {
                   <TableCell className="text-right">{fmtBRL(p.cost_price)}</TableCell>
                   <TableCell className="text-right">{fmtBRL(p.sale_price)}</TableCell>
                   <TableCell className="text-right">{p.current_stock ?? 0} {p.unit || ""}</TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => toggleCatalogo(p)}
                       className="inline-flex items-center gap-1.5 text-xs"
@@ -336,6 +383,29 @@ export default function Produtos() {
                         <Badge variant="outline" className="gap-1"><EyeOff className="h-3 w-3" />Oculto</Badge>
                       )}
                     </button>
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setEditingProduct(p)}>
+                          <Pencil className="h-4 w-4 mr-2" /> Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => duplicateProduct(p)}>
+                          <Copy className="h-4 w-4 mr-2" /> Duplicar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setDeletingProduct(p)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
@@ -378,6 +448,30 @@ export default function Produtos() {
             categories={categories || []}
             onCreated={() => queryClient.invalidateQueries({ queryKey: ["produtos-list"] })}
           />
+
+          <NewProductDialog
+            open={!!editingProduct}
+            onOpenChange={(v) => !v && setEditingProduct(null)}
+            categories={categories || []}
+            product={editingProduct}
+            onCreated={() => queryClient.invalidateQueries({ queryKey: ["produtos-list"] })}
+          />
+
+          <AlertDialog open={!!deletingProduct} onOpenChange={(v) => !v && setDeletingProduct(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir produto?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  O produto "{deletingProduct?.name}" será desativado e removido do catálogo.
+                  Você poderá restaurá-lo depois alterando o filtro Status para Inativo.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDelete}>Excluir</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </DashboardLayout>
     </ProtectedRoute>
@@ -389,13 +483,16 @@ function NewProductDialog({
   onOpenChange,
   categories,
   onCreated,
+  product,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   categories: { id: string; name: string }[];
   onCreated: () => void;
+  product?: ProductRow | null;
 }) {
-  const [form, setForm] = useState({
+  const isEdit = !!product;
+  const emptyForm = {
     code: "",
     name: "",
     descricao_curta: "",
@@ -407,8 +504,31 @@ function NewProductDialog({
     prazo_producao_dias: 0,
     peso: 0,
     ativo_no_catalogo: false,
-  });
+  };
+  const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+
+  // Sync form when product/open changes
+  useMemo(() => {
+    if (open && product) {
+      setForm({
+        code: product.code || "",
+        name: product.name || "",
+        descricao_curta: product.descricao_curta || "",
+        description: product.description || "",
+        category_id: product.category_id || "",
+        item_type: product.item_type || "produto_acabado",
+        cost_price: product.cost_price || 0,
+        sale_price: product.sale_price || 0,
+        prazo_producao_dias: product.prazo_producao_dias || 0,
+        peso: 0,
+        ativo_no_catalogo: !!product.ativo_no_catalogo,
+      });
+    } else if (open && !product) {
+      setForm(emptyForm);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, product?.id]);
 
   const submit = async () => {
     if (!form.name.trim()) return toast.error("Nome obrigatório");
@@ -425,22 +545,27 @@ function NewProductDialog({
       prazo_producao_dias: form.prazo_producao_dias,
       peso: form.peso || null,
       ativo_no_catalogo: form.ativo_no_catalogo,
-      active: true,
     };
-    const { error } = await supabase.from("products").insert(payload);
+    let error;
+    if (isEdit && product) {
+      ({ error } = await supabase.from("products").update(payload).eq("id", product.id));
+    } else {
+      payload.active = true;
+      ({ error } = await supabase.from("products").insert(payload));
+    }
     setSaving(false);
     if (error) return toast.error("Erro: " + error.message);
-    toast.success("Produto criado");
+    toast.success(isEdit ? "Produto atualizado" : "Produto criado");
     onCreated();
     onOpenChange(false);
-    setForm({ ...form, code: "", name: "", descricao_curta: "", description: "" });
+    if (!isEdit) setForm(emptyForm);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Novo Produto</DialogTitle>
+          <DialogTitle>{isEdit ? "Editar Produto" : "Novo Produto"}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
@@ -533,7 +658,7 @@ function NewProductDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={submit} disabled={saving}>{saving ? "Salvando..." : "Criar"}</Button>
+          <Button onClick={submit} disabled={saving}>{saving ? "Salvando..." : isEdit ? "Salvar" : "Criar"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

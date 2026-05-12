@@ -19010,6 +19010,48 @@ export type Database = {
         }
         Relationships: []
       }
+      tenant_catalogo_settings: {
+        Row: {
+          created_at: string
+          footer_company_name: string | null
+          footer_copyright: string | null
+          hero_subtitle: string | null
+          hero_title: string | null
+          instagram_url: string | null
+          logo_url: string | null
+          primary_color: string | null
+          tenant_id: string
+          updated_at: string
+          whatsapp_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          footer_company_name?: string | null
+          footer_copyright?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
+          instagram_url?: string | null
+          logo_url?: string | null
+          primary_color?: string | null
+          tenant_id: string
+          updated_at?: string
+          whatsapp_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          footer_company_name?: string | null
+          footer_copyright?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
+          instagram_url?: string | null
+          logo_url?: string | null
+          primary_color?: string | null
+          tenant_id?: string
+          updated_at?: string
+          whatsapp_url?: string | null
+        }
+        Relationships: []
+      }
       tenant_customization_snapshots: {
         Row: {
           created_at: string | null
