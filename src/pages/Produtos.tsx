@@ -92,6 +92,8 @@ const fmtBRL = (n: number | null | undefined) =>
 export default function Produtos() {
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<ProductRow | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState<ProductRow | null>(null);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({
     tipo: "all",
