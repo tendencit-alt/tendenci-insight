@@ -77,6 +77,8 @@ export default function Clientes() {
   const queryClient = useQueryClient();
   const { costCenters } = useCostCenters();
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<ClientRow | null>(null);
+  const [deletingClient, setDeletingClient] = useState<ClientRow | null>(null);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({
     tipo: "all",
