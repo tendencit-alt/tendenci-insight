@@ -363,7 +363,7 @@ export default function Produtos() {
               </TableRow>
             ) : (
               filtered.map((p) => (
-                <TableRow key={p.id}>
+                <TableRow key={p.id} className="cursor-pointer" onClick={() => setEditingProduct(p)}>
                   <TableCell className="font-mono text-xs">{p.code || "—"}</TableCell>
                   <TableCell className="font-medium">{p.name}</TableCell>
                   <TableCell>
@@ -372,7 +372,7 @@ export default function Produtos() {
                   <TableCell className="text-right">{fmtBRL(p.cost_price)}</TableCell>
                   <TableCell className="text-right">{fmtBRL(p.sale_price)}</TableCell>
                   <TableCell className="text-right">{p.current_stock ?? 0} {p.unit || ""}</TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => toggleCatalogo(p)}
                       className="inline-flex items-center gap-1.5 text-xs"
@@ -383,6 +383,29 @@ export default function Produtos() {
                         <Badge variant="outline" className="gap-1"><EyeOff className="h-3 w-3" />Oculto</Badge>
                       )}
                     </button>
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setEditingProduct(p)}>
+                          <Pencil className="h-4 w-4 mr-2" /> Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => duplicateProduct(p)}>
+                          <Copy className="h-4 w-4 mr-2" /> Duplicar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setDeletingProduct(p)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
