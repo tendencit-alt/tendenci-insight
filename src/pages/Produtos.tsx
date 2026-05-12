@@ -448,6 +448,30 @@ export default function Produtos() {
             categories={categories || []}
             onCreated={() => queryClient.invalidateQueries({ queryKey: ["produtos-list"] })}
           />
+
+          <NewProductDialog
+            open={!!editingProduct}
+            onOpenChange={(v) => !v && setEditingProduct(null)}
+            categories={categories || []}
+            product={editingProduct}
+            onCreated={() => queryClient.invalidateQueries({ queryKey: ["produtos-list"] })}
+          />
+
+          <AlertDialog open={!!deletingProduct} onOpenChange={(v) => !v && setDeletingProduct(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir produto?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  O produto "{deletingProduct?.name}" será desativado e removido do catálogo.
+                  Você poderá restaurá-lo depois alterando o filtro Status para Inativo.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDelete}>Excluir</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </DashboardLayout>
     </ProtectedRoute>
