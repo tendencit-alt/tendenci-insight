@@ -29,7 +29,9 @@ import {
   Settings,
   Home,
   Search,
+  Crown,
 } from "lucide-react";
+import { useVisibleModuleGroups, MODULE_ROUTE_MAP } from "@/hooks/useModulesConfig";
 import { commandBarStore } from "@/components/command/CommandBar";
 import { useTheme } from "next-themes";
 import { useLocation } from "react-router-dom";
