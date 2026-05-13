@@ -47,7 +47,9 @@ const fmtBRL = (n: number) =>
 
 export default function HomeHoje() {
   const navigate = useNavigate();
-  const { isLoading: modulesLoading } = useVisibleModuleGroups();
+  const { visible: leadsVisible } = useIsModuleVisible("leads");
+  const { visible: ordersVisible } = useIsModuleVisible("pedidos");
+  const { visible: orcamentosVisible } = useIsModuleVisible("orcamentos");
 
   const { data: kpis, isLoading } = useQuery({
     queryKey: ["home-hoje-kpis"],
