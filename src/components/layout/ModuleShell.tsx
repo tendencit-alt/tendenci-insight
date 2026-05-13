@@ -64,6 +64,11 @@ export interface ModuleShellProps {
   defaultSection?: ModuleSectionKey;
 }
 
+// Simplificação MVP: apenas Registros e Relatórios são exibidos.
+// As demais seções (Visão Geral, Ações, Configurações, Integrações) ficam ocultas
+// mas continuam aceitando conteúdo via URL `?section=`. Reverter trocando MVP_VISIBLE_SECTIONS.
+const MVP_VISIBLE_SECTIONS: ModuleSectionKey[] = ["records", "reports"];
+
 const SECTION_ORDER: {
   key: ModuleSectionKey;
   label: string;
@@ -72,6 +77,11 @@ const SECTION_ORDER: {
 }[] = [
   { key: "overview", label: "Visão Geral", icon: <LayoutDashboard className="h-4 w-4" />, hint: "Indicadores, resumo operacional e alertas." },
   { key: "records", label: "Registros", icon: <ListChecks className="h-4 w-4" />, hint: "Lista principal, filtros e busca." },
+  { key: "actions", label: "Ações", icon: <Zap className="h-4 w-4" />, hint: "Operações em massa, workflows e execuções." },
+  { key: "settings", label: "Configurações", icon: <SettingsIcon className="h-4 w-4" />, hint: "Regras, parâmetros e definições." },
+  { key: "integrations", label: "Integrações", icon: <Plug className="h-4 w-4" />, hint: "Entrada/saída de dados, APIs e sincronizações." },
+  { key: "reports", label: "Relatórios", icon: <BarChart3 className="h-4 w-4" />, hint: "Análises, comparações e indicadores." },
+];
   { key: "actions", label: "Ações", icon: <Zap className="h-4 w-4" />, hint: "Operações em massa, workflows e execuções." },
   { key: "settings", label: "Configurações", icon: <SettingsIcon className="h-4 w-4" />, hint: "Regras, parâmetros e definições." },
   { key: "integrations", label: "Integrações", icon: <Plug className="h-4 w-4" />, hint: "Entrada/saída de dados, APIs e sincronizações." },
