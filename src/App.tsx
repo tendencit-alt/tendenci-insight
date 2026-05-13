@@ -120,8 +120,12 @@ const App = () => (
               <Route path="/reset-password" element={<Navigate to="/redefinir-senha" replace />} />
 
               <Route path="/catalogo" element={<ProtectedRoute><PermissionGuard module="comercial"><Catalogo /></PermissionGuard></ProtectedRoute>} />
-              <Route path="/" element={<ProtectedRoute><Navigate to="/central-navegacao" replace /></ProtectedRoute>} />
-              <Route path="/central-navegacao" element={<ProtectedRoute><HomeLauncher /></ProtectedRoute>} />
+              {/* Simplificação MVP: "/" mostra a tela "Hoje". HomeLauncher antigo continua em /central-navegacao-completo. */}
+              <Route path="/" element={<ProtectedRoute><HomeHoje /></ProtectedRoute>} />
+              <Route path="/central-navegacao" element={<ProtectedRoute><HomeHoje /></ProtectedRoute>} />
+              <Route path="/central-navegacao-completo" element={<ProtectedRoute><HomeLauncher /></ProtectedRoute>} />
+              {/* Dashboard simplificado: 4 KPIs. Versão completa segue em /bi-dashboard-completo. */}
+              <Route path="/dashboard" element={<ProtectedRoute><DashboardSimple /></ProtectedRoute>} />
 
               {/* Super administrador (PT canônico + redirect EN) */}
               <Route path="/super-administrador" element={<ProtectedRoute><SuperAdmin /></ProtectedRoute>} />
