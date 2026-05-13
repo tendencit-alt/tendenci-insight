@@ -52,6 +52,8 @@ import Automacoes from "./pages/Automacoes";
 import Relatorios from "./pages/Relatorios";
 import DataFlowMap from "./pages/DataFlowMap";
 import HomeLauncher from "./pages/HomeLauncher";
+import HomeHoje from "./pages/HomeHoje";
+import DashboardSimple from "./pages/DashboardSimple";
 import DashboardBI from "./pages/DashboardBI";
 import RecursosHumanos from "./pages/RecursosHumanos";
 import ProducaoOperacoes from "./pages/ProducaoOperacoes";
