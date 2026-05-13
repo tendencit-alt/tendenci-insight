@@ -392,19 +392,23 @@ export function AppNavbar() {
     return Icon || LucideIcons.HelpCircle;
   };
 
-  const visibleModules = useMemo(() => {
-    if (loading) return ERP_MODULES.filter((m) => !m.ownerOnly);
+  // Dynamic modules from modules_config (DB feature flags)
+  const { groups: dynamicGroups } = useVisibleModuleGroups();
 
-    return ERP_MODULES.filter((mod) => {
-      if (mod.key === "owner") return false;
-      if (mod.ownerOnly && !canSeeOwnerMenu) return false;
-      if (mod.masterOnly && !isMaster) return false;
-      if (mod.requiredModules) {
-        return mod.requiredModules.some((m) => hasModuleAccess(m as any));
-      }
-      return true;
-    });
-  }, [loading, isMaster, canSeeOwnerMenu, hasModuleAccess]);
+  const visibleModules = useMemo(() => {
+    // Build ModuleGroup-shaped array from DB config so existing renderers work.
+    return dynamicGroups.map((g) => ({
+      key: g.category,
+      label: g.label.toUpperCase(),
+      icon: LayoutGrid as any,
+      items: g.items.map((m) => ({
+        label: m.label,
+        route: MODULE_ROUTE_MAP[m.module_key] ?? "/",
+        icon: (m.icon as any) ?? "Circle",
+        available: true,
+      })),
+    })) as ModuleGroup[];
+  }, [dynamicGroups]);
 
   const renderMainGroupAccordion = (mod: ModuleGroup) => {
     const visibleItems = mod.items.filter((i) => {
