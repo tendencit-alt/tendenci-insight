@@ -767,8 +767,8 @@ export function AppNavbar() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-80 max-h-[80vh] overflow-y-auto bg-card border border-border shadow-lg">
                 <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                  <Building2 className="h-3.5 w-3.5" />
-                  Painel Owner
+                  <Crown className="h-3.5 w-3.5 text-amber-500" />
+                  Painel Master
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <div className="py-1">
