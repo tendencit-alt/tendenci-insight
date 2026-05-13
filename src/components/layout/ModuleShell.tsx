@@ -82,11 +82,6 @@ const SECTION_ORDER: {
   { key: "integrations", label: "Integrações", icon: <Plug className="h-4 w-4" />, hint: "Entrada/saída de dados, APIs e sincronizações." },
   { key: "reports", label: "Relatórios", icon: <BarChart3 className="h-4 w-4" />, hint: "Análises, comparações e indicadores." },
 ];
-  { key: "actions", label: "Ações", icon: <Zap className="h-4 w-4" />, hint: "Operações em massa, workflows e execuções." },
-  { key: "settings", label: "Configurações", icon: <SettingsIcon className="h-4 w-4" />, hint: "Regras, parâmetros e definições." },
-  { key: "integrations", label: "Integrações", icon: <Plug className="h-4 w-4" />, hint: "Entrada/saída de dados, APIs e sincronizações." },
-  { key: "reports", label: "Relatórios", icon: <BarChart3 className="h-4 w-4" />, hint: "Análises, comparações e indicadores." },
-];
 
 function ComingSoon({ label, hint }: { label: string; hint: string }) {
   return (
