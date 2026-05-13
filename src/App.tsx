@@ -20,6 +20,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import ProjectSettings from "./pages/ProjectSettings";
 import UserManagement from "./pages/UserManagement";
 import ConfiguracoesCatalogo from "./pages/ConfiguracoesCatalogo";
+import ConfiguracoesModulos from "./pages/ConfiguracoesModulos";
 import Auth from "./pages/Auth";
 import Production from "./pages/Production";
 import Orders from "./pages/Orders";
@@ -140,6 +141,7 @@ const App = () => (
               <Route path="/configuracoes" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ProjectSettings /></PermissionGuard></ProtectedRoute>} />
               <Route path="/configuracoes/usuarios" element={<ProtectedRoute><PermissionGuard module="configuracoes"><UserManagement /></PermissionGuard></ProtectedRoute>} />
               <Route path="/configuracoes/catalogo" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ConfiguracoesCatalogo /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/configuracoes/modulos" element={<ProtectedRoute><ConfiguracoesModulos /></ProtectedRoute>} />
               <Route path="/settings" element={<Navigate to="/configuracoes" replace />} />
               <Route path="/settings/users" element={<Navigate to="/configuracoes/usuarios" replace />} />
 
