@@ -760,8 +760,8 @@ export function AppNavbar() {
                     (location.pathname.startsWith("/owner") || openModuleKey === "__owner__") && "bg-primary/10 text-primary font-semibold"
                   )}
                 >
-                  <Building2 className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="whitespace-nowrap">Owner</span>
+                  <Crown className="h-3.5 w-3.5 flex-shrink-0 text-amber-500" />
+                  <span className="whitespace-nowrap">Painel Master</span>
                   <ChevronDown className={cn("h-3 w-3 opacity-60 transition-transform duration-200", openModuleKey === "__owner__" && "rotate-180")} />
                 </Button>
               </DropdownMenuTrigger>
