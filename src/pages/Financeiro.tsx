@@ -15,6 +15,14 @@ import { CapitalFinancingTab } from "@/components/financeiro/CapitalFinancingTab
 import { RecurringContractsTab } from "@/components/financeiro/RecurringContractsTab";
 import { GovernanceTab } from "@/components/financeiro/GovernanceTab";
 import { useSearchParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Plus } from "lucide-react";
 
 import {
   ArrowDownCircle,
