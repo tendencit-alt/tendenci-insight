@@ -129,12 +129,6 @@ export function ModuleShell({
 
   const visibleSections = SECTION_ORDER.filter((s) => MVP_VISIBLE_SECTIONS.includes(s.key));
 
-  const urlSection = searchParams.get("section") as ModuleSectionKey | null;
-  const storageKey = `erp_module_section_${moduleKey}`;
-  const stored = (typeof window !== "undefined"
-    ? (localStorage.getItem(storageKey) as ModuleSectionKey | null)
-    : null);
-
   const isVisible = (k: ModuleSectionKey | null | undefined) =>
     !!k && visibleSections.some((s) => s.key === k);
 
