@@ -127,12 +127,24 @@ export function ModuleShell({
     ? (localStorage.getItem(storageKey) as ModuleSectionKey | null)
     : null);
 
-  const initial =
-    urlSection && SECTION_ORDER.some((s) => s.key === urlSection)
-      ? urlSection
-      : stored && SECTION_ORDER.some((s) => s.key === stored)
-        ? stored
-        : defaultSection;
+  const visibleSections = SECTION_ORDER.filter((s) => MVP_VISIBLE_SECTIONS.includes(s.key));
+
+  const urlSection = searchParams.get("section") as ModuleSectionKey | null;
+  const storageKey = `erp_module_section_${moduleKey}`;
+  const stored = (typeof window !== "undefined"
+    ? (localStorage.getItem(storageKey) as ModuleSectionKey | null)
+    : null);
+
+  const isVisible = (k: ModuleSectionKey | null | undefined) =>
+    !!k && visibleSections.some((s) => s.key === k);
+
+  const initial: ModuleSectionKey = isVisible(urlSection)
+    ? (urlSection as ModuleSectionKey)
+    : isVisible(stored)
+      ? (stored as ModuleSectionKey)
+      : isVisible(defaultSection)
+        ? defaultSection
+        : visibleSections[0].key;
 
   const handleChange = (value: string) => {
     const next = value as ModuleSectionKey;
@@ -163,17 +175,21 @@ export function ModuleShell({
       </div>
 
       <Tabs value={initial} onValueChange={handleChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto">
-          {SECTION_ORDER.map((s) => {
-            const empty = !slots[s.key];
+        <TabsList
+          className={cn(
+            "grid w-full h-auto",
+            visibleSections.length === 1 && "grid-cols-1",
+            visibleSections.length === 2 && "grid-cols-2",
+            visibleSections.length >= 3 && "grid-cols-3 md:grid-cols-6",
+          )}
+        >
+          {visibleSections.map((s) => {
+            const empty = !slots[s.key] && !(s.key === "records" && overview);
             return (
               <TabsTrigger
                 key={s.key}
                 value={s.key}
-                className={cn(
-                  "flex items-center gap-2 py-2",
-                  empty && "opacity-60"
-                )}
+                className={cn("flex items-center gap-2 py-2", empty && "opacity-60")}
                 title={empty ? `${s.label} — Em breve` : s.label}
               >
                 {s.icon}
@@ -183,12 +199,18 @@ export function ModuleShell({
           })}
         </TabsList>
 
-        {SECTION_ORDER.map((s) => (
+        {visibleSections.map((s) => (
           <TabsContent key={s.key} value={s.key} className="mt-4">
-            {/* Lazy: só renderiza se for a aba ativa */}
             {initial === s.key ? (
               <Suspense fallback={<Skeleton className="h-64 w-full" />}>
-                {slots[s.key] ?? <ComingSoon label={s.label} hint={s.hint} />}
+                {s.key === "records" ? (
+                  <div className="space-y-4">
+                    {overview /* KPIs movidos para o topo de Registros */}
+                    {slots.records ?? <ComingSoon label={s.label} hint={s.hint} />}
+                  </div>
+                ) : (
+                  slots[s.key] ?? <ComingSoon label={s.label} hint={s.hint} />
+                )}
               </Suspense>
             ) : null}
           </TabsContent>
