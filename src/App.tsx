@@ -20,6 +20,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import ProjectSettings from "./pages/ProjectSettings";
 import UserManagement from "./pages/UserManagement";
 import ConfiguracoesCatalogo from "./pages/ConfiguracoesCatalogo";
+import ConfiguracoesModulos from "./pages/ConfiguracoesModulos";
 import Auth from "./pages/Auth";
 import Production from "./pages/Production";
 import Orders from "./pages/Orders";
