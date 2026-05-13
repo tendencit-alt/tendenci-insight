@@ -2,8 +2,9 @@ import { AppNavbar } from "./AppNavbar";
 import { useGlobalRealtime } from "@/hooks/useGlobalRealtime";
 import { SmartBreadcrumb } from "@/components/navigation-intelligence/SmartBreadcrumb";
 import { RecentNavigationBar } from "@/components/navigation-intelligence/RecentNavigationBar";
-import { ContextualShortcutsBar } from "@/components/navigation-intelligence/ContextualShortcutsBar";
-import { NextActionSuggestion } from "@/components/navigation-intelligence/NextActionSuggestion";
+// Simplificação MVP: barras "AÇÕES:" e "PRÓXIMO:" ocultas (componentes preservados).
+// import { ContextualShortcutsBar } from "@/components/navigation-intelligence/ContextualShortcutsBar";
+// import { NextActionSuggestion } from "@/components/navigation-intelligence/NextActionSuggestion";
 import { PermissionSimulatorTrigger } from "@/components/smart-permissions/PermissionSimulator";
 import { useProductAnalytics } from "@/hooks/useProductAnalytics";
 
