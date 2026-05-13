@@ -142,6 +142,7 @@ const App = () => (
               <Route path="/tarefas" element={<ProtectedRoute><Tarefas /></ProtectedRoute>} />
               <Route path="/automacoes" element={<ProtectedRoute><Automacoes /></ProtectedRoute>} />
               <Route path="/bi-dashboard" element={<ProtectedRoute><DashboardBI /></ProtectedRoute>} />
+              <Route path="/bi-dashboard-completo" element={<ProtectedRoute><DashboardBI /></ProtectedRoute>} />
 
               {/* Configurações (PT canônico + redirects EN) */}
               <Route path="/configuracoes" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ProjectSettings /></PermissionGuard></ProtectedRoute>} />
