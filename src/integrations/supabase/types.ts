@@ -10987,6 +10987,42 @@ export type Database = {
           },
         ]
       }
+      modules_config: {
+        Row: {
+          category: string
+          created_at: string
+          icon: string | null
+          label: string
+          module_key: string
+          sort_order: number
+          updated_at: string
+          visible_in_menu: boolean
+          visible_in_routes: boolean
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          icon?: string | null
+          label: string
+          module_key: string
+          sort_order?: number
+          updated_at?: string
+          visible_in_menu?: boolean
+          visible_in_routes?: boolean
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          icon?: string | null
+          label?: string
+          module_key?: string
+          sort_order?: number
+          updated_at?: string
+          visible_in_menu?: boolean
+          visible_in_routes?: boolean
+        }
+        Relationships: []
+      }
       msg_costs: {
         Row: {
           conversation_id: string | null
@@ -22302,6 +22338,7 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_admin_safe: { Args: never; Returns: boolean }
+      is_master_owner: { Args: { _uid: string }; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
       is_tenant_admin_or_above: { Args: never; Returns: boolean }
       is_tenant_owner: { Args: never; Returns: boolean }

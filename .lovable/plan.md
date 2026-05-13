@@ -1,63 +1,67 @@
-# Plano: Correção de 5 bugs E2E (Pedidos, Catálogo, Produtos, Clientes, DOM)
+# Simplificação da Navegação e UI
 
-## Ordem de execução (priorizada)
+Objetivo: reduzir o sistema à UX de uma "marcenaria pequena começando", controlando visibilidade via feature flag por módulo. Nada é deletado — tudo é reversível.
 
-### BUG #17 — Select dentro de Modal não renderiza (CRÍTICO)
-- Auditar `src/components/orders/CreateOrderDialog.tsx` e wizards relacionados
-- Garantir que TODO `<SelectContent>` use `position="popper"` + classe `z-[100]` (acima do Dialog `z-50`)
-- Mesmo fix em Selects de: item picker, categoria, status, vendedor, centro de custo
-- Aplicar também em Clientes/Produtos/Leads modals
-- Atalho: ajustar globalmente `src/components/ui/select.tsx` adicionando `z-[100]` ao SelectContent (resolve em todo o sistema)
+## 1. Banco — tabela `modules_config`
 
-### BUG #13 — Google Translate quebra DOM
-- Adicionar `<meta name="google" content="notranslate">` em `index.html`
-- Adicionar `<meta name="robots" content="notranslate">` por segurança
-- Adicionar `translate="no"` no `<html>` raiz
+Migration cria:
 
-### BUG #16 — Modais não fecham após salvar
-- Auditar `CreateClientDialog`, `CreateProductDialog`, `CreateLeadDialog`
-- Garantir `onOpenChange(false)` no `onSuccess` da mutation, após `invalidateQueries`
+- `modules_config(module_key text PK, label text, icon text, category text, visible_in_menu bool default false, visible_in_routes bool default true, sort_order int, created_at, updated_at)`
+- RLS: `SELECT` para `authenticated`; `INSERT/UPDATE/DELETE` apenas se `is_master_owner(auth.uid())` (função SECURITY DEFINER que lê `profiles.is_owner`).
+- Seed com 51 módulos. Apenas estes 8 com `visible_in_menu=true`:
+  `clientes, catalogo-produtos, pedidos, estoque, financeiro, dashboard, configuracoes-usuarios, configuracoes-marca`.
+- Categorias: `comercial`, `operacional`, `financeiro`, `relatorios`, `configuracoes`, `futuro`, `master`.
 
-### BUG #15 — Falta editar/excluir em /produtos e /clientes
-- Adicionar coluna "Ações" com DropdownMenu (Editar | Duplicar | Excluir)
-- Reutilizar Create dialog em modo edição (passar `initialData`)
-- AlertDialog de confirmação para exclusão (soft-delete `active=false` ou `ativo=false`)
+## 2. Hook `useModulesConfig`
 
-### BUG #14 — White-label do /catalogo
-- Migration: tabela `tenant_catalogo_settings` (tenant_id PK, logo_url, hero_title, hero_subtitle, footer_company_name, footer_copyright, whatsapp_url, instagram_url, primary_color)
-- RLS: tenant_rls_check; SELECT público para uso no storefront
-- Bucket Storage `tenant-assets` (público) com policies
-- Refatorar `src/pages/Catalogo.tsx` para ler settings via `useQuery` (com fallback ao nome do tenant)
-- Nova página `/configuracoes/catalogo` com formulário de edição + upload de logo
-- Adicionar entrada na navegação de configurações
+`src/hooks/useModulesConfig.ts` — React Query, retorna lista filtrada `visible_in_menu=true` agrupada por `category`. Cache 5min, invalidado quando `/configuracoes/modulos` salva.
+
+## 3. Menu "Módulos" enxuto
+
+Refatorar dropdown em `src/components/layout/AppNavbar.tsx` para consumir o hook. Resultado:
+
+```text
+COMERCIAL    → Clientes • Catálogo • Pedidos
+OPERAÇÃO     → Estoque
+FINANCEIRO   → Financeiro
+RELATÓRIOS   → Dashboard
+CONFIGURAÇÕES→ Usuários & Permissões • Marca & Catálogo
+```
+
+Categorias vazias somem automaticamente. Categoria `master` nunca entra aqui.
+
+## 4. Painel Master separado
+
+Novo componente `MasterPanelMenu` (ícone Crown no canto direito do header), só renderiza se `profile.is_owner === true`. Dropdown lateral com 4 grupos fixos (TENANTS, BILLING, PLATAFORMA, SAÚDE) listando rotas `/owner/*` já existentes. Remover essas rotas do menu Módulos / Configurações principal.
+
+## 5. Simplificações por página
+
+- **ModuleHeader compartilhado**: reduzir tabs de 6 → 2 (`Registros`, `Relatórios`). KPIs (antes em "Visão Geral") movem para topo de Registros.
+- **Páginas Pedidos / Clientes / Produtos / Estoque / Financeiro**: remover barras "AÇÕES:" e "PRÓXIMO:". Único botão `+ Novo X` no canto direito do header.
+- **Command Center (`/`)**: substituir 6 view-tabs por uma tela única "Hoje":
+  - 4 KPIs: Receita do Mês • Pedidos Abertos • Saldo Caixa • Contas Vencidas
+  - Seção "Caixa de Entrada" (Leads/Pedidos/Propostas — itens condicionados a `visible_in_menu` do módulo)
+  - Seção "Hoje você precisa" (tarefas do dia)
+  - Remover dropdown view-mode, search global visível, "Configuração do Sistema" (3 cards), "Status Executivo".
+- **Dashboard (`/dashboard` = `/bi-dashboard`)**: 4 KPIs (Receita do Mês • Margem Bruta • Saldo Caixa • Inadimplência). Remover sub-tabs DRE/Fluxo/Planejamento/Orçamento/Forecast/Integração nesta versão.
+
+## 6. Página `/configuracoes/modulos`
+
+Nova rota visível só pra master_owner. Lista checkboxes por módulo agrupados por categoria, toggle em `visible_in_menu` (mutation direta). Invalida cache do menu ao salvar.
+
+## 7. Reversibilidade
+
+- Nenhum arquivo deletado. Nenhuma rota removida do `App.tsx`.
+- Componentes antigos (tabs extras, barras de ação, view-tabs) ficam comentados/condicionados a flag, não removidos.
+- URLs diretas continuam funcionando (`visible_in_routes=true`).
 
 ## Detalhes técnicos
 
-**Z-index Dialog Radix**: `DialogOverlay` é `z-50`, `DialogContent` é `z-50`. Subindo `SelectContent` para `z-[100]` resolve sem mexer em portal.
+- Função SQL: `is_master_owner(uid uuid) returns boolean` SECURITY DEFINER lendo `profiles.is_owner`.
+- `useModulesConfig.isVisible(key)` exposto para condicionar seções (Leads na Caixa de Entrada, etc.).
+- `AppNavbar.tsx`: substituir array hardcoded `MODULES` pelo retorno do hook; manter fallback estático enquanto carrega.
+- Rota `/dashboard` aliasada para componente atual de `/bi-dashboard`; a versão simplificada vive em flag dentro do mesmo componente (`MODULES_SIMPLIFIED=true`).
 
-**Tabela `tenant_catalogo_settings`**:
-```sql
-CREATE TABLE public.tenant_catalogo_settings (
-  tenant_id uuid PRIMARY KEY REFERENCES public.tenants(id) ON DELETE CASCADE,
-  logo_url text,
-  hero_title text,
-  hero_subtitle text,
-  footer_company_name text,
-  footer_copyright text,
-  whatsapp_url text,
-  instagram_url text,
-  primary_color text DEFAULT '#C41E3A',
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
-```
-RLS: SELECT permitido a `anon`+`authenticated` (storefront público); INSERT/UPDATE/DELETE só admin/owner do tenant.
+## Validação
 
-**Bucket `tenant-assets`**: público, upload restrito a usuários autenticados do tenant (path prefix = tenant_id).
-
-**Validação E2E final**: rodar manualmente após deploy seguindo os 4 passos do usuário.
-
-## Riscos
-- Mudar `select.tsx` global pode afetar muitos componentes — apenas elevar z-index é seguro.
-- Catálogo público precisa SELECT anon — confirmar que isso é desejado (é, é storefront público).
-- Soft-delete em produtos/clientes: confirmar nome da coluna (`active` em products, `ativo` em outros).
+Após implementar: checar dropdown enxuto, painel master só pra owner, header de Pedidos com 2 tabs, `/` mostrando "Hoje", `/dashboard` com 4 KPIs, `/leads` ainda acessível por URL, `/configuracoes/modulos` togglando visibilidade em runtime.
