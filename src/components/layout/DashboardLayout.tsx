@@ -23,8 +23,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <main className="flex-1 p-4 lg:p-6 bg-background min-h-screen max-w-[1800px] mx-auto w-full">
         <RecentNavigationBar />
         <SmartBreadcrumb />
-        <ContextualShortcutsBar />
-        <NextActionSuggestion />
+        {/* <ContextualShortcutsBar /> */}
+        {/* <NextActionSuggestion /> */}
         <div className="flex justify-end mb-2"><PermissionSimulatorTrigger /></div>
         {children}
       </main>
