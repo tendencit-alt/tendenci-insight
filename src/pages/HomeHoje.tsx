@@ -189,19 +189,21 @@ export default function HomeHoje() {
             </div>
             {loadingInbox ? (
               <Skeleton className="h-32 w-full" />
-            ) : inboxOrders && inboxOrders.length > 0 ? (
+            ) : inbox && inbox.length > 0 ? (
               <ul className="divide-y divide-border">
-                {inboxOrders.map((o: any) => (
+                {inbox.map((it) => (
                   <li
-                    key={o.id}
-                    onClick={() => navigate(`/pedidos?orderId=${o.id}`)}
+                    key={it.id}
+                    onClick={() => navigate(it.route)}
                     className="py-2 flex items-center justify-between cursor-pointer hover:bg-muted/40 px-2 rounded"
                   >
-                    <div>
-                      <div className="text-sm font-medium">Pedido #{o.order_number}</div>
-                      <div className="text-xs text-muted-foreground">{o.client?.name || "—"}</div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate">{it.title}</div>
+                      <div className="text-xs text-muted-foreground truncate">{it.subtitle}</div>
                     </div>
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{o.status}</span>
+                    {it.meta && (
+                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground shrink-0 ml-2">{it.meta}</span>
+                    )}
                   </li>
                 ))}
               </ul>
