@@ -87,15 +87,66 @@ export default function HomeHoje() {
     },
   });
 
-  const { data: inboxOrders, isLoading: loadingInbox } = useQuery({
-    queryKey: ["home-hoje-inbox-orders"],
+  const { data: inbox, isLoading: loadingInbox } = useQuery({
+    queryKey: ["home-hoje-inbox", { leadsVisible, ordersVisible, orcamentosVisible }],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("orders")
-        .select("id, order_number, status, created_at, client:clients(name)")
-        .order("created_at", { ascending: false })
-        .limit(5);
-      return data || [];
+      const items: Array<{ id: string; type: "lead" | "order" | "proposta"; title: string; subtitle: string; route: string; meta?: string }> = [];
+
+      if (ordersVisible) {
+        const { data } = await supabase
+          .from("orders")
+          .select("id, order_number, status, client:clients(name)")
+          .order("created_at", { ascending: false })
+          .limit(4);
+        for (const o of data || []) {
+          items.push({
+            id: `order-${o.id}`,
+            type: "order",
+            title: `Pedido #${(o as any).order_number}`,
+            subtitle: (o as any).client?.name || "—",
+            route: `/pedidos?orderId=${o.id}`,
+            meta: (o as any).status,
+          });
+        }
+      }
+
+      if (leadsVisible) {
+        const { data } = await (supabase as any)
+          .from("crm_deals")
+          .select("id, title, stage")
+          .order("created_at", { ascending: false })
+          .limit(3);
+        for (const l of data || []) {
+          items.push({
+            id: `lead-${l.id}`,
+            type: "lead",
+            title: l.title || "Lead sem título",
+            subtitle: "Lead novo",
+            route: `/leads`,
+            meta: l.stage,
+          });
+        }
+      }
+
+      if (orcamentosVisible) {
+        const { data } = await (supabase as any)
+          .from("propostas")
+          .select("id, numero, status")
+          .order("created_at", { ascending: false })
+          .limit(3);
+        for (const p of data || []) {
+          items.push({
+            id: `proposta-${p.id}`,
+            type: "proposta",
+            title: `Proposta #${p.numero ?? p.id.slice(0, 6)}`,
+            subtitle: "Orçamento",
+            route: `/propostas`,
+            meta: p.status,
+          });
+        }
+      }
+
+      return items;
     },
   });
 
