@@ -8,7 +8,7 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DollarSign, ShoppingCart, Wallet, AlertTriangle, Inbox } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useVisibleModuleGroups } from "@/hooks/useModulesConfig";
+import { useIsModuleVisible } from "@/hooks/useModulesConfig";
 
 function Kpi({
   icon: Icon,
