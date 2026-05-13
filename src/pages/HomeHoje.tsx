@@ -162,7 +162,7 @@ export default function HomeHoje() {
           <MyTasksBlock />
         </div>
 
-        {modulesLoading ? null : null}
+        
       </div>
     </DashboardLayout>
   );
