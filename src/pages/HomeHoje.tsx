@@ -157,10 +157,7 @@ export default function HomeHoje() {
             )}
           </Card>
 
-          <Card className="p-4">
-            <h2 className="font-semibold mb-3">Hoje você precisa</h2>
-            <MyTasksBlock />
-          </Card>
+          <MyTasksBlock />
         </div>
 
         {modulesLoading ? null : null}
