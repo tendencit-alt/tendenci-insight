@@ -115,6 +115,13 @@ export function useVisibleModuleGroups() {
   return { groups, isLoading };
 }
 
+/** Hook helper: checks if a given module_key is visible_in_menu. */
+export function useIsModuleVisible(module_key: string) {
+  const { data = [], isLoading } = useModulesConfig();
+  const m = data.find((x) => x.module_key === module_key);
+  return { visible: !!m?.visible_in_menu, isLoading };
+}
+
 export function useToggleModuleVisibility() {
   const qc = useQueryClient();
   return useMutation({

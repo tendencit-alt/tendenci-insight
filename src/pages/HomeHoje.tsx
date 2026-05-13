@@ -8,7 +8,7 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DollarSign, ShoppingCart, Wallet, AlertTriangle, Inbox } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useVisibleModuleGroups } from "@/hooks/useModulesConfig";
+import { useIsModuleVisible } from "@/hooks/useModulesConfig";
 
 function Kpi({
   icon: Icon,
@@ -47,7 +47,9 @@ const fmtBRL = (n: number) =>
 
 export default function HomeHoje() {
   const navigate = useNavigate();
-  const { isLoading: modulesLoading } = useVisibleModuleGroups();
+  const { visible: leadsVisible } = useIsModuleVisible("leads");
+  const { visible: ordersVisible } = useIsModuleVisible("pedidos");
+  const { visible: orcamentosVisible } = useIsModuleVisible("orcamentos");
 
   const { data: kpis, isLoading } = useQuery({
     queryKey: ["home-hoje-kpis"],
@@ -85,15 +87,66 @@ export default function HomeHoje() {
     },
   });
 
-  const { data: inboxOrders, isLoading: loadingInbox } = useQuery({
-    queryKey: ["home-hoje-inbox-orders"],
+  const { data: inbox, isLoading: loadingInbox } = useQuery({
+    queryKey: ["home-hoje-inbox", { leadsVisible, ordersVisible, orcamentosVisible }],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("orders")
-        .select("id, order_number, status, created_at, client:clients(name)")
-        .order("created_at", { ascending: false })
-        .limit(5);
-      return data || [];
+      const items: Array<{ id: string; type: "lead" | "order" | "proposta"; title: string; subtitle: string; route: string; meta?: string }> = [];
+
+      if (ordersVisible) {
+        const { data } = await supabase
+          .from("orders")
+          .select("id, order_number, status, client:clients(name)")
+          .order("created_at", { ascending: false })
+          .limit(4);
+        for (const o of data || []) {
+          items.push({
+            id: `order-${o.id}`,
+            type: "order",
+            title: `Pedido #${(o as any).order_number}`,
+            subtitle: (o as any).client?.name || "—",
+            route: `/pedidos?orderId=${o.id}`,
+            meta: (o as any).status,
+          });
+        }
+      }
+
+      if (leadsVisible) {
+        const { data } = await (supabase as any)
+          .from("crm_deals")
+          .select("id, title, stage")
+          .order("created_at", { ascending: false })
+          .limit(3);
+        for (const l of data || []) {
+          items.push({
+            id: `lead-${l.id}`,
+            type: "lead",
+            title: l.title || "Lead sem título",
+            subtitle: "Lead novo",
+            route: `/leads`,
+            meta: l.stage,
+          });
+        }
+      }
+
+      if (orcamentosVisible) {
+        const { data } = await (supabase as any)
+          .from("propostas")
+          .select("id, numero, status")
+          .order("created_at", { ascending: false })
+          .limit(3);
+        for (const p of data || []) {
+          items.push({
+            id: `proposta-${p.id}`,
+            type: "proposta",
+            title: `Proposta #${p.numero ?? p.id.slice(0, 6)}`,
+            subtitle: "Orçamento",
+            route: `/propostas`,
+            meta: p.status,
+          });
+        }
+      }
+
+      return items;
     },
   });
 
@@ -136,19 +189,21 @@ export default function HomeHoje() {
             </div>
             {loadingInbox ? (
               <Skeleton className="h-32 w-full" />
-            ) : inboxOrders && inboxOrders.length > 0 ? (
+            ) : inbox && inbox.length > 0 ? (
               <ul className="divide-y divide-border">
-                {inboxOrders.map((o: any) => (
+                {inbox.map((it) => (
                   <li
-                    key={o.id}
-                    onClick={() => navigate(`/pedidos?orderId=${o.id}`)}
+                    key={it.id}
+                    onClick={() => navigate(it.route)}
                     className="py-2 flex items-center justify-between cursor-pointer hover:bg-muted/40 px-2 rounded"
                   >
-                    <div>
-                      <div className="text-sm font-medium">Pedido #{o.order_number}</div>
-                      <div className="text-xs text-muted-foreground">{o.client?.name || "—"}</div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate">{it.title}</div>
+                      <div className="text-xs text-muted-foreground truncate">{it.subtitle}</div>
                     </div>
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{o.status}</span>
+                    {it.meta && (
+                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground shrink-0 ml-2">{it.meta}</span>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -160,7 +215,7 @@ export default function HomeHoje() {
           <MyTasksBlock />
         </div>
 
-        {modulesLoading ? null : null}
+        
       </div>
     </DashboardLayout>
   );
