@@ -61,6 +61,30 @@ export default function Financeiro() {
         title="Financeiro"
         description="Gestão financeira completa: obrigações, tesouraria, resultado e capital"
         icon={<Wallet className="h-5 w-5" />}
+        headerActions={
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Lançamento
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem onClick={() => setActiveTab("receivables")}>
+                <ArrowUpCircle className="h-4 w-4 mr-2" />
+                Conta a Receber
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setActiveTab("payables")}>
+                <ArrowDownCircle className="h-4 w-4 mr-2" />
+                Conta a Pagar
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setActiveTab("treasury")}>
+                <Landmark className="h-4 w-4 mr-2" />
+                Movimento de Tesouraria
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        }
         records={
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <div className="w-full rounded-xl bg-card border border-border p-1.5 overflow-x-auto">
