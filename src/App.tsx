@@ -52,6 +52,8 @@ import Automacoes from "./pages/Automacoes";
 import Relatorios from "./pages/Relatorios";
 import DataFlowMap from "./pages/DataFlowMap";
 import HomeLauncher from "./pages/HomeLauncher";
+import HomeHoje from "./pages/HomeHoje";
+import DashboardSimple from "./pages/DashboardSimple";
 import DashboardBI from "./pages/DashboardBI";
 import RecursosHumanos from "./pages/RecursosHumanos";
 import ProducaoOperacoes from "./pages/ProducaoOperacoes";
@@ -120,8 +122,12 @@ const App = () => (
               <Route path="/reset-password" element={<Navigate to="/redefinir-senha" replace />} />
 
               <Route path="/catalogo" element={<ProtectedRoute><PermissionGuard module="comercial"><Catalogo /></PermissionGuard></ProtectedRoute>} />
-              <Route path="/" element={<ProtectedRoute><Navigate to="/central-navegacao" replace /></ProtectedRoute>} />
-              <Route path="/central-navegacao" element={<ProtectedRoute><HomeLauncher /></ProtectedRoute>} />
+              {/* Simplificação MVP: "/" mostra a tela "Hoje". HomeLauncher antigo continua em /central-navegacao-completo. */}
+              <Route path="/" element={<ProtectedRoute><HomeHoje /></ProtectedRoute>} />
+              <Route path="/central-navegacao" element={<ProtectedRoute><HomeHoje /></ProtectedRoute>} />
+              <Route path="/central-navegacao-completo" element={<ProtectedRoute><HomeLauncher /></ProtectedRoute>} />
+              {/* Dashboard simplificado: 4 KPIs. Versão completa segue em /bi-dashboard-completo. */}
+              <Route path="/dashboard" element={<ProtectedRoute><DashboardSimple /></ProtectedRoute>} />
 
               {/* Super administrador (PT canônico + redirect EN) */}
               <Route path="/super-administrador" element={<ProtectedRoute><SuperAdmin /></ProtectedRoute>} />
@@ -136,6 +142,7 @@ const App = () => (
               <Route path="/tarefas" element={<ProtectedRoute><Tarefas /></ProtectedRoute>} />
               <Route path="/automacoes" element={<ProtectedRoute><Automacoes /></ProtectedRoute>} />
               <Route path="/bi-dashboard" element={<ProtectedRoute><DashboardBI /></ProtectedRoute>} />
+              <Route path="/bi-dashboard-completo" element={<ProtectedRoute><DashboardBI /></ProtectedRoute>} />
 
               {/* Configurações (PT canônico + redirects EN) */}
               <Route path="/configuracoes" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ProjectSettings /></PermissionGuard></ProtectedRoute>} />
