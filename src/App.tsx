@@ -141,6 +141,7 @@ const App = () => (
               <Route path="/configuracoes" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ProjectSettings /></PermissionGuard></ProtectedRoute>} />
               <Route path="/configuracoes/usuarios" element={<ProtectedRoute><PermissionGuard module="configuracoes"><UserManagement /></PermissionGuard></ProtectedRoute>} />
               <Route path="/configuracoes/catalogo" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ConfiguracoesCatalogo /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/configuracoes/modulos" element={<ProtectedRoute><ConfiguracoesModulos /></ProtectedRoute>} />
               <Route path="/settings" element={<Navigate to="/configuracoes" replace />} />
               <Route path="/settings/users" element={<Navigate to="/configuracoes/usuarios" replace />} />
 
