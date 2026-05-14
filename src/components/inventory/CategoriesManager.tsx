@@ -148,25 +148,75 @@ export default function CategoriesManager() {
 
     setDeleteLoading(true);
     try {
+      let reallocatedProductIds: string[] = [];
+      const reallocatedToName =
+        categories.find((c) => c.id === reallocateTo)?.name ?? null;
+
       // Reallocate products if needed
       if (deleteProductCount > 0 && reallocateTo) {
+        // capture ids first so we can audit per product
+        const { data: affected } = await supabase
+          .from("products")
+          .select("id")
+          .eq("category_id", categoryToDelete.id);
+        reallocatedProductIds = (affected ?? []).map((p) => p.id);
+
         const { error: updErr } = await supabase
           .from("products")
           .update({ category_id: reallocateTo })
           .eq("category_id", categoryToDelete.id);
         if (updErr) throw updErr;
+
+        // Audit per product
+        await Promise.all(
+          reallocatedProductIds.map((pid) =>
+            logAudit({
+              table_name: "products",
+              record_id: pid,
+              event_type: "reallocate",
+              field_name: "category_id",
+              old_value: categoryToDelete.id,
+              new_value: reallocateTo,
+              metadata: {
+                reason: "category_deleted",
+                from_category_name: categoryToDelete.name,
+                to_category_name: reallocatedToName,
+              },
+            })
+          )
+        );
       }
 
-      const { error } = await supabase.from("product_categories").delete().eq("id", categoryToDelete.id);
+      const { error } = await supabase
+        .from("product_categories")
+        .delete()
+        .eq("id", categoryToDelete.id);
       if (error) throw error;
+
+      // Audit category deletion (with reallocation summary)
+      await logAudit({
+        table_name: "product_categories",
+        record_id: categoryToDelete.id,
+        event_type: "delete",
+        old_value: categoryToDelete.name,
+        metadata: {
+          name: categoryToDelete.name,
+          reallocated_count: reallocatedProductIds.length,
+          reallocated_to_id: reallocateTo || null,
+          reallocated_to_name: reallocatedToName,
+        },
+      });
+
       toast({
         title: "Categoria removida",
-        description: deleteProductCount > 0
-          ? `${deleteProductCount} produto(s) realocado(s) com sucesso.`
-          : undefined,
+        description:
+          deleteProductCount > 0
+            ? `${deleteProductCount} produto(s) realocado(s) com sucesso.`
+            : undefined,
       });
       refetch();
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["category-audit-log"] });
       setDeleteOpen(false);
       setCategoryToDelete(null);
       setReallocateTo("");
