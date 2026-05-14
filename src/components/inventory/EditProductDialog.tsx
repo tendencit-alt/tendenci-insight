@@ -213,7 +213,7 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
         code: form.code || null,
         name: form.name,
         description: form.description || null,
-        category_id: form.category_id || null,
+        category_id: form.category_id,
         location_id: form.location_id || null,
         unit: form.unit,
         min_stock: form.min_stock,
