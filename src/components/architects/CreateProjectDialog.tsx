@@ -138,13 +138,9 @@ export function CreateProjectDialog({ open, onOpenChange, architectId, onSuccess
 
           <div>
             <Label htmlFor="valor">Valor (R$)</Label>
-            <Input
-              id="valor"
-              type="number"
-              step="0.01"
+            <CurrencyInput
               value={valor}
-              onChange={(e) => setValor(e.target.value)}
-              placeholder="0.00"
+              onChange={setValor}
             />
           </div>
 
