@@ -290,13 +290,10 @@ export function AddProductLineDialog({ productId, open, onOpenChange, onSuccess 
 
               <div className="space-y-2">
                 <Label htmlFor="unitCost">Custo Unit. (R$)</Label>
-                <Input
+                <MoneyInput
                   id="unitCost"
-                  type="number"
-                  step="0.01"
-                  min={0}
                   value={unitCost}
-                  onChange={(e) => setUnitCost(parseFloat(e.target.value) || 0)}
+                  onChange={setUnitCost}
                   disabled={costRefId !== "manual"}
                 />
               </div>
