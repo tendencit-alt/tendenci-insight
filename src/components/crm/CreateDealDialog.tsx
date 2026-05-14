@@ -495,7 +495,7 @@ export function CreateDealDialog({
         lead_id: formData.lead_id || null,
         architect_id: formData.architect_id && formData.architect_id !== "sem-arquiteto" ? formData.architect_id : null,
         owner_id: user?.id || null,
-        value: formData.value ? Number(formData.value) : null,
+        value: formData.value ? parseCurrencyToNumber(formData.value) : null,
         note: `${formData.observations ? formData.observations + '\n\n' : ''}${formData.note || ''}`.trim() || null,
         categoria: formData.categorias.join(", ") || null,
         centro_custo: formData.centros_custo.join(", ") || null,
