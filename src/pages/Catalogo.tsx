@@ -7,6 +7,8 @@ import { CatalogoHeader } from "@/components/catalogo/CatalogoHeader";
 import { ProductCard } from "@/components/catalogo/ProductCard";
 import { ProductDetailModal } from "@/components/catalogo/ProductDetailModal";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/contexts/AuthContext";
+import { CatalogoAdminBar } from "@/components/catalogo/CatalogoAdminBar";
 
 interface Product {
   id: string;
@@ -45,6 +47,7 @@ export default function Catalogo() {
   const [modalOpen, setModalOpen] = useState(false);
 
   const { activeTenantId, memberships } = useActiveTenant();
+  const { user } = useAuth();
   const tenantName = useMemo(
     () => memberships.find((m) => m.tenant_id === activeTenantId)?.name || "Loja",
     [memberships, activeTenantId]
@@ -172,6 +175,7 @@ export default function Catalogo() {
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {user && <CatalogoAdminBar onProductCreated={loadProducts} />}
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
             {heroTitle}

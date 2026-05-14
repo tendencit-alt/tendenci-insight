@@ -19,9 +19,11 @@ interface CreateProductDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  /** When true, the new product is created with ativo_no_catalogo = true (default false) */
+  ativoNoCatalogoDefault?: boolean;
 }
 
-export default function CreateProductDialog({ open, onOpenChange, onSuccess }: CreateProductDialogProps) {
+export default function CreateProductDialog({ open, onOpenChange, onSuccess, ativoNoCatalogoDefault = false }: CreateProductDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [selectedCostCenters, setSelectedCostCenters] = useState<string[]>([]);
@@ -113,6 +115,7 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
         image_url: form.image_url || null,
         galeria: isProdutoCategory ? galeria : [],
         videos: isProdutoCategory ? videos : [],
+        ativo_no_catalogo: ativoNoCatalogoDefault,
       };
       
       const { data: newProduct, error } = await supabase
