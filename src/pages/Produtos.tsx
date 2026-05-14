@@ -578,8 +578,14 @@ function NewProductDialog({
 
   const submit = async () => {
     if (!form.name.trim()) return toast.error("Nome obrigatório");
+    if (!form.category_id) return toast.error("Categoria obrigatória");
     setSaving(true);
     const payload: any = {
+      code: form.code || null,
+      name: form.name,
+      descricao_curta: form.descricao_curta || null,
+      description: form.description || null,
+      category_id: form.category_id,
       code: form.code || null,
       name: form.name,
       descricao_curta: form.descricao_curta || null,
