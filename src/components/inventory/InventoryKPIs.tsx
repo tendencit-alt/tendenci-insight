@@ -21,6 +21,19 @@ export default function InventoryKPIs() {
     }
   });
 
+  const { data: negativeCount } = useQuery({
+    queryKey: ["inventory-negative-stock-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("products")
+        .select("id", { count: "exact", head: true })
+        .eq("active", true)
+        .lt("current_stock", 0);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
@@ -59,6 +72,12 @@ export default function InventoryKPIs() {
       value: metrics?.out_of_stock_count || 0,
       icon: XCircle,
       color: "text-red-500"
+    },
+    {
+      label: "Estoque Negativo",
+      value: negativeCount || 0,
+      icon: AlertTriangle,
+      color: "text-destructive"
     },
     {
       label: "Entradas (Mês)",

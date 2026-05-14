@@ -384,9 +384,12 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                         </div>
                         <div className="shrink-0 text-right space-y-1">
                           <p className="font-medium">{formatCurrency(produto.cost_price || 0)}</p>
-                          <Badge variant={(produto.current_stock ?? 0) > 0 ? 'default' : 'secondary'}>
-                            {(produto.current_stock ?? 0) > 0 ? `${produto.current_stock} ${produto.unit || 'UN'}` : 'Sem estoque'}
-                          </Badge>
+                          {(() => {
+                            const s = produto.current_stock ?? 0;
+                            if (s < 0) return <Badge variant="destructive">Negativo: {s} {produto.unit || 'UN'}</Badge>;
+                            if (s === 0) return <Badge variant="secondary">Sem estoque</Badge>;
+                            return <Badge variant="default">{s} {produto.unit || 'UN'}</Badge>;
+                          })()}
                         </div>
                       </div>
                     </Card>

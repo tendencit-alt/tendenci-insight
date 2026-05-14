@@ -371,7 +371,13 @@ export default function Produtos() {
                   </TableCell>
                   <TableCell className="text-right">{fmtBRL(p.cost_price)}</TableCell>
                   <TableCell className="text-right">{fmtBRL(p.sale_price)}</TableCell>
-                  <TableCell className="text-right">{p.current_stock ?? 0} {p.unit || ""}</TableCell>
+                  <TableCell className="text-right">
+                    {(p.current_stock ?? 0) < 0 ? (
+                      <Badge variant="destructive">Negativo: {p.current_stock} {p.unit || ""}</Badge>
+                    ) : (
+                      <span>{p.current_stock ?? 0} {p.unit || ""}</span>
+                    )}
+                  </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => toggleCatalogo(p)}
