@@ -236,16 +236,30 @@ export default function CategoriesManager() {
     
     setEditLoading(true);
     try {
+      const previousName = selectedCategory.name;
+      const newNameValue = editName.trim();
       const { error } = await supabase
         .from("product_categories")
-        .update({ name: editName.trim() })
+        .update({ name: newNameValue })
         .eq("id", selectedCategory.id);
       if (error) throw error;
-      
+
+      if (previousName !== newNameValue) {
+        await logAudit({
+          table_name: "product_categories",
+          record_id: selectedCategory.id,
+          event_type: "update",
+          field_name: "name",
+          old_value: previousName,
+          new_value: newNameValue,
+        });
+      }
+
       toast({ title: "Categoria atualizada!" });
       setEditOpen(false);
       refetch();
       queryClient.invalidateQueries({ queryKey: ["category-products"] });
+      queryClient.invalidateQueries({ queryKey: ["category-audit-log"] });
     } catch (error: any) {
       toast({ title: "Erro ao atualizar categoria", description: error.message, variant: "destructive" });
     } finally {
