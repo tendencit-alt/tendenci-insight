@@ -23,6 +23,7 @@ import MaterialRequestsTable from "@/components/inventory/MaterialRequestsTable"
 import InvReservationsTab from "@/components/inventory/InvReservationsTab";
 import InvCostsTab from "@/components/inventory/InvCostsTab";
 import InvAnalyticsTab from "@/components/inventory/InvAnalyticsTab";
+import CategoryKPIsReport from "@/components/inventory/CategoryKPIsReport";
 
 // Hook para debounce
 function useDebounce<T>(value: T, delay: number): T {
