@@ -1,67 +1,87 @@
-# Simplificação da Navegação e UI
+## Problema
 
-Objetivo: reduzir o sistema à UX de uma "marcenaria pequena começando", controlando visibilidade via feature flag por módulo. Nada é deletado — tudo é reversível.
+Hoje a venda **não dá baixa** no estoque: não existe trigger entre `order_items` e `stock_movements`. O badge "Sem estoque" no seletor de produto é apenas visual e não bloqueia, mas como nada é decrementado, o estoque nunca chega a ficar negativo. O trigger `update_product_stock` em `stock_movements` já permite saldo negativo (não há `GREATEST(0, …)`).
 
-## 1. Banco — tabela `modules_config`
+## Decisões aprovadas
 
-Migration cria:
+- Baixa **ao criar o item do pedido** (`order_items` INSERT).
+- Estoque negativo é **permitido** e **destacado em vermelho** na UI.
 
-- `modules_config(module_key text PK, label text, icon text, category text, visible_in_menu bool default false, visible_in_routes bool default true, sort_order int, created_at, updated_at)`
-- RLS: `SELECT` para `authenticated`; `INSERT/UPDATE/DELETE` apenas se `is_master_owner(auth.uid())` (função SECURITY DEFINER que lê `profiles.is_owner`).
-- Seed com 51 módulos. Apenas estes 8 com `visible_in_menu=true`:
-  `clientes, catalogo-produtos, pedidos, estoque, financeiro, dashboard, configuracoes-usuarios, configuracoes-marca`.
-- Categorias: `comercial`, `operacional`, `financeiro`, `relatorios`, `configuracoes`, `futuro`, `master`.
+## O que será feito
 
-## 2. Hook `useModulesConfig`
+### 1. Migration: baixa automática de estoque na venda
 
-`src/hooks/useModulesConfig.ts` — React Query, retorna lista filtrada `visible_in_menu=true` agrupada por `category`. Cache 5min, invalidado quando `/configuracoes/modulos` salva.
+Criar trigger `AFTER INSERT/UPDATE/DELETE ON order_items` que mantém um `stock_movements` espelho do item:
 
-## 3. Menu "Módulos" enxuto
+- **INSERT** com `product_id` not null → cria movimento `movement_type = 'saida'`, `reference_type = 'order_item'`, `reference_id = NEW.id`, `quantity = NEW.quantity`, `tenant_id = NEW.tenant_id`. O trigger existente de `stock_movements` decrementa `products.current_stock` (pode ficar negativo).
+- **UPDATE** de `quantity` ou `product_id` → estorna o movimento anterior (entrada compensatória) e cria o novo de saída.
+- **DELETE** → cria entrada compensatória (`movement_type = 'entrada'`, `reference_type = 'order_item_revert'`).
+- Itens sem `product_id` (serviço, produto avulso) são ignorados.
+- Idempotência: a função busca movimento existente por `(reference_type='order_item', reference_id=order_item.id)` antes de inserir, evitando duplicação em re-execuções.
 
-Refatorar dropdown em `src/components/layout/AppNavbar.tsx` para consumir o hook. Resultado:
+### 2. Reconciliação retroativa
 
-```text
-COMERCIAL    → Clientes • Catálogo • Pedidos
-OPERAÇÃO     → Estoque
-FINANCEIRO   → Financeiro
-RELATÓRIOS   → Dashboard
-CONFIGURAÇÕES→ Usuários & Permissões • Marca & Catálogo
+Script único na mesma migration:
+- Para cada `order_items` existente com `product_id` que ainda não tenha `stock_movement` correspondente, gerar a saída.
+- Recalcula `products.current_stock` somando movimentos (entrada − saída) para corrigir divergências históricas.
+
+### 3. UI: destaque de estoque negativo
+
+Componentes a ajustar (somente visual, sem mudar regra de negócio):
+
+- `src/components/inventory/ProductsTable.tsx` — célula de estoque: se `current_stock < 0`, badge `variant="destructive"` com texto `Negativo: {valor}`.
+- `src/components/orders/OrderItemsTable.tsx` (linha 387-388) — badge do seletor: 3 estados → `> 0` default, `= 0` secondary "Sem estoque", `< 0` destructive "Negativo: {valor}".
+- `src/components/inventory/InventoryKPIs.tsx` — adicionar KPI "Estoque Negativo" (count de produtos com `current_stock < 0`) ao lado de "Sem Estoque".
+- `src/components/inventory/LowStockAlerts.tsx` — listar produtos negativos no topo com severidade alta.
+- `src/pages/Produtos.tsx` (linha 290) — mesmo tratamento do badge.
+
+Nenhum bloqueio de venda é adicionado: usuário pode vender mesmo com saldo negativo.
+
+### 4. Detalhes técnicos
+
+```sql
+CREATE OR REPLACE FUNCTION public.sync_order_item_stock_movement()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE v_prev_stock NUMERIC;
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    IF OLD.product_id IS NOT NULL THEN
+      SELECT current_stock INTO v_prev_stock FROM products WHERE id = OLD.product_id;
+      INSERT INTO stock_movements (tenant_id, product_id, movement_type, quantity,
+        previous_stock, reference_type, reference_id, notes)
+      VALUES (OLD.tenant_id, OLD.product_id, 'entrada', OLD.quantity,
+        COALESCE(v_prev_stock, 0), 'order_item_revert', OLD.id,
+        'Estorno automático de venda (item removido)');
+    END IF;
+    RETURN OLD;
+  END IF;
+
+  IF TG_OP = 'UPDATE' AND OLD.product_id IS NOT NULL
+     AND (OLD.quantity <> NEW.quantity OR OLD.product_id IS DISTINCT FROM NEW.product_id) THEN
+    SELECT current_stock INTO v_prev_stock FROM products WHERE id = OLD.product_id;
+    INSERT INTO stock_movements (...) VALUES (...'entrada'... reference_type='order_item_revert');
+  END IF;
+
+  IF NEW.product_id IS NOT NULL THEN
+    SELECT current_stock INTO v_prev_stock FROM products WHERE id = NEW.product_id;
+    INSERT INTO stock_movements (tenant_id, product_id, movement_type, quantity,
+      previous_stock, reference_type, reference_id, notes)
+    VALUES (NEW.tenant_id, NEW.product_id, 'saida', NEW.quantity,
+      COALESCE(v_prev_stock, 0), 'order_item', NEW.id,
+      'Baixa automática de venda');
+  END IF;
+  RETURN NEW;
+END $$;
+
+CREATE TRIGGER trg_order_item_stock
+AFTER INSERT OR UPDATE OR DELETE ON order_items
+FOR EACH ROW EXECUTE FUNCTION sync_order_item_stock_movement();
 ```
 
-Categorias vazias somem automaticamente. Categoria `master` nunca entra aqui.
+Observação: `stock_movements.previous_stock` e `new_stock` continuam sendo calculados pelo trigger `update_product_stock` já existente — o `previous_stock` que passamos é só placeholder.
 
-## 4. Painel Master separado
+## Fora de escopo
 
-Novo componente `MasterPanelMenu` (ícone Crown no canto direito do header), só renderiza se `profile.is_owner === true`. Dropdown lateral com 4 grupos fixos (TENANTS, BILLING, PLATAFORMA, SAÚDE) listando rotas `/owner/*` já existentes. Remover essas rotas do menu Módulos / Configurações principal.
-
-## 5. Simplificações por página
-
-- **ModuleHeader compartilhado**: reduzir tabs de 6 → 2 (`Registros`, `Relatórios`). KPIs (antes em "Visão Geral") movem para topo de Registros.
-- **Páginas Pedidos / Clientes / Produtos / Estoque / Financeiro**: remover barras "AÇÕES:" e "PRÓXIMO:". Único botão `+ Novo X` no canto direito do header.
-- **Command Center (`/`)**: substituir 6 view-tabs por uma tela única "Hoje":
-  - 4 KPIs: Receita do Mês • Pedidos Abertos • Saldo Caixa • Contas Vencidas
-  - Seção "Caixa de Entrada" (Leads/Pedidos/Propostas — itens condicionados a `visible_in_menu` do módulo)
-  - Seção "Hoje você precisa" (tarefas do dia)
-  - Remover dropdown view-mode, search global visível, "Configuração do Sistema" (3 cards), "Status Executivo".
-- **Dashboard (`/dashboard` = `/bi-dashboard`)**: 4 KPIs (Receita do Mês • Margem Bruta • Saldo Caixa • Inadimplência). Remover sub-tabs DRE/Fluxo/Planejamento/Orçamento/Forecast/Integração nesta versão.
-
-## 6. Página `/configuracoes/modulos`
-
-Nova rota visível só pra master_owner. Lista checkboxes por módulo agrupados por categoria, toggle em `visible_in_menu` (mutation direta). Invalida cache do menu ao salvar.
-
-## 7. Reversibilidade
-
-- Nenhum arquivo deletado. Nenhuma rota removida do `App.tsx`.
-- Componentes antigos (tabs extras, barras de ação, view-tabs) ficam comentados/condicionados a flag, não removidos.
-- URLs diretas continuam funcionando (`visible_in_routes=true`).
-
-## Detalhes técnicos
-
-- Função SQL: `is_master_owner(uid uuid) returns boolean` SECURITY DEFINER lendo `profiles.is_owner`.
-- `useModulesConfig.isVisible(key)` exposto para condicionar seções (Leads na Caixa de Entrada, etc.).
-- `AppNavbar.tsx`: substituir array hardcoded `MODULES` pelo retorno do hook; manter fallback estático enquanto carrega.
-- Rota `/dashboard` aliasada para componente atual de `/bi-dashboard`; a versão simplificada vive em flag dentro do mesmo componente (`MODULES_SIMPLIFIED=true`).
-
-## Validação
-
-Após implementar: checar dropdown enxuto, painel master só pra owner, header de Pedidos com 2 tabs, `/` mostrando "Hoje", `/dashboard` com 4 KPIs, `/leads` ainda acessível por URL, `/configuracoes/modulos` togglando visibilidade em runtime.
+- Reserva de estoque por status de pedido (rascunho vs confirmado).
+- Bloqueio configurável por produto (já existe campo `permite_venda_sem_estoque` mas não será usado nessa entrega — venda nunca é bloqueada).
+- Controle por localização (`location_id`).
