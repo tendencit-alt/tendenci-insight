@@ -84,10 +84,10 @@ export function UserPermissionsDialog({
 
       setLoading(true);
       try {
-        // Buscar role do usuário
+        // Buscar role + tipo de perfil do usuário
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, profile_type_id')
           .eq('id', userId)
           .single();
 
@@ -109,18 +109,31 @@ export function UserPermissionsDialog({
           return;
         }
 
-        // Buscar permissões do usuário
-        const { data, error } = await supabase
+        // Buscar permissões individuais do usuário
+        const { data: userPerms, error } = await supabase
           .from('user_permissions')
           .select('*')
           .eq('user_id', userId);
 
         if (error) throw error;
 
+        // Fallback: se o usuário ainda não tem permissões individuais,
+        // espelhar o template do tipo de perfil dele para refletir o acesso
+        // herdado (e permitir salvar como override).
+        let templatePerms: any[] = [];
+        if ((!userPerms || userPerms.length === 0) && profile.profile_type_id) {
+          const { data: tpl } = await supabase
+            .from('profile_type_permissions')
+            .select('*')
+            .eq('profile_type_id', profile.profile_type_id);
+          templatePerms = tpl || [];
+        }
+
+        const baseSource = (userPerms && userPerms.length > 0) ? userPerms : templatePerms;
+
         // Garantir que todos os módulos estejam presentes
-        const existingPermissions = data || [];
         const allPermissions = ALL_MODULES.map(module => {
-          const existing = existingPermissions.find(p => p.module === module);
+          const existing = baseSource.find((p: any) => p.module === module);
           return existing || {
             module,
             can_view: false,
