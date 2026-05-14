@@ -445,7 +445,7 @@ export function CreateDealDialog({
     const selectedStage = stages.find(s => s.id === formData.stage_id);
     if (selectedStage) {
       const stageName = selectedStage.name.toLowerCase();
-      if (stageName.includes("negociação") && (!formData.value || Number(formData.value) <= 0)) {
+      if (stageName.includes("negociação") && (!formData.value || parseCurrencyToNumber(formData.value) <= 0)) {
         sonnerToast.error("Valor obrigatório", {
           description: `Para a etapa "${selectedStage.name}", é obrigatório informar o valor (R$) do negócio.`,
         });
