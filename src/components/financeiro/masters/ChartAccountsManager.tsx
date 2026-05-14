@@ -548,8 +548,14 @@ export function ChartAccountsManager() {
   const treeData = useMemo(() => accounts ? buildTree(accounts) : [], [accounts]);
   const hierarchicalAccounts = useMemo(() => {
     const flattenedAccounts = flattenTree(treeData);
-    return injectCalculatedRows(flattenedAccounts);
-  }, [treeData, expandedIds, injectCalculatedRows]);
+    const filtered = originFilter === "all"
+      ? flattenedAccounts
+      : flattenedAccounts.filter((a) => {
+          if (a.isCalculated) return true;
+          return originFilter === "core" ? !!a.is_core : !a.is_core;
+        });
+    return injectCalculatedRows(filtered);
+  }, [treeData, expandedIds, injectCalculatedRows, originFilter]);
 
   // Get all descendants of an account (for preventing invalid drops)
   const getDescendantIds = useCallback((accountId: string, accountsList: any[]): Set<string> => {
