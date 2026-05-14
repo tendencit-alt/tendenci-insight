@@ -559,7 +559,7 @@ export function CreateDealDialog({
           deal_id: dealData.id,
           architect_id: ind.architect_id,
           product_type: ind.product_type,
-          value: ind.value ? Number(ind.value) : null,
+          value: ind.value ? parseCurrencyToNumber(ind.value) : null,
           notes: ind.notes || null,
           created_by: user?.id || null,
         }));
