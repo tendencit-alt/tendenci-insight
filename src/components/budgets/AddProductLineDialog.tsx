@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -289,13 +290,10 @@ export function AddProductLineDialog({ productId, open, onOpenChange, onSuccess 
 
               <div className="space-y-2">
                 <Label htmlFor="unitCost">Custo Unit. (R$)</Label>
-                <Input
+                <MoneyInput
                   id="unitCost"
-                  type="number"
-                  step="0.01"
-                  min={0}
                   value={unitCost}
-                  onChange={(e) => setUnitCost(parseFloat(e.target.value) || 0)}
+                  onChange={setUnitCost}
                   disabled={costRefId !== "manual"}
                 />
               </div>

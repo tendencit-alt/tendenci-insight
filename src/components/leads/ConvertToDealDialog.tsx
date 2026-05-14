@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput, parseCurrencyToNumber } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -48,7 +49,7 @@ export function ConvertToDealDialog({ lead, open, onOpenChange, onSuccess }: Con
         .insert({
           lead_id: lead.id,
           pipeline_id: formData.pipeline_id,
-          amount: parseFloat(formData.amount),
+          amount: parseCurrencyToNumber(formData.amount),
           title: `Negócio - ${lead.client?.name}`,
           status: "aberto"
         });
@@ -99,14 +100,9 @@ export function ConvertToDealDialog({ lead, open, onOpenChange, onSuccess }: Con
 
           <div className="space-y-2">
             <Label htmlFor="amount">Valor Estimado (R$) *</Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.01"
+            <CurrencyInput
               value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-              placeholder="0.00"
-              required
+              onChange={(v) => setFormData({ ...formData, amount: v })}
             />
           </div>
 

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -264,14 +265,10 @@ export default function EditPurchaseOrderDialog({ order, open, onOpenChange, onS
                 value={newItem.quantity}
                 onChange={(e) => setNewItem({ ...newItem, quantity: parseFloat(e.target.value) || 1 })}
               />
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
+              <MoneyInput
                 className="w-32"
-                placeholder="Preço"
                 value={newItem.unit_price}
-                onChange={(e) => setNewItem({ ...newItem, unit_price: parseFloat(e.target.value) || 0 })}
+                onChange={(v) => setNewItem({ ...newItem, unit_price: v })}
               />
               <Button type="button" onClick={addItem}>
                 <Plus className="h-4 w-4" />

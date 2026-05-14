@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+
 import {
   Select,
   SelectContent,
@@ -42,7 +43,7 @@ import {
 } from "lucide-react";
 import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
 import { reconcileWithSync } from "@/lib/financeiroIntegration";
-import { CurrencyInput, parseCurrencyToNumber, formatToCurrencyDisplay } from "@/components/ui/currency-input";
+import { CurrencyInput, MoneyInput, parseCurrencyToNumber, formatToCurrencyDisplay } from "@/components/ui/currency-input";
 
 interface LedgerEntry {
   id: string;
@@ -701,14 +702,10 @@ export function ReconcileDialog({
                     <Label htmlFor="jurosAtraso">
                       Juros por Atraso (R$)
                     </Label>
-                    <Input
+                    <MoneyInput
                       id="jurosAtraso"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0,00"
-                      value={jurosAtraso || ""}
-                      onChange={(e) => setJurosAtraso(parseFloat(e.target.value) || 0)}
+                      value={jurosAtraso || 0}
+                      onChange={setJurosAtraso}
                     />
                     <p className="text-xs text-muted-foreground">
                       Informe se houve cobrança de juros por atraso no pagamento

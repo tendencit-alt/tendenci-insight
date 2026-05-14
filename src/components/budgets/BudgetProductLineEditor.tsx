@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/currency-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2 } from "lucide-react";
@@ -142,12 +143,9 @@ export function BudgetProductLineEditor({ line, globalCosts, onUpdate, onDelete 
 
       {/* Valor Unitário */}
       <td className="py-2 px-2 w-28">
-        <Input
-          type="number"
-          step="0.01"
-          min={0}
+        <MoneyInput
           value={unitCost}
-          onChange={(e) => handleUnitCostChange(parseFloat(e.target.value) || 0)}
+          onChange={handleUnitCostChange}
           className="h-8 text-right text-sm"
           disabled={selectedCostRef !== "manual"}
         />

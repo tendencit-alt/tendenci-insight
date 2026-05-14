@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput, parseCurrencyToNumber } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -444,7 +445,7 @@ export function CreateDealDialog({
     const selectedStage = stages.find(s => s.id === formData.stage_id);
     if (selectedStage) {
       const stageName = selectedStage.name.toLowerCase();
-      if (stageName.includes("negociação") && (!formData.value || Number(formData.value) <= 0)) {
+      if (stageName.includes("negociação") && (!formData.value || parseCurrencyToNumber(formData.value) <= 0)) {
         sonnerToast.error("Valor obrigatório", {
           description: `Para a etapa "${selectedStage.name}", é obrigatório informar o valor (R$) do negócio.`,
         });
@@ -494,7 +495,7 @@ export function CreateDealDialog({
         lead_id: formData.lead_id || null,
         architect_id: formData.architect_id && formData.architect_id !== "sem-arquiteto" ? formData.architect_id : null,
         owner_id: user?.id || null,
-        value: formData.value ? Number(formData.value) : null,
+        value: formData.value ? parseCurrencyToNumber(formData.value) : null,
         note: `${formData.observations ? formData.observations + '\n\n' : ''}${formData.note || ''}`.trim() || null,
         categoria: formData.categorias.join(", ") || null,
         centro_custo: formData.centros_custo.join(", ") || null,
@@ -558,7 +559,7 @@ export function CreateDealDialog({
           deal_id: dealData.id,
           architect_id: ind.architect_id,
           product_type: ind.product_type,
-          value: ind.value ? Number(ind.value) : null,
+          value: ind.value ? parseCurrencyToNumber(ind.value) : null,
           notes: ind.notes || null,
           created_by: user?.id || null,
         }));
@@ -849,12 +850,9 @@ export function CreateDealDialog({
 
                   <div className="space-y-1">
                     <Label className="text-xs">Valor Estimado (R$)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
+                    <CurrencyInput
                       value={newIndication.value}
-                      onChange={(e) => setNewIndication(prev => ({ ...prev, value: e.target.value }))}
-                      placeholder="0.00"
+                      onChange={(v) => setNewIndication(prev => ({ ...prev, value: v }))}
                       className="h-8 text-sm"
                     />
                   </div>
@@ -983,15 +981,9 @@ export function CreateDealDialog({
 
               <div className="space-y-2">
                 <Label htmlFor="value">Valor (R$)</Label>
-                <Input
-                  id="value"
-                  type="number"
-                  step="0.01"
+                <CurrencyInput
                   value={formData.value}
-                  onChange={(e) =>
-                    setFormData({ ...formData, value: e.target.value })
-                  }
-                  placeholder="0.00"
+                  onChange={(v) => setFormData({ ...formData, value: v })}
                 />
               </div>
 

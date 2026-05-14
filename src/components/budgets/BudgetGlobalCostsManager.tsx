@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/currency-input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -170,11 +171,9 @@ export function BudgetGlobalCostsManager() {
                     <TableCell className="text-muted-foreground">{cost.unit}</TableCell>
                     <TableCell className="text-right">
                       {editingId === cost.id ? (
-                        <Input
-                          type="number"
-                          step="0.01"
+                        <MoneyInput
                           value={editValue}
-                          onChange={(e) => setEditValue(parseFloat(e.target.value) || 0)}
+                          onChange={setEditValue}
                           className="w-32 text-right ml-auto"
                           autoFocus
                         />

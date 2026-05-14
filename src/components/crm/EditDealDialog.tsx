@@ -8,6 +8,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput, parseCurrencyToNumber, formatToCurrencyDisplay } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -151,7 +152,7 @@ export function EditDealDialog({
         title: deal.title || "",
         stage_id: deal.stage_id || "",
         architect_id: deal.architect_id || "",
-        value: deal.value?.toString() || "",
+        value: deal.value != null ? formatToCurrencyDisplay(Number(deal.value)) : "",
         note: deal.note || "",
         temperature: deal.lead?.temperature || "frio",
         tipos_produto: tiposProdutoArray,
@@ -564,7 +565,7 @@ export function EditDealDialog({
           const stageName = selectedStage.name.toLowerCase();
           const requiresValue = stageName.includes("negociação");
           
-          if (requiresValue && (!formData.value || Number(formData.value) <= 0)) {
+          if (requiresValue && (!formData.value || parseCurrencyToNumber(formData.value) <= 0)) {
             setLoading(false);
             toast({
               title: "Valor obrigatório",
@@ -621,7 +622,7 @@ export function EditDealDialog({
         title: formData.title,
         architect_id: formData.architect_id || null,
         owner_id: ownerIdToSave,
-        value: formData.value ? Number(formData.value) : 0,
+        value: formData.value ? parseCurrencyToNumber(formData.value) : 0,
         note: formData.note || null,
         tipo_produto: formData.tipos_produto.length > 0 ? formData.tipos_produto.join(", ") : null,
         categoria: formData.categoria || null,
@@ -706,7 +707,7 @@ export function EditDealDialog({
           deal_id: deal.id,
           architect_id: ind.architect_id,
           product_type: ind.product_type,
-          value: ind.value ? Number(ind.value) : null,
+          value: ind.value ? parseCurrencyToNumber(ind.value) : null,
           notes: ind.notes || null,
           created_by: user?.id,
         }));
@@ -886,15 +887,9 @@ export function EditDealDialog({
 
               <div className="space-y-2">
                 <Label htmlFor="value">Valor (R$)</Label>
-                <Input
-                  id="value"
-                  type="number"
-                  step="0.01"
+                <CurrencyInput
                   value={formData.value}
-                  onChange={(e) =>
-                    setFormData({ ...formData, value: e.target.value })
-                  }
-                  placeholder="0.00"
+                  onChange={(v) => setFormData({ ...formData, value: v })}
                 />
               </div>
             </div>
@@ -1248,12 +1243,9 @@ export function EditDealDialog({
 
               <div className="space-y-1">
                 <Label className="text-xs">Valor Estimado</Label>
-                <Input
-                  type="number"
-                  step="0.01"
+                <CurrencyInput
                   value={newIndication.value}
-                  onChange={(e) => setNewIndication({ ...newIndication, value: e.target.value })}
-                  placeholder="0.00"
+                  onChange={(v) => setNewIndication({ ...newIndication, value: v })}
                   className="h-9"
                 />
               </div>

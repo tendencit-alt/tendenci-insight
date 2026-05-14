@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -243,11 +244,9 @@ export default function CreatePurchaseOrderDialog({ open, onOpenChange, onSucces
                   </div>
                   <div className="col-span-2">
                     <Label className="text-xs">Valor Unit.</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
+                    <MoneyInput
                       value={item.unit_price}
-                      onChange={(e) => updateItem(index, "unit_price", parseFloat(e.target.value) || 0)}
+                      onChange={(v) => updateItem(index, "unit_price", v)}
                     />
                   </div>
                   <div className="col-span-2">
