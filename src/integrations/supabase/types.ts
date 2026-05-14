@@ -14997,7 +14997,7 @@ export type Database = {
           ativo_no_catalogo: boolean
           average_cost: number | null
           barcode: string | null
-          category_id: string | null
+          category_id: string
           cfop_entrada: string | null
           cfop_saida: string | null
           code: string | null
@@ -15041,7 +15041,7 @@ export type Database = {
           ativo_no_catalogo?: boolean
           average_cost?: number | null
           barcode?: string | null
-          category_id?: string | null
+          category_id: string
           cfop_entrada?: string | null
           cfop_saida?: string | null
           code?: string | null
@@ -15085,7 +15085,7 @@ export type Database = {
           ativo_no_catalogo?: boolean
           average_cost?: number | null
           barcode?: string | null
-          category_id?: string | null
+          category_id?: string
           cfop_entrada?: string | null
           cfop_saida?: string | null
           code?: string | null
