@@ -197,11 +197,13 @@ export default function Inventory() {
           </Tabs>
         }
         reports={
-          <Tabs defaultValue="analytics">
+          <Tabs defaultValue="category-kpis">
             <TabsList>
+              <TabsTrigger value="category-kpis">KPIs por Categoria</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              <TabsTrigger value="abc">Por Categoria</TabsTrigger>
+              <TabsTrigger value="abc">Distribuição</TabsTrigger>
             </TabsList>
+            <TabsContent value="category-kpis"><CategoryKPIsReport /></TabsContent>
             <TabsContent value="analytics"><InvAnalyticsTab /></TabsContent>
             <TabsContent value="abc"><ABCAnalysis /></TabsContent>
           </Tabs>
