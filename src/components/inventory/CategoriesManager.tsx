@@ -630,6 +630,7 @@ export default function CategoriesManager() {
               auditEntries.map((e: any) => {
                 const isDelete = e.event_type === "delete" && e.table_name === "product_categories";
                 const isReallocate = e.event_type === "reallocate";
+                const isBulkUpdate = e.event_type === "bulk_update";
                 const isUpdate = e.event_type === "update" && e.table_name === "product_categories";
                 const meta = e.metadata || {};
 
