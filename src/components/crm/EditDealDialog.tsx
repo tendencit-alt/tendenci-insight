@@ -622,7 +622,7 @@ export function EditDealDialog({
         title: formData.title,
         architect_id: formData.architect_id || null,
         owner_id: ownerIdToSave,
-        value: formData.value ? Number(formData.value) : 0,
+        value: formData.value ? parseCurrencyToNumber(formData.value) : 0,
         note: formData.note || null,
         tipo_produto: formData.tipos_produto.length > 0 ? formData.tipos_produto.join(", ") : null,
         categoria: formData.categoria || null,
