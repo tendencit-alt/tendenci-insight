@@ -7,6 +7,8 @@ import { CatalogoHeader } from "@/components/catalogo/CatalogoHeader";
 import { ProductCard } from "@/components/catalogo/ProductCard";
 import { ProductDetailModal } from "@/components/catalogo/ProductDetailModal";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/contexts/AuthContext";
+import { CatalogoAdminBar } from "@/components/catalogo/CatalogoAdminBar";
 
 interface Product {
   id: string;
