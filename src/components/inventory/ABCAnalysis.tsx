@@ -80,7 +80,7 @@ export default function ABCAnalysis() {
   if (isLoading) {
     return (
       <Card>
-        <CardHeader><CardTitle>Curva ABC por Categoria</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Análise por Categoria</CardTitle></CardHeader>
         <CardContent><Skeleton className="h-64 w-full" /></CardContent>
       </Card>
     );
