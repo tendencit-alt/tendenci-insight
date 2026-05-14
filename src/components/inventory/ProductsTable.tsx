@@ -69,6 +69,7 @@ export default function ProductsTable({ products, isLoading, onSelect, onRefresh
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10"></TableHead>
               <TableHead>Código</TableHead>
               <TableHead>Item</TableHead>
               <TableHead>Categoria</TableHead>
