@@ -47,6 +47,7 @@ export default function Catalogo() {
   const [modalOpen, setModalOpen] = useState(false);
 
   const { activeTenantId, memberships } = useActiveTenant();
+  const { user } = useAuth();
   const tenantName = useMemo(
     () => memberships.find((m) => m.tenant_id === activeTenantId)?.name || "Loja",
     [memberships, activeTenantId]
