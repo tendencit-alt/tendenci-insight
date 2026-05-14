@@ -178,13 +178,27 @@ export default function CategoriesManager() {
     if (!categoryToDelete) return;
 
     // Block delete if products exist and no reallocation target chosen
-    if (deleteProductCount > 0 && !reallocateTo) {
-      toast({
-        title: "Realocação obrigatória",
-        description: `Esta categoria possui ${deleteProductCount} produto(s). Selecione outra categoria para realocá-los.`,
-        variant: "destructive",
-      });
-      return;
+    if (deleteProductCount > 0) {
+      const availableTargets = categories.filter(
+        (c) => c.id !== categoryToDelete.id && c.active
+      );
+      if (availableTargets.length === 0) {
+        toast({
+          title: "Exclusão bloqueada",
+          description:
+            "Não há outra categoria ativa disponível para realocar os produtos. Crie ou ative uma categoria antes de excluir esta.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!reallocateTo) {
+        toast({
+          title: "Realocação obrigatória",
+          description: `Esta categoria possui ${deleteProductCount} produto(s). Selecione outra categoria para realocá-los.`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setDeleteLoading(true);
