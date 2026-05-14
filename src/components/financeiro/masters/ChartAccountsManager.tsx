@@ -342,6 +342,9 @@ export function ChartAccountsManager() {
   // Tree expansion state
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
+  // Origin filter: all | core | custom
+  const [originFilter, setOriginFilter] = useState<"all" | "core" | "custom">("all");
+
   // Drag state
   const [activeId, setActiveId] = useState<string | null>(null);
   
