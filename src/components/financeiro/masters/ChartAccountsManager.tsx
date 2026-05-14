@@ -1402,6 +1402,48 @@ export function ChartAccountsManager() {
         </div>
       </CardHeader>
       <CardContent>
+        {/* Origin filter + intro banner */}
+        <div className="mb-4 flex items-start justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground max-w-2xl">
+            <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+            <span>
+              Você começa com o <strong className="text-foreground">plano padrão do sistema</strong> (contas marcadas com <ShieldCheck className="inline h-3 w-3 text-primary" />). Elas não podem ser excluídas, mas você pode adicionar contas filhas e criar suas próprias contas para personalizar a estrutura.
+            </span>
+          </div>
+          <div className="inline-flex rounded-md border bg-background p-0.5 text-xs">
+            <button
+              type="button"
+              onClick={() => setOriginFilter("all")}
+              className={cn(
+                "px-3 py-1.5 rounded-sm transition-colors",
+                originFilter === "all" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Todas
+            </button>
+            <button
+              type="button"
+              onClick={() => setOriginFilter("core")}
+              className={cn(
+                "px-3 py-1.5 rounded-sm transition-colors",
+                originFilter === "core" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Padrão do sistema
+            </button>
+            <button
+              type="button"
+              onClick={() => setOriginFilter("custom")}
+              className={cn(
+                "px-3 py-1.5 rounded-sm transition-colors",
+                originFilter === "custom" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Personalizadas
+            </button>
+          </div>
+        </div>
+
         {/* Bulk Actions Bar */}
         {isSomeSelected && (
           <div className="mb-4 p-3 bg-muted rounded-lg flex items-center justify-between flex-wrap gap-2">
