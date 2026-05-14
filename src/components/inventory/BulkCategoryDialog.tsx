@@ -20,6 +20,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { logAudit } from "@/lib/auditLog";
 
 interface BulkCategoryDialogProps {
   open: boolean;
