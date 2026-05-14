@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
-import { Instagram, Phone, ArrowLeft } from "lucide-react";
+import { Instagram, Phone, ArrowLeft, Search, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
@@ -47,6 +49,8 @@ export default function Catalogo() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState<"name-asc" | "name-desc" | "price-asc" | "price-desc" | "category">("category");
 
   const { activeTenantId, memberships } = useActiveTenant();
   const { user } = useAuth();
@@ -146,9 +150,30 @@ export default function Catalogo() {
   }, [products]);
 
   const filteredProducts = useMemo(() => {
-    if (!selectedCategory) return products;
-    return products.filter((p) => p.categoria === selectedCategory);
-  }, [products, selectedCategory]);
+    const term = searchTerm.trim().toLowerCase();
+    let list = products.filter((p) => {
+      if (selectedCategory && p.categoria !== selectedCategory) return false;
+      if (term) {
+        const haystack = `${p.nome} ${p.descricao || ""} ${p.categoria || ""}`.toLowerCase();
+        if (!haystack.includes(term)) return false;
+      }
+      return true;
+    });
+    list = [...list].sort((a, b) => {
+      switch (sortBy) {
+        case "name-asc": return a.nome.localeCompare(b.nome, "pt-BR");
+        case "name-desc": return b.nome.localeCompare(a.nome, "pt-BR");
+        case "price-asc": return (a.preco_base ?? Infinity) - (b.preco_base ?? Infinity);
+        case "price-desc": return (b.preco_base ?? -Infinity) - (a.preco_base ?? -Infinity);
+        case "category":
+        default: {
+          const ca = (a.categoria || "zzz").localeCompare(b.categoria || "zzz", "pt-BR");
+          return ca !== 0 ? ca : a.nome.localeCompare(b.nome, "pt-BR");
+        }
+      }
+    });
+    return list;
+  }, [products, selectedCategory, searchTerm, sortBy]);
 
   const handleBuyNow = (product: Product) => {
     if (!whatsappNumber) return;
@@ -195,6 +220,49 @@ export default function Catalogo() {
           <p className="text-gray-600">{heroSubtitle}</p>
         </div>
 
+        {/* Filtros: busca + ordenação */}
+        <div className="flex flex-col md:flex-row gap-3 mb-4 max-w-3xl mx-auto">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Buscar por nome, descrição ou categoria..."
+              className="pl-9 pr-9 bg-white"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-700"
+                aria-label="Limpar busca"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+            <SelectTrigger className="md:w-56 bg-white">
+              <SelectValue placeholder="Ordenar por" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="category">Categoria (A–Z)</SelectItem>
+              <SelectItem value="name-asc">Nome (A–Z)</SelectItem>
+              <SelectItem value="name-desc">Nome (Z–A)</SelectItem>
+              <SelectItem value="price-asc">Menor preço</SelectItem>
+              <SelectItem value="price-desc">Maior preço</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {!loading && (
+          <p className="text-sm text-gray-500 text-center mb-6">
+            {filteredProducts.length} produto{filteredProducts.length === 1 ? "" : "s"}
+            {selectedCategory && <> em <strong>{selectedCategory}</strong></>}
+            {searchTerm && <> para "<strong>{searchTerm}</strong>"</>}
+          </p>
+        )}
+
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {[...Array(8)].map((_, i) => (
@@ -209,10 +277,21 @@ export default function Catalogo() {
         ) : filteredProducts.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-gray-500 text-lg">
-              {selectedCategory
+              {searchTerm
+                ? `Nenhum produto encontrado para "${searchTerm}"`
+                : selectedCategory
                 ? `Nenhum produto encontrado na categoria "${selectedCategory}"`
                 : "Nenhum produto cadastrado ainda"}
             </p>
+            {(searchTerm || selectedCategory) && (
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => { setSearchTerm(""); setSelectedCategory(null); }}
+              >
+                Limpar filtros
+              </Button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
