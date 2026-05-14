@@ -248,26 +248,66 @@ export default function Produtos() {
       const text = await file.text();
       const lines = text.split(/\r?\n/).filter(Boolean);
       const [, ...rows] = lines;
-      const parsed = rows
-        .map((line) => {
-          const cols = line
-            .match(/("([^"]|"")*"|[^,]+)/g)
-            ?.map((c) => c.replace(/^"|"$/g, "").replace(/""/g, '"').trim());
-          if (!cols || !cols[1]) return null;
-          return {
-            code: cols[0] || null,
-            name: cols[1],
-            item_type: cols[2] || "produto_acabado",
-            cost_price: Number(cols[4]) || 0,
-            sale_price: Number(cols[5]) || 0,
-          };
-        })
-        .filter(Boolean) as any[];
-      if (!parsed.length) return toast.error("Nenhuma linha válida");
+      const splitCsv = (line: string) =>
+        line
+          .match(/("([^"]|"")*"|[^,]+)/g)
+          ?.map((c) => c.replace(/^"|"$/g, "").replace(/""/g, '"').trim()) || [];
+
+      const rawRows: string[][] = rows.map(splitCsv).filter((c) => c[1]);
+      if (!rawRows.length) return toast.error("Nenhuma linha válida");
+
+      // Resolve / criar categorias por nome (coluna "Categoria" = índice 3)
+      const catNames: string[] = Array.from(
+        new Set(rawRows.map((c) => (c[3] || "").trim()).filter(Boolean))
+      );
+      const norm = (s: string) => s.trim().toLowerCase();
+      const catMap = new Map<string, string>();
+      (categories || []).forEach((c) => catMap.set(norm(c.name), c.id));
+
+      // Cria categorias que ainda não existem
+      const missing = catNames.filter((n) => !catMap.has(norm(n)));
+      if (missing.length) {
+        const { data: created, error: createErr } = await supabase
+          .from("product_categories")
+          .insert(missing.map((name) => ({ name, active: true, position: 9999 })))
+          .select("id, name");
+        if (createErr) return toast.error("Erro ao criar categorias: " + createErr.message);
+        (created || []).forEach((c: any) => catMap.set(norm(c.name), c.id));
+      }
+
+      // Garante "Sem Categoria" como fallback para linhas sem categoria
+      let fallbackId = catMap.get("sem categoria");
+      const needsFallback = rawRows.some((c) => !(c[3] || "").trim());
+      if (needsFallback && !fallbackId) {
+        const { data: fb, error: fbErr } = await supabase
+          .from("product_categories")
+          .insert({ name: "Sem Categoria", active: true, position: 9999 })
+          .select("id, name")
+          .single();
+        if (fbErr) return toast.error("Erro ao criar categoria padrão: " + fbErr.message);
+        fallbackId = fb!.id;
+        catMap.set("sem categoria", fallbackId);
+      }
+
+      const parsed = rawRows.map((cols) => {
+        const catName = (cols[3] || "").trim();
+        const category_id = catName ? catMap.get(norm(catName))! : fallbackId!;
+        return {
+          code: cols[0] || null,
+          name: cols[1],
+          item_type: cols[2] || "produto_acabado",
+          category_id,
+          cost_price: Number(cols[4]) || 0,
+          sale_price: Number(cols[5]) || 0,
+          active: true,
+        };
+      });
+
       const { error } = await supabase.from("products").insert(parsed);
       if (error) return toast.error("Erro: " + error.message);
       toast.success(`${parsed.length} produtos importados`);
       queryClient.invalidateQueries({ queryKey: ["produtos-list"] });
+      queryClient.invalidateQueries({ queryKey: ["product-categories-options"] });
     };
     input.click();
   };
@@ -538,13 +578,14 @@ function NewProductDialog({
 
   const submit = async () => {
     if (!form.name.trim()) return toast.error("Nome obrigatório");
+    if (!form.category_id) return toast.error("Categoria obrigatória");
     setSaving(true);
     const payload: any = {
       code: form.code || null,
       name: form.name,
       descricao_curta: form.descricao_curta || null,
       description: form.description || null,
-      category_id: form.category_id || null,
+      category_id: form.category_id,
       item_type: form.item_type,
       cost_price: form.cost_price,
       sale_price: form.sale_price,
