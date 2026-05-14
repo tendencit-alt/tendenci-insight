@@ -391,6 +391,16 @@ export function ChartAccountsManager() {
     }
   }, [accounts]);
 
+  // Auto-open onboarding on first visit when no custom accounts exist
+  useEffect(() => {
+    if (!accounts) return;
+    const customCount = accounts.filter((a) => !a.is_core).length;
+    if (shouldAutoOpenOnboarding(customCount)) {
+      setOnboardingOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accounts?.length]);
+
   const toggleExpanded = (id: string) => {
     setExpandedIds(prev => {
       const next = new Set(prev);
