@@ -59,12 +59,39 @@ export default function BulkCategoryDialog({
     if (!categoryId || productIds.length === 0) return;
     setLoading(true);
     try {
+      // capture old values for audit
+      const { data: previous } = await supabase
+        .from("products")
+        .select("id, category_id, category:product_categories(name)")
+        .in("id", productIds);
+
       const { error } = await supabase
         .from("products")
         .update({ category_id: categoryId })
         .in("id", productIds);
       if (error) throw error;
       const cat = categories.find((c) => c.id === categoryId);
+
+      // audit each product
+      await Promise.all(
+        (previous ?? []).map((p: any) =>
+          logAudit({
+            table_name: "products",
+            record_id: p.id,
+            event_type: "bulk_update",
+            event_source: "ui:bulk_category_dialog",
+            field_name: "category_id",
+            old_value: p.category_id,
+            new_value: categoryId,
+            metadata: {
+              from_category_name: p.category?.name ?? null,
+              to_category_name: cat?.name ?? null,
+              batch_size: productIds.length,
+            },
+          })
+        )
+      );
+
       toast.success(
         `${productIds.length} produto(s) movido(s) para "${cat?.name ?? "categoria"}"`
       );
