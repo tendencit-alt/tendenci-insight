@@ -244,11 +244,9 @@ export default function CreatePurchaseOrderDialog({ open, onOpenChange, onSucces
                   </div>
                   <div className="col-span-2">
                     <Label className="text-xs">Valor Unit.</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
+                    <MoneyInput
                       value={item.unit_price}
-                      onChange={(e) => updateItem(index, "unit_price", parseFloat(e.target.value) || 0)}
+                      onChange={(v) => updateItem(index, "unit_price", v)}
                     />
                   </div>
                   <div className="col-span-2">
