@@ -121,7 +121,7 @@ const menuGroups: MenuGroup[] = [
       { title: "Forecast Financeiro", url: "/resultado-financeiro", icon: Calculator, comingSoon: true },
       { title: "Metas Financeiras", url: "/planning", icon: Target },
       { title: "Plano de Contas", url: "/cadastros-financeiros", icon: BookOpen },
-      { title: "BI Financeiro", url: "/bi-dashboard", icon: PieChart },
+      { title: "Dashboard", url: "/dashboard", icon: PieChart },
     ],
   },
   // ── VENDAS ──
