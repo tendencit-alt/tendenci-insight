@@ -49,6 +49,8 @@ export default function Catalogo() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState<"name-asc" | "name-desc" | "price-asc" | "price-desc" | "category">("category");
 
   const { activeTenantId, memberships } = useActiveTenant();
   const { user } = useAuth();
