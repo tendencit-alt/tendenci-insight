@@ -152,7 +152,7 @@ export function EditDealDialog({
         title: deal.title || "",
         stage_id: deal.stage_id || "",
         architect_id: deal.architect_id || "",
-        value: deal.value?.toString() || "",
+        value: deal.value != null ? formatToCurrencyDisplay(Number(deal.value)) : "",
         note: deal.note || "",
         temperature: deal.lead?.temperature || "frio",
         tipos_produto: tiposProdutoArray,
