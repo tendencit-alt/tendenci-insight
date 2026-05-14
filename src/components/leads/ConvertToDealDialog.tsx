@@ -49,7 +49,7 @@ export function ConvertToDealDialog({ lead, open, onOpenChange, onSuccess }: Con
         .insert({
           lead_id: lead.id,
           pipeline_id: formData.pipeline_id,
-          amount: parseFloat(formData.amount),
+          amount: parseCurrencyToNumber(formData.amount),
           title: `Negócio - ${lead.client?.name}`,
           status: "aberto"
         });
