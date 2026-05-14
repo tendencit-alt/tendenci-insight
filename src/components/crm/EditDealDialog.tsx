@@ -565,7 +565,7 @@ export function EditDealDialog({
           const stageName = selectedStage.name.toLowerCase();
           const requiresValue = stageName.includes("negociação");
           
-          if (requiresValue && (!formData.value || Number(formData.value) <= 0)) {
+          if (requiresValue && (!formData.value || parseCurrencyToNumber(formData.value) <= 0)) {
             setLoading(false);
             toast({
               title: "Valor obrigatório",
