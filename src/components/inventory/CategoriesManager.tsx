@@ -135,16 +135,46 @@ export default function CategoriesManager() {
 
   const handleDelete = async () => {
     if (!categoryToDelete) return;
-    
+
+    // Block delete if products exist and no reallocation target chosen
+    if (deleteProductCount > 0 && !reallocateTo) {
+      toast({
+        title: "Realocação obrigatória",
+        description: `Esta categoria possui ${deleteProductCount} produto(s). Selecione outra categoria para realocá-los.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setDeleteLoading(true);
     try {
+      // Reallocate products if needed
+      if (deleteProductCount > 0 && reallocateTo) {
+        const { error: updErr } = await supabase
+          .from("products")
+          .update({ category_id: reallocateTo })
+          .eq("category_id", categoryToDelete.id);
+        if (updErr) throw updErr;
+      }
+
       const { error } = await supabase.from("product_categories").delete().eq("id", categoryToDelete.id);
       if (error) throw error;
-      toast({ title: "Categoria removida" });
+      toast({
+        title: "Categoria removida",
+        description: deleteProductCount > 0
+          ? `${deleteProductCount} produto(s) realocado(s) com sucesso.`
+          : undefined,
+      });
       refetch();
+      queryClient.invalidateQueries({ queryKey: ["products"] });
       setDeleteOpen(false);
       setCategoryToDelete(null);
+      setReallocateTo("");
+      setDeleteProductCount(0);
     } catch (error: any) {
       toast({ title: "Erro ao remover categoria", description: error.message, variant: "destructive" });
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
