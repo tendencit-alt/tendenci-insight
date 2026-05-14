@@ -265,14 +265,10 @@ export default function EditPurchaseOrderDialog({ order, open, onOpenChange, onS
                 value={newItem.quantity}
                 onChange={(e) => setNewItem({ ...newItem, quantity: parseFloat(e.target.value) || 1 })}
               />
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
+              <MoneyInput
                 className="w-32"
-                placeholder="Preço"
                 value={newItem.unit_price}
-                onChange={(e) => setNewItem({ ...newItem, unit_price: parseFloat(e.target.value) || 0 })}
+                onChange={(v) => setNewItem({ ...newItem, unit_price: v })}
               />
               <Button type="button" onClick={addItem}>
                 <Plus className="h-4 w-4" />
