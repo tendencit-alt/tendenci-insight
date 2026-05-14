@@ -199,6 +199,10 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
       toast({ title: "Nome é obrigatório", variant: "destructive" });
       return;
     }
+    if (!form.category_id) {
+      toast({ title: "Categoria é obrigatória", description: "Selecione uma categoria para o produto.", variant: "destructive" });
+      return;
+    }
 
     setLoading(true);
     try {
