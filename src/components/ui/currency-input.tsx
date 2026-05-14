@@ -61,8 +61,61 @@ export function parseCurrencyToNumber(value: string): number {
 
 // Helper function to format number to currency display
 export function formatToCurrencyDisplay(value: number): string {
-  return value.toLocaleString('pt-BR', {
+  return (value || 0).toLocaleString('pt-BR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+}
+
+// Numeric variant: accepts a number and emits a number. Same R$ 10,00 mask.
+interface MoneyInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'> {
+  value: number | null | undefined;
+  onChange: (value: number) => void;
+}
+
+export function MoneyInput({ value, onChange, className, ...props }: MoneyInputProps) {
+  const [display, setDisplay] = React.useState<string>(
+    value != null && value !== 0 ? formatToCurrencyDisplay(Number(value)) : ""
+  );
+
+  React.useEffect(() => {
+    const numFromDisplay = parseCurrencyToNumber(display);
+    const incoming = Number(value) || 0;
+    if (Math.abs(numFromDisplay - incoming) > 0.005) {
+      setDisplay(incoming === 0 ? "" : formatToCurrencyDisplay(incoming));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const numericValue = e.target.value.replace(/\D/g, '');
+    if (!numericValue) {
+      setDisplay('');
+      onChange(0);
+      return;
+    }
+    const numberValue = parseInt(numericValue, 10) / 100;
+    setDisplay(numberValue.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }));
+    onChange(numberValue);
+  };
+
+  return (
+    <div className="relative">
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+        R$
+      </span>
+      <Input
+        {...props}
+        type="text"
+        inputMode="numeric"
+        value={display}
+        onChange={handleChange}
+        className={cn("pl-10", className)}
+        placeholder="0,00"
+      />
+    </div>
+  );
 }
