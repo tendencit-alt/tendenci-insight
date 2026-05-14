@@ -308,6 +308,16 @@ export default function ProductsTable({ products, isLoading, onSelect, onRefresh
         onOpenChange={(open) => !open && setRequestProduct(null)}
         onSuccess={handleRefresh}
       />
+
+      <BulkCategoryDialog
+        open={bulkCategoryOpen}
+        onOpenChange={setBulkCategoryOpen}
+        productIds={Array.from(selectedIds)}
+        onSuccess={() => {
+          clearSelection();
+          handleRefresh();
+        }}
+      />
     </>
   );
 }
