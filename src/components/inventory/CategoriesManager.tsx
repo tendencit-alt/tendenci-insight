@@ -75,6 +75,9 @@ export default function CategoriesManager() {
   // Delete state
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [deleteProductCount, setDeleteProductCount] = useState(0);
+  const [reallocateTo, setReallocateTo] = useState<string>("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const { data: categories = [], refetch } = useQuery({
     queryKey: ["product-categories-all"],
