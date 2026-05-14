@@ -344,8 +344,12 @@ export default function CategoriesManager() {
   return (
     <>
       <Card>
-        <CardHeader>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle className="text-lg">Categorias de Itens</CardTitle>
+          <Button variant="outline" size="sm" onClick={() => setHistoryOpen(true)}>
+            <HistoryIcon className="h-4 w-4 mr-2" />
+            Histórico
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
