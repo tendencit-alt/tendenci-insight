@@ -48,7 +48,7 @@ export function CreateProjectDialog({ open, onOpenChange, architectId, onSuccess
         nome_projeto: nome,
         tipo,
         data_projeto: data.toISOString(),
-        valor: valor ? parseFloat(valor) : 0,
+        valor: valor ? parseCurrencyToNumber(valor) : 0,
         observacoes: observacoes || null,
       });
 
