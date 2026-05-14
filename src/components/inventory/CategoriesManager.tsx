@@ -685,6 +685,25 @@ export default function CategoriesManager() {
                       <span className="font-medium text-foreground">{e.new_value}</span>
                     </div>
                   );
+                } else if (isBulkUpdate) {
+                  title = "Edição em lote";
+                  badgeVariant = "default";
+                  body = (
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium text-foreground">
+                          {meta.from_category_name || "—"}
+                        </span>
+                        <ArrowRight className="h-3 w-3" />
+                        <span className="font-medium text-foreground">
+                          {meta.to_category_name || "—"}
+                        </span>
+                      </div>
+                      {meta.batch_size > 1 && (
+                        <div className="text-xs">Lote de {meta.batch_size} produto(s)</div>
+                      )}
+                    </div>
+                  );
                 }
 
                 return (
