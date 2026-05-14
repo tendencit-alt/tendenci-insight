@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { AlertTriangle, Eye, Pencil, ShoppingCart, MoreHorizontal, Package, FileSpreadsheet } from "lucide-react";
+import { AlertTriangle, Eye, Pencil, ShoppingCart, MoreHorizontal, Package, FileSpreadsheet, Tag, X } from "lucide-react";
 import ProductDetailSheet from "./ProductDetailSheet";
 import EditProductDialog from "./EditProductDialog";
 import QuickMinStockDialog from "./QuickMinStockDialog";
 import CreateMaterialRequestDialog from "./CreateMaterialRequestDialog";
+import BulkCategoryDialog from "./BulkCategoryDialog";
 import { cn } from "@/lib/utils";
 
 interface ProductsTableProps {
