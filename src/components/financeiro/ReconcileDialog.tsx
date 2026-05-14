@@ -43,7 +43,7 @@ import {
 } from "lucide-react";
 import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
 import { reconcileWithSync } from "@/lib/financeiroIntegration";
-import { CurrencyInput, parseCurrencyToNumber, formatToCurrencyDisplay } from "@/components/ui/currency-input";
+import { CurrencyInput, MoneyInput, parseCurrencyToNumber, formatToCurrencyDisplay } from "@/components/ui/currency-input";
 
 interface LedgerEntry {
   id: string;
