@@ -44,9 +44,11 @@ export function CatalogoAdminBar({ onProductCreated }: Props) {
     if (!newCategory.trim()) return;
     setSaving(true);
     try {
+      const { data: tenantId, error: tErr } = await supabase.rpc("get_user_tenant_id");
+      if (tErr) throw tErr;
       const { error } = await supabase
         .from("product_categories")
-        .insert({ name: newCategory.trim(), active: true } as any);
+        .insert({ name: newCategory.trim(), active: true, tenant_id: tenantId } as any);
       if (error) throw error;
       setNewCategory("");
       await refetch();
