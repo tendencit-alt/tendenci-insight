@@ -32,6 +32,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { AlertTriangle } from "lucide-react";
 
 interface Category {
   id: string;
@@ -67,6 +75,9 @@ export default function CategoriesManager() {
   // Delete state
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [deleteProductCount, setDeleteProductCount] = useState(0);
+  const [reallocateTo, setReallocateTo] = useState<string>("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const { data: categories = [], refetch } = useQuery({
     queryKey: ["product-categories-all"],
@@ -124,16 +135,46 @@ export default function CategoriesManager() {
 
   const handleDelete = async () => {
     if (!categoryToDelete) return;
-    
+
+    // Block delete if products exist and no reallocation target chosen
+    if (deleteProductCount > 0 && !reallocateTo) {
+      toast({
+        title: "Realocação obrigatória",
+        description: `Esta categoria possui ${deleteProductCount} produto(s). Selecione outra categoria para realocá-los.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setDeleteLoading(true);
     try {
+      // Reallocate products if needed
+      if (deleteProductCount > 0 && reallocateTo) {
+        const { error: updErr } = await supabase
+          .from("products")
+          .update({ category_id: reallocateTo })
+          .eq("category_id", categoryToDelete.id);
+        if (updErr) throw updErr;
+      }
+
       const { error } = await supabase.from("product_categories").delete().eq("id", categoryToDelete.id);
       if (error) throw error;
-      toast({ title: "Categoria removida" });
+      toast({
+        title: "Categoria removida",
+        description: deleteProductCount > 0
+          ? `${deleteProductCount} produto(s) realocado(s) com sucesso.`
+          : undefined,
+      });
       refetch();
+      queryClient.invalidateQueries({ queryKey: ["products"] });
       setDeleteOpen(false);
       setCategoryToDelete(null);
+      setReallocateTo("");
+      setDeleteProductCount(0);
     } catch (error: any) {
       toast({ title: "Erro ao remover categoria", description: error.message, variant: "destructive" });
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -183,9 +224,16 @@ export default function CategoriesManager() {
     setEditOpen(true);
   };
 
-  const openDelete = (cat: Category) => {
+  const openDelete = async (cat: Category) => {
     setCategoryToDelete(cat);
+    setReallocateTo("");
+    setDeleteProductCount(0);
     setDeleteOpen(true);
+    const { count } = await supabase
+      .from("products")
+      .select("id", { count: "exact", head: true })
+      .eq("category_id", cat.id);
+    setDeleteProductCount(count ?? 0);
   };
 
   return (
@@ -399,15 +447,52 @@ export default function CategoriesManager() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remover categoria?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja remover a categoria "{categoryToDelete?.name}"? 
-              Os itens vinculados a esta categoria ficarão sem categoria.
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Tem certeza que deseja remover a categoria{" "}
+                  <span className="font-medium">"{categoryToDelete?.name}"</span>?
+                </p>
+                {deleteProductCount > 0 && (
+                  <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 space-y-2">
+                    <div className="flex items-start gap-2 text-destructive">
+                      <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                      <p className="text-sm font-medium">
+                        Esta categoria possui {deleteProductCount} produto(s) vinculado(s).
+                        Selecione outra categoria para realocá-los antes de excluir.
+                      </p>
+                    </div>
+                    <Select value={reallocateTo} onValueChange={setReallocateTo}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Realocar produtos para..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories
+                          .filter((c) => c.id !== categoryToDelete?.id && c.active)
+                          .map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Remover
+            <AlertDialogCancel disabled={deleteLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
+              disabled={deleteLoading || (deleteProductCount > 0 && !reallocateTo)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {deleteProductCount > 0 ? "Realocar e remover" : "Remover"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
