@@ -99,7 +99,7 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess, ati
         code: form.code || null,
         name: form.name,
         description: form.description || null,
-        category_id: form.category_id || null,
+        category_id: form.category_id,
         location_id: form.location_id || null,
         unit: form.unit,
         current_stock: form.current_stock,
