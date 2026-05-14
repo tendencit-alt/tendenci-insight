@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Loader2, Eye, Pencil, Package } from "lucide-react";
+import { Plus, Trash2, Loader2, Eye, Pencil, Package, History as HistoryIcon, ArrowRight } from "lucide-react";
+import { logAudit } from "@/lib/auditLog";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   Sheet,
   SheetContent,
