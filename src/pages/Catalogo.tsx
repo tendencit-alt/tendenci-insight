@@ -150,9 +150,30 @@ export default function Catalogo() {
   }, [products]);
 
   const filteredProducts = useMemo(() => {
-    if (!selectedCategory) return products;
-    return products.filter((p) => p.categoria === selectedCategory);
-  }, [products, selectedCategory]);
+    const term = searchTerm.trim().toLowerCase();
+    let list = products.filter((p) => {
+      if (selectedCategory && p.categoria !== selectedCategory) return false;
+      if (term) {
+        const haystack = `${p.nome} ${p.descricao || ""} ${p.categoria || ""}`.toLowerCase();
+        if (!haystack.includes(term)) return false;
+      }
+      return true;
+    });
+    list = [...list].sort((a, b) => {
+      switch (sortBy) {
+        case "name-asc": return a.nome.localeCompare(b.nome, "pt-BR");
+        case "name-desc": return b.nome.localeCompare(a.nome, "pt-BR");
+        case "price-asc": return (a.preco_base ?? Infinity) - (b.preco_base ?? Infinity);
+        case "price-desc": return (b.preco_base ?? -Infinity) - (a.preco_base ?? -Infinity);
+        case "category":
+        default: {
+          const ca = (a.categoria || "zzz").localeCompare(b.categoria || "zzz", "pt-BR");
+          return ca !== 0 ? ca : a.nome.localeCompare(b.nome, "pt-BR");
+        }
+      }
+    });
+    return list;
+  }, [products, selectedCategory, searchTerm, sortBy]);
 
   const handleBuyNow = (product: Product) => {
     if (!whatsappNumber) return;
