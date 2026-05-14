@@ -75,6 +75,12 @@ serve(async (req) => {
       const updateData: Record<string, any> = {
         username: finalUsername,
       };
+
+      // Herdar tenant_id do admin que está criando, para que o usuário apareça
+      // corretamente na listagem (que é filtrada por tenant via RLS).
+      if (callerTenantId) {
+        updateData.tenant_id = callerTenantId;
+      }
       
       // Map role to valid user_role enum values
       const validRoles = ['admin', 'vendedor', 'arquiteto', 'projetista'];
