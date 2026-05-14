@@ -702,14 +702,10 @@ export function ReconcileDialog({
                     <Label htmlFor="jurosAtraso">
                       Juros por Atraso (R$)
                     </Label>
-                    <Input
+                    <MoneyInput
                       id="jurosAtraso"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0,00"
-                      value={jurosAtraso || ""}
-                      onChange={(e) => setJurosAtraso(parseFloat(e.target.value) || 0)}
+                      value={jurosAtraso || 0}
+                      onChange={setJurosAtraso}
                     />
                     <p className="text-xs text-muted-foreground">
                       Informe se houve cobrança de juros por atraso no pagamento
