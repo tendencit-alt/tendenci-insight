@@ -199,7 +199,7 @@ export default function Inventory() {
           <Tabs defaultValue="analytics">
             <TabsList>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              <TabsTrigger value="abc">Curva ABC</TabsTrigger>
+              <TabsTrigger value="abc">Por Categoria</TabsTrigger>
             </TabsList>
             <TabsContent value="analytics"><InvAnalyticsTab /></TabsContent>
             <TabsContent value="abc"><ABCAnalysis /></TabsContent>
