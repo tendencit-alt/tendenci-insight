@@ -1,105 +1,122 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { PieChart, Pie, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from "recharts";
 
-interface ABCItem {
-  product_id: string;
-  product_name: string;
-  product_code: string;
-  stock_value: number;
-  cumulative_percentage: number;
-  abc_class: string;
+const PALETTE = [
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+  "hsl(220 70% 55%)",
+  "hsl(160 60% 45%)",
+  "hsl(30 80% 55%)",
+  "hsl(280 60% 55%)",
+  "hsl(340 70% 55%)",
+];
+
+interface ProductRow {
+  id: string;
+  name: string;
+  code: string | null;
+  current_stock: number | null;
+  average_cost: number | null;
+  cost_price: number | null;
+  category_id: string | null;
+  product_categories?: { name: string } | null;
 }
 
 export default function ABCAnalysis() {
-  const { data: abcData = [], isLoading } = useQuery({
-    queryKey: ["stock-abc-analysis"],
+  const { data: products = [], isLoading } = useQuery({
+    queryKey: ["stock-by-category"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("stock_abc_analysis");
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, name, code, current_stock, average_cost, cost_price, category_id, product_categories(name)")
+        .eq("active", true);
       if (error) throw error;
-      return (data || []) as ABCItem[];
+      return (data || []) as ProductRow[];
     },
   });
+
+  const formatCurrency = (value: number) =>
+    (value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  const { items, summary, totalValue, categoryColors } = useMemo(() => {
+    const items = products.map((p) => {
+      const unit = Number(p.average_cost) || Number(p.cost_price) || 0;
+      const stock = Number(p.current_stock) || 0;
+      const value = unit * stock;
+      const category = p.product_categories?.name || "Sem categoria";
+      return {
+        product_id: p.id,
+        product_name: p.name,
+        product_code: p.code || "",
+        category,
+        stock_value: value,
+      };
+    }).sort((a, b) => b.stock_value - a.stock_value);
+
+    const summary: Record<string, { count: number; value: number }> = {};
+    for (const it of items) {
+      if (!summary[it.category]) summary[it.category] = { count: 0, value: 0 };
+      summary[it.category].count++;
+      summary[it.category].value += it.stock_value;
+    }
+    const totalValue = items.reduce((s, i) => s + i.stock_value, 0);
+
+    const sortedCats = Object.entries(summary).sort((a, b) => b[1].value - a[1].value);
+    const categoryColors: Record<string, string> = {};
+    sortedCats.forEach(([cat], i) => { categoryColors[cat] = PALETTE[i % PALETTE.length]; });
+
+    return { items, summary, totalValue, categoryColors };
+  }, [products]);
 
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Curva ABC</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-64 w-full" />
-        </CardContent>
+        <CardHeader><CardTitle>Curva ABC por Categoria</CardTitle></CardHeader>
+        <CardContent><Skeleton className="h-64 w-full" /></CardContent>
       </Card>
     );
   }
 
-  const formatCurrency = (value: number) =>
-    value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const totalProducts = items.length;
+  const sortedCats = Object.entries(summary).sort((a, b) => b[1].value - a[1].value);
 
-  const classColors: Record<string, string> = {
-    A: "hsl(var(--chart-1))",
-    B: "hsl(var(--chart-2))",
-    C: "hsl(var(--chart-3))",
-  };
-
-  const classBadgeVariants: Record<string, "default" | "secondary" | "outline"> = {
-    A: "default",
-    B: "secondary",
-    C: "outline",
-  };
-
-  // Summary by class
-  const summary = abcData.reduce(
-    (acc, item) => {
-      if (!acc[item.abc_class]) {
-        acc[item.abc_class] = { count: 0, value: 0 };
-      }
-      acc[item.abc_class].count++;
-      acc[item.abc_class].value += item.stock_value;
-      return acc;
-    },
-    {} as Record<string, { count: number; value: number }>
-  );
-
-  const totalValue = abcData.reduce((sum, item) => sum + item.stock_value, 0);
-  const totalProducts = abcData.length;
-
-  const pieData = Object.entries(summary).map(([cls, data]) => ({
-    name: `Classe ${cls}`,
+  const pieData = sortedCats.map(([cat, data]) => ({
+    name: cat,
     value: data.value,
     count: data.count,
-    percentage: ((data.value / totalValue) * 100).toFixed(1),
-    fill: classColors[cls],
+    percentage: totalValue > 0 ? ((data.value / totalValue) * 100).toFixed(1) : "0",
+    fill: categoryColors[cat],
   }));
 
-  const barData = abcData.slice(0, 15).map((item) => ({
+  const barData = items.slice(0, 15).map((item) => ({
     name: item.product_name.length > 20 ? item.product_name.substring(0, 20) + "..." : item.product_name,
     value: item.stock_value,
-    class: item.abc_class,
+    category: item.category,
   }));
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        {["A", "B", "C"].map((cls) => {
-          const data = summary[cls] || { count: 0, value: 0 };
+      {/* Summary Cards por Categoria */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {sortedCats.map(([cat, data]) => {
           const valuePercentage = totalValue > 0 ? ((data.value / totalValue) * 100).toFixed(1) : "0";
           const countPercentage = totalProducts > 0 ? ((data.count / totalProducts) * 100).toFixed(1) : "0";
-
           return (
-            <Card key={cls}>
+            <Card key={cat}>
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center justify-between">
-                  <span className="text-base">Classe {cls}</span>
-                  <Badge variant={classBadgeVariants[cls]} style={{ backgroundColor: classColors[cls], color: "white" }}>
-                    {cls === "A" ? "Alto Valor" : cls === "B" ? "Médio Valor" : "Baixo Valor"}
+                  <span className="text-base truncate">{cat}</span>
+                  <Badge style={{ backgroundColor: categoryColors[cat], color: "white" }}>
+                    {valuePercentage}%
                   </Badge>
                 </CardTitle>
               </CardHeader>
@@ -111,7 +128,7 @@ export default function ABCAnalysis() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Valor</span>
-                    <span className="font-medium">{formatCurrency(data.value)} ({valuePercentage}%)</span>
+                    <span className="font-medium">{formatCurrency(data.value)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -123,9 +140,7 @@ export default function ABCAnalysis() {
       {/* Charts */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Distribuição por Classe</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-base">Distribuição por Categoria</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
@@ -142,10 +157,7 @@ export default function ABCAnalysis() {
                     <Cell key={index} fill={entry.fill} />
                   ))}
                 </Pie>
-                <Tooltip
-                  formatter={(value: number) => formatCurrency(value)}
-                  labelFormatter={(label) => label}
-                />
+                <Tooltip formatter={(value: number) => formatCurrency(value)} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -153,9 +165,7 @@ export default function ABCAnalysis() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Top 15 Produtos por Valor</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-base">Top 15 Produtos por Valor</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={barData} layout="vertical">
@@ -165,7 +175,7 @@ export default function ABCAnalysis() {
                 <Tooltip formatter={(value: number) => formatCurrency(value)} />
                 <Bar dataKey="value">
                   {barData.map((entry, index) => (
-                    <Cell key={index} fill={classColors[entry.class]} />
+                    <Cell key={index} fill={categoryColors[entry.category] || PALETTE[0]} />
                   ))}
                 </Bar>
               </BarChart>
@@ -176,9 +186,7 @@ export default function ABCAnalysis() {
 
       {/* Table */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Detalhamento por Produto</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="text-base">Detalhamento por Produto</CardTitle></CardHeader>
         <CardContent>
           <div className="max-h-96 overflow-auto">
             <Table>
@@ -187,29 +195,31 @@ export default function ABCAnalysis() {
                   <TableHead>#</TableHead>
                   <TableHead>Produto</TableHead>
                   <TableHead>Código</TableHead>
+                  <TableHead>Categoria</TableHead>
                   <TableHead className="text-right">Valor em Estoque</TableHead>
-                  <TableHead className="text-right">% Acumulado</TableHead>
-                  <TableHead className="text-center">Classe</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {abcData.map((item, index) => (
+                {items.map((item, index) => (
                   <TableRow key={item.product_id}>
                     <TableCell className="text-muted-foreground">{index + 1}</TableCell>
                     <TableCell className="font-medium">{item.product_name}</TableCell>
                     <TableCell className="text-muted-foreground">{item.product_code || "-"}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(item.stock_value)}</TableCell>
-                    <TableCell className="text-right">{item.cumulative_percentage.toFixed(1)}%</TableCell>
-                    <TableCell className="text-center">
-                      <Badge
-                        variant={classBadgeVariants[item.abc_class]}
-                        style={{ backgroundColor: classColors[item.abc_class], color: "white" }}
-                      >
-                        {item.abc_class}
+                    <TableCell>
+                      <Badge style={{ backgroundColor: categoryColors[item.category], color: "white" }}>
+                        {item.category}
                       </Badge>
                     </TableCell>
+                    <TableCell className="text-right">{formatCurrency(item.stock_value)}</TableCell>
                   </TableRow>
                 ))}
+                {items.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                      Nenhum produto cadastrado
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
