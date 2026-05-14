@@ -115,6 +115,7 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess, ati
         image_url: form.image_url || null,
         galeria: isProdutoCategory ? galeria : [],
         videos: isProdutoCategory ? videos : [],
+        ativo_no_catalogo: ativoNoCatalogoDefault,
       };
       
       const { data: newProduct, error } = await supabase
