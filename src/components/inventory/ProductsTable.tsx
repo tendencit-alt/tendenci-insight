@@ -117,10 +117,37 @@ export default function ProductsTable({ products, isLoading, onSelect, onRefresh
 
   return (
     <>
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between gap-3 px-4 py-2 mb-3 border rounded-lg bg-muted/50">
+          <div className="flex items-center gap-2 text-sm">
+            <Badge variant="secondary">{selectedIds.size}</Badge>
+            <span className="text-muted-foreground">
+              {selectedIds.size === 1 ? "produto selecionado" : "produtos selecionados"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="default" onClick={() => setBulkCategoryOpen(true)}>
+              <Tag className="h-4 w-4 mr-2" />
+              Alterar categoria
+            </Button>
+            <Button size="sm" variant="ghost" onClick={clearSelection}>
+              <X className="h-4 w-4 mr-1" />
+              Limpar
+            </Button>
+          </div>
+        </div>
+      )}
       <div className="border rounded-lg overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                  onCheckedChange={toggleAll}
+                  aria-label="Selecionar todos"
+                />
+              </TableHead>
               <TableHead>Código</TableHead>
               <TableHead>Item</TableHead>
               <TableHead>Categoria</TableHead>
