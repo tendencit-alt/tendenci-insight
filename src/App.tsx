@@ -234,8 +234,9 @@ const App = () => (
               <Route path="/empresas" element={<ProtectedRoute><Empresas /></ProtectedRoute>} />
 
               {/* Painéis (PT canônico + redirect EN) */}
-              <Route path="/paineis" element={<Navigate to="/bi-dashboard" replace />} />
-              <Route path="/dashboards" element={<Navigate to="/paineis" replace />} />
+              <Route path="/paineis" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboards" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/painel" element={<Navigate to="/dashboard" replace />} />
 
               <Route path="/ia-configuracao" element={<Navigate to="/" replace />} />
               <Route path="/compras" element={<Navigate to="/suprimentos" replace />} />
