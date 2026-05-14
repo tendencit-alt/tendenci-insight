@@ -80,6 +80,18 @@ export default function InventoryKPIs() {
       color: "text-green-500"
     },
     {
+      label: "Estoque Negativo",
+      value: negativeCount || 0,
+      icon: AlertTriangle,
+      color: "text-destructive"
+    },
+    {
+      label: "Entradas (Mês)",
+      value: metrics?.entries_this_month || 0,
+      icon: TrendingUp,
+      color: "text-green-500"
+    },
+    {
       label: "Saídas (Mês)",
       value: metrics?.exits_this_month || 0,
       icon: TrendingDown,
