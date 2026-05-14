@@ -145,12 +145,16 @@ export default function ProductsTable({ products, isLoading, onSelect, onRefresh
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      {(isLowStock || isOutOfStock) && (
-                        <AlertTriangle className={`h-4 w-4 ${isOutOfStock ? "text-red-500" : "text-amber-500"}`} />
+                      {(isLowStock || isOutOfStock || isNegativeStock) && (
+                        <AlertTriangle className={`h-4 w-4 ${isNegativeStock ? "text-destructive" : isOutOfStock ? "text-red-500" : "text-amber-500"}`} />
                       )}
-                      <span className={isOutOfStock ? "text-red-500 font-medium" : isLowStock ? "text-amber-500" : ""}>
-                        {product.current_stock} {product.unit}
-                      </span>
+                      {isNegativeStock ? (
+                        <Badge variant="destructive">Negativo: {product.current_stock} {product.unit}</Badge>
+                      ) : (
+                        <span className={isOutOfStock ? "text-red-500 font-medium" : isLowStock ? "text-amber-500" : ""}>
+                          {product.current_stock} {product.unit}
+                        </span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
