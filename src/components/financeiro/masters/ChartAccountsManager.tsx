@@ -1401,6 +1401,15 @@ export function ChartAccountsManager() {
           Plano de Contas
         </CardTitle>
         <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setOnboardingOpen(true)}
+            className="gap-1"
+          >
+            <Wand2 className="h-4 w-4" />
+            Assistente
+          </Button>
           <Button variant="outline" size="sm" onClick={expandAll} className="gap-1">
             <ChevronsUpDown className="h-4 w-4" />
             Expandir
@@ -1914,5 +1923,7 @@ export function ChartAccountsManager() {
         </AlertDialogContent>
       </AlertDialog>
     </Card>
+    <ChartAccountsOnboardingWizard open={onboardingOpen} onOpenChange={setOnboardingOpen} />
+    </>
   );
 }
