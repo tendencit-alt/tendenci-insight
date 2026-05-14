@@ -606,6 +606,110 @@ export default function CategoriesManager() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* History Sheet */}
+      <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+        <SheetContent className="sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <HistoryIcon className="h-5 w-5" />
+              Histórico de Categorias
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="mt-6 space-y-3">
+            {loadingHistory ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : auditEntries.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                Nenhuma alteração registrada ainda.
+              </div>
+            ) : (
+              auditEntries.map((e: any) => {
+                const isDelete = e.event_type === "delete" && e.table_name === "product_categories";
+                const isReallocate = e.event_type === "reallocate";
+                const isUpdate = e.event_type === "update" && e.table_name === "product_categories";
+                const meta = e.metadata || {};
+
+                let title = "Alteração";
+                let badgeVariant: "default" | "destructive" | "secondary" | "outline" = "secondary";
+                let body: React.ReactNode = null;
+
+                if (isDelete) {
+                  title = "Categoria removida";
+                  badgeVariant = "destructive";
+                  body = (
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <div>
+                        Categoria{" "}
+                        <span className="font-medium text-foreground">"{meta.name || e.old_value}"</span>{" "}
+                        foi excluída.
+                      </div>
+                      {meta.reallocated_count > 0 && (
+                        <div className="flex items-center gap-1">
+                          <span>{meta.reallocated_count} produto(s) realocado(s) para</span>
+                          <ArrowRight className="h-3 w-3" />
+                          <span className="font-medium text-foreground">
+                            {meta.reallocated_to_name || "—"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                } else if (isReallocate) {
+                  title = "Produto realocado";
+                  badgeVariant = "default";
+                  body = (
+                    <div className="text-sm text-muted-foreground">
+                      Produto movido de{" "}
+                      <span className="font-medium text-foreground">
+                        {meta.from_category_name || "—"}
+                      </span>{" "}
+                      para{" "}
+                      <span className="font-medium text-foreground">
+                        {meta.to_category_name || "—"}
+                      </span>
+                      {meta.reason === "category_deleted" && " (categoria excluída)"}
+                    </div>
+                  );
+                } else if (isUpdate) {
+                  title = "Categoria renomeada";
+                  badgeVariant = "outline";
+                  body = (
+                    <div className="text-sm text-muted-foreground flex items-center gap-1">
+                      <span className="font-medium text-foreground">{e.old_value}</span>
+                      <ArrowRight className="h-3 w-3" />
+                      <span className="font-medium text-foreground">{e.new_value}</span>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={e.id} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={badgeVariant}>{title}</Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {formatDistanceToNow(new Date(e.created_at), {
+                          addSuffix: true,
+                          locale: ptBR,
+                        })}
+                      </span>
+                    </div>
+                    {body}
+                    <div className="text-xs text-muted-foreground border-t pt-2">
+                      por <span className="font-medium">{e.user_name}</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }
