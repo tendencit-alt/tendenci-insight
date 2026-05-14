@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { AlertTriangle, Eye, Pencil, ShoppingCart, MoreHorizontal, Package, FileSpreadsheet } from "lucide-react";
+import { AlertTriangle, Eye, Pencil, ShoppingCart, MoreHorizontal, Package, FileSpreadsheet, Tag, X } from "lucide-react";
 import ProductDetailSheet from "./ProductDetailSheet";
 import EditProductDialog from "./EditProductDialog";
 import QuickMinStockDialog from "./QuickMinStockDialog";
 import CreateMaterialRequestDialog from "./CreateMaterialRequestDialog";
+import BulkCategoryDialog from "./BulkCategoryDialog";
 import { cn } from "@/lib/utils";
 
 interface ProductsTableProps {
@@ -28,6 +30,33 @@ export default function ProductsTable({ products, isLoading, onSelect, onRefresh
   const [editProduct, setEditProduct] = useState<any>(null);
   const [minStockProduct, setMinStockProduct] = useState<any>(null);
   const [requestProduct, setRequestProduct] = useState<any>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkCategoryOpen, setBulkCategoryOpen] = useState(false);
+
+  const allVisibleIds = useMemo(() => products.map((p) => p.id), [products]);
+  const allSelected = allVisibleIds.length > 0 && allVisibleIds.every((id) => selectedIds.has(id));
+  const someSelected = !allSelected && allVisibleIds.some((id) => selectedIds.has(id));
+
+  const toggleAll = () => {
+    if (allSelected) {
+      const next = new Set(selectedIds);
+      allVisibleIds.forEach((id) => next.delete(id));
+      setSelectedIds(next);
+    } else {
+      const next = new Set(selectedIds);
+      allVisibleIds.forEach((id) => next.add(id));
+      setSelectedIds(next);
+    }
+  };
+
+  const toggleOne = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
 
   const openProductWithTab = (product: any, tab: string) => {
     setViewProductTab(tab);
@@ -40,6 +69,7 @@ export default function ProductsTable({ products, isLoading, onSelect, onRefresh
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10"></TableHead>
               <TableHead>Código</TableHead>
               <TableHead>Item</TableHead>
               <TableHead>Categoria</TableHead>
@@ -55,6 +85,7 @@ export default function ProductsTable({ products, isLoading, onSelect, onRefresh
           <TableBody>
             {[...Array(5)].map((_, i) => (
               <TableRow key={i}>
+                <TableCell><Skeleton className="h-4 w-4" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-20" /></TableCell>
@@ -88,10 +119,37 @@ export default function ProductsTable({ products, isLoading, onSelect, onRefresh
 
   return (
     <>
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between gap-3 px-4 py-2 mb-3 border rounded-lg bg-muted/50">
+          <div className="flex items-center gap-2 text-sm">
+            <Badge variant="secondary">{selectedIds.size}</Badge>
+            <span className="text-muted-foreground">
+              {selectedIds.size === 1 ? "produto selecionado" : "produtos selecionados"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="default" onClick={() => setBulkCategoryOpen(true)}>
+              <Tag className="h-4 w-4 mr-2" />
+              Alterar categoria
+            </Button>
+            <Button size="sm" variant="ghost" onClick={clearSelection}>
+              <X className="h-4 w-4 mr-1" />
+              Limpar
+            </Button>
+          </div>
+        </div>
+      )}
       <div className="border rounded-lg overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                  onCheckedChange={toggleAll}
+                  aria-label="Selecionar todos"
+                />
+              </TableHead>
               <TableHead>Código</TableHead>
               <TableHead>Item</TableHead>
               <TableHead>Categoria</TableHead>
@@ -113,7 +171,14 @@ export default function ProductsTable({ products, isLoading, onSelect, onRefresh
               const fichaTecnica = product.ficha_tecnica?.[0];
 
               return (
-                <TableRow key={product.id} className="group">
+                <TableRow key={product.id} className="group" data-state={selectedIds.has(product.id) ? "selected" : undefined}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.has(product.id)}
+                      onCheckedChange={() => toggleOne(product.id)}
+                      aria-label={`Selecionar ${product.name}`}
+                    />
+                  </TableCell>
                   <TableCell className="font-mono text-sm">
                     {product.code || "-"}
                   </TableCell>
@@ -244,6 +309,16 @@ export default function ProductsTable({ products, isLoading, onSelect, onRefresh
         open={!!requestProduct}
         onOpenChange={(open) => !open && setRequestProduct(null)}
         onSuccess={handleRefresh}
+      />
+
+      <BulkCategoryDialog
+        open={bulkCategoryOpen}
+        onOpenChange={setBulkCategoryOpen}
+        productIds={Array.from(selectedIds)}
+        onSuccess={() => {
+          clearSelection();
+          handleRefresh();
+        }}
       />
     </>
   );
