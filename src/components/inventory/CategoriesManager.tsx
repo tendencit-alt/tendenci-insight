@@ -562,31 +562,58 @@ export default function CategoriesManager() {
                   Tem certeza que deseja remover a categoria{" "}
                   <span className="font-medium">"{categoryToDelete?.name}"</span>?
                 </p>
-                {deleteProductCount > 0 && (
-                  <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 space-y-2">
-                    <div className="flex items-start gap-2 text-destructive">
-                      <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-                      <p className="text-sm font-medium">
-                        Esta categoria possui {deleteProductCount} produto(s) vinculado(s).
-                        Selecione outra categoria para realocá-los antes de excluir.
-                      </p>
-                    </div>
-                    <Select value={reallocateTo} onValueChange={setReallocateTo}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Realocar produtos para..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories
-                          .filter((c) => c.id !== categoryToDelete?.id && c.active)
-                          .map((c) => (
+                {deleteProductCount > 0 && (() => {
+                  const availableTargets = categories.filter(
+                    (c) => c.id !== categoryToDelete?.id && c.active
+                  );
+                  const noTargets = availableTargets.length === 0;
+
+                  if (noTargets) {
+                    return (
+                      <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 space-y-2">
+                        <div className="flex items-start gap-2 text-destructive">
+                          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                          <div className="text-sm font-medium space-y-1">
+                            <p>
+                              Não é possível excluir esta categoria.
+                            </p>
+                            <p className="font-normal">
+                              Existem {deleteProductCount} produto(s) vinculado(s) e
+                              nenhuma outra categoria ativa disponível para realocá-los.
+                            </p>
+                            <p className="font-normal">
+                              Crie ou ative outra categoria antes de excluir esta.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 space-y-2">
+                      <div className="flex items-start gap-2 text-destructive">
+                        <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                        <p className="text-sm font-medium">
+                          Esta categoria possui {deleteProductCount} produto(s) vinculado(s).
+                          Selecione outra categoria para realocá-los antes de excluir.
+                        </p>
+                      </div>
+                      <Select value={reallocateTo} onValueChange={setReallocateTo}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Realocar produtos para..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableTargets.map((c) => (
                             <SelectItem key={c.id} value={c.id}>
                               {c.name}
                             </SelectItem>
                           ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  );
+                })()}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -597,7 +624,12 @@ export default function CategoriesManager() {
                 e.preventDefault();
                 handleDelete();
               }}
-              disabled={deleteLoading || (deleteProductCount > 0 && !reallocateTo)}
+              disabled={
+                deleteLoading ||
+                (deleteProductCount > 0 &&
+                  (categories.filter((c) => c.id !== categoryToDelete?.id && c.active).length === 0 ||
+                    !reallocateTo))
+              }
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleteLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
