@@ -1394,6 +1394,7 @@ export function ChartAccountsManager() {
   const activeAccount = activeId ? hierarchicalAccounts.find(a => a.id === activeId) : null;
 
   return (
+    <>
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-base font-medium flex items-center gap-2">
