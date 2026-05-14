@@ -57,6 +57,8 @@ export default function ProductsTable({ products, isLoading, onSelect, onRefresh
   };
 
   const clearSelection = () => setSelectedIds(new Set());
+
+  const openProductWithTab = (product: any, tab: string) => {
     setViewProductTab(tab);
     setViewProduct(product);
   };
