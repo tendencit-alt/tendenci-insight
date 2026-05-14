@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Loader2, Eye, Pencil, Package } from "lucide-react";
+import { Plus, Trash2, Loader2, Eye, Pencil, Package, History as HistoryIcon, ArrowRight } from "lucide-react";
+import { logAudit } from "@/lib/auditLog";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   Sheet,
   SheetContent,
@@ -79,6 +82,44 @@ export default function CategoriesManager() {
   const [reallocateTo, setReallocateTo] = useState<string>("");
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // History state
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  const { data: auditEntries = [], isLoading: loadingHistory } = useQuery({
+    queryKey: ["category-audit-log"],
+    enabled: historyOpen,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("audit_log")
+        .select("*")
+        .or(
+          "table_name.eq.product_categories,and(table_name.eq.products,field_name.eq.category_id)"
+        )
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+
+      // enrich with user names
+      const userIds = Array.from(
+        new Set((data ?? []).map((e: any) => e.user_id).filter(Boolean))
+      );
+      let profiles: Record<string, string> = {};
+      if (userIds.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", userIds);
+        profiles = Object.fromEntries(
+          (profs ?? []).map((p: any) => [p.id, p.full_name || p.email || "—"])
+        );
+      }
+      return (data ?? []).map((e: any) => ({
+        ...e,
+        user_name: e.user_id ? profiles[e.user_id] || "Usuário" : "Sistema",
+      }));
+    },
+  });
+
   const { data: categories = [], refetch } = useQuery({
     queryKey: ["product-categories-all"],
     queryFn: async () => {
@@ -148,25 +189,75 @@ export default function CategoriesManager() {
 
     setDeleteLoading(true);
     try {
+      let reallocatedProductIds: string[] = [];
+      const reallocatedToName =
+        categories.find((c) => c.id === reallocateTo)?.name ?? null;
+
       // Reallocate products if needed
       if (deleteProductCount > 0 && reallocateTo) {
+        // capture ids first so we can audit per product
+        const { data: affected } = await supabase
+          .from("products")
+          .select("id")
+          .eq("category_id", categoryToDelete.id);
+        reallocatedProductIds = (affected ?? []).map((p) => p.id);
+
         const { error: updErr } = await supabase
           .from("products")
           .update({ category_id: reallocateTo })
           .eq("category_id", categoryToDelete.id);
         if (updErr) throw updErr;
+
+        // Audit per product
+        await Promise.all(
+          reallocatedProductIds.map((pid) =>
+            logAudit({
+              table_name: "products",
+              record_id: pid,
+              event_type: "reallocate",
+              field_name: "category_id",
+              old_value: categoryToDelete.id,
+              new_value: reallocateTo,
+              metadata: {
+                reason: "category_deleted",
+                from_category_name: categoryToDelete.name,
+                to_category_name: reallocatedToName,
+              },
+            })
+          )
+        );
       }
 
-      const { error } = await supabase.from("product_categories").delete().eq("id", categoryToDelete.id);
+      const { error } = await supabase
+        .from("product_categories")
+        .delete()
+        .eq("id", categoryToDelete.id);
       if (error) throw error;
+
+      // Audit category deletion (with reallocation summary)
+      await logAudit({
+        table_name: "product_categories",
+        record_id: categoryToDelete.id,
+        event_type: "delete",
+        old_value: categoryToDelete.name,
+        metadata: {
+          name: categoryToDelete.name,
+          reallocated_count: reallocatedProductIds.length,
+          reallocated_to_id: reallocateTo || null,
+          reallocated_to_name: reallocatedToName,
+        },
+      });
+
       toast({
         title: "Categoria removida",
-        description: deleteProductCount > 0
-          ? `${deleteProductCount} produto(s) realocado(s) com sucesso.`
-          : undefined,
+        description:
+          deleteProductCount > 0
+            ? `${deleteProductCount} produto(s) realocado(s) com sucesso.`
+            : undefined,
       });
       refetch();
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["category-audit-log"] });
       setDeleteOpen(false);
       setCategoryToDelete(null);
       setReallocateTo("");
@@ -183,16 +274,30 @@ export default function CategoriesManager() {
     
     setEditLoading(true);
     try {
+      const previousName = selectedCategory.name;
+      const newNameValue = editName.trim();
       const { error } = await supabase
         .from("product_categories")
-        .update({ name: editName.trim() })
+        .update({ name: newNameValue })
         .eq("id", selectedCategory.id);
       if (error) throw error;
-      
+
+      if (previousName !== newNameValue) {
+        await logAudit({
+          table_name: "product_categories",
+          record_id: selectedCategory.id,
+          event_type: "update",
+          field_name: "name",
+          old_value: previousName,
+          new_value: newNameValue,
+        });
+      }
+
       toast({ title: "Categoria atualizada!" });
       setEditOpen(false);
       refetch();
       queryClient.invalidateQueries({ queryKey: ["category-products"] });
+      queryClient.invalidateQueries({ queryKey: ["category-audit-log"] });
     } catch (error: any) {
       toast({ title: "Erro ao atualizar categoria", description: error.message, variant: "destructive" });
     } finally {
@@ -239,8 +344,12 @@ export default function CategoriesManager() {
   return (
     <>
       <Card>
-        <CardHeader>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle className="text-lg">Categorias de Itens</CardTitle>
+          <Button variant="outline" size="sm" onClick={() => setHistoryOpen(true)}>
+            <HistoryIcon className="h-4 w-4 mr-2" />
+            Histórico
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
@@ -497,6 +606,130 @@ export default function CategoriesManager() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* History Sheet */}
+      <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+        <SheetContent className="sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <HistoryIcon className="h-5 w-5" />
+              Histórico de Categorias
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="mt-6 space-y-3">
+            {loadingHistory ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : auditEntries.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                Nenhuma alteração registrada ainda.
+              </div>
+            ) : (
+              auditEntries.map((e: any) => {
+                const isDelete = e.event_type === "delete" && e.table_name === "product_categories";
+                const isReallocate = e.event_type === "reallocate";
+                const isBulkUpdate = e.event_type === "bulk_update";
+                const isUpdate = e.event_type === "update" && e.table_name === "product_categories";
+                const meta = e.metadata || {};
+
+                let title = "Alteração";
+                let badgeVariant: "default" | "destructive" | "secondary" | "outline" = "secondary";
+                let body: React.ReactNode = null;
+
+                if (isDelete) {
+                  title = "Categoria removida";
+                  badgeVariant = "destructive";
+                  body = (
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <div>
+                        Categoria{" "}
+                        <span className="font-medium text-foreground">"{meta.name || e.old_value}"</span>{" "}
+                        foi excluída.
+                      </div>
+                      {meta.reallocated_count > 0 && (
+                        <div className="flex items-center gap-1">
+                          <span>{meta.reallocated_count} produto(s) realocado(s) para</span>
+                          <ArrowRight className="h-3 w-3" />
+                          <span className="font-medium text-foreground">
+                            {meta.reallocated_to_name || "—"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                } else if (isReallocate) {
+                  title = "Produto realocado";
+                  badgeVariant = "default";
+                  body = (
+                    <div className="text-sm text-muted-foreground">
+                      Produto movido de{" "}
+                      <span className="font-medium text-foreground">
+                        {meta.from_category_name || "—"}
+                      </span>{" "}
+                      para{" "}
+                      <span className="font-medium text-foreground">
+                        {meta.to_category_name || "—"}
+                      </span>
+                      {meta.reason === "category_deleted" && " (categoria excluída)"}
+                    </div>
+                  );
+                } else if (isUpdate) {
+                  title = "Categoria renomeada";
+                  badgeVariant = "outline";
+                  body = (
+                    <div className="text-sm text-muted-foreground flex items-center gap-1">
+                      <span className="font-medium text-foreground">{e.old_value}</span>
+                      <ArrowRight className="h-3 w-3" />
+                      <span className="font-medium text-foreground">{e.new_value}</span>
+                    </div>
+                  );
+                } else if (isBulkUpdate) {
+                  title = "Edição em lote";
+                  badgeVariant = "default";
+                  body = (
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium text-foreground">
+                          {meta.from_category_name || "—"}
+                        </span>
+                        <ArrowRight className="h-3 w-3" />
+                        <span className="font-medium text-foreground">
+                          {meta.to_category_name || "—"}
+                        </span>
+                      </div>
+                      {meta.batch_size > 1 && (
+                        <div className="text-xs">Lote de {meta.batch_size} produto(s)</div>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={e.id} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={badgeVariant}>{title}</Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {formatDistanceToNow(new Date(e.created_at), {
+                          addSuffix: true,
+                          locale: ptBR,
+                        })}
+                      </span>
+                    </div>
+                    {body}
+                    <div className="text-xs text-muted-foreground border-t pt-2">
+                      por <span className="font-medium">{e.user_name}</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }
