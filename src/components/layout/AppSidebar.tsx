@@ -11,7 +11,7 @@ import {
   Star, AlertTriangle, UserCheck,
   Brain, Telescope, GraduationCap,
   Network, GitBranch, LifeBuoy, Clock, ListChecks, ShieldCheck,
-  Bug, Sparkles, Tag, Rocket, LayoutGrid, Gauge
+  Bug, Sparkles, Tag, Rocket, LayoutGrid, Gauge, Database
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -120,7 +120,8 @@ const menuGroups: MenuGroup[] = [
       { title: "Fluxo de Caixa", url: "/fluxo-caixa", icon: BarChart, comingSoon: true },
       { title: "Forecast Financeiro", url: "/resultado-financeiro", icon: Calculator, comingSoon: true },
       { title: "Metas Financeiras", url: "/planning", icon: Target },
-      { title: "Plano de Contas", url: "/cadastros-financeiros", icon: BookOpen },
+      { title: "Plano de Contas", url: "/cadastros-financeiros?tab=chart", icon: BookOpen },
+      { title: "Cadastros Financeiros", url: "/cadastros-financeiros?tab=bank-accounts", icon: Database },
       { title: "Dashboard", url: "/dashboard", icon: PieChart },
     ],
   },

@@ -1,87 +1,58 @@
-## Problema
+## Diagnóstico
 
-Hoje a venda **não dá baixa** no estoque: não existe trigger entre `order_items` e `stock_movements`. O badge "Sem estoque" no seletor de produto é apenas visual e não bloqueia, mas como nada é decrementado, o estoque nunca chega a ficar negativo. O trigger `update_product_stock` em `stock_movements` já permite saldo negativo (não há `GREATEST(0, …)`).
+Existe a página completa **`/cadastros-financeiros`** (`src/pages/CadastrosFinanceiros.tsx`) com 7 abas: **Contas Bancárias, Plano de Contas, Centros de Custo, Projetos, Compromissos sobre Venda, Responsáveis, Taxas Cartão** — mais aba de configurações com Origem/Eventos/Permissões. Os componentes `Manager` já existem e funcionam.
 
-## Decisões aprovadas
+Por que você não está vendo:
 
-- Baixa **ao criar o item do pedido** (`order_items` INSERT).
-- Estoque negativo é **permitido** e **destacado em vermelho** na UI.
+1. **Você está em `/financeiro?section=records`.** Essa página NÃO conecta os cadastros — em `settings` ela mostra `GovernanceTab`, então não há link visível para Plano de Contas a partir do Financeiro.
+2. **No menu lateral existe a seção "Controladoria"** com Plano de Contas, Centros de Custo etc., mas os links estão **quebrados**: apontam para `?tab=chart`, `?tab=cost-centers`, `?tab=projects`, mas o componente `CadastrosFinanceiros` ignora `useSearchParams` e usa estado interno com valores diferentes (`chart_accounts`, `cost_centers`, `projects`). Resultado: clicar em qualquer item sempre cai em "Contas Bancárias".
+3. Existem `MastersTab.tsx` (em `components/financeiro/`) e `CadastrosFinanceiros.tsx` (em `pages/`) com conteúdo quase idêntico — duplicação que confunde.
 
-## O que será feito
+Sobre **padrão do sistema vs personalização**: já está implementado no banco. A tabela `fin_chart_accounts` tem 40 contas (35 marcadas `is_core`/`is_system_default`) por tenant, e o `ChartAccountsManager` já bloqueia exclusão de contas core. Falta deixar isso **explícito visualmente** e dar uma ação "duplicar para personalizar".
 
-### 1. Migration: baixa automática de estoque na venda
+## Caminho recomendado
 
-Criar trigger `AFTER INSERT/UPDATE/DELETE ON order_items` que mantém um `stock_movements` espelho do item:
+**Mantém uma única fonte da verdade** (`/cadastros-financeiros`) e cria atalhos a partir do Financeiro, ao invés de duplicar tudo dentro dele. Razões:
 
-- **INSERT** com `product_id` not null → cria movimento `movement_type = 'saida'`, `reference_type = 'order_item'`, `reference_id = NEW.id`, `quantity = NEW.quantity`, `tenant_id = NEW.tenant_id`. O trigger existente de `stock_movements` decrementa `products.current_stock` (pode ficar negativo).
-- **UPDATE** de `quantity` ou `product_id` → estorna o movimento anterior (entrada compensatória) e cria o novo de saída.
-- **DELETE** → cria entrada compensatória (`movement_type = 'entrada'`, `reference_type = 'order_item_revert'`).
-- Itens sem `product_id` (serviço, produto avulso) são ignorados.
-- Idempotência: a função busca movimento existente por `(reference_type='order_item', reference_id=order_item.id)` antes de inserir, evitando duplicação em re-execuções.
+- A página dedicada cabe bem no menu Controladoria (já está lá).
+- Evita inflar mais ainda a navegação do `/financeiro` (que já tem 6 abas + relatórios + governance).
+- Garante que existe um único componente por cadastro (sem risco de divergir).
 
-### 2. Reconciliação retroativa
+## Plano de implementação
 
-Script único na mesma migration:
-- Para cada `order_items` existente com `product_id` que ainda não tenha `stock_movement` correspondente, gerar a saída.
-- Recalcula `products.current_stock` somando movimentos (entrada − saída) para corrigir divergências históricas.
+### 1. Corrigir roteamento por tab em `CadastrosFinanceiros.tsx`
+- Ler `useSearchParams()` e usar `?tab=` como estado inicial.
+- Padronizar slugs: `bank-accounts`, `chart`, `cost-centers`, `projects`, `commitments`, `responsibles`, `card-rates`, `origin-rules`, `event-automations`, `permissions`.
+- Atualizar `setActiveTab` para também escrever na URL (`setSearchParams`), mantendo deep-link e botão "voltar" funcionando.
 
-### 3. UI: destaque de estoque negativo
+### 2. Atualizar links do menu (`AppNavbar.tsx` linhas 141-146 e `AppSidebar.tsx` linha 123)
+- Trocar para os slugs corretos.
+- Adicionar entradas que faltam: **Compromissos sobre Venda**, **Responsáveis**, **Taxas Cartão**, **Contas Bancárias**.
 
-Componentes a ajustar (somente visual, sem mudar regra de negócio):
+### 3. Atalho a partir do Financeiro
+Em `Financeiro.tsx` adicionar no `headerActions` um botão secundário **"Cadastros & Plano de Contas"** que navega para `/cadastros-financeiros`. Opcionalmente, na aba Settings (hoje `GovernanceTab`), incluir um card no topo com links rápidos para os 4 cadastros mais usados (Plano de Contas, CCs, Projetos, Contas Bancárias).
 
-- `src/components/inventory/ProductsTable.tsx` — célula de estoque: se `current_stock < 0`, badge `variant="destructive"` com texto `Negativo: {valor}`.
-- `src/components/orders/OrderItemsTable.tsx` (linha 387-388) — badge do seletor: 3 estados → `> 0` default, `= 0` secondary "Sem estoque", `< 0` destructive "Negativo: {valor}".
-- `src/components/inventory/InventoryKPIs.tsx` — adicionar KPI "Estoque Negativo" (count de produtos com `current_stock < 0`) ao lado de "Sem Estoque".
-- `src/components/inventory/LowStockAlerts.tsx` — listar produtos negativos no topo com severidade alta.
-- `src/pages/Produtos.tsx` (linha 290) — mesmo tratamento do badge.
+### 4. Remover duplicação
+Excluir `src/components/financeiro/MastersTab.tsx` (não é referenciado em nenhum lugar) para evitar divergência futura. Os 14 arquivos em `components/financeiro/masters/` permanecem intactos — são os Managers reais.
 
-Nenhum bloqueio de venda é adicionado: usuário pode vender mesmo com saldo negativo.
+### 5. Tornar visível "Padrão do Sistema vs Personalizado"
+No `ChartAccountsManager` (e por extensão `CostCentersManager`):
+- Adicionar **filtro segmentado** no topo: `Todos | Padrão do Sistema | Personalizadas`.
+- Em cada linha core, manter o badge "Padrão" já existente, e adicionar tooltip explicando: *"Conta padrão do sistema. Não pode ser excluída ou ter código alterado, mas você pode adicionar contas filhas e personalizar a descrição."*
+- Adicionar ação **"Duplicar e personalizar"** em contas core: cria uma cópia editável (sem `is_core`) na mesma posição hierárquica. Útil para o usuário começar uma variação sem mexer no padrão.
+- Banner informativo no topo da aba Plano de Contas explicando o conceito em 1 frase, dispensável (cookie `cadastros_intro_seen`).
 
-### 4. Detalhes técnicos
+### 6. (Opcional, não-bloqueante) Wizard de primeiro acesso
+Se o tenant ainda não tiver nenhuma personalização (`COUNT(*) WHERE NOT is_core = 0`), exibir banner uma única vez sugerindo: *"Comece a partir do plano padrão do sistema. Renomeie, oculte ou adicione contas conforme sua operação."*
 
-```sql
-CREATE OR REPLACE FUNCTION public.sync_order_item_stock_movement()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE v_prev_stock NUMERIC;
-BEGIN
-  IF TG_OP = 'DELETE' THEN
-    IF OLD.product_id IS NOT NULL THEN
-      SELECT current_stock INTO v_prev_stock FROM products WHERE id = OLD.product_id;
-      INSERT INTO stock_movements (tenant_id, product_id, movement_type, quantity,
-        previous_stock, reference_type, reference_id, notes)
-      VALUES (OLD.tenant_id, OLD.product_id, 'entrada', OLD.quantity,
-        COALESCE(v_prev_stock, 0), 'order_item_revert', OLD.id,
-        'Estorno automático de venda (item removido)');
-    END IF;
-    RETURN OLD;
-  END IF;
+## Resumo de arquivos afetados
 
-  IF TG_OP = 'UPDATE' AND OLD.product_id IS NOT NULL
-     AND (OLD.quantity <> NEW.quantity OR OLD.product_id IS DISTINCT FROM NEW.product_id) THEN
-    SELECT current_stock INTO v_prev_stock FROM products WHERE id = OLD.product_id;
-    INSERT INTO stock_movements (...) VALUES (...'entrada'... reference_type='order_item_revert');
-  END IF;
+- `src/pages/CadastrosFinanceiros.tsx` — ler/escrever `?tab=`
+- `src/components/layout/AppNavbar.tsx` — corrigir slugs + adicionar entradas faltantes
+- `src/components/layout/AppSidebar.tsx` — completar links de Controladoria
+- `src/pages/Financeiro.tsx` — botão "Cadastros & Plano de Contas" no header
+- `src/components/financeiro/masters/ChartAccountsManager.tsx` — filtro segmentado, ação Duplicar, banner
+- `src/components/financeiro/masters/CostCentersManager.tsx` — filtro segmentado
+- **Remover** `src/components/financeiro/MastersTab.tsx` (não usado)
 
-  IF NEW.product_id IS NOT NULL THEN
-    SELECT current_stock INTO v_prev_stock FROM products WHERE id = NEW.product_id;
-    INSERT INTO stock_movements (tenant_id, product_id, movement_type, quantity,
-      previous_stock, reference_type, reference_id, notes)
-    VALUES (NEW.tenant_id, NEW.product_id, 'saida', NEW.quantity,
-      COALESCE(v_prev_stock, 0), 'order_item', NEW.id,
-      'Baixa automática de venda');
-  END IF;
-  RETURN NEW;
-END $$;
-
-CREATE TRIGGER trg_order_item_stock
-AFTER INSERT OR UPDATE OR DELETE ON order_items
-FOR EACH ROW EXECUTE FUNCTION sync_order_item_stock_movement();
-```
-
-Observação: `stock_movements.previous_stock` e `new_stock` continuam sendo calculados pelo trigger `update_product_stock` já existente — o `previous_stock` que passamos é só placeholder.
-
-## Fora de escopo
-
-- Reserva de estoque por status de pedido (rascunho vs confirmado).
-- Bloqueio configurável por produto (já existe campo `permite_venda_sem_estoque` mas não será usado nessa entrega — venda nunca é bloqueada).
-- Controle por localização (`location_id`).
+Sem mudanças de schema — `fin_chart_accounts.is_core` / `is_system_default` já existem e a proteção contra delete já está aplicada.

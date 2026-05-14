@@ -14,7 +14,7 @@ import { FinancialResultTab } from "@/components/financeiro/FinancialResultTab";
 import { CapitalFinancingTab } from "@/components/financeiro/CapitalFinancingTab";
 import { RecurringContractsTab } from "@/components/financeiro/RecurringContractsTab";
 import { GovernanceTab } from "@/components/financeiro/GovernanceTab";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -22,7 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus } from "lucide-react";
+import { Plus, Database } from "lucide-react";
 
 import {
   ArrowDownCircle,
@@ -40,6 +40,7 @@ import {
 
 export default function Financeiro() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const initialTab = searchParams.get("tab") || "receivables";
 
   useFinanceiroRealtime();
@@ -70,28 +71,38 @@ export default function Financeiro() {
         description="Gestão financeira completa: obrigações, tesouraria, resultado e capital"
         icon={<Wallet className="h-5 w-5" />}
         headerActions={
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Lançamento
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
-              <DropdownMenuItem onClick={() => setActiveTab("receivables")}>
-                <ArrowUpCircle className="h-4 w-4 mr-2" />
-                Conta a Receber
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActiveTab("payables")}>
-                <ArrowDownCircle className="h-4 w-4 mr-2" />
-                Conta a Pagar
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActiveTab("treasury")}>
-                <Landmark className="h-4 w-4 mr-2" />
-                Movimento de Tesouraria
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/cadastros-financeiros?tab=chart")}
+            >
+              <Database className="h-4 w-4 mr-2" />
+              Cadastros & Plano de Contas
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Lançamento
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem onClick={() => setActiveTab("receivables")}>
+                  <ArrowUpCircle className="h-4 w-4 mr-2" />
+                  Conta a Receber
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab("payables")}>
+                  <ArrowDownCircle className="h-4 w-4 mr-2" />
+                  Conta a Pagar
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab("treasury")}>
+                  <Landmark className="h-4 w-4 mr-2" />
+                  Movimento de Tesouraria
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         }
         records={
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
