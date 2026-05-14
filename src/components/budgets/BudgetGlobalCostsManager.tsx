@@ -171,11 +171,9 @@ export function BudgetGlobalCostsManager() {
                     <TableCell className="text-muted-foreground">{cost.unit}</TableCell>
                     <TableCell className="text-right">
                       {editingId === cost.id ? (
-                        <Input
-                          type="number"
-                          step="0.01"
+                        <MoneyInput
                           value={editValue}
-                          onChange={(e) => setEditValue(parseFloat(e.target.value) || 0)}
+                          onChange={setEditValue}
                           className="w-32 text-right ml-auto"
                           autoFocus
                         />
