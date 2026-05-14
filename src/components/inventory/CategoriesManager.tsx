@@ -224,9 +224,16 @@ export default function CategoriesManager() {
     setEditOpen(true);
   };
 
-  const openDelete = (cat: Category) => {
+  const openDelete = async (cat: Category) => {
     setCategoryToDelete(cat);
+    setReallocateTo("");
+    setDeleteProductCount(0);
     setDeleteOpen(true);
+    const { count } = await supabase
+      .from("products")
+      .select("id", { count: "exact", head: true })
+      .eq("category_id", cat.id);
+    setDeleteProductCount(count ?? 0);
   };
 
   return (
