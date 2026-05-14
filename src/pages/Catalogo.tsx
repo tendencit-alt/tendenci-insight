@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
-import { Instagram, Phone, ArrowLeft } from "lucide-react";
+import { Instagram, Phone, ArrowLeft, Search, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
