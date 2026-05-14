@@ -253,11 +253,11 @@ export default function Produtos() {
           .match(/("([^"]|"")*"|[^,]+)/g)
           ?.map((c) => c.replace(/^"|"$/g, "").replace(/""/g, '"').trim()) || [];
 
-      const rawRows = rows.map(splitCsv).filter((c) => c[1]);
+      const rawRows: string[][] = rows.map(splitCsv).filter((c) => c[1]);
       if (!rawRows.length) return toast.error("Nenhuma linha válida");
 
       // Resolve / criar categorias por nome (coluna "Categoria" = índice 3)
-      const catNames = Array.from(
+      const catNames: string[] = Array.from(
         new Set(rawRows.map((c) => (c[3] || "").trim()).filter(Boolean))
       );
       const norm = (s: string) => s.trim().toLowerCase();
