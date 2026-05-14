@@ -169,7 +169,14 @@ export default function ProductsTable({ products, isLoading, onSelect, onRefresh
               const fichaTecnica = product.ficha_tecnica?.[0];
 
               return (
-                <TableRow key={product.id} className="group">
+                <TableRow key={product.id} className="group" data-state={selectedIds.has(product.id) ? "selected" : undefined}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.has(product.id)}
+                      onCheckedChange={() => toggleOne(product.id)}
+                      aria-label={`Selecionar ${product.name}`}
+                    />
+                  </TableCell>
                   <TableCell className="font-mono text-sm">
                     {product.code || "-"}
                   </TableCell>
