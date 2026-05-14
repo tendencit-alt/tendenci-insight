@@ -82,6 +82,44 @@ export default function CategoriesManager() {
   const [reallocateTo, setReallocateTo] = useState<string>("");
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // History state
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  const { data: auditEntries = [], isLoading: loadingHistory } = useQuery({
+    queryKey: ["category-audit-log"],
+    enabled: historyOpen,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("audit_log")
+        .select("*")
+        .or(
+          "table_name.eq.product_categories,and(table_name.eq.products,field_name.eq.category_id)"
+        )
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+
+      // enrich with user names
+      const userIds = Array.from(
+        new Set((data ?? []).map((e: any) => e.user_id).filter(Boolean))
+      );
+      let profiles: Record<string, string> = {};
+      if (userIds.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", userIds);
+        profiles = Object.fromEntries(
+          (profs ?? []).map((p: any) => [p.id, p.full_name || p.email || "—"])
+        );
+      }
+      return (data ?? []).map((e: any) => ({
+        ...e,
+        user_name: e.user_id ? profiles[e.user_id] || "Usuário" : "Sistema",
+      }));
+    },
+  });
+
   const { data: categories = [], refetch } = useQuery({
     queryKey: ["product-categories-all"],
     queryFn: async () => {
