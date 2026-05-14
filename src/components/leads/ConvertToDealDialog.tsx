@@ -100,14 +100,9 @@ export function ConvertToDealDialog({ lead, open, onOpenChange, onSuccess }: Con
 
           <div className="space-y-2">
             <Label htmlFor="amount">Valor Estimado (R$) *</Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.01"
+            <CurrencyInput
               value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-              placeholder="0.00"
-              required
+              onChange={(v) => setFormData({ ...formData, amount: v })}
             />
           </div>
 
