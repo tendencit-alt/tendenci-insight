@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, FileSpreadsheet, Loader2, Trash2, X, ChevronRight, ChevronDown, ChevronsUpDown, GripVertical, RefreshCw, ShieldCheck } from "lucide-react";
+import { Plus, Pencil, FileSpreadsheet, Loader2, Trash2, X, ChevronRight, ChevronDown, ChevronsUpDown, GripVertical, RefreshCw, ShieldCheck, Wand2 } from "lucide-react";
+import { ChartAccountsOnboardingWizard, shouldAutoOpenOnboarding } from "./ChartAccountsOnboardingWizard";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -345,6 +346,9 @@ export function ChartAccountsManager() {
   // Origin filter: all | core | custom
   const [originFilter, setOriginFilter] = useState<"all" | "core" | "custom">("all");
 
+  // Onboarding wizard
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+
   // Drag state
   const [activeId, setActiveId] = useState<string | null>(null);
   
@@ -386,6 +390,16 @@ export function ChartAccountsManager() {
       setExpandedIds(new Set(rootIds));
     }
   }, [accounts]);
+
+  // Auto-open onboarding on first visit when no custom accounts exist
+  useEffect(() => {
+    if (!accounts) return;
+    const customCount = accounts.filter((a) => !a.is_core).length;
+    if (shouldAutoOpenOnboarding(customCount)) {
+      setOnboardingOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accounts?.length]);
 
   const toggleExpanded = (id: string) => {
     setExpandedIds(prev => {
@@ -1380,6 +1394,7 @@ export function ChartAccountsManager() {
   const activeAccount = activeId ? hierarchicalAccounts.find(a => a.id === activeId) : null;
 
   return (
+    <>
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-base font-medium flex items-center gap-2">
@@ -1387,6 +1402,15 @@ export function ChartAccountsManager() {
           Plano de Contas
         </CardTitle>
         <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setOnboardingOpen(true)}
+            className="gap-1"
+          >
+            <Wand2 className="h-4 w-4" />
+            Assistente
+          </Button>
           <Button variant="outline" size="sm" onClick={expandAll} className="gap-1">
             <ChevronsUpDown className="h-4 w-4" />
             Expandir
@@ -1900,5 +1924,7 @@ export function ChartAccountsManager() {
         </AlertDialogContent>
       </AlertDialog>
     </Card>
+    <ChartAccountsOnboardingWizard open={onboardingOpen} onOpenChange={setOnboardingOpen} />
+    </>
   );
 }
