@@ -21,6 +21,19 @@ export default function InventoryKPIs() {
     }
   });
 
+  const { data: negativeCount } = useQuery({
+    queryKey: ["inventory-negative-stock-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("products")
+        .select("id", { count: "exact", head: true })
+        .eq("active", true)
+        .lt("current_stock", 0);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
