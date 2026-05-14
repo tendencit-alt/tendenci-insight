@@ -30,8 +30,33 @@ export default function ProductsTable({ products, isLoading, onSelect, onRefresh
   const [editProduct, setEditProduct] = useState<any>(null);
   const [minStockProduct, setMinStockProduct] = useState<any>(null);
   const [requestProduct, setRequestProduct] = useState<any>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkCategoryOpen, setBulkCategoryOpen] = useState(false);
 
-  const openProductWithTab = (product: any, tab: string) => {
+  const allVisibleIds = useMemo(() => products.map((p) => p.id), [products]);
+  const allSelected = allVisibleIds.length > 0 && allVisibleIds.every((id) => selectedIds.has(id));
+  const someSelected = !allSelected && allVisibleIds.some((id) => selectedIds.has(id));
+
+  const toggleAll = () => {
+    if (allSelected) {
+      const next = new Set(selectedIds);
+      allVisibleIds.forEach((id) => next.delete(id));
+      setSelectedIds(next);
+    } else {
+      const next = new Set(selectedIds);
+      allVisibleIds.forEach((id) => next.add(id));
+      setSelectedIds(next);
+    }
+  };
+
+  const toggleOne = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
     setViewProductTab(tab);
     setViewProduct(product);
   };
