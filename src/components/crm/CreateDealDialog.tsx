@@ -981,15 +981,9 @@ export function CreateDealDialog({
 
               <div className="space-y-2">
                 <Label htmlFor="value">Valor (R$)</Label>
-                <Input
-                  id="value"
-                  type="number"
-                  step="0.01"
+                <CurrencyInput
                   value={formData.value}
-                  onChange={(e) =>
-                    setFormData({ ...formData, value: e.target.value })
-                  }
-                  placeholder="0.00"
+                  onChange={(v) => setFormData({ ...formData, value: v })}
                 />
               </div>
 
