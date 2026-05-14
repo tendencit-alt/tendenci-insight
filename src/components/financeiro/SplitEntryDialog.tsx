@@ -461,16 +461,10 @@ export function SplitEntryDialog({
                         <Label htmlFor={`amount-${split.id}`} className="text-xs">
                           Valor (R$) <span className="text-red-500">*</span>
                         </Label>
-                        <Input
+                        <MoneyInput
                           id={`amount-${split.id}`}
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="0,00"
-                          value={split.amount || ""}
-                          onChange={(e) =>
-                            updateSplitLine(split.id, "amount", parseFloat(e.target.value) || 0)
-                          }
+                          value={split.amount || 0}
+                          onChange={(v) => updateSplitLine(split.id, "amount", v)}
                         />
                       </div>
 
