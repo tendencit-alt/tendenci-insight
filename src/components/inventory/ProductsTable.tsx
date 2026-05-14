@@ -106,8 +106,9 @@ export default function ProductsTable({ products, isLoading, onSelect, onRefresh
           </TableHeader>
           <TableBody>
             {products.map((product) => {
-              const isLowStock = product.min_stock > 0 && product.current_stock <= product.min_stock;
-              const isOutOfStock = product.current_stock <= 0;
+              const isNegativeStock = product.current_stock < 0;
+              const isLowStock = !isNegativeStock && product.min_stock > 0 && product.current_stock <= product.min_stock;
+              const isOutOfStock = product.current_stock === 0;
               const costCenters = product.cost_centers || [];
               const fichaTecnica = product.ficha_tecnica?.[0];
 
