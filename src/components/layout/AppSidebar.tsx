@@ -24,7 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useNavigationUsage } from "@/hooks/useNavigationUsage";
 import { useAttentionLayer, type AttentionLevel } from "@/hooks/useAttentionLayer";
-import { useWorkspace } from "@/hooks/useWorkspace";
+
 import { useFavorites } from "@/hooks/useFavorites";
 import { cn } from "@/lib/utils";
 import {
@@ -374,7 +374,7 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const { trackVisit, getTopPaths } = useNavigationUsage();
   const { alerts, totalActions, getGroupBadge, getItemBadge } = useAttentionLayer();
-  const { isGroupVisible } = useWorkspace();
+  
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
 
   // Profile type
@@ -454,9 +454,8 @@ export function AppSidebar() {
 
   const visibleGroups = useMemo(() =>
     menuGroups
-      .filter(g => !g.profiles || g.profiles.length === 0 || g.profiles.includes(currentProfile))
-      .filter(g => isGroupVisible(g.label)),
-    [currentProfile, isGroupVisible]
+      .filter(g => !g.profiles || g.profiles.length === 0 || g.profiles.includes(currentProfile)),
+    [currentProfile]
   );
 
   // Favorites items
