@@ -294,7 +294,8 @@ export function AppNavbar() {
   const companyLogo = companySettings?.logo_url;
   const companyName = companySettings?.trade_name || companySettings?.company_name || "Sistema";
   const normalizedRole = profile?.role?.toLowerCase().trim() ?? "";
-  const canSeeOwnerMenu = isOwner || isMaster || normalizedRole === "owner" || normalizedRole === "tenant_owner";
+  const SYSTEM_OWNER_EMAIL = "pablo@tendenci.com.br";
+  const canSeeOwnerMenu = user?.email?.toLowerCase().trim() === SYSTEM_OWNER_EMAIL;
   const ownerModule = ERP_MODULES.find((mod) => mod.key === "owner") ?? null;
   const location = useLocation();
 
