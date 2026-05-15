@@ -139,7 +139,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       // Get chart accounts with in_cashflow = true
       const { data: chartAccounts } = await supabase
         .from("fin_chart_accounts")
-        .select("id, code, name, nature, parent_id")
+        .select("id, code, name, nature, parent_id, grupo_fluxo")
         .eq("in_cashflow", true)
         .eq("active", true)
         .order("code");
