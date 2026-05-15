@@ -82,7 +82,7 @@ export function DashboardBI({ filters }: DashboardBIProps) {
         .select(`
           id, type, amount, status, description, cash_date, competence_date, 
           document_number, party_type, party_id, has_splits,
-          chart_account:fin_chart_accounts(id, code, name, nature)
+          chart_account:fin_chart_accounts(id, code, name, nature, grupo_fluxo)
         `)
         .neq("status", "CANCELADO");
 
