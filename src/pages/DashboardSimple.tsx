@@ -41,19 +41,13 @@ export default function DashboardSimple() {
       const end = format(endOfMonth(new Date()), "yyyy-MM-dd");
       const today = format(new Date(), "yyyy-MM-dd");
 
-      const [receivedAll, costsAll, banks, overdue, recvAll] = await Promise.all([
+      const [ledgerRes, banks, overdue, recvAll] = await Promise.all([
         supabase
-          .from("fin_receivables")
-          .select("amount")
-          .gte("liquidation_date", start)
-          .lte("liquidation_date", end)
-          .eq("status", "received"),
-        supabase
-          .from("fin_payables")
-          .select("amount")
-          .gte("liquidation_date", start)
-          .lte("liquidation_date", end)
-          .eq("status", "paid"),
+          .from("fin_ledger_entries")
+          .select("amount, entry_type, type, status, chart_account:fin_chart_accounts(grupo_fluxo)")
+          .neq("status", "CANCELADO")
+          .gte("competence_date", start)
+          .lte("competence_date", end),
         supabase.from("fin_bank_accounts").select("current_balance"),
         supabase
           .from("fin_receivables")
@@ -66,8 +60,18 @@ export default function DashboardSimple() {
           .neq("status", "cancelled"),
       ]);
 
-      const revenue = (receivedAll.data || []).reduce((s, r: any) => s + Number(r.amount || 0), 0);
-      const costs = (costsAll.data || []).reduce((s, p: any) => s + Number(p.amount || 0), 0);
+      const sumByFlow = (kind: "ENTRADA" | "SAIDA") =>
+        (ledgerRes.data || []).reduce((s: number, r: any) => {
+          const gf = r.chart_account?.grupo_fluxo ?? null;
+          let match = false;
+          if (gf) match = gf === kind;
+          else if (kind === "ENTRADA") match = r.entry_type === "credit" || r.type === "RECEITA";
+          else match = r.entry_type === "debit" || r.type === "DESPESA";
+          return match ? s + Number(r.amount || 0) : s;
+        }, 0);
+
+      const revenue = sumByFlow("ENTRADA");
+      const costs = sumByFlow("SAIDA");
       const cash = (banks.data || []).reduce((s, b: any) => s + Number(b.current_balance || 0), 0);
       const overdueAmount = (overdue.data || []).reduce((s, r: any) => s + Number(r.amount || 0), 0);
       const totalRecv = (recvAll.data || []).reduce((s, r: any) => s + Number(r.amount || 0), 0);
