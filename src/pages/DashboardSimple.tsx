@@ -62,10 +62,15 @@ export default function DashboardSimple() {
 
       const sumByFlow = (kind: "ENTRADA" | "SAIDA") =>
         (ledgerRes.data || []).reduce((s: number, r: any) => {
-          const gf = r.chart_account?.grupo_fluxo ?? null;
+          const gf: string | null = r.chart_account?.grupo_fluxo ?? null;
           let match = false;
-          if (gf) match = gf === kind;
-          else if (kind === "ENTRADA") match = r.entry_type === "credit" || r.type === "RECEITA";
+          if (gf) {
+            // Suporta valores compostos: OPERACIONAL_ENTRADA, FINANCIAMENTO_SAIDA, etc.
+            // NAO_CAIXA é ignorado nos KPIs de caixa.
+            if (gf === "NAO_CAIXA") match = false;
+            else match = kind === "ENTRADA" ? gf.endsWith("_ENTRADA") || gf === "ENTRADA"
+                                            : gf.endsWith("_SAIDA")  || gf === "SAIDA";
+          } else if (kind === "ENTRADA") match = r.entry_type === "credit" || r.type === "RECEITA";
           else match = r.entry_type === "debit" || r.type === "DESPESA";
           return match ? s + Number(r.amount || 0) : s;
         }, 0);

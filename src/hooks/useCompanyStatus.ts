@@ -57,10 +57,14 @@ export function useCompanyStatus() {
       const sumByFlow = (rows: FlowRow[] | null | undefined, kind: "ENTRADA" | "SAIDA") => {
         if (!rows) return 0;
         return rows.reduce((s, r) => {
-          const gf = r.chart_account?.grupo_fluxo ?? null;
+          const gf: string | null = r.chart_account?.grupo_fluxo ?? null;
           let isMatch = false;
           if (gf) {
-            isMatch = gf === kind;
+            // Suporta valores compostos (OPERACIONAL_ENTRADA, FINANCIAMENTO_SAIDA, etc.)
+            // NAO_CAIXA é ignorado nos KPIs de caixa.
+            if (gf === "NAO_CAIXA") isMatch = false;
+            else isMatch = kind === "ENTRADA" ? gf.endsWith("_ENTRADA") || gf === "ENTRADA"
+                                              : gf.endsWith("_SAIDA")  || gf === "SAIDA";
           } else {
             // Fallback antigo enquanto contas não tiverem grupo_fluxo classificado
             if (kind === "ENTRADA") isMatch = r.entry_type === "credit" || r.type === "RECEITA";
