@@ -1,79 +1,57 @@
-# Auditoria Plano de Contas — 4 correções estruturais
+## Objetivo
 
-Sem deletar dados. Tudo aditivo (ALTER ADD COLUMN, INSERT … ON CONFLICT DO NOTHING, UPDATE em backfill).
+Tornar os KPIs de receita / custo / resultado / saldo dos 3 dashboards financeiros consistentes com o DRE e o Fluxo de Caixa, usando a coluna `grupo_fluxo` (`ENTRADA`, `SAIDA`, `NAO_CAIXA`) já existente em `fin_chart_accounts`.
 
----
+Escopo: **só** `DashboardSimple.tsx`, `ExecutiveStatusBar` (via `useCompanyStatus`) e `FinanceiroDashboard` (via `DashboardBI`). Nada mais é tocado.
 
-## PROBLEMA 1 — Seed analítico + colunas `pai_codigo` e `grupo_fluxo`
+## Regra única que será aplicada
 
-**Migração** (`supabase/migrations/...`):
-- `ALTER TABLE fin_chart_accounts ADD COLUMN IF NOT EXISTS pai_codigo TEXT` — código do pai denormalizado (ex: `2.4` para `2.4.1`).
-- `ALTER TABLE fin_chart_accounts ADD COLUMN IF NOT EXISTS grupo_fluxo TEXT` — categoriza para Fluxo de Caixa: `OPERACIONAL_ENTRADA`, `OPERACIONAL_SAIDA`, `INVESTIMENTO_ENTRADA`, `INVESTIMENTO_SAIDA`, `FINANCIAMENTO_ENTRADA`, `FINANCIAMENTO_SAIDA`, `NAO_CAIXA`.
-- Trigger `BEFORE INSERT/UPDATE` que preenche `pai_codigo` automaticamente via JOIN no `parent_id`.
-- Backfill: `UPDATE fin_chart_accounts SET pai_codigo = (SELECT code FROM fin_chart_accounts p WHERE p.id = fin_chart_accounts.parent_id)`.
-- Backfill `grupo_fluxo` por raiz: 1.* → OPERACIONAL_ENTRADA; 2.*/3.* → OPERACIONAL_SAIDA; 4.* → NAO_CAIXA; 5.1 → OPERACIONAL_ENTRADA, 5.2 → OPERACIONAL_SAIDA; 6.1/6.3 → FINANCIAMENTO_ENTRADA, 6.2/6.4 → FINANCIAMENTO_SAIDA.
+Para somar valores monetários nos KPIs:
 
-**Seed analítico** (INSERT … ON CONFLICT DO NOTHING) — adiciona ~30 contas folha que faltam para classificação real:
-- `1.1.1` Venda à vista, `1.1.2` Venda a prazo
-- `1.2.1` Serviço PF, `1.2.2` Serviço PJ
-- `2.1.1` ICMS, `2.1.2` ISS, `2.1.3` PIS/COFINS, `2.1.4` Simples Nacional
-- `2.2.1` Taxa cartão crédito, `2.2.2` Taxa cartão débito, `2.2.3` Taxa Pix, `2.2.4` Taxa boleto
-- `2.4.1` Comissão vendedor interno, `2.4.2` Comissão representante
-- `3.1.1` Salários, `3.1.2` Encargos, `3.1.3` Benefícios, `3.1.4` Pró-labore
-- `3.2.1` Aluguel, `3.2.2` Energia, `3.2.3` Água, `3.2.4` Internet
-- `3.3.1` SaaS/Licenças, `3.3.2` Hospedagem
-- `3.4.1` Mídia paga, `3.4.2` Material gráfico
-- `3.5.1` Contabilidade, `3.5.2` Jurídico
-- `5.1.1` Juros recebidos, `5.1.2` Rendimento aplicações
-- `5.2.1` Juros pagos, `5.2.2` IOF
+- **Receita** = lançamentos cuja conta tem `grupo_fluxo = ENTRADA`
+- **Custo/Despesa** = lançamentos cuja conta tem `grupo_fluxo = SAIDA`
+- **Resultado / Margem** = Receita − Custo
+- **Saldo de caixa do período** = Σ ENTRADA − Σ SAIDA (ignora `NAO_CAIXA`)
+- Lançamentos com conta sem `grupo_fluxo` (NULL) são **ignorados** no numerador, mas contados num campo auxiliar `naoClassificados` para alerta opcional.
 
-Todas com `is_core=true`, `tenant_id=NULL` (template do sistema), `active=true`.
+Fallback: se a conta tiver `grupo_fluxo = NULL`, cai-se no comportamento antigo (`type RECEITA/DESPESA` ou `entry_type credit/debit`) só para não zerar painéis enquanto o usuário não classifica tudo.
 
----
+## Mudanças por arquivo
 
-## PROBLEMA 2 — DRE renderizada (`src/components/financeiro/DRETab.tsx`)
+### 1. `src/pages/DashboardSimple.tsx`
+- Trocar as queries diretas em `fin_receivables` / `fin_payables` por `fin_ledger_entries` com join: `chart_account:fin_chart_accounts(grupo_fluxo)`.
+- Filtrar pelo período (`competence_date` do mês atual).
+- `revenue` = soma onde `grupo_fluxo = 'ENTRADA'`.
+- `costs` = soma onde `grupo_fluxo = 'SAIDA'`.
+- `margin` mantida: `(revenue − costs) / revenue`.
+- `cash` (saldo bancário) e `inadimplencia` ficam como estão (não dependem de grupo_fluxo).
 
-Corrigir os bugs de renderização sem mexer em consultas:
-1. **Linha calculada `=RL2` (Receita Líquida 2)** — atualmente ausente. Adicionar após raiz `2`: `RL2 = Σ(1) − Σ(2)`.
-2. **Ordem dos blocos** — forçar ordenação numérica natural do `code` (1,2,3,4,5,6) usando `numericCodeSort` em vez da string sort atual.
-3. **Mostrar EBIT explicitamente** — `EBIT = RL2 − Σ(3) − Σ(4)` (já calculado como "Resultado Operacional" mas com label genérico; renomear para "EBIT (Resultado Operacional)").
-4. **Mostrar RAC (Resultado Antes de Capital)** — `RAC = EBIT + Σ(5)`. Adicionar linha calculada antes do bloco 6 com destaque visual.
+### 2. `src/hooks/useCompanyStatus.ts` (alimenta `ExecutiveStatusBar`)
+- Substituir os 4 `ledger().eq("entry_type", "credit"/"debit")` por queries com join em `fin_chart_accounts(grupo_fluxo)`.
+- `revenue` / `expenses` (mês atual e anterior) passam a usar `grupo_fluxo`.
+- `monthlyResult = revenue − expenses` segue igual.
+- Demais KPIs (`cashBalance`, `openOrders`, `overduePayables`, `goalProgress`) ficam intactos.
 
-Linhas calculadas seguem o padrão visual já existente de `Lucro Bruto` (font-bold, fundo `bg-muted/30`, badge `=`).
+### 3. `src/components/financeiro/DashboardBI.tsx` (renderizado por `FinanceiroDashboard`)
+- No `useQuery` principal:
+  - Estender o select do join de chart_account para incluir `grupo_fluxo`.
+  - Trocar os reduces de `receitas` / `despesas` / `receitasRealizadas` / `despesasRealizadas` para usar `grupo_fluxo` em vez de `entry.type`.
+  - Mesma troca para `allReceitas` / `allDespesas` (saldo consolidado) — adicionar join também na `balanceQuery`.
+  - Manter fallback `type === "RECEITA" / "DESPESA"` quando `grupo_fluxo` estiver NULL.
+- Agrupamento de categorias (`receitasByAccount` / `despesasByAccount`) passa a usar `grupo_fluxo` para decidir o mapa de destino (não mais `entry.type`).
 
----
+### 4. (Opcional, sem custo) Indicador "Não classificados"
+- Acrescentar `naoClassificados` ao retorno de `DashboardBI` e exibir um Badge discreto no `FinanceiroKPIs` quando `> 0`, com link para o Plano de Contas. Útil para o usuário corrigir contas sem `grupo_fluxo`.
 
-## PROBLEMA 3 — Fluxo de Caixa puxar do banco (`src/components/financeiro/CashflowTab.tsx`)
+## Fora do escopo
 
-Substituir o array hardcoded de blocos pela leitura de `fin_chart_accounts.grupo_fluxo`:
-- Query: `fin_ledger_entries` agrupado por `chart_account_id` → JOIN `fin_chart_accounts` → agrupa por `grupo_fluxo`.
-- Renderiza dinamicamente os 7 blocos do método indireto: Operacional (entradas/saídas), Investimento (entradas/saídas), Financiamento (entradas/saídas), Variação Líquida.
-- Mantém a UI atual (cards + tabela), só troca a fonte de dados.
-- Fallback: se `grupo_fluxo` for NULL, exibe em "Não Classificados" (warning amarelo) com link para classificar.
+- Outros dashboards (executivo, cockpit, command center, BI personalizadas).
+- DRE/Cashflow (já usam `grupo_fluxo`).
+- Migrações de banco — nada muda no schema.
+- Novos componentes de UI ou novos KPIs.
 
----
+## Validação
 
-## PROBLEMA 4 — `conta_plano_codigo` em AP/AR + triggers de classificação
-
-**Migração**:
-- `ALTER TABLE fin_payables ADD COLUMN IF NOT EXISTS conta_plano_codigo TEXT`
-- `ALTER TABLE fin_receivables ADD COLUMN IF NOT EXISTS conta_plano_codigo TEXT`
-- Backfill via JOIN `chart_account_id → fin_chart_accounts.code`.
-- Trigger `BEFORE INSERT/UPDATE` em ambas que preenche `conta_plano_codigo` sempre que `chart_account_id` mudar.
-- Índice `idx_fin_payables_conta_codigo` e `idx_fin_receivables_conta_codigo` para queries por prefixo (`code LIKE '2.4.%'`).
-
-**Atualizar triggers existentes** (`create_payable_from_purchase_order`, `create_receivable_from_order`) para já gravar `conta_plano_codigo` na criação (evita um round-trip).
-
----
-
-## Tech notes
-
-- Migrações idempotentes (`IF NOT EXISTS`, `ON CONFLICT DO NOTHING`).
-- Nenhum DROP/DELETE.
-- Tipos do Supabase regeneram automaticamente após a migração.
-- Componentes DRE/Cashflow são edits in-place (>1900 linhas combinadas) — mudanças cirúrgicas em renderização e fonte de dados, não rewrite.
-
-## Ordem de execução
-
-1. Migração única consolidando schema (1 + 4) + seed (1) + triggers (1 + 4).
-2. Após approval da migração: edits em DRETab.tsx (2) e CashflowTab.tsx (3).
+1. Rodar o preview e abrir as 3 telas: Home → ExecutiveStatusBar; `/dashboard` simples; Financeiro → DashboardBI.
+2. Conferir que Receita do mês bate com a linha `1` do DRE e que Custo bate com `2+3` do DRE para o mesmo período.
+3. Conferir que se eu marcar uma conta `4.* NÃO CAIXA` (depreciação) ela some dos KPIs mas continua aparecendo no DRE.

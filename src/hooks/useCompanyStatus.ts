@@ -43,12 +43,32 @@ export function useCompanyStatus() {
         .select("opening_balance")
         .eq("active", true) as unknown as { data: { opening_balance: number | null }[] | null };
 
-      type AmtRes = { data: { amount: number | null }[] | null };
-      const ledger = () => supabase.from("fin_ledger_entries").select("amount") as any;
-      const revenueRes: AmtRes = await ledger().eq("entry_type", "credit").gte("competence_date", monthStart).lte("competence_date", monthEnd);
-      const expenseRes: AmtRes = await ledger().eq("entry_type", "debit").gte("competence_date", monthStart).lte("competence_date", monthEnd);
-      const prevRevenueRes: AmtRes = await ledger().eq("entry_type", "credit").gte("competence_date", prevMonthStart).lte("competence_date", prevMonthEnd);
-      const prevExpenseRes: AmtRes = await ledger().eq("entry_type", "debit").gte("competence_date", prevMonthStart).lte("competence_date", prevMonthEnd);
+      type FlowRow = { amount: number | null; entry_type?: string | null; type?: string | null; chart_account?: { grupo_fluxo: string | null } | null };
+      type FlowRes = { data: FlowRow[] | null };
+      const ledger = () =>
+        supabase
+          .from("fin_ledger_entries")
+          .select("amount, entry_type, type, chart_account:fin_chart_accounts(grupo_fluxo)") as any;
+      const revenueRes: FlowRes = await ledger().gte("competence_date", monthStart).lte("competence_date", monthEnd);
+      const expenseRes: FlowRes = revenueRes; // same dataset, classified below
+      const prevRevenueRes: FlowRes = await ledger().gte("competence_date", prevMonthStart).lte("competence_date", prevMonthEnd);
+      const prevExpenseRes: FlowRes = prevRevenueRes;
+
+      const sumByFlow = (rows: FlowRow[] | null | undefined, kind: "ENTRADA" | "SAIDA") => {
+        if (!rows) return 0;
+        return rows.reduce((s, r) => {
+          const gf = r.chart_account?.grupo_fluxo ?? null;
+          let isMatch = false;
+          if (gf) {
+            isMatch = gf === kind;
+          } else {
+            // Fallback antigo enquanto contas não tiverem grupo_fluxo classificado
+            if (kind === "ENTRADA") isMatch = r.entry_type === "credit" || r.type === "RECEITA";
+            else isMatch = r.entry_type === "debit" || r.type === "DESPESA";
+          }
+          return isMatch ? s + Number(r.amount || 0) : s;
+        }, 0);
+      };
 
       const openOrdersRes = await supabase
         .from("orders")
@@ -69,11 +89,11 @@ export function useCompanyStatus() {
 
       // Calculate
       const cashBalance = cashRes.data?.reduce((s, r) => s + Number(r.opening_balance || 0), 0) || 0;
-      const revenue = revenueRes.data?.reduce((s, r) => s + Number(r.amount || 0), 0) || 0;
-      const expenses = expenseRes.data?.reduce((s, r) => s + Number(r.amount || 0), 0) || 0;
+      const revenue = sumByFlow(revenueRes.data, "ENTRADA");
+      const expenses = sumByFlow(expenseRes.data, "SAIDA");
       const monthlyResult = revenue - expenses;
-      const prevRevenue = prevRevenueRes.data?.reduce((s, r) => s + Number(r.amount || 0), 0) || 0;
-      const prevExpenses = prevExpenseRes.data?.reduce((s, r) => s + Number(r.amount || 0), 0) || 0;
+      const prevRevenue = sumByFlow(prevRevenueRes.data, "ENTRADA");
+      const prevExpenses = sumByFlow(prevExpenseRes.data, "SAIDA");
       const prevResult = prevRevenue - prevExpenses;
 
       const openOrders = openOrdersRes.count || 0;

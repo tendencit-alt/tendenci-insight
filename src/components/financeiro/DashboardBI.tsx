@@ -82,7 +82,7 @@ export function DashboardBI({ filters }: DashboardBIProps) {
         .select(`
           id, type, amount, status, description, cash_date, competence_date, 
           document_number, party_type, party_id, has_splits,
-          chart_account:fin_chart_accounts(id, code, name, nature)
+          chart_account:fin_chart_accounts(id, code, name, nature, grupo_fluxo)
         `)
         .neq("status", "CANCELADO");
 
@@ -163,7 +163,7 @@ export function DashboardBI({ filters }: DashboardBIProps) {
       // Get ALL ledger entries up to dateTo for real cash balance
       let balanceQuery = supabase
         .from("fin_ledger_entries")
-        .select("type, amount, cash_date, competence_date")
+        .select("type, amount, cash_date, competence_date, chart_account:fin_chart_accounts(grupo_fluxo)")
         .neq("status", "CANCELADO");
 
       if (dateTo) {
@@ -181,30 +181,59 @@ export function DashboardBI({ filters }: DashboardBIProps) {
         .eq("month", currentMonth)
         .eq("year", currentYear);
 
-      // Calculate period totals (filtered)
-      const receitas = entries?.filter(e => e.type === "RECEITA").reduce((sum, e) => sum + Number(e.amount), 0) || 0;
-      const despesas = entries?.filter(e => e.type === "DESPESA").reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+      // Resolve "kind" from grupo_fluxo with fallback to legacy entry.type
+      const resolveKind = (entry: any): "ENTRADA" | "SAIDA" | "NAO_CAIXA" | null => {
+        const gf = entry?.chart_account?.grupo_fluxo ?? null;
+        if (gf === "ENTRADA" || gf === "SAIDA" || gf === "NAO_CAIXA") return gf;
+        if (entry?.type === "RECEITA") return "ENTRADA";
+        if (entry?.type === "DESPESA") return "SAIDA";
+        return null;
+      };
+
+      // Calculate period totals using grupo_fluxo (filtered)
+      let receitas = 0;
+      let despesas = 0;
+      let receitasRealizadas = 0;
+      let despesasRealizadas = 0;
+      let naoClassificados = 0;
+      entries?.forEach((e: any) => {
+        const kind = resolveKind(e);
+        const amt = Number(e.amount || 0);
+        if (kind === "ENTRADA") {
+          receitas += amt;
+          if (e.status === "PAGO_RECEBIDO") receitasRealizadas += amt;
+        } else if (kind === "SAIDA") {
+          despesas += amt;
+          if (e.status === "PAGO_RECEBIDO") despesasRealizadas += amt;
+        } else if (kind === null) {
+          naoClassificados += 1;
+        }
+      });
       const resultado = receitas - despesas;
 
-      // Calculate realized amounts (PAGO_RECEBIDO)
-      const receitasRealizadas = entries?.filter(e => e.type === "RECEITA" && (e as any).status === "PAGO_RECEBIDO").reduce((sum, e) => sum + Number(e.amount), 0) || 0;
-      const despesasRealizadas = entries?.filter(e => e.type === "DESPESA" && (e as any).status === "PAGO_RECEBIDO").reduce((sum, e) => sum + Number(e.amount), 0) || 0;
-
-      // Calculate real consolidated balance: opening balances + ALL transactions up to dateTo
+      // Calculate real consolidated balance using grupo_fluxo
       const saldoInicial = accounts?.reduce((sum, a) => sum + Number(a.opening_balance || 0), 0) || 0;
-      const allReceitas = allEntriesForBalance?.filter(e => e.type === "RECEITA").reduce((sum, e) => sum + Number(e.amount), 0) || 0;
-      const allDespesas = allEntriesForBalance?.filter(e => e.type === "DESPESA").reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+      let allReceitas = 0;
+      let allDespesas = 0;
+      allEntriesForBalance?.forEach((e: any) => {
+        const kind = resolveKind(e);
+        const amt = Number(e.amount || 0);
+        if (kind === "ENTRADA") allReceitas += amt;
+        else if (kind === "SAIDA") allDespesas += amt;
+      });
       const saldoAtual = saldoInicial + allReceitas - allDespesas;
 
-      // Group entries by chart account for BI
+      // Group entries by chart account for BI (uses grupo_fluxo, fallback to type)
       const receitasByAccount = new Map<string, CategoryData>();
       const despesasByAccount = new Map<string, CategoryData>();
 
       entries?.forEach(entry => {
         const account = entry.chart_account;
         if (!account) return;
+        const kind = resolveKind(entry);
+        if (kind !== "ENTRADA" && kind !== "SAIDA") return;
 
-        const map = entry.type === "RECEITA" ? receitasByAccount : despesasByAccount;
+        const map = kind === "ENTRADA" ? receitasByAccount : despesasByAccount;
         
         if (!map.has(account.id)) {
           map.set(account.id, {
@@ -235,6 +264,7 @@ export function DashboardBI({ filters }: DashboardBIProps) {
         saldoInicial,
         receitasRealizadas,
         despesasRealizadas,
+        naoClassificados,
         receitasCategories: Array.from(receitasByAccount.values()).sort((a, b) => b.value - a.value),
         despesasCategories: Array.from(despesasByAccount.values()).sort((a, b) => b.value - a.value),
       };
