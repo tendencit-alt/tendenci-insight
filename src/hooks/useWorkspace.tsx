@@ -38,13 +38,6 @@ const DEFAULT_WORKSPACES: WorkspaceDefinition[] = [
     description: "Visão executiva: finanças, vendas, estratégia",
   },
   {
-    id: "financeiro",
-    name: "Financeiro",
-    icon: "💰",
-    groups: ["Hoje", "Financeiro", "Sistema"],
-    description: "Tesouraria, DRE, fluxo de caixa, metas",
-  },
-  {
     id: "comercial",
     name: "Comercial",
     icon: "🛒",
