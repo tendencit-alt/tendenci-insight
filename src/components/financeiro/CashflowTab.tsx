@@ -29,6 +29,7 @@ interface ChartAccount {
   name: string;
   nature: string | null;
   parent_id: string | null;
+  grupo_fluxo: string | null;
 }
 
 interface LedgerEntry {
@@ -67,17 +68,21 @@ interface CashflowLine {
   status?: "conciliado" | "pendente" | "previsto" | "realizado";
 }
 
-// Map DRE root codes to cashflow blocks
-function getBlockForCode(mainCode: number): string {
-  switch (mainCode) {
-    case 1: return "entradas_operacionais";
-    case 2: return "saidas_vendas";
-    case 3: return "saidas_estrutura";
-    case 5: return "mov_financeiras";
-    case 6: return "mov_capital";
-    case 8: return "investimentos";
-    default: return "other";
+// Route account to cashflow block based on grupo_fluxo (from DB) with code-based refinement
+// for splitting OPERACIONAL_SAIDA between "saídas sobre vendas" (root 2) and "estrutura" (root 3).
+function getBlockForAccount(account: { code: string; grupo_fluxo: string | null }): string {
+  const grupo = account.grupo_fluxo;
+  const root = account.code.split('.')[0];
+
+  if (!grupo) return "nao_classificados";
+  if (grupo === "NAO_CAIXA") return "nao_classificados";
+  if (grupo === "OPERACIONAL_ENTRADA") return "entradas_operacionais";
+  if (grupo === "OPERACIONAL_SAIDA") {
+    return root === "2" ? "saidas_vendas" : "saidas_estrutura";
   }
+  if (grupo === "INVESTIMENTO_ENTRADA" || grupo === "INVESTIMENTO_SAIDA") return "investimentos";
+  if (grupo === "FINANCIAMENTO_ENTRADA" || grupo === "FINANCIAMENTO_SAIDA") return "mov_capital";
+  return "nao_classificados";
 }
 
 function numericCodeSort(a: string, b: string): number {
