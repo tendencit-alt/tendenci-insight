@@ -57,7 +57,7 @@ import {
   RegistrarBlock, AcompanharBlock, AnalisarBlock,
   PlanejarBlock, ResolverBlock, EstrategiaBlock,
 } from "@/components/command-center/TaskBlocks";
-import { WorkspaceModeSelector } from "@/components/command-center/WorkspaceModeSelector";
+
 import { SetupPriorityWidget } from "@/components/smart-empty-states/SetupPriorityWidget";
 
 // ── Searchable items for command palette ──
@@ -186,9 +186,7 @@ export default function HomeLauncher() {
             </div>
             <h1 className="text-2xl font-bold tracking-tight">Command Center</h1>
           </div>
-          {/* Workspace Mode Selector */}
           <div className="flex items-center justify-center gap-2">
-            <WorkspaceModeSelector />
             <Button
               variant={actionLayer.rapidMode ? "default" : "outline"}
               size="sm"

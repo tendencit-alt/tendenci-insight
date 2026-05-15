@@ -12,7 +12,7 @@ import { PermissionSimulationProvider } from "@/contexts/PermissionSimulationCon
 import { SimulationBanner } from "@/components/smart-permissions/SimulationBanner";
 import PermissionAuditPage from "./pages/PermissionAuditPage";
 import RlsAudit from "./pages/RlsAudit";
-import { WorkspaceProvider } from "@/hooks/useWorkspace";
+
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionGuard } from "@/components/auth/PermissionGuard";
 import { DynamicRouteHandler } from "@/components/routing/DynamicRouteHandler";
@@ -108,7 +108,7 @@ const App = () => (
             <MinimizedDialogsBar />
             <PermissionsProvider>
             <PermissionSimulationProvider>
-            <WorkspaceProvider>
+            
               <SimulationBanner />
               <CommandBar />
                <Routes>
@@ -247,7 +247,7 @@ const App = () => (
                 </ProtectedRoute>
               } />
               </Routes>
-            </WorkspaceProvider>
+            
             </PermissionSimulationProvider>
             </PermissionsProvider>
             </MinimizedDialogsProvider>
