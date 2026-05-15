@@ -72,14 +72,6 @@ export default function Financeiro() {
         icon={<Wallet className="h-5 w-5" />}
         headerActions={
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/cadastros-financeiros?tab=chart")}
-            >
-              <Database className="h-4 w-4 mr-2" />
-              Cadastros & Plano de Contas
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm">
