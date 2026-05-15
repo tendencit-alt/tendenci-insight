@@ -89,11 +89,11 @@ export function useCompanyStatus() {
 
       // Calculate
       const cashBalance = cashRes.data?.reduce((s, r) => s + Number(r.opening_balance || 0), 0) || 0;
-      const revenue = revenueRes.data?.reduce((s, r) => s + Number(r.amount || 0), 0) || 0;
-      const expenses = expenseRes.data?.reduce((s, r) => s + Number(r.amount || 0), 0) || 0;
+      const revenue = sumByFlow(revenueRes.data, "ENTRADA");
+      const expenses = sumByFlow(expenseRes.data, "SAIDA");
       const monthlyResult = revenue - expenses;
-      const prevRevenue = prevRevenueRes.data?.reduce((s, r) => s + Number(r.amount || 0), 0) || 0;
-      const prevExpenses = prevExpenseRes.data?.reduce((s, r) => s + Number(r.amount || 0), 0) || 0;
+      const prevRevenue = sumByFlow(prevRevenueRes.data, "ENTRADA");
+      const prevExpenses = sumByFlow(prevExpenseRes.data, "SAIDA");
       const prevResult = prevRevenue - prevExpenses;
 
       const openOrders = openOrdersRes.count || 0;
