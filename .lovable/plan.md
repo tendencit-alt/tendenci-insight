@@ -1,58 +1,79 @@
-## Diagnóstico
+# Auditoria Plano de Contas — 4 correções estruturais
 
-Existe a página completa **`/cadastros-financeiros`** (`src/pages/CadastrosFinanceiros.tsx`) com 7 abas: **Contas Bancárias, Plano de Contas, Centros de Custo, Projetos, Compromissos sobre Venda, Responsáveis, Taxas Cartão** — mais aba de configurações com Origem/Eventos/Permissões. Os componentes `Manager` já existem e funcionam.
+Sem deletar dados. Tudo aditivo (ALTER ADD COLUMN, INSERT … ON CONFLICT DO NOTHING, UPDATE em backfill).
 
-Por que você não está vendo:
+---
 
-1. **Você está em `/financeiro?section=records`.** Essa página NÃO conecta os cadastros — em `settings` ela mostra `GovernanceTab`, então não há link visível para Plano de Contas a partir do Financeiro.
-2. **No menu lateral existe a seção "Controladoria"** com Plano de Contas, Centros de Custo etc., mas os links estão **quebrados**: apontam para `?tab=chart`, `?tab=cost-centers`, `?tab=projects`, mas o componente `CadastrosFinanceiros` ignora `useSearchParams` e usa estado interno com valores diferentes (`chart_accounts`, `cost_centers`, `projects`). Resultado: clicar em qualquer item sempre cai em "Contas Bancárias".
-3. Existem `MastersTab.tsx` (em `components/financeiro/`) e `CadastrosFinanceiros.tsx` (em `pages/`) com conteúdo quase idêntico — duplicação que confunde.
+## PROBLEMA 1 — Seed analítico + colunas `pai_codigo` e `grupo_fluxo`
 
-Sobre **padrão do sistema vs personalização**: já está implementado no banco. A tabela `fin_chart_accounts` tem 40 contas (35 marcadas `is_core`/`is_system_default`) por tenant, e o `ChartAccountsManager` já bloqueia exclusão de contas core. Falta deixar isso **explícito visualmente** e dar uma ação "duplicar para personalizar".
+**Migração** (`supabase/migrations/...`):
+- `ALTER TABLE fin_chart_accounts ADD COLUMN IF NOT EXISTS pai_codigo TEXT` — código do pai denormalizado (ex: `2.4` para `2.4.1`).
+- `ALTER TABLE fin_chart_accounts ADD COLUMN IF NOT EXISTS grupo_fluxo TEXT` — categoriza para Fluxo de Caixa: `OPERACIONAL_ENTRADA`, `OPERACIONAL_SAIDA`, `INVESTIMENTO_ENTRADA`, `INVESTIMENTO_SAIDA`, `FINANCIAMENTO_ENTRADA`, `FINANCIAMENTO_SAIDA`, `NAO_CAIXA`.
+- Trigger `BEFORE INSERT/UPDATE` que preenche `pai_codigo` automaticamente via JOIN no `parent_id`.
+- Backfill: `UPDATE fin_chart_accounts SET pai_codigo = (SELECT code FROM fin_chart_accounts p WHERE p.id = fin_chart_accounts.parent_id)`.
+- Backfill `grupo_fluxo` por raiz: 1.* → OPERACIONAL_ENTRADA; 2.*/3.* → OPERACIONAL_SAIDA; 4.* → NAO_CAIXA; 5.1 → OPERACIONAL_ENTRADA, 5.2 → OPERACIONAL_SAIDA; 6.1/6.3 → FINANCIAMENTO_ENTRADA, 6.2/6.4 → FINANCIAMENTO_SAIDA.
 
-## Caminho recomendado
+**Seed analítico** (INSERT … ON CONFLICT DO NOTHING) — adiciona ~30 contas folha que faltam para classificação real:
+- `1.1.1` Venda à vista, `1.1.2` Venda a prazo
+- `1.2.1` Serviço PF, `1.2.2` Serviço PJ
+- `2.1.1` ICMS, `2.1.2` ISS, `2.1.3` PIS/COFINS, `2.1.4` Simples Nacional
+- `2.2.1` Taxa cartão crédito, `2.2.2` Taxa cartão débito, `2.2.3` Taxa Pix, `2.2.4` Taxa boleto
+- `2.4.1` Comissão vendedor interno, `2.4.2` Comissão representante
+- `3.1.1` Salários, `3.1.2` Encargos, `3.1.3` Benefícios, `3.1.4` Pró-labore
+- `3.2.1` Aluguel, `3.2.2` Energia, `3.2.3` Água, `3.2.4` Internet
+- `3.3.1` SaaS/Licenças, `3.3.2` Hospedagem
+- `3.4.1` Mídia paga, `3.4.2` Material gráfico
+- `3.5.1` Contabilidade, `3.5.2` Jurídico
+- `5.1.1` Juros recebidos, `5.1.2` Rendimento aplicações
+- `5.2.1` Juros pagos, `5.2.2` IOF
 
-**Mantém uma única fonte da verdade** (`/cadastros-financeiros`) e cria atalhos a partir do Financeiro, ao invés de duplicar tudo dentro dele. Razões:
+Todas com `is_core=true`, `tenant_id=NULL` (template do sistema), `active=true`.
 
-- A página dedicada cabe bem no menu Controladoria (já está lá).
-- Evita inflar mais ainda a navegação do `/financeiro` (que já tem 6 abas + relatórios + governance).
-- Garante que existe um único componente por cadastro (sem risco de divergir).
+---
 
-## Plano de implementação
+## PROBLEMA 2 — DRE renderizada (`src/components/financeiro/DRETab.tsx`)
 
-### 1. Corrigir roteamento por tab em `CadastrosFinanceiros.tsx`
-- Ler `useSearchParams()` e usar `?tab=` como estado inicial.
-- Padronizar slugs: `bank-accounts`, `chart`, `cost-centers`, `projects`, `commitments`, `responsibles`, `card-rates`, `origin-rules`, `event-automations`, `permissions`.
-- Atualizar `setActiveTab` para também escrever na URL (`setSearchParams`), mantendo deep-link e botão "voltar" funcionando.
+Corrigir os bugs de renderização sem mexer em consultas:
+1. **Linha calculada `=RL2` (Receita Líquida 2)** — atualmente ausente. Adicionar após raiz `2`: `RL2 = Σ(1) − Σ(2)`.
+2. **Ordem dos blocos** — forçar ordenação numérica natural do `code` (1,2,3,4,5,6) usando `numericCodeSort` em vez da string sort atual.
+3. **Mostrar EBIT explicitamente** — `EBIT = RL2 − Σ(3) − Σ(4)` (já calculado como "Resultado Operacional" mas com label genérico; renomear para "EBIT (Resultado Operacional)").
+4. **Mostrar RAC (Resultado Antes de Capital)** — `RAC = EBIT + Σ(5)`. Adicionar linha calculada antes do bloco 6 com destaque visual.
 
-### 2. Atualizar links do menu (`AppNavbar.tsx` linhas 141-146 e `AppSidebar.tsx` linha 123)
-- Trocar para os slugs corretos.
-- Adicionar entradas que faltam: **Compromissos sobre Venda**, **Responsáveis**, **Taxas Cartão**, **Contas Bancárias**.
+Linhas calculadas seguem o padrão visual já existente de `Lucro Bruto` (font-bold, fundo `bg-muted/30`, badge `=`).
 
-### 3. Atalho a partir do Financeiro
-Em `Financeiro.tsx` adicionar no `headerActions` um botão secundário **"Cadastros & Plano de Contas"** que navega para `/cadastros-financeiros`. Opcionalmente, na aba Settings (hoje `GovernanceTab`), incluir um card no topo com links rápidos para os 4 cadastros mais usados (Plano de Contas, CCs, Projetos, Contas Bancárias).
+---
 
-### 4. Remover duplicação
-Excluir `src/components/financeiro/MastersTab.tsx` (não é referenciado em nenhum lugar) para evitar divergência futura. Os 14 arquivos em `components/financeiro/masters/` permanecem intactos — são os Managers reais.
+## PROBLEMA 3 — Fluxo de Caixa puxar do banco (`src/components/financeiro/CashflowTab.tsx`)
 
-### 5. Tornar visível "Padrão do Sistema vs Personalizado"
-No `ChartAccountsManager` (e por extensão `CostCentersManager`):
-- Adicionar **filtro segmentado** no topo: `Todos | Padrão do Sistema | Personalizadas`.
-- Em cada linha core, manter o badge "Padrão" já existente, e adicionar tooltip explicando: *"Conta padrão do sistema. Não pode ser excluída ou ter código alterado, mas você pode adicionar contas filhas e personalizar a descrição."*
-- Adicionar ação **"Duplicar e personalizar"** em contas core: cria uma cópia editável (sem `is_core`) na mesma posição hierárquica. Útil para o usuário começar uma variação sem mexer no padrão.
-- Banner informativo no topo da aba Plano de Contas explicando o conceito em 1 frase, dispensável (cookie `cadastros_intro_seen`).
+Substituir o array hardcoded de blocos pela leitura de `fin_chart_accounts.grupo_fluxo`:
+- Query: `fin_ledger_entries` agrupado por `chart_account_id` → JOIN `fin_chart_accounts` → agrupa por `grupo_fluxo`.
+- Renderiza dinamicamente os 7 blocos do método indireto: Operacional (entradas/saídas), Investimento (entradas/saídas), Financiamento (entradas/saídas), Variação Líquida.
+- Mantém a UI atual (cards + tabela), só troca a fonte de dados.
+- Fallback: se `grupo_fluxo` for NULL, exibe em "Não Classificados" (warning amarelo) com link para classificar.
 
-### 6. (Opcional, não-bloqueante) Wizard de primeiro acesso
-Se o tenant ainda não tiver nenhuma personalização (`COUNT(*) WHERE NOT is_core = 0`), exibir banner uma única vez sugerindo: *"Comece a partir do plano padrão do sistema. Renomeie, oculte ou adicione contas conforme sua operação."*
+---
 
-## Resumo de arquivos afetados
+## PROBLEMA 4 — `conta_plano_codigo` em AP/AR + triggers de classificação
 
-- `src/pages/CadastrosFinanceiros.tsx` — ler/escrever `?tab=`
-- `src/components/layout/AppNavbar.tsx` — corrigir slugs + adicionar entradas faltantes
-- `src/components/layout/AppSidebar.tsx` — completar links de Controladoria
-- `src/pages/Financeiro.tsx` — botão "Cadastros & Plano de Contas" no header
-- `src/components/financeiro/masters/ChartAccountsManager.tsx` — filtro segmentado, ação Duplicar, banner
-- `src/components/financeiro/masters/CostCentersManager.tsx` — filtro segmentado
-- **Remover** `src/components/financeiro/MastersTab.tsx` (não usado)
+**Migração**:
+- `ALTER TABLE fin_payables ADD COLUMN IF NOT EXISTS conta_plano_codigo TEXT`
+- `ALTER TABLE fin_receivables ADD COLUMN IF NOT EXISTS conta_plano_codigo TEXT`
+- Backfill via JOIN `chart_account_id → fin_chart_accounts.code`.
+- Trigger `BEFORE INSERT/UPDATE` em ambas que preenche `conta_plano_codigo` sempre que `chart_account_id` mudar.
+- Índice `idx_fin_payables_conta_codigo` e `idx_fin_receivables_conta_codigo` para queries por prefixo (`code LIKE '2.4.%'`).
 
-Sem mudanças de schema — `fin_chart_accounts.is_core` / `is_system_default` já existem e a proteção contra delete já está aplicada.
+**Atualizar triggers existentes** (`create_payable_from_purchase_order`, `create_receivable_from_order`) para já gravar `conta_plano_codigo` na criação (evita um round-trip).
+
+---
+
+## Tech notes
+
+- Migrações idempotentes (`IF NOT EXISTS`, `ON CONFLICT DO NOTHING`).
+- Nenhum DROP/DELETE.
+- Tipos do Supabase regeneram automaticamente após a migração.
+- Componentes DRE/Cashflow são edits in-place (>1900 linhas combinadas) — mudanças cirúrgicas em renderização e fonte de dados, não rewrite.
+
+## Ordem de execução
+
+1. Migração única consolidando schema (1 + 4) + seed (1) + triggers (1 + 4).
+2. Após approval da migração: edits em DRETab.tsx (2) e CashflowTab.tsx (3).
