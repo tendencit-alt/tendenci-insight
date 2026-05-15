@@ -629,6 +629,9 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
     { key: "mov_financeiras", label: "Movimentações Financeiras", icon: <TrendingUp className="h-3.5 w-3.5" />, colorClass: "bg-blue-50 dark:bg-blue-950/20" },
     { key: "mov_capital", label: "Movimentações de Capital", icon: <Wallet className="h-3.5 w-3.5" />, colorClass: "bg-purple-50 dark:bg-purple-950/20" },
     { key: "investimentos", label: "Investimentos", icon: <Flame className="h-3.5 w-3.5" />, colorClass: "bg-amber-50 dark:bg-amber-950/20" },
+    ...((bd?.nao_classificados?.lines.length ?? 0) > 0
+      ? [{ key: "nao_classificados", label: "⚠ Não Classificados (definir Grupo de Fluxo)", icon: <Clock className="h-3.5 w-3.5" />, colorClass: "bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-300 dark:border-yellow-800" }]
+      : []),
   ];
 
   return (
