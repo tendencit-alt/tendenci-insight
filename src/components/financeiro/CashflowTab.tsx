@@ -273,6 +273,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
         mov_financeiras: { total: 0, compTotal: 0, lines: [] },
         mov_capital: { total: 0, compTotal: 0, lines: [] },
         investimentos: { total: 0, compTotal: 0, lines: [] },
+        nao_classificados: { total: 0, compTotal: 0, lines: [] },
       };
 
       const flattenIntoBlock = (
@@ -313,8 +314,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       };
 
       rootAccounts.forEach(root => {
-        const mainCode = parseFloat(root.code.split('.')[0]);
-        const blockKey = getBlockForCode(mainCode);
+        const blockKey = getBlockForAccount(root);
         if (!blockData[blockKey]) return;
 
         const directValue = accountValues.get(root.id) || 0;
