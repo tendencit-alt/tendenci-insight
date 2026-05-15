@@ -183,8 +183,13 @@ export function DashboardBI({ filters }: DashboardBIProps) {
 
       // Resolve "kind" from grupo_fluxo with fallback to legacy entry.type
       const resolveKind = (entry: any): "ENTRADA" | "SAIDA" | "NAO_CAIXA" | null => {
-        const gf = entry?.chart_account?.grupo_fluxo ?? null;
-        if (gf === "ENTRADA" || gf === "SAIDA" || gf === "NAO_CAIXA") return gf;
+        const gf: string | null = entry?.chart_account?.grupo_fluxo ?? null;
+        if (gf) {
+          if (gf === "NAO_CAIXA") return "NAO_CAIXA";
+          // Suporta valores compostos: OPERACIONAL_ENTRADA, FINANCIAMENTO_SAIDA, INVESTIMENTO_*, etc.
+          if (gf === "ENTRADA" || gf.endsWith("_ENTRADA")) return "ENTRADA";
+          if (gf === "SAIDA"   || gf.endsWith("_SAIDA"))   return "SAIDA";
+        }
         if (entry?.type === "RECEITA") return "ENTRADA";
         if (entry?.type === "DESPESA") return "SAIDA";
         return null;
