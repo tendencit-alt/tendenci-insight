@@ -6538,12 +6538,14 @@ export type Database = {
           code: string
           created_at: string | null
           dre_order: number | null
+          grupo_fluxo: string | null
           id: string
           in_cashflow: boolean | null
           in_dre: boolean | null
           is_core: boolean
           name: string
           nature: string | null
+          pai_codigo: string | null
           parent_id: string | null
           tenant_id: string | null
         }
@@ -6553,12 +6555,14 @@ export type Database = {
           code: string
           created_at?: string | null
           dre_order?: number | null
+          grupo_fluxo?: string | null
           id?: string
           in_cashflow?: boolean | null
           in_dre?: boolean | null
           is_core?: boolean
           name: string
           nature?: string | null
+          pai_codigo?: string | null
           parent_id?: string | null
           tenant_id?: string | null
         }
@@ -6568,12 +6572,14 @@ export type Database = {
           code?: string
           created_at?: string | null
           dre_order?: number | null
+          grupo_fluxo?: string | null
           id?: string
           in_cashflow?: boolean | null
           in_dre?: boolean | null
           is_core?: boolean
           name?: string
           nature?: string | null
+          pai_codigo?: string | null
           parent_id?: string | null
           tenant_id?: string | null
         }
@@ -7576,6 +7582,7 @@ export type Database = {
           client_id: string | null
           competence_date: string
           conciliado_em: string | null
+          conta_plano_codigo: string | null
           cost_center_id: string | null
           created_at: string | null
           created_by: string | null
@@ -7623,6 +7630,7 @@ export type Database = {
           client_id?: string | null
           competence_date: string
           conciliado_em?: string | null
+          conta_plano_codigo?: string | null
           cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -7670,6 +7678,7 @@ export type Database = {
           client_id?: string | null
           competence_date?: string
           conciliado_em?: string | null
+          conta_plano_codigo?: string | null
           cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -8178,6 +8187,7 @@ export type Database = {
           competence_date: string
           conciliado_em: string | null
           conciliado_por: string | null
+          conta_plano_codigo: string | null
           cost_center_id: string | null
           created_at: string | null
           created_by: string | null
@@ -8210,6 +8220,7 @@ export type Database = {
           competence_date?: string
           conciliado_em?: string | null
           conciliado_por?: string | null
+          conta_plano_codigo?: string | null
           cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -8242,6 +8253,7 @@ export type Database = {
           competence_date?: string
           conciliado_em?: string | null
           conciliado_por?: string | null
+          conta_plano_codigo?: string | null
           cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -8602,6 +8614,7 @@ export type Database = {
           competence_date: string
           conciliado_em: string | null
           conciliado_por: string | null
+          conta_plano_codigo: string | null
           cost_center_id: string | null
           created_at: string | null
           created_by: string | null
@@ -8635,6 +8648,7 @@ export type Database = {
           competence_date?: string
           conciliado_em?: string | null
           conciliado_por?: string | null
+          conta_plano_codigo?: string | null
           cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -8668,6 +8682,7 @@ export type Database = {
           competence_date?: string
           conciliado_em?: string | null
           conciliado_por?: string | null
+          conta_plano_codigo?: string | null
           cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null

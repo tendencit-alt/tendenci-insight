@@ -499,17 +499,23 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
         level: 0, hasChildren: false, parentId: null, isCalculated: true, entries: [],
       });
 
+      // RAC = Resultado Antes de Capital (EBIT + Depreciação + Resultado Financeiro, antes do bloco 6)
+      const rac = resultadoOperacionalEBITDA - totalDepreciacao + totalResultadoFinanceiro;
+
       // Insert in reverse order so indices don't shift
       // Final: Resultado Líquido after impostos (or after root 5 if no impostos)
       if (showImpostos) {
-        injectAfterCode("7", makeCalcLine("calc-resultado-liquido", "=RL²", "= Resultado Líquido", resultadoLiquido));
+        injectAfterCode("7", makeCalcLine("calc-resultado-liquido", "=RLi", "= Resultado Líquido", resultadoLiquido));
+        injectAfterCode("5", makeCalcLine("calc-rac", "=RAC", "= Resultado Antes de Capital (RAC)", rac));
         injectAfterCode("5", makeCalcLine("calc-resultado-antes-impostos", "=RAI", "= Resultado Antes dos Impostos", resultadoAntesImpostos));
       } else {
-        injectAfterCode("5", makeCalcLine("calc-resultado-liquido", "=RL²", "= Resultado Líquido", resultadoLiquido));
+        injectAfterCode("5", makeCalcLine("calc-resultado-liquido", "=RLi", "= Resultado Líquido", resultadoLiquido));
+        injectAfterCode("5", makeCalcLine("calc-rac", "=RAC", "= Resultado Antes de Capital (RAC)", rac));
       }
+      injectAfterCode("4", makeCalcLine("calc-ebit", "=EBIT", "= EBIT (Resultado Operacional)", resultadoOperacionalEBITDA - totalDepreciacao));
       injectAfterCode("3", makeCalcLine("calc-ebitda", "=EBITDA", "= EBITDA", resultadoOperacionalEBITDA));
       injectAfterCode("2", makeCalcLine("calc-margem", "=MC", "= Margem de Contribuição", margemContribuicao));
-      injectAfterCode("2", makeCalcLine("calc-receita-liquida", "=RL", "= Receita Líquida", receitaLiquida));
+      injectAfterCode("2", makeCalcLine("calc-receita-liquida", "=RL2", "= Receita Líquida (RL2)", receitaLiquida));
 
       // Fetch goals for breakeven meta
       const month = new Date().getMonth() + 1;

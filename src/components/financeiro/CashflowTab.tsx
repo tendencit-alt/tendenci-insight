@@ -29,6 +29,7 @@ interface ChartAccount {
   name: string;
   nature: string | null;
   parent_id: string | null;
+  grupo_fluxo: string | null;
 }
 
 interface LedgerEntry {
@@ -67,17 +68,21 @@ interface CashflowLine {
   status?: "conciliado" | "pendente" | "previsto" | "realizado";
 }
 
-// Map DRE root codes to cashflow blocks
-function getBlockForCode(mainCode: number): string {
-  switch (mainCode) {
-    case 1: return "entradas_operacionais";
-    case 2: return "saidas_vendas";
-    case 3: return "saidas_estrutura";
-    case 5: return "mov_financeiras";
-    case 6: return "mov_capital";
-    case 8: return "investimentos";
-    default: return "other";
+// Route account to cashflow block based on grupo_fluxo (from DB) with code-based refinement
+// for splitting OPERACIONAL_SAIDA between "saídas sobre vendas" (root 2) and "estrutura" (root 3).
+function getBlockForAccount(account: { code: string; grupo_fluxo: string | null }): string {
+  const grupo = account.grupo_fluxo;
+  const root = account.code.split('.')[0];
+
+  if (!grupo) return "nao_classificados";
+  if (grupo === "NAO_CAIXA") return "nao_classificados";
+  if (grupo === "OPERACIONAL_ENTRADA") return "entradas_operacionais";
+  if (grupo === "OPERACIONAL_SAIDA") {
+    return root === "2" ? "saidas_vendas" : "saidas_estrutura";
   }
+  if (grupo === "INVESTIMENTO_ENTRADA" || grupo === "INVESTIMENTO_SAIDA") return "investimentos";
+  if (grupo === "FINANCIAMENTO_ENTRADA" || grupo === "FINANCIAMENTO_SAIDA") return "mov_capital";
+  return "nao_classificados";
 }
 
 function numericCodeSort(a: string, b: string): number {
@@ -134,7 +139,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       // Get chart accounts with in_cashflow = true
       const { data: chartAccounts } = await supabase
         .from("fin_chart_accounts")
-        .select("id, code, name, nature, parent_id")
+        .select("id, code, name, nature, parent_id, grupo_fluxo")
         .eq("in_cashflow", true)
         .eq("active", true)
         .order("code");
@@ -268,6 +273,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
         mov_financeiras: { total: 0, compTotal: 0, lines: [] },
         mov_capital: { total: 0, compTotal: 0, lines: [] },
         investimentos: { total: 0, compTotal: 0, lines: [] },
+        nao_classificados: { total: 0, compTotal: 0, lines: [] },
       };
 
       const flattenIntoBlock = (
@@ -308,8 +314,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       };
 
       rootAccounts.forEach(root => {
-        const mainCode = parseFloat(root.code.split('.')[0]);
-        const blockKey = getBlockForCode(mainCode);
+        const blockKey = getBlockForAccount(root);
         if (!blockData[blockKey]) return;
 
         const directValue = accountValues.get(root.id) || 0;
@@ -624,6 +629,9 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
     { key: "mov_financeiras", label: "Movimentações Financeiras", icon: <TrendingUp className="h-3.5 w-3.5" />, colorClass: "bg-blue-50 dark:bg-blue-950/20" },
     { key: "mov_capital", label: "Movimentações de Capital", icon: <Wallet className="h-3.5 w-3.5" />, colorClass: "bg-purple-50 dark:bg-purple-950/20" },
     { key: "investimentos", label: "Investimentos", icon: <Flame className="h-3.5 w-3.5" />, colorClass: "bg-amber-50 dark:bg-amber-950/20" },
+    ...((bd?.nao_classificados?.lines.length ?? 0) > 0
+      ? [{ key: "nao_classificados", label: "⚠ Não Classificados (definir Grupo de Fluxo)", icon: <Clock className="h-3.5 w-3.5" />, colorClass: "bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-300 dark:border-yellow-800" }]
+      : []),
   ];
 
   return (
