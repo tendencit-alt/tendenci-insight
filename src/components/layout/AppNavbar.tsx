@@ -130,6 +130,8 @@ const ERP_MODULES: ModuleGroup[] = [
       { label: "DRE Gerencial", route: "/financeiro?tab=dre", icon: "BarChart2", module: "financeiro", available: true },
       { label: "Resultado Financeiro", route: "/financeiro?tab=financial-result", icon: "DollarSign", module: "financeiro", available: true },
       { label: "Capital e Financiamentos", route: "/financeiro?tab=capital", icon: "Banknote", module: "financeiro", available: true },
+      { label: "Plano de Contas", route: "/cadastros-financeiros?tab=chart", icon: "BookOpen", module: "cadastros_financeiros", available: true },
+      { label: "Cadastros Financeiros", route: "/cadastros-financeiros?tab=bank-accounts", icon: "Database", module: "cadastros_financeiros", available: true },
     ],
   },
   {
