@@ -22,7 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Database } from "lucide-react";
+import { Plus } from "lucide-react";
 
 import {
   ArrowDownCircle,
