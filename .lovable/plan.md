@@ -1,57 +1,65 @@
 ## Objetivo
 
-Tornar os KPIs de receita / custo / resultado / saldo dos 3 dashboards financeiros consistentes com o DRE e o Fluxo de Caixa, usando a coluna `grupo_fluxo` (`ENTRADA`, `SAIDA`, `NAO_CAIXA`) já existente em `fin_chart_accounts`.
+Trazer de volta a visão rica de Projetos (que existia em `Projects.tsx` mas não estava roteada) e criar uma nova aba **Projetos** dentro de `/operacao` focada em acompanhar a evolução da produção (OPs vinculadas), com KPIs no topo e toggle Kanban/Tabela.
 
-Escopo: **só** `DashboardSimple.tsx`, `ExecutiveStatusBar` (via `useCompanyStatus`) e `FinanceiroDashboard` (via `DashboardBI`). Nada mais é tocado.
+## Situação atual
 
-## Regra única que será aplicada
+- `/projetos` aponta para `Projetos.tsx` (37 linhas, abas vazias `PrjCadastroTab`, `PrjPlanningTab`, etc.).
+- `Projects.tsx` (450 linhas) existe mas **não está roteado** — contém KPIs por estágio, `ProjectsBoard` (Kanban), `ProjectsTable`, `ProjectsFilters`, `DeadlineAlerts`, `ArchitectPerformance`, `ProjectDetailSheet`, `KPIDetailDialog`. Usa a tabela `projects` (estágios comerciais: recebido → em_orcamento → orcado → apresentado → em_negociacao → aprovado/perdido).
+- `/operacao` (`ProducaoOperacoes.tsx`) tem 5 abas: Ordens, Planejamento, Execução, Custos, Analytics — sem aba Projetos.
+- Tabela `production_orders` já existe e é a fonte para evolução de produção (linkada a `projects` via cost center / order).
 
-Para somar valores monetários nos KPIs:
+## Mudanças
 
-- **Receita** = lançamentos cuja conta tem `grupo_fluxo = ENTRADA`
-- **Custo/Despesa** = lançamentos cuja conta tem `grupo_fluxo = SAIDA`
-- **Resultado / Margem** = Receita − Custo
-- **Saldo de caixa do período** = Σ ENTRADA − Σ SAIDA (ignora `NAO_CAIXA`)
-- Lançamentos com conta sem `grupo_fluxo` (NULL) são **ignorados** no numerador, mas contados num campo auxiliar `naoClassificados` para alerta opcional.
+### 1. Reativar `/projetos` com a UI rica
 
-Fallback: se a conta tiver `grupo_fluxo = NULL`, cai-se no comportamento antigo (`type RECEITA/DESPESA` ou `entry_type credit/debit`) só para não zerar painéis enquanto o usuário não classifica tudo.
+- Substituir o conteúdo de `src/pages/Projetos.tsx` para renderizar a página rica (KPIs por estágio comercial + Board/Tabela + Filtros + DeadlineAlerts + ArchitectPerformance), mantendo o wrapper `DashboardLayout` + `ModuleShell` (canônico do projeto).
+- Manter as quatro sub-abas existentes (Cadastro, Planejamento, Execução, Custos) **dentro** de `ModuleShell records`, mas a aba inicial **Cadastro** passa a exibir a visão rica (Kanban/Tabela com KPIs e filtros) em vez do esqueleto atual.
+- Manter `PrjAnalyticsTab` em `reports`.
+- A página atual `Projects.tsx` vira o conteúdo da aba Cadastro (extraído como componente `PrjOverview.tsx` em `src/components/projects/`), e o arquivo `Projects.tsx` solto é removido.
 
-## Mudanças por arquivo
+### 2. Nova aba **Projetos** em `/operacao`
 
-### 1. `src/pages/DashboardSimple.tsx`
-- Trocar as queries diretas em `fin_receivables` / `fin_payables` por `fin_ledger_entries` com join: `chart_account:fin_chart_accounts(grupo_fluxo)`.
-- Filtrar pelo período (`competence_date` do mês atual).
-- `revenue` = soma onde `grupo_fluxo = 'ENTRADA'`.
-- `costs` = soma onde `grupo_fluxo = 'SAIDA'`.
-- `margin` mantida: `(revenue − costs) / revenue`.
-- `cash` (saldo bancário) e `inadimplencia` ficam como estão (não dependem de grupo_fluxo).
+- Adicionar `TabsTrigger value="projetos"` em `ProducaoOperacoes.tsx` (entre "Ordens" e "Planejamento") com ícone `FolderKanban`.
+- Criar `src/components/ops/OpsProjectsTab.tsx`:
+  - **KPIs no topo** (cards horizontais): Projetos em produção, Aguardando início, Atrasados (deadline < hoje), Concluídos no mês, % OPs no prazo.
+  - **Toggle Kanban ⇄ Tabela** (Tabs internas).
+  - **Kanban**: colunas pelos estágios de produção das OPs vinculadas (ex.: `aguardando`, `em_producao`, `montagem`, `acabamento`, `entregue`) usando as etapas já definidas em `mem://modules/production/kanban-editable-stages`. Cards exibem: nome do projeto, cliente, % OPs concluídas, deadline, responsável; drag-and-drop atualiza o estágio agregado.
+  - **Tabela**: linhas = projetos aprovados; colunas = cliente, valor, deadline, OPs (concluídas/total com barra de progresso), próximo SLA, responsável, ações (abrir detalhe).
+  - **Filtros**: período (deadline), cost center, status agregado, responsável, busca.
+  - Reaproveita `ProjectDetailSheet` para abrir o painel lateral.
+- Fonte de dados: `projects` (apenas `stage='aprovado'`) join com `production_orders` agregando contagem/% por projeto. Query direta no Supabase respeitando RLS (memory: dashboard direto no Postgres).
 
-### 2. `src/hooks/useCompanyStatus.ts` (alimenta `ExecutiveStatusBar`)
-- Substituir os 4 `ledger().eq("entry_type", "credit"/"debit")` por queries com join em `fin_chart_accounts(grupo_fluxo)`.
-- `revenue` / `expenses` (mês atual e anterior) passam a usar `grupo_fluxo`.
-- `monthlyResult = revenue − expenses` segue igual.
-- Demais KPIs (`cashBalance`, `openOrders`, `overduePayables`, `goalProgress`) ficam intactos.
+### 3. Navegação
 
-### 3. `src/components/financeiro/DashboardBI.tsx` (renderizado por `FinanceiroDashboard`)
-- No `useQuery` principal:
-  - Estender o select do join de chart_account para incluir `grupo_fluxo`.
-  - Trocar os reduces de `receitas` / `despesas` / `receitasRealizadas` / `despesasRealizadas` para usar `grupo_fluxo` em vez de `entry.type`.
-  - Mesma troca para `allReceitas` / `allDespesas` (saldo consolidado) — adicionar join também na `balanceQuery`.
-  - Manter fallback `type === "RECEITA" / "DESPESA"` quando `grupo_fluxo` estiver NULL.
-- Agrupamento de categorias (`receitasByAccount` / `despesasByAccount`) passa a usar `grupo_fluxo` para decidir o mapa de destino (não mais `entry.type`).
+- Sidebar e Home Launcher já apontam para `/projetos` — sem mudança.
+- Quick action no Home Launcher: link "Projetos em produção" → `/operacao?tab=projetos`.
 
-### 4. (Opcional, sem custo) Indicador "Não classificados"
-- Acrescentar `naoClassificados` ao retorno de `DashboardBI` e exibir um Badge discreto no `FinanceiroKPIs` quando `> 0`, com link para o Plano de Contas. Útil para o usuário corrigir contas sem `grupo_fluxo`.
+## Detalhes técnicos
 
-## Fora do escopo
+- Estágios de produção lidos de `production_kanban_stages` (ou hook existente equivalente) para manter editabilidade.
+- Drag-and-drop reaproveita o pattern do Kanban de Ordens (`OpsOrdersTab`/`ProjectsBoard`).
+- KPIs calculados client-side a partir do resultado da query agregada (sem edge function nova).
+- `ProducaoOperacoes.tsx` passa a aceitar `?tab=` via `useSearchParams` para deep-link.
+- Toda nova UI usa tokens semânticos do design system; sem cores hardcoded.
 
-- Outros dashboards (executivo, cockpit, command center, BI personalizadas).
-- DRE/Cashflow (já usam `grupo_fluxo`).
-- Migrações de banco — nada muda no schema.
-- Novos componentes de UI ou novos KPIs.
+## Arquivos
 
-## Validação
+**Criar**
+- `src/components/ops/OpsProjectsTab.tsx`
+- `src/components/projects/PrjOverview.tsx` (extraído de `Projects.tsx`)
+- `src/hooks/useProjectProductionProgress.ts` (agregação projects + production_orders)
 
-1. Rodar o preview e abrir as 3 telas: Home → ExecutiveStatusBar; `/dashboard` simples; Financeiro → DashboardBI.
-2. Conferir que Receita do mês bate com a linha `1` do DRE e que Custo bate com `2+3` do DRE para o mesmo período.
-3. Conferir que se eu marcar uma conta `4.* NÃO CAIXA` (depreciação) ela some dos KPIs mas continua aparecendo no DRE.
+**Editar**
+- `src/pages/Projetos.tsx` — usa `PrjOverview` na aba Cadastro
+- `src/pages/ProducaoOperacoes.tsx` — adiciona TabsTrigger/TabsContent "projetos" + `useSearchParams`
+- `src/pages/HomeLauncher.tsx` — atalho opcional para `/operacao?tab=projetos`
+
+**Remover**
+- `src/pages/Projects.tsx` (conteúdo migrado para `PrjOverview.tsx`)
+
+## Fora de escopo
+
+- Mudanças de schema (todas as tabelas necessárias já existem).
+- Novas regras de RLS.
+- Edição dos estágios de produção (já existe em outra tela).
