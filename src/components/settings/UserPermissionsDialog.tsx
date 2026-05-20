@@ -130,7 +130,7 @@ export function UserPermissionsDialog({
             can_delete: !!ptRow.can_delete, can_approve: !!ptRow.can_approve,
             can_conciliate: !!ptRow.can_conciliate, can_export: !!ptRow.can_export, can_admin: !!ptRow.can_admin,
           } : emptyPerm();
-          const ovRow = (ovRows || []).find((o: any) => o.module === mod);
+          const ovRow: any = (ovRows as any[] | null || []).find((o: any) => o.module === mod);
           const override: ModulePermission = ovRow ? {
             can_view: !!ovRow.can_view, can_create: !!ovRow.can_create, can_edit: !!ovRow.can_edit,
             can_delete: !!ovRow.can_delete, can_approve: !!ovRow.can_approve,
