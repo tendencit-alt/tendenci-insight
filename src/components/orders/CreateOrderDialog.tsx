@@ -1186,28 +1186,18 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <span className="text-xs">Desconto (R$):</span>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
+                    <MoneyInput
                       className="h-8 w-full sm:w-24"
-                      value={String(formData.desconto_valor ?? '').replace('.', ',')}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/[^\d,.-]/g, '').replace(',', '.');
-                        setFormData({ ...formData, desconto_valor: raw === '' || raw === '-' ? 0 : Number(raw) || 0 });
-                      }}
+                      value={formData.desconto_valor}
+                      onChange={(v) => setFormData({ ...formData, desconto_valor: v })}
                     />
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <span className="text-xs">Frete:</span>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
+                    <MoneyInput
                       className="h-8 w-full sm:w-24"
-                      value={String(formData.valor_frete ?? '').replace('.', ',')}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/[^\d,.-]/g, '').replace(',', '.');
-                        setFormData({ ...formData, valor_frete: raw === '' || raw === '-' ? 0 : Number(raw) || 0 });
-                      }}
+                      value={formData.valor_frete}
+                      onChange={(v) => setFormData({ ...formData, valor_frete: v })}
                     />
                   </div>
                   {descontoTotal > 0 && (
