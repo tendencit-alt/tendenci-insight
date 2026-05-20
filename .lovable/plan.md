@@ -1,50 +1,58 @@
 ## Objetivo
 
-Tornar as configurações financeiras (Plano de Contas, Estrutura DRE/Fluxo de Caixa, Centros de Custo, Projetos, Compromissos Sobre Venda, Responsáveis, Taxas Cartão, Automações por Origem, Automações por Evento, Permissões Financeiras) acessíveis diretamente dentro da página **Configurações** (`/configuracoes`), em vez de só na rota separada `/cadastros-financeiros`.
+Tornar o Plano de Contas (conta 2.3 "Custos diretos da venda") a fonte única dos "Compromissos sobre Venda". As subcategorias cadastradas em 2.3 — com percentual padrão configurável — aparecerão automaticamente na criação do pedido, pré-preenchidas e editáveis.
 
-## Situação atual
+## O que já existe (reaproveitar)
 
-- `/configuracoes` (`ProjectSettings.tsx`) só mostra 4 abas: Usuários, Tipos de Perfil, Empresa, Personalização.
-- A tela `CadastrosFinanceiros.tsx` (`/cadastros-financeiros`) já contém todos os managers financeiros (ChartAccountsManager, CostCentersManager, FinProjectsManager, StrategicResourceCategoriesManager, OrderResponsiblesManager, CardRatesManager, OriginRulesMatrix, EventAutomationRulesPanel, FinancePermissionsMatrix), mas o usuário não percebe que ela existe a partir do menu Configurações.
-- O dropdown "Configurações" do navbar lista apenas Usuários, Permissões e Integrações.
+- Pedido (`CreateOrderDialog` / `OrderCompromissosCard`) já lê os compromissos do hook `useCompromissosVendaCategories`, que consulta filhos da conta `2.3`.
+- Tabela `fin_strategic_resource_account_configs` já guarda `chart_account_id`, `active`, `default_percentage`.
+- Aba "Compromissos Sobre Venda" (`StrategicResourceCategoriesManager`) já lista filhos de 2.3 e edita ativo/percentual.
 
-## Mudanças
+## O que falta (a fazer)
 
-### 1. Adicionar nova aba "Financeiro" em `src/pages/ProjectSettings.tsx`
+### 1. Banco — semear subcategorias em 2.3
 
-Inserir como 5ª aba (visível para `isMaster`), com sub-abas internas reaproveitando os managers existentes:
+Inserir 6 contas filhas em `fin_chart_accounts` sob `code = '2.3'` para todos os tenants existentes, com `is_core = false` (permite edição/exclusão manual pelo usuário):
 
-- Plano de Contas / Estrutura DRE & Fluxo de Caixa → `ChartAccountsManager`
-- Centros de Custo → `CostCentersManager`
-- Projetos → `FinProjectsManager`
-- Compromissos Sobre Venda → `StrategicResourceCategoriesManager`
-- Responsáveis → `OrderResponsiblesManager`
-- Taxas Cartão / Financeiras → `CardRatesManager`
-- Automação por Origem → `OriginRulesMatrix`
-- Automações por Evento → `EventAutomationRulesPanel`
-- Permissões Financeiras → `FinancePermissionsMatrix`
+```
+2.3.1  Comissão vendedor
+2.3.2  Premiação de terceiros
+2.3.3  Comissão de parceiros
+2.3.4  Bônus comercial
+2.3.5  Comissão de representantes
+2.3.6  Afiliados e indicações
+```
 
-Sub-abas serão renderizadas com `Tabs` rolável (mesmo padrão usado em `CadastrosFinanceiros`).
+Criar entrada correspondente em `fin_strategic_resource_account_configs` com `active = true` e `default_percentage` inicial (0). Usuário ajusta depois.
 
-### 2. Adicionar atalho no dropdown "Configurações" do navbar
+Atualizar `supabase/functions/seed-chart-of-accounts/index.ts` (`COMMON_ROOTS` / template comum) para garantir que novos tenants já recebam essa estrutura.
 
-Em `src/components/layout/AppNavbar.tsx`, no item `configuracoes.items`, incluir:
+### 2. Plano de Contas — coluna "% padrão" sincronizada
 
-- `{ label: "Financeiro", route: "/configuracoes?tab=financeiro", icon: "Landmark", available: true }`
+Em `ChartAccountsManager.tsx`, para contas filhas de 2.3:
+- Mostrar input numérico "% padrão" na linha.
+- Mostrar toggle "Ativo no pedido".
+- Persistir via `fin_strategic_resource_account_configs` (mesmo upsert usado em `StrategicResourceCategoriesManager`).
+- Ao salvar, invalidar queries `["compromissos-venda-categories"]`, `["fin-strategic-resource-account-configs"]` e `["strategic-resource-defaults"]` para refletir na aba dedicada e no pedido em tempo real.
 
-A página `ProjectSettings` passa a ler `?tab=` da URL para abrir a aba correspondente (compatível com `usuarios`, `tipos`, `empresa`, `personalizacao`, `financeiro`).
+### 3. Aba "Compromissos Sobre Venda" — manter sincronia
 
-### 3. Manter `/cadastros-financeiros` funcionando
+Nenhuma mudança estrutural: já lê de 2.3 e grava em `fin_strategic_resource_account_configs`. Garantir que invalida as mesmas query keys do item 2 para refletir no Plano de Contas.
 
-A rota antiga continua existindo (não quebra links/favoritos), mas a entrada principal de acesso passa a ser via Configurações.
+### 4. Criação do pedido — sem alterações de lógica
 
-## Fora do escopo
-
-- Nenhuma mudança em RLS, schema do banco ou lógica de negócio.
-- Nenhum manager financeiro será reescrito — apenas reaproveitados.
-- Sem alteração no `/configuracoes/catalogo` ou `/configuracoes/modulos`.
+`buildInitialCompromissos` já gera estado pré-preenchido a partir das categorias + `defaultPercentage`. `OrderCompromissosCard` já permite edição manual linha-a-linha. Apenas confirmar visualmente que tudo aparece após o seed.
 
 ## Arquivos afetados
 
-- `src/pages/ProjectSettings.tsx` (adicionar aba Financeiro + leitura de `?tab=`)
-- `src/components/layout/AppNavbar.tsx` (adicionar item Financeiro no dropdown Configurações)
+- `supabase/migrations/*` (nova) — seed das 6 contas filhas em 2.3 para tenants atuais + configs default.
+- `supabase/functions/seed-chart-of-accounts/index.ts` — incluir filhos de 2.3 no template comum.
+- `src/components/financeiro/masters/ChartAccountsManager.tsx` — coluna % padrão + toggle para filhos de 2.3.
+- `src/components/financeiro/masters/StrategicResourceCategoriesManager.tsx` — adicionar invalidação cruzada de cache.
+
+## Comportamento final
+
+- Admin abre **Configurações → Plano de Contas**, expande "2.3 Custos diretos da venda", vê as 6 categorias com input "% padrão" e toggle de ativo.
+- Edita ali OU na aba "Compromissos Sobre Venda" — ambos sincronizados.
+- Pode criar, renomear ou excluir subcategorias de 2.3 manualmente — refletem automaticamente no pedido.
+- Ao criar novo pedido, o card "Compromissos sobre Venda" lista as categorias ativas com % pré-preenchido e permite edição pontual sem alterar o padrão global.
