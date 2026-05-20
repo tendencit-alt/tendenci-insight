@@ -189,6 +189,15 @@ export function UserPermissionsDialog({
         return;
       }
 
+      if (!targetTenantId) {
+        toast({
+          title: 'Erro',
+          description: 'Usuário sem tenant associado. Não é possível salvar permissões.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       // Deletar permissões existentes
       await supabase
         .from('user_permissions')
@@ -201,12 +210,13 @@ export function UserPermissionsDialog({
         .insert(
           permissions.map(p => ({
             user_id: userId,
+            tenant_id: targetTenantId,
             module: p.module as any,
             can_view: p.can_view,
             can_create: p.can_create,
             can_edit: p.can_edit,
             can_delete: p.can_delete
-          }))
+          })) as any
         );
 
       if (error) throw error;
@@ -222,7 +232,7 @@ export function UserPermissionsDialog({
       console.error('Erro ao salvar permissões:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível atualizar as permissões.',
+        description: error?.message || 'Não foi possível atualizar as permissões.',
         variant: 'destructive',
       });
     } finally {
