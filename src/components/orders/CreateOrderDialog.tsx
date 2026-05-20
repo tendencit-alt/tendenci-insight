@@ -1989,7 +1989,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                 <Button variant="outline" onClick={() => setActiveTab('itens')}>
                   Voltar
                 </Button>
-                <Button onClick={handleNext} disabled={!isPagamentoValid}>
+                <Button onClick={handleNext}>
                   Avançar <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>
