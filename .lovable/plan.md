@@ -1,25 +1,22 @@
-## Diagnóstico
+## Plano: Inserir permissões do módulo `producao` para todos os perfis
 
-A rota `/projetos` está implementada e funcional, mas não aparece no menu lateral porque em `modules_config` o módulo está como:
+Espelhar o mesmo padrão já aplicado ao módulo `operacional`, garantindo que a aba "Produção (legado)" deixe de depender do bypass de admin/owner.
 
-- `module_key='projetos'` → `category='futuro'`, `visible_in_menu=false`
+### Matriz a inserir em `profile_type_permissions`
 
-O hook `useVisibleModuleGroups` filtra por `visible_in_menu=true`, então o item nunca renderiza. Os módulos `producao` e `producao-operacoes` estão na mesma situação.
+| Perfil | view | create | edit | delete |
+|---|---|---|---|---|
+| owner | ✅ | ✅ | ✅ | ✅ |
+| administrador | ✅ | ✅ | ✅ | ✅ |
+| gestor | ✅ | ❌ | ❌ | ❌ |
+| operacional | ✅ | ✅ | ✅ | ❌ |
+| comercial | ✅ | ❌ | ❌ | ❌ |
+| controladoria | ✅ | ❌ | ❌ | ❌ |
+| auditoria | ✅ | ❌ | ❌ | ❌ |
+| financeiro | ❌ | ❌ | ❌ | ❌ |
 
-## Plano (apenas dados / sem mudança de código)
+### Execução
 
-1. **Migration** atualizando `modules_config`:
-   - `projetos` → `category='operacional'`, `visible_in_menu=true`, `sort_order=35`
-   - `producao-operacoes` → `category='operacional'`, `visible_in_menu=true`, `sort_order=40` (já existe a aba nova "Projetos" dentro dela)
-   - `producao` permanece em `futuro` (legado, mantemos escondido)
-
-2. Resultado esperado no menu lateral, grupo **Operação**:
-   - Projetos → `/projetos`
-   - Produção / Operações → `/producao-operacoes` (com a nova aba "Projetos")
-
-## Fora de escopo
-- Nenhuma alteração em código React, RLS, schema ou permissões.
-- Não mexo no `HomeLauncher` nem em outras categorias.
-
-## Pergunta rápida
-Confirma que quer ativar **ambos** (`projetos` e `producao-operacoes`) na categoria Operação, ou só `projetos`?
+1. `INSERT` em `profile_type_permissions` com `ON CONFLICT (profile_type_id, module) DO NOTHING` para os 8 perfis × módulo `producao`.
+2. Sem mudança de código — sidebar e PermissionsContext já consultam essa tabela.
+3. Validar com `SELECT` final confirmando 8 linhas em `module = 'producao'`.
