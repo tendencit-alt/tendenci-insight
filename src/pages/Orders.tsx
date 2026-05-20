@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ModuleShell } from '@/components/layout/ModuleShell';
@@ -16,9 +16,12 @@ import { DeleteOrderDialog } from '@/components/orders/DeleteOrderDialog';
 import { Button } from '@/components/ui/button';
 import { Plus, ShoppingCart } from 'lucide-react';
 import { startOfMonth } from 'date-fns';
+import { useOrdersRealtime } from '@/hooks/useOrdersRealtime';
 
 export default function Orders() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
+  useOrdersRealtime();
   const [createOpen, setCreateOpen] = useState(false);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -162,15 +165,26 @@ export default function Orders() {
           <CreateOrderDialog
             open={createOpen}
             onOpenChange={setCreateOpen}
-            onSuccess={() => { refetch(); setCreateOpen(false); }}
+            onSuccess={() => {
+              setFilters((prev) => ({ ...prev, dateTo: new Date() }));
+              queryClient.invalidateQueries({ queryKey: ['orders'] });
+              refetch();
+              setCreateOpen(false);
+            }}
           />
 
           <BulkEditOrdersDialog
             open={bulkEditOpen}
             onOpenChange={setBulkEditOpen}
             selectedIds={selectedOrderIds}
-            onSuccess={() => { refetch(); setBulkEditOpen(false); setSelectedOrderIds([]); }}
+            onSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ['orders'] });
+              refetch();
+              setBulkEditOpen(false);
+              setSelectedOrderIds([]);
+            }}
           />
+
 
           {selectedOrderId && (
             <OrderDetailSheet
