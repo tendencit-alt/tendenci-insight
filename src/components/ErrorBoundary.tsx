@@ -144,8 +144,21 @@ class ErrorBoundary extends Component<Props, State> {
               {this.state.error && (
                 <div className="p-3 bg-muted rounded-lg">
                   <p className="text-sm font-mono text-destructive">
-                    {this.state.error.message}
+                    {humanizeError(this.state.error)}
                   </p>
+                </div>
+              )}
+
+              {this.state.correlationId && (
+                <div className="flex items-center justify-between gap-2 p-3 bg-muted/50 rounded-lg border border-border">
+                  <div className="text-xs">
+                    <span className="text-muted-foreground">Request ID: </span>
+                    <span className="font-mono font-medium">{this.state.correlationId}</span>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={this.handleCopyId} className="h-7">
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copiar
+                  </Button>
                 </div>
               )}
 
