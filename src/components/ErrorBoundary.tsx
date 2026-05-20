@@ -1,8 +1,10 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { newCorrelationId } from '@/lib/errorReporter';
+import { humanizeError } from '@/lib/errorMessage';
 
 interface Props {
   children: ReactNode;
@@ -13,6 +15,7 @@ interface State {
   hasError: boolean;
   error: Error | null;
   errorInfo: ErrorInfo | null;
+  correlationId: string | null;
 }
 
 const isRecoverableDomNotFoundError = (error: Error): boolean => {
