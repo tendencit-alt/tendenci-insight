@@ -1186,22 +1186,27 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <span className="text-xs">Desconto (R$):</span>
                     <Input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       className="h-8 w-full sm:w-24"
-                      value={formData.desconto_valor}
-                      onChange={(e) => setFormData({ ...formData, desconto_valor: Number(e.target.value) })}
-                      min={0}
-                      step={0.01}
+                      value={String(formData.desconto_valor ?? '').replace('.', ',')}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/[^\d,.-]/g, '').replace(',', '.');
+                        setFormData({ ...formData, desconto_valor: raw === '' || raw === '-' ? 0 : Number(raw) || 0 });
+                      }}
                     />
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <span className="text-xs">Frete:</span>
                     <Input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       className="h-8 w-full sm:w-24"
-                      value={formData.valor_frete}
-                      onChange={(e) => setFormData({ ...formData, valor_frete: Number(e.target.value) })}
-                      min={0}
+                      value={String(formData.valor_frete ?? '').replace('.', ',')}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/[^\d,.-]/g, '').replace(',', '.');
+                        setFormData({ ...formData, valor_frete: raw === '' || raw === '-' ? 0 : Number(raw) || 0 });
+                      }}
                     />
                   </div>
                   {descontoTotal > 0 && (
