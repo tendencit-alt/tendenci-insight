@@ -11,6 +11,13 @@ type Account = { code: string; name: string; nature?: string; in_dre?: boolean; 
 const COMMON_ROOTS: Account[] = [
   { code: "1", name: "Receitas", nature: "RECEITA", in_dre: true, in_cashflow: true },
   { code: "2", name: "Despesas sobre Vendas", nature: "DESPESA", in_dre: true, in_cashflow: true },
+  { code: "2.3", name: "Custos diretos da venda", nature: "DESPESA", in_dre: true, in_cashflow: true },
+  { code: "2.3.1", name: "Comissão vendedor", nature: "DESPESA", in_dre: true, in_cashflow: true },
+  { code: "2.3.2", name: "Premiação de terceiros", nature: "DESPESA", in_dre: true, in_cashflow: true },
+  { code: "2.3.3", name: "Comissão de parceiros", nature: "DESPESA", in_dre: true, in_cashflow: true },
+  { code: "2.3.4", name: "Bônus comercial", nature: "DESPESA", in_dre: true, in_cashflow: true },
+  { code: "2.3.5", name: "Comissão de representantes", nature: "DESPESA", in_dre: true, in_cashflow: true },
+  { code: "2.3.6", name: "Afiliados e indicações", nature: "DESPESA", in_dre: true, in_cashflow: true },
   { code: "3", name: "Custos Variáveis", nature: "DESPESA", in_dre: true, in_cashflow: true },
   { code: "4", name: "Despesas Operacionais", nature: "DESPESA", in_dre: true, in_cashflow: true },
   { code: "5", name: "Despesas Financeiras", nature: "DESPESA", in_dre: true, in_cashflow: true },
