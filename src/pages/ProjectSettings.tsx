@@ -120,8 +120,6 @@ const ProjectSettings = () => {
           <TabsContent value="commitments" className="mt-6"><StrategicResourceCategoriesManager /></TabsContent>
           <TabsContent value="responsibles" className="mt-6"><OrderResponsiblesManager /></TabsContent>
           <TabsContent value="card-rates" className="mt-6"><CardRatesManager /></TabsContent>
-          <TabsContent value="origin-rules" className="mt-6"><OriginRulesMatrix /></TabsContent>
-          <TabsContent value="event-automations" className="mt-6"><EventAutomationRulesPanel /></TabsContent>
           <TabsContent value="fin-permissions" className="mt-6"><FinancePermissionsMatrix /></TabsContent>
         </Tabs>
       </div>
