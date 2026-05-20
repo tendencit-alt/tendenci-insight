@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
   Landmark, FileSpreadsheet, FolderKanban, FolderCog, BriefcaseBusiness,
-  CreditCard, Shield, Database, Building2,
+  CreditCard, Database, Building2,
 } from "lucide-react";
 import { BankAccountsManager } from "@/components/financeiro/masters/BankAccountsManager";
 import { ChartAccountsManager } from "@/components/financeiro/masters/ChartAccountsManager";
@@ -15,11 +15,10 @@ import { FinProjectsManager } from "@/components/financeiro/masters/FinProjectsM
 import { StrategicResourceCategoriesManager } from "@/components/financeiro/masters/StrategicResourceCategoriesManager";
 import { OrderResponsiblesManager } from "@/components/financeiro/masters/OrderResponsiblesManager";
 import { CardRatesManager } from "@/components/financeiro/masters/CardRatesManager";
-import { FinancePermissionsMatrix } from "@/components/financeiro/masters/FinancePermissionsMatrix";
 
 const FIN_TABS = new Set([
   "bank-accounts", "chart", "cost-centers", "projects", "commitments",
-  "responsibles", "card-rates", "fin-permissions",
+  "responsibles", "card-rates",
 ]);
 
 const ProjectSettings = () => {
