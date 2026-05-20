@@ -22,6 +22,7 @@ export const MODULE_ROUTE_MAP: Record<string, string> = {
   "dashboard": "/bi-dashboard",
   "configuracoes-usuarios": "/configuracoes/usuarios",
   "configuracoes-marca": "/configuracoes/catalogo",
+  "configuracoes-financeiro": "/configuracoes?tab=financeiro",
   // additional
   "leads": "/leads",
   "crm-comercial": "/crm-comercial",
