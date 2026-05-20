@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Upload, File, X, Download, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { validateFileType, validateFileSize, ALLOWED_FILE_TYPES_ACCEPT, MAX_FILE_SIZE_MB, formatFileSize } from "@/lib/utils";
+import { describeError } from '@/lib/errorMessage';
 
 interface DealFileUploadProps {
   dealId: string;
@@ -188,7 +189,7 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
     } catch (error) {
       toast({
         title: "Erro ao baixar arquivo",
-        description: "Não foi possível baixar o arquivo",
+        description: describeError('Não foi possível baixar o arquivo', error),
         variant: "destructive",
       });
     }
@@ -220,7 +221,7 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
     } catch (error) {
       toast({
         title: "Erro ao remover arquivo",
-        description: "Não foi possível remover o arquivo",
+        description: describeError('Não foi possível remover o arquivo', error),
         variant: "destructive",
       });
     }

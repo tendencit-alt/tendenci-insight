@@ -9,6 +9,7 @@ import { CreateProfileTypeDialog } from './CreateProfileTypeDialog';
 import { ProfileTypePermissionsDialog } from './ProfileTypePermissionsDialog';
 import { ProfileTemplatesManager } from './ProfileTemplatesManager';
 import {
+import { describeError } from '@/lib/errorMessage';
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -79,7 +80,7 @@ export function ProfileTypesManager() {
       console.error('Erro ao buscar tipos de perfil:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível carregar os tipos de perfil.',
+        description: describeError('Não foi possível carregar os tipos de perfil', error),
         variant: 'destructive',
       });
     } finally {

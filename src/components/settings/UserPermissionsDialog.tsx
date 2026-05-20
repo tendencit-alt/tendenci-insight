@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import type { AppModule } from '@/hooks/usePermissions';
+import { describeError } from '@/lib/errorMessage';
 
 interface UserPermissionsDialogProps {
   open: boolean;
@@ -150,7 +151,7 @@ export function UserPermissionsDialog({
         console.error('Erro ao buscar permissões:', error);
         toast({
           title: 'Erro',
-          description: 'Não foi possível carregar as permissões do usuário.',
+          description: describeError('Não foi possível carregar as permissões do usuário', error),
           variant: 'destructive',
         });
       } finally {

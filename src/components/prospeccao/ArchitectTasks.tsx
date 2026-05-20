@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { 
+import { describeError } from '@/lib/errorMessage';
   localInputToUTC, 
   utcToLocalInput, 
   isLocalInputInPast, 
@@ -856,7 +857,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
                                   } catch (error) {
                                     toast({
                                       title: "Erro",
-                                      description: "Não foi possível reproduzir o áudio.",
+                                      description: describeError('Não foi possível reproduzir o áudio', error),
                                       variant: "destructive",
                                     });
                                   }

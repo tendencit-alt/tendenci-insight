@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Message } from "@/utils/aiChat";
 import { toast } from "@/hooks/use-toast";
+import { describeError } from '@/lib/errorMessage';
 
 export interface AIConversation {
   id: string;
@@ -48,7 +49,7 @@ export function useAIChat() {
       console.error("[useAIChat] Error loading conversations:", error);
       toast({
         title: "Erro ao carregar histórico",
-        description: "Não foi possível carregar as conversas anteriores.",
+        description: describeError('Não foi possível carregar as conversas anteriores', error),
         variant: "destructive",
       });
     } finally {

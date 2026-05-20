@@ -15,6 +15,7 @@ import { ArchitectsAnalysis } from "@/components/goals/performance/ArchitectsAna
 import { ProductsAnalysis } from "@/components/goals/performance/ProductsAnalysis";
 import { ConversionByOrigin } from "@/components/goals/performance/ConversionByOrigin";
 import { useToast } from "@/hooks/use-toast";
+import { describeError } from '@/lib/errorMessage';
 
 export default function SellerPerformance() {
   const { goalId } = useParams();
@@ -66,7 +67,7 @@ export default function SellerPerformance() {
       console.error("Erro ao buscar dados de performance:", error);
       toast({
         title: "Erro ao carregar dados",
-        description: "Não foi possível carregar os dados de performance do vendedor.",
+        description: describeError('Não foi possível carregar os dados de performance do vendedor', error),
         variant: "destructive",
       });
     } finally {

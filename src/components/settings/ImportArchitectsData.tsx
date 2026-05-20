@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { readExcelFile } from "@/utils/excelReader";
 import { useAuth } from "@/contexts/AuthContext";
+import { describeError } from '@/lib/errorMessage';
 
 export const ImportArchitectsData = () => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -108,7 +109,7 @@ export const ImportArchitectsData = () => {
       console.error("Erro ao carregar arquivo padrão:", error);
       toast({
         title: "Erro",
-        description: "Não foi possível carregar o arquivo de importação.",
+        description: describeError('Não foi possível carregar o arquivo de importação', error),
         variant: "destructive",
       });
     }
