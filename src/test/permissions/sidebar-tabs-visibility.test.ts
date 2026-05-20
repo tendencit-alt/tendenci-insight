@@ -34,27 +34,31 @@ const EXPECTED_OPERACIONAL_DENIED = ["financeiro"];
 const EXPECTED_PRODUCAO_VIEW = EXPECTED_OPERACIONAL_VIEW;
 const EXPECTED_PRODUCAO_DENIED = EXPECTED_OPERACIONAL_DENIED;
 
-type Row = {
-  module: string;
-  can_view: boolean;
-  profile_types: { name: string } | null;
-};
+type Row = { module: string; can_view: boolean; profile_type_id: string };
+type Profile = { id: string; name: string };
 
 let rows: Row[] = [];
+let profilesById = new Map<string, string>();
 
 beforeAll(async () => {
-  const { data, error } = await supabase
-    .from("profile_type_permissions")
-    .select("module, can_view, profile_types(name)")
-    .in("module", ["operacional", "producao"]);
-  if (error) throw error;
-  rows = (data ?? []) as unknown as Row[];
+  const [permRes, profRes] = await Promise.all([
+    supabase
+      .from("profile_type_permissions")
+      .select("module, can_view, profile_type_id")
+      .in("module", ["operacional", "producao"]),
+    supabase.from("profile_types").select("id, name"),
+  ]);
+  if (permRes.error) throw permRes.error;
+  if (profRes.error) throw profRes.error;
+  rows = (permRes.data ?? []) as Row[];
+  profilesById = new Map((profRes.data as Profile[]).map((p) => [p.id, p.name]));
 });
 
 function viewers(module: string): string[] {
   return rows
-    .filter((r) => r.module === module && r.can_view && r.profile_types?.name)
-    .map((r) => r.profile_types!.name)
+    .filter((r) => r.module === module && r.can_view)
+    .map((r) => profilesById.get(r.profile_type_id))
+    .filter((n): n is string => !!n)
     .sort();
 }
 
