@@ -986,7 +986,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-4xl xl:max-w-6xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <MinimizeButton onClick={handleMinimize} absolute />
           <DialogHeader>
             <div className="flex items-center gap-2">
