@@ -15,13 +15,11 @@ import { FinProjectsManager } from "@/components/financeiro/masters/FinProjectsM
 import { StrategicResourceCategoriesManager } from "@/components/financeiro/masters/StrategicResourceCategoriesManager";
 import { OrderResponsiblesManager } from "@/components/financeiro/masters/OrderResponsiblesManager";
 import { CardRatesManager } from "@/components/financeiro/masters/CardRatesManager";
-import { OriginRulesMatrix } from "@/components/financeiro/masters/OriginRulesMatrix";
-import { EventAutomationRulesPanel } from "@/components/financeiro/masters/EventAutomationRulesPanel";
 import { FinancePermissionsMatrix } from "@/components/financeiro/masters/FinancePermissionsMatrix";
 
 const FIN_TABS = new Set([
   "bank-accounts", "chart", "cost-centers", "projects", "commitments",
-  "responsibles", "card-rates", "origin-rules", "event-automations", "fin-permissions",
+  "responsibles", "card-rates", "fin-permissions",
 ]);
 
 const ProjectSettings = () => {
