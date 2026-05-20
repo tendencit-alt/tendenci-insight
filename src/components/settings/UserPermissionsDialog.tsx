@@ -88,12 +88,13 @@ export function UserPermissionsDialog({
         // Buscar role + tipo de perfil do usuário
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('role, profile_type_id')
+          .select('role, profile_type_id, tenant_id')
           .eq('id', userId)
           .single();
 
         if (profileError) throw profileError;
         setUserRole(profile.role);
+        setTargetTenantId((profile as any).tenant_id ?? null);
 
         // Se for admin, não precisa buscar permissões
         if (profile.role === 'admin') {
