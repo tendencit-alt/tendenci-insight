@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
   Landmark, FileSpreadsheet, FolderKanban, FolderCog, BriefcaseBusiness,
-  CreditCard, Zap, Bot, Shield, Database, Building2,
+  CreditCard, Shield, Database, Building2,
 } from "lucide-react";
 import { BankAccountsManager } from "@/components/financeiro/masters/BankAccountsManager";
 import { ChartAccountsManager } from "@/components/financeiro/masters/ChartAccountsManager";
