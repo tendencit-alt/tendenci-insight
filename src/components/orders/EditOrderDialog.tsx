@@ -1561,11 +1561,11 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                 </div>
                 <div className="flex items-center gap-2">
                   <span>Desconto (R$):</span>
-                  <Input type="number" className="w-24 h-8" value={formData.desconto_valor} onChange={(e) => setFormData({ ...formData, desconto_valor: Number(e.target.value) })} min={0} disabled={!isEditable} />
+                  <MoneyInput className="w-24 h-8" value={formData.desconto_valor} onChange={(v) => setFormData({ ...formData, desconto_valor: v })} disabled={!isEditable} />
                 </div>
                 <div className="flex items-center gap-2">
                   <span>Frete:</span>
-                  <Input type="number" className="w-24 h-8" value={formData.valor_frete} onChange={(e) => setFormData({ ...formData, valor_frete: Number(e.target.value) })} min={0} disabled={!isEditable} />
+                  <MoneyInput className="w-24 h-8" value={formData.valor_frete} onChange={(v) => setFormData({ ...formData, valor_frete: v })} disabled={!isEditable} />
                 </div>
                 <div className="flex justify-between font-bold text-lg border-t pt-2">
                   <span>Total:</span>
