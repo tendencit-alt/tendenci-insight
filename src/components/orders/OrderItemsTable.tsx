@@ -181,10 +181,9 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
           active,
           image_url,
           ia_produto_id,
-          category:product_categories!inner(name)
+          category:product_categories(name)
         `)
         .eq('active', true)
-        .eq('category.name', 'Produto')
         .order('name');
       
       if (error) throw error;
