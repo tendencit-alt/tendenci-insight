@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ModuleShell } from '@/components/layout/ModuleShell';
@@ -16,6 +16,7 @@ import { DeleteOrderDialog } from '@/components/orders/DeleteOrderDialog';
 import { Button } from '@/components/ui/button';
 import { Plus, ShoppingCart } from 'lucide-react';
 import { startOfMonth } from 'date-fns';
+import { useOrdersRealtime } from '@/hooks/useOrdersRealtime';
 
 export default function Orders() {
   const [searchParams, setSearchParams] = useSearchParams();
