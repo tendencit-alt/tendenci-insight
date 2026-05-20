@@ -21581,6 +21581,14 @@ export type Database = {
       }
       architects_aggregates: { Args: never; Returns: Json }
       architecture_health_summary: { Args: never; Returns: Json }
+      audit_module_viewers: {
+        Args: { _modules: string[] }
+        Returns: {
+          can_view: boolean
+          module: string
+          profile_name: string
+        }[]
+      }
       audit_tenant_rls_direct_profile_reads: {
         Args: never
         Returns: {
