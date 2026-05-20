@@ -8,8 +8,8 @@ import { Plus, Shield, User, Palette, Ruler, Loader2, Settings2, Trash2, Edit2, 
 import { CreateProfileTypeDialog } from './CreateProfileTypeDialog';
 import { ProfileTypePermissionsDialog } from './ProfileTypePermissionsDialog';
 import { ProfileTemplatesManager } from './ProfileTemplatesManager';
-import {
 import { describeError } from '@/lib/errorMessage';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
