@@ -107,14 +107,6 @@ const ProjectSettings = () => {
               <CreditCard className="h-4 w-4" />
               Taxas Financeiras
             </TabsTrigger>
-            <TabsTrigger value="origin-rules" className="flex items-center gap-2 px-4 py-2">
-              <Zap className="h-4 w-4" />
-              Automação por Origem
-            </TabsTrigger>
-            <TabsTrigger value="event-automations" className="flex items-center gap-2 px-4 py-2">
-              <Bot className="h-4 w-4" />
-              Automações por Evento
-            </TabsTrigger>
             <TabsTrigger value="fin-permissions" className="flex items-center gap-2 px-4 py-2">
               <Shield className="h-4 w-4" />
               Permissões Financeiras
