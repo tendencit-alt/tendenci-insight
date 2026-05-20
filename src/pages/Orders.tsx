@@ -165,15 +165,26 @@ export default function Orders() {
           <CreateOrderDialog
             open={createOpen}
             onOpenChange={setCreateOpen}
-            onSuccess={() => { refetch(); setCreateOpen(false); }}
+            onSuccess={() => {
+              setFilters((prev) => ({ ...prev, dateTo: new Date() }));
+              queryClient.invalidateQueries({ queryKey: ['orders'] });
+              refetch();
+              setCreateOpen(false);
+            }}
           />
 
           <BulkEditOrdersDialog
             open={bulkEditOpen}
             onOpenChange={setBulkEditOpen}
             selectedIds={selectedOrderIds}
-            onSuccess={() => { refetch(); setBulkEditOpen(false); setSelectedOrderIds([]); }}
+            onSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ['orders'] });
+              refetch();
+              setBulkEditOpen(false);
+              setSelectedOrderIds([]);
+            }}
           />
+
 
           {selectedOrderId && (
             <OrderDetailSheet
