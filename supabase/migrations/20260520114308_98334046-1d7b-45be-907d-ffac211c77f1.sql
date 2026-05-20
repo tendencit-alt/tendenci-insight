@@ -1,0 +1,2 @@
+UPDATE public.modules_config SET category='operacional', visible_in_menu=true, sort_order=35 WHERE module_key='projetos';
+UPDATE public.modules_config SET category='operacional', visible_in_menu=true, sort_order=40 WHERE module_key='producao-operacoes';
