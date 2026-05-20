@@ -106,7 +106,12 @@ export function StrategicResourceCategoriesManager() {
         if (error) throw error;
       }
       setLocalPct((p) => { const c = { ...p }; delete c[accountId]; return c; });
-      await qc.invalidateQueries({ queryKey: ["fin-strategic-resource-account-configs"] });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["fin-strategic-resource-account-configs"] }),
+        qc.invalidateQueries({ queryKey: ["compromissos-venda-categories"] }),
+        qc.invalidateQueries({ queryKey: ["strategic-resource-defaults"] }),
+        qc.invalidateQueries({ queryKey: ["fin-chart-accounts-all"] }),
+      ]);
       toast.success("Salvo");
     } catch (e: any) {
       toast.error(e.message || "Erro ao salvar");
