@@ -20,6 +20,8 @@ import { useOrdersRealtime } from '@/hooks/useOrdersRealtime';
 
 export default function Orders() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
+  useOrdersRealtime();
   const [createOpen, setCreateOpen] = useState(false);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
