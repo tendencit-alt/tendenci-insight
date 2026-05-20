@@ -3,11 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Shield, Eye, Plus, Edit, Trash } from 'lucide-react';
+import { Loader2, Shield } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import type { AppModule } from '@/hooks/usePermissions';
 import { describeError } from '@/lib/errorMessage';
 
 interface UserPermissionsDialogProps {
@@ -19,134 +17,102 @@ interface UserPermissionsDialogProps {
   onSuccess: () => void;
 }
 
-interface ModulePermissions {
-  module: AppModule;
+interface ModulePermission {
   can_view: boolean;
   can_create: boolean;
   can_edit: boolean;
   can_delete: boolean;
+  can_approve: boolean;
+  can_conciliate: boolean;
+  can_export: boolean;
+  can_admin: boolean;
 }
 
-const MODULE_LABELS: Record<string, string> = {
-  'dashboard': 'Dashboard',
-  'configuracoes': 'Configurações',
-  'gestao_usuarios': 'Gestão de Usuários',
-  'producao': 'Produção',
-  'fornecedores': 'Fornecedores',
-  'estoque': 'Estoque',
-  'pedidos': 'Pedidos',
-  'financeiro': 'Financeiro',
-  'cadastros_financeiros': 'Cadastros Financeiros',
-  'dashboard_executivo': 'Dashboard Executivo',
-  'comercial': 'Comercial',
-  'operacional': 'Operacional',
-  'controladoria': 'Controladoria',
-  'planejamento': 'Planejamento',
-  'cadastros': 'Cadastros',
-  'relatorios_bi': 'Relatórios & BI',
-};
-
-const ALL_MODULES: AppModule[] = [
-  'dashboard',
-  'dashboard_executivo',
-  'comercial',
-  'operacional',
-  'producao',
-  'pedidos',
-  'financeiro',
-  'controladoria',
-  'planejamento',
-  'cadastros',
-  'cadastros_financeiros',
-  'relatorios_bi',
-  'fornecedores',
-  'estoque',
-  'configuracoes',
-  'gestao_usuarios',
+// IMPORTANTE: deve espelhar exatamente ProfileTypePermissionsDialog
+// para evitar conflito/confusão entre as duas telas.
+const ALL_MODULES = [
+  'dashboard_executivo', 'comercial', 'operacional', 'financeiro',
+  'controladoria', 'planejamento', 'cadastros', 'relatorios_bi', 'configuracoes',
 ];
 
+const MODULE_LABELS: Record<string, string> = {
+  dashboard_executivo: 'Dashboard Executivo', comercial: 'Comercial', operacional: 'Operacional',
+  financeiro: 'Financeiro', controladoria: 'Controladoria', planejamento: 'Planejamento',
+  cadastros: 'Cadastros', relatorios_bi: 'Relatórios & BI', configuracoes: 'Configurações',
+};
+
+const PERMISSION_COLUMNS = [
+  { key: 'can_view', label: 'Ver', description: 'Leitura e exportação',
+    flags: ['can_view', 'can_export'] as (keyof ModulePermission)[] },
+  { key: 'can_create', label: 'Criar', description: 'Adicionar novos',
+    flags: ['can_create'] as (keyof ModulePermission)[] },
+  { key: 'can_edit', label: 'Editar', description: 'Alterar / aprovar / conciliar',
+    flags: ['can_edit', 'can_approve', 'can_conciliate'] as (keyof ModulePermission)[] },
+  { key: 'can_delete', label: 'Excluir', description: 'Remover e ações críticas',
+    flags: ['can_delete', 'can_admin'] as (keyof ModulePermission)[] },
+] as const;
+
+const emptyPerm = (): ModulePermission => ({
+  can_view: false, can_create: false, can_edit: false, can_delete: false,
+  can_approve: false, can_conciliate: false, can_export: false, can_admin: false,
+});
+const fullPerm = (): ModulePermission => ({
+  can_view: true, can_create: true, can_edit: true, can_delete: true,
+  can_approve: true, can_conciliate: true, can_export: true, can_admin: true,
+});
+
 export function UserPermissionsDialog({
-  open,
-  onOpenChange,
-  userId,
-  userEmail,
-  userName,
-  onSuccess
+  open, onOpenChange, userId, userEmail, userName,
 }: UserPermissionsDialogProps) {
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [permissions, setPermissions] = useState<ModulePermissions[]>([]);
+  const [permissions, setPermissions] = useState<Record<string, ModulePermission>>({});
   const [userRole, setUserRole] = useState<string>('');
-  const [targetTenantId, setTargetTenantId] = useState<string | null>(null);
+  const [profileTypeName, setProfileTypeName] = useState<string>('');
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchUserPermissions = async () => {
       if (!userId || !open) return;
-
       setLoading(true);
       try {
-        // Buscar role + tipo de perfil do usuário
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('role, profile_type_id, tenant_id')
+          .select('role, profile_type_id')
           .eq('id', userId)
           .single();
-
         if (profileError) throw profileError;
         setUserRole(profile.role);
-        setTargetTenantId((profile as any).tenant_id ?? null);
 
-        // Se for admin, não precisa buscar permissões
         if (profile.role === 'admin') {
-          setPermissions(
-            ALL_MODULES.map(module => ({
-              module,
-              can_view: true,
-              can_create: true,
-              can_edit: true,
-              can_delete: true
-            }))
-          );
+          const m: Record<string, ModulePermission> = {};
+          ALL_MODULES.forEach(mod => { m[mod] = fullPerm(); });
+          setPermissions(m);
           setLoading(false);
           return;
         }
 
-        // Buscar permissões individuais do usuário
-        const { data: userPerms, error } = await supabase
-          .from('user_permissions')
-          .select('*')
-          .eq('user_id', userId);
-
-        if (error) throw error;
-
-        // Fallback: se o usuário ainda não tem permissões individuais,
-        // espelhar o template do tipo de perfil dele para refletir o acesso
-        // herdado (e permitir salvar como override).
-        let templatePerms: any[] = [];
-        if ((!userPerms || userPerms.length === 0) && profile.profile_type_id) {
-          const { data: tpl } = await supabase
-            .from('profile_type_permissions')
-            .select('*')
-            .eq('profile_type_id', profile.profile_type_id);
-          templatePerms = tpl || [];
+        let typeName = '';
+        let rows: any[] = [];
+        if (profile.profile_type_id) {
+          const [{ data: pt }, { data: perms }] = await Promise.all([
+            supabase.from('profile_types').select('display_name,name').eq('id', profile.profile_type_id).maybeSingle(),
+            supabase.from('profile_type_permissions').select('*').eq('profile_type_id', profile.profile_type_id),
+          ]);
+          typeName = pt?.display_name || pt?.name || '';
+          rows = perms || [];
         }
+        setProfileTypeName(typeName);
 
-        const baseSource = (userPerms && userPerms.length > 0) ? userPerms : templatePerms;
-
-        // Garantir que todos os módulos estejam presentes
-        const allPermissions = ALL_MODULES.map(module => {
-          const existing = baseSource.find((p: any) => p.module === module);
-          return existing || {
-            module,
-            can_view: false,
-            can_create: false,
-            can_edit: false,
-            can_delete: false
-          };
+        const map: Record<string, ModulePermission> = {};
+        ALL_MODULES.forEach(mod => {
+          const r = rows.find((p: any) => p.module === mod);
+          map[mod] = r ? {
+            can_view: !!r.can_view, can_create: !!r.can_create, can_edit: !!r.can_edit,
+            can_delete: !!r.can_delete, can_approve: !!r.can_approve,
+            can_conciliate: !!r.can_conciliate, can_export: !!r.can_export, can_admin: !!r.can_admin,
+          } : emptyPerm();
         });
-
-        setPermissions(allPermissions as ModulePermissions[]);
+        setPermissions(map);
       } catch (error: any) {
         console.error('Erro ao buscar permissões:', error);
         toast({
@@ -158,92 +124,18 @@ export function UserPermissionsDialog({
         setLoading(false);
       }
     };
-
     fetchUserPermissions();
   }, [userId, open, toast]);
 
-  const handlePermissionChange = (
-    module: AppModule,
-    field: 'can_view' | 'can_create' | 'can_edit' | 'can_delete',
-    value: boolean
-  ) => {
-    setPermissions(prev =>
-      prev.map(p =>
-        p.module === module ? { ...p, [field]: value } : p
-      )
-    );
-  };
-
-  const handleSave = async () => {
-    if (!userId) return;
-
-    setSaving(true);
-    try {
-      // Se for admin, não salvar permissões
-      if (userRole === 'admin') {
-        toast({
-          title: 'Aviso',
-          description: 'Administradores têm todas as permissões automaticamente.',
-        });
-        onSuccess();
-        onOpenChange(false);
-        return;
-      }
-
-      if (!targetTenantId) {
-        toast({
-          title: 'Erro',
-          description: 'Usuário sem tenant associado. Não é possível salvar permissões.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Deletar permissões existentes
-      await supabase
-        .from('user_permissions')
-        .delete()
-        .eq('user_id', userId);
-
-      // Inserir novas permissões (cast para any devido ao tipo gerado do Supabase não incluir novos módulos ainda)
-      const { error } = await supabase
-        .from('user_permissions')
-        .insert(
-          permissions.map(p => ({
-            user_id: userId,
-            tenant_id: targetTenantId,
-            module: p.module as any,
-            can_view: p.can_view,
-            can_create: p.can_create,
-            can_edit: p.can_edit,
-            can_delete: p.can_delete
-          })) as any
-        );
-
-      if (error) throw error;
-
-      toast({
-        title: 'Sucesso',
-        description: 'Permissões atualizadas com sucesso!',
-      });
-
-      onSuccess();
-      onOpenChange(false);
-    } catch (error: any) {
-      console.error('Erro ao salvar permissões:', error);
-      toast({
-        title: 'Erro',
-        description: error?.message || 'Não foi possível atualizar as permissões.',
-        variant: 'destructive',
-      });
-    } finally {
-      setSaving(false);
-    }
+  const isColumnChecked = (mod: string, flags: readonly (keyof ModulePermission)[]) => {
+    const p = permissions[mod];
+    if (!p) return false;
+    return flags.every(f => p[f]);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
@@ -255,10 +147,12 @@ export function UserPermissionsDialog({
         </DialogHeader>
 
         <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-          As permissões abaixo são herdadas do <strong>Tipo de Perfil</strong> do usuário.
+          As permissões abaixo são herdadas do <strong>Tipo de Perfil</strong>
+          {profileTypeName ? <> <strong>"{profileTypeName}"</strong></> : null}.
           Para alterá-las, edite o tipo de perfil em{' '}
-          <strong>Configurações → Tipos de Perfil</strong>. As mudanças passam a valer para todos
-          os usuários daquele perfil.
+          <strong>Configurações → Tipos de Perfil</strong>. A estrutura e os agrupamentos
+          (Ver, Criar, Editar, Excluir) são idênticos aos da tela de edição, para evitar
+          divergências de avaliação.
         </div>
 
         {loading ? (
@@ -274,75 +168,42 @@ export function UserPermissionsDialog({
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
-            <div className="space-y-4">
-              {permissions.map((perm) => (
-                <div key={perm.module} className="space-y-3">
-                  <div className="font-medium text-sm">
-                    {MODULE_LABELS[perm.module]}
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pl-4">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`${perm.module}-view`}
-                        checked={perm.can_view}
-                        disabled
-                      />
-                      <Label
-                        htmlFor={`${perm.module}-view`}
-                        className="text-sm font-normal flex items-center gap-1 text-muted-foreground"
-                      >
-                        <Eye className="h-3 w-3" />
-                        Visualizar
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`${perm.module}-create`}
-                        checked={perm.can_create}
-                        disabled
-                      />
-                      <Label
-                        htmlFor={`${perm.module}-create`}
-                        className="text-sm font-normal flex items-center gap-1 text-muted-foreground"
-                      >
-                        <Plus className="h-3 w-3" />
-                        Criar
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`${perm.module}-edit`}
-                        checked={perm.can_edit}
-                        disabled
-                      />
-                      <Label
-                        htmlFor={`${perm.module}-edit`}
-                        className="text-sm font-normal flex items-center gap-1 text-muted-foreground"
-                      >
-                        <Edit className="h-3 w-3" />
-                        Editar
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`${perm.module}-delete`}
-                        checked={perm.can_delete}
-                        disabled
-                      />
-                      <Label
-                        htmlFor={`${perm.module}-delete`}
-                        className="text-sm font-normal flex items-center gap-1 text-muted-foreground"
-                      >
-                        <Trash className="h-3 w-3" />
-                        Deletar
-                      </Label>
-                    </div>
-                  </div>
-                  <Separator />
-                </div>
-              ))}
+          <div className="space-y-4">
+            <div className="rounded-md border border-border overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="text-left p-3 font-medium">Módulo</th>
+                    {PERMISSION_COLUMNS.map(col => (
+                      <th key={col.key} className="text-center p-3 font-medium">
+                        <div>{col.label}</div>
+                        <div className="text-[10px] font-normal text-muted-foreground">
+                          {col.description}
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {ALL_MODULES.map((mod, idx) => (
+                    <tr key={mod} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/20'}>
+                      <td className="p-3 font-medium">{MODULE_LABELS[mod]}</td>
+                      {PERMISSION_COLUMNS.map(col => (
+                        <td key={col.key} className="text-center p-3">
+                          <Checkbox checked={isColumnChecked(mod, col.flags)} disabled />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
+            <Separator />
+            <p className="text-xs text-muted-foreground">
+              Os agrupamentos refletem as mesmas regras aplicadas no backend: <strong>Ver</strong> inclui
+              exportação; <strong>Editar</strong> inclui aprovar e conciliar; <strong>Excluir</strong> inclui
+              ações administrativas críticas.
+            </p>
           </div>
         )}
 
@@ -353,4 +214,3 @@ export function UserPermissionsDialog({
     </Dialog>
   );
 }
-
