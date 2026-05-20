@@ -53,7 +53,7 @@ const ProjectSettings = () => {
     setSearchParams(next, { replace: true });
   };
 
-  const tabCount = isMaster ? 5 : 1;
+  const gridColsClass = isMaster ? "grid-cols-5" : "grid-cols-1";
 
   return (
     <DashboardLayout>
