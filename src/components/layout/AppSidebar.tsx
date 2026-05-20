@@ -147,9 +147,9 @@ const menuGroups: MenuGroup[] = [
     icon: Factory,
     separator: true,
     items: [
-      { title: "Projetos", url: "/projetos", icon: Briefcase },
-      { title: "Produção", url: "/producao-operacoes", icon: Factory },
-      { title: "Produção (legado)", url: "/producao", icon: Factory },
+      { title: "Projetos", url: "/projetos", icon: Briefcase, module: "operacional" },
+      { title: "Produção", url: "/producao-operacoes", icon: Factory, module: "operacional" },
+      { title: "Produção (legado)", url: "/producao", icon: Factory, module: "producao" },
       { title: "Automações", url: "/automacoes", icon: Zap },
       { title: "Suprimentos", url: "/suprimentos", icon: Package },
       { title: "Estoque", url: "/estoque", icon: Layers },
