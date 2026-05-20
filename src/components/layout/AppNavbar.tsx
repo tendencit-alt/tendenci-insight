@@ -194,6 +194,7 @@ const ERP_MODULES: ModuleGroup[] = [
     items: [
       { label: "Usuários", route: "/settings/users", icon: "Users", module: "configuracoes", available: true },
       { label: "Permissões", route: "/settings", icon: "Shield", module: "configuracoes", available: true },
+      { label: "Financeiro", route: "/configuracoes?tab=financeiro", icon: "Landmark", module: "configuracoes", available: true },
       { label: "Integrações", route: "/integracoes", icon: "Plug", available: false },
     ],
   },
