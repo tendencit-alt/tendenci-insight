@@ -1,87 +1,50 @@
-## Problema
+## Objetivo
 
-Ao clicar em "Salvar" no diálogo de permissões de usuário, o backend rejeita o `INSERT` em `user_permissions` e o frontend mostra "Não foi possível atualizar as permissões."
+Tornar as configurações financeiras (Plano de Contas, Estrutura DRE/Fluxo de Caixa, Centros de Custo, Projetos, Compromissos Sobre Venda, Responsáveis, Taxas Cartão, Automações por Origem, Automações por Evento, Permissões Financeiras) acessíveis diretamente dentro da página **Configurações** (`/configuracoes`), em vez de só na rota separada `/cadastros-financeiros`.
 
-## Causa raiz (duas falhas combinadas)
+## Situação atual
 
-Investiguei as policies da tabela `public.user_permissions` e o código de `src/components/settings/UserPermissionsDialog.tsx`:
+- `/configuracoes` (`ProjectSettings.tsx`) só mostra 4 abas: Usuários, Tipos de Perfil, Empresa, Personalização.
+- A tela `CadastrosFinanceiros.tsx` (`/cadastros-financeiros`) já contém todos os managers financeiros (ChartAccountsManager, CostCentersManager, FinProjectsManager, StrategicResourceCategoriesManager, OrderResponsiblesManager, CardRatesManager, OriginRulesMatrix, EventAutomationRulesPanel, FinancePermissionsMatrix), mas o usuário não percebe que ela existe a partir do menu Configurações.
+- O dropdown "Configurações" do navbar lista apenas Usuários, Permissões e Integrações.
 
-1. **Policies permissivas restritas demais**
-   As policies `Admins can insert/update/delete permissions` só liberam quando `profiles.role = 'admin'`. Mas no enum `user_role` existe também `owner` e `tenant_owner`, e o usuário `pablo@tendenci.com.br` (que é dono do sistema) tem `role = 'owner'` + `is_owner = true`. Para ele, o `auth.uid()` nunca casa com a policy → operação negada.
+## Mudanças
 
-2. **`tenant_id` ausente no INSERT**
-   Existe uma policy **RESTRICTIVE** `tenant_isolation_modify_user_permissions` exigindo `tenant_rls_check(tenant_id)`. O diálogo monta o payload sem `tenant_id` (fica `NULL`), o que reprova a checagem mesmo para um admin legítimo do tenant.
+### 1. Adicionar nova aba "Financeiro" em `src/pages/ProjectSettings.tsx`
 
-Resultado: até admins de tenant tropeçam no item 2, e o owner/tenant_owner tropeça nos dois.
+Inserir como 5ª aba (visível para `isMaster`), com sub-abas internas reaproveitando os managers existentes:
 
-## Mudanças propostas
+- Plano de Contas / Estrutura DRE & Fluxo de Caixa → `ChartAccountsManager`
+- Centros de Custo → `CostCentersManager`
+- Projetos → `FinProjectsManager`
+- Compromissos Sobre Venda → `StrategicResourceCategoriesManager`
+- Responsáveis → `OrderResponsiblesManager`
+- Taxas Cartão / Financeiras → `CardRatesManager`
+- Automação por Origem → `OriginRulesMatrix`
+- Automações por Evento → `EventAutomationRulesPanel`
+- Permissões Financeiras → `FinancePermissionsMatrix`
 
-### 1. Migration — relaxar policies permissivas para incluir owner/tenant_owner
-Substituir as 4 policies "Admins can ..." por versões que também aceitam `is_owner = true` ou `role IN ('admin','owner','tenant_owner')`, mantendo as policies de tenant restritivas como segunda camada:
+Sub-abas serão renderizadas com `Tabs` rolável (mesmo padrão usado em `CadastrosFinanceiros`).
 
-```sql
-DROP POLICY "Admins can view all permissions" ON public.user_permissions;
-DROP POLICY "Admins can insert permissions"   ON public.user_permissions;
-DROP POLICY "Admins can update permissions"   ON public.user_permissions;
-DROP POLICY "Admins can delete permissions"   ON public.user_permissions;
+### 2. Adicionar atalho no dropdown "Configurações" do navbar
 
-CREATE POLICY "Admins manage permissions"
-ON public.user_permissions
-FOR ALL
-TO authenticated
-USING (EXISTS (
-  SELECT 1 FROM profiles p
-  WHERE p.id = auth.uid()
-    AND (p.is_owner = true OR p.role IN ('admin','owner','tenant_owner'))
-))
-WITH CHECK (EXISTS (
-  SELECT 1 FROM profiles p
-  WHERE p.id = auth.uid()
-    AND (p.is_owner = true OR p.role IN ('admin','owner','tenant_owner'))
-));
+Em `src/components/layout/AppNavbar.tsx`, no item `configuracoes.items`, incluir:
 
--- Mantém a policy "Users can view their own permissions" como está.
-```
+- `{ label: "Financeiro", route: "/configuracoes?tab=financeiro", icon: "Landmark", available: true }`
 
-A policy restritiva de tenant continua valendo — owner do sistema (`is_owner=true`) é tratada como bypass dentro de `tenant_rls_check`, então segue funcionando.
+A página `ProjectSettings` passa a ler `?tab=` da URL para abrir a aba correspondente (compatível com `usuarios`, `tipos`, `empresa`, `personalizacao`, `financeiro`).
 
-### 2. Frontend — incluir `tenant_id` no payload
-Em `src/components/settings/UserPermissionsDialog.tsx`, no `useEffect` que busca o perfil, ler também `tenant_id` do usuário-alvo e usá-lo no `insert`:
+### 3. Manter `/cadastros-financeiros` funcionando
 
-```ts
-const { data: profile } = await supabase
-  .from('profiles')
-  .select('role, profile_type_id, tenant_id')
-  .eq('id', userId)
-  .single();
-// guarda em estado: setTargetTenantId(profile.tenant_id)
+A rota antiga continua existindo (não quebra links/favoritos), mas a entrada principal de acesso passa a ser via Configurações.
 
-// no handleSave:
-.insert(permissions.map(p => ({
-  user_id: userId,
-  tenant_id: targetTenantId,   // <- novo
-  module: p.module as any,
-  can_view: p.can_view,
-  can_create: p.can_create,
-  can_edit: p.can_edit,
-  can_delete: p.can_delete,
-})));
-```
+## Fora do escopo
 
-Se `targetTenantId` vier nulo (caso raro), abortar com toast explicativo em vez de mandar `NULL` e receber erro genérico.
+- Nenhuma mudança em RLS, schema do banco ou lógica de negócio.
+- Nenhum manager financeiro será reescrito — apenas reaproveitados.
+- Sem alteração no `/configuracoes/catalogo` ou `/configuracoes/modulos`.
 
-### 3. Mensagem de erro mais útil
-No `catch` do `handleSave`, exibir `error.message` (quando existir) no toast, para futuros incidentes ficarem diagnosticáveis sem inspecionar console.
+## Arquivos afetados
 
-## Fora de escopo
-
-- Não mexo na estrutura da tabela nem nas policies restritivas de tenant.
-- Não altero o modelo de papéis (`user_role` enum).
-- Não toco em `profile_type_permissions` nem na matriz por perfil já validada.
-
-## Validação
-
-1. Logado como `pablo@tendenci.com.br` (owner), abrir Configurações → Usuários → editar permissões de um usuário não-admin → salvar → toast de sucesso.
-2. Logado como `pablomobiliarios@tendenci.com.br` (admin de tenant) → repetir → sucesso, e linhas inseridas devem ter `tenant_id` = tenant do usuário-alvo.
-3. Conferir via SQL: `SELECT tenant_id, count(*) FROM user_permissions GROUP BY 1;` — sem nulos novos.
-4. Tentar como usuário operacional comum → continua bloqueado (esperado).
+- `src/pages/ProjectSettings.tsx` (adicionar aba Financeiro + leitura de `?tab=`)
+- `src/components/layout/AppNavbar.tsx` (adicionar item Financeiro no dropdown Configurações)
