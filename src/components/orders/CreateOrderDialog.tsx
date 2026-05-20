@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -1185,28 +1186,18 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <span className="text-xs">Desconto (R$):</span>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
+                    <MoneyInput
                       className="h-8 w-full sm:w-24"
-                      value={String(formData.desconto_valor ?? '').replace('.', ',')}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/[^\d,.-]/g, '').replace(',', '.');
-                        setFormData({ ...formData, desconto_valor: raw === '' || raw === '-' ? 0 : Number(raw) || 0 });
-                      }}
+                      value={formData.desconto_valor}
+                      onChange={(v) => setFormData({ ...formData, desconto_valor: v })}
                     />
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <span className="text-xs">Frete:</span>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
+                    <MoneyInput
                       className="h-8 w-full sm:w-24"
-                      value={String(formData.valor_frete ?? '').replace('.', ',')}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/[^\d,.-]/g, '').replace(',', '.');
-                        setFormData({ ...formData, valor_frete: raw === '' || raw === '-' ? 0 : Number(raw) || 0 });
-                      }}
+                      value={formData.valor_frete}
+                      onChange={(v) => setFormData({ ...formData, valor_frete: v })}
                     />
                   </div>
                   {descontoTotal > 0 && (
@@ -1395,13 +1386,10 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
                             <div className="col-span-2 space-y-1">
                               <Label className="text-xs">Valor (R$)</Label>
-                              <Input
-                                type="number"
+                              <MoneyInput
                                 className="h-10"
                                 value={Math.round(valorParcela * 100) / 100}
-                                onChange={(e) => atualizarValorParcela(parcela.id, Number(e.target.value))}
-                                min={0}
-                                step={0.01}
+                                onChange={(v) => atualizarValorParcela(parcela.id, v)}
                               />
                             </div>
 
@@ -1495,13 +1483,10 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
                           <div className="col-span-2 space-y-1">
                             <Label className="text-xs">Valor (R$)</Label>
-                            <Input
-                              type="number"
+                            <MoneyInput
                               className="h-10"
                               value={Math.round(valorParcela * 100) / 100}
-                              onChange={(e) => atualizarValorParcela(parcela.id, Number(e.target.value))}
-                              min={0}
-                              step={0.01}
+                              onChange={(v) => atualizarValorParcela(parcela.id, v)}
                             />
                           </div>
 

@@ -10,6 +10,7 @@ import { useOrderResponsibles } from '@/hooks/useOrderResponsibles';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -1560,11 +1561,11 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                 </div>
                 <div className="flex items-center gap-2">
                   <span>Desconto (R$):</span>
-                  <Input type="number" className="w-24 h-8" value={formData.desconto_valor} onChange={(e) => setFormData({ ...formData, desconto_valor: Number(e.target.value) })} min={0} disabled={!isEditable} />
+                  <MoneyInput className="w-24 h-8" value={formData.desconto_valor} onChange={(v) => setFormData({ ...formData, desconto_valor: v })} disabled={!isEditable} />
                 </div>
                 <div className="flex items-center gap-2">
                   <span>Frete:</span>
-                  <Input type="number" className="w-24 h-8" value={formData.valor_frete} onChange={(e) => setFormData({ ...formData, valor_frete: Number(e.target.value) })} min={0} disabled={!isEditable} />
+                  <MoneyInput className="w-24 h-8" value={formData.valor_frete} onChange={(v) => setFormData({ ...formData, valor_frete: v })} disabled={!isEditable} />
                 </div>
                 <div className="flex justify-between font-bold text-lg border-t pt-2">
                   <span>Total:</span>
@@ -1745,13 +1746,10 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
                           <div className="col-span-2 space-y-1">
                             <Label className="text-xs">Valor (R$)</Label>
-                            <Input
-                              type="number"
+                            <MoneyInput
                               className="h-10"
                               value={Math.round(valorParcela * 100) / 100}
-                              onChange={(e) => atualizarValorParcela(parcela.id, Number(e.target.value))}
-                              min={0}
-                              step={0.01}
+                              onChange={(v) => atualizarValorParcela(parcela.id, v)}
                               disabled={!isEditable}
                             />
                           </div>
@@ -1849,13 +1847,10 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
                         <div className="col-span-2 space-y-1">
                           <Label className="text-xs">Valor (R$)</Label>
-                          <Input
-                            type="number"
+                          <MoneyInput
                             className="h-10"
                             value={Math.round(valorParcela * 100) / 100}
-                            onChange={(e) => atualizarValorParcela(parcela.id, Number(e.target.value))}
-                            min={0}
-                            step={0.01}
+                            onChange={(v) => atualizarValorParcela(parcela.id, v)}
                             disabled={!isEditable}
                           />
                         </div>
