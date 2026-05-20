@@ -248,8 +248,18 @@ export function UserPermissionsDialog({
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
             Permissões de {userName || userEmail}
+            <span className="ml-2 text-xs font-normal text-muted-foreground border border-border rounded px-2 py-0.5">
+              Somente leitura
+            </span>
           </DialogTitle>
         </DialogHeader>
+
+        <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+          As permissões abaixo são herdadas do <strong>Tipo de Perfil</strong> do usuário.
+          Para alterá-las, edite o tipo de perfil em{' '}
+          <strong>Configurações → Tipos de Perfil</strong>. As mudanças passam a valer para todos
+          os usuários daquele perfil.
+        </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-8">
@@ -276,13 +286,11 @@ export function UserPermissionsDialog({
                       <Checkbox
                         id={`${perm.module}-view`}
                         checked={perm.can_view}
-                        onCheckedChange={(checked) =>
-                          handlePermissionChange(perm.module, 'can_view', checked as boolean)
-                        }
+                        disabled
                       />
                       <Label
                         htmlFor={`${perm.module}-view`}
-                        className="text-sm font-normal cursor-pointer flex items-center gap-1"
+                        className="text-sm font-normal flex items-center gap-1 text-muted-foreground"
                       >
                         <Eye className="h-3 w-3" />
                         Visualizar
@@ -292,13 +300,11 @@ export function UserPermissionsDialog({
                       <Checkbox
                         id={`${perm.module}-create`}
                         checked={perm.can_create}
-                        onCheckedChange={(checked) =>
-                          handlePermissionChange(perm.module, 'can_create', checked as boolean)
-                        }
+                        disabled
                       />
                       <Label
                         htmlFor={`${perm.module}-create`}
-                        className="text-sm font-normal cursor-pointer flex items-center gap-1"
+                        className="text-sm font-normal flex items-center gap-1 text-muted-foreground"
                       >
                         <Plus className="h-3 w-3" />
                         Criar
@@ -308,13 +314,11 @@ export function UserPermissionsDialog({
                       <Checkbox
                         id={`${perm.module}-edit`}
                         checked={perm.can_edit}
-                        onCheckedChange={(checked) =>
-                          handlePermissionChange(perm.module, 'can_edit', checked as boolean)
-                        }
+                        disabled
                       />
                       <Label
                         htmlFor={`${perm.module}-edit`}
-                        className="text-sm font-normal cursor-pointer flex items-center gap-1"
+                        className="text-sm font-normal flex items-center gap-1 text-muted-foreground"
                       >
                         <Edit className="h-3 w-3" />
                         Editar
@@ -324,13 +328,11 @@ export function UserPermissionsDialog({
                       <Checkbox
                         id={`${perm.module}-delete`}
                         checked={perm.can_delete}
-                        onCheckedChange={(checked) =>
-                          handlePermissionChange(perm.module, 'can_delete', checked as boolean)
-                        }
+                        disabled
                       />
                       <Label
                         htmlFor={`${perm.module}-delete`}
-                        className="text-sm font-normal cursor-pointer flex items-center gap-1"
+                        className="text-sm font-normal flex items-center gap-1 text-muted-foreground"
                       >
                         <Trash className="h-3 w-3" />
                         Deletar
@@ -345,15 +347,10 @@ export function UserPermissionsDialog({
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={saving || userRole === 'admin'}>
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Salvar
-          </Button>
+          <Button onClick={() => onOpenChange(false)}>Fechar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
