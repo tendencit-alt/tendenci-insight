@@ -105,10 +105,6 @@ const ProjectSettings = () => {
               <CreditCard className="h-4 w-4" />
               Taxas Financeiras
             </TabsTrigger>
-            <TabsTrigger value="fin-permissions" className="flex items-center gap-2 px-4 py-2">
-              <Shield className="h-4 w-4" />
-              Permissões Financeiras
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="chart" className="mt-6"><ChartAccountsManager /></TabsContent>
@@ -118,7 +114,6 @@ const ProjectSettings = () => {
           <TabsContent value="commitments" className="mt-6"><StrategicResourceCategoriesManager /></TabsContent>
           <TabsContent value="responsibles" className="mt-6"><OrderResponsiblesManager /></TabsContent>
           <TabsContent value="card-rates" className="mt-6"><CardRatesManager /></TabsContent>
-          <TabsContent value="fin-permissions" className="mt-6"><FinancePermissionsMatrix /></TabsContent>
         </Tabs>
       </div>
     </DashboardLayout>
