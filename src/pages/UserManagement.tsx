@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Shield, User, Loader2, ArrowLeft, CheckCircle, UserPlus, Key, Edit2, Trash2, Users, Tags } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { describeError } from '@/lib/errorMessage';
 
 interface ProfileType {
   id: string;
@@ -91,7 +92,7 @@ const UserManagement = () => {
       console.error('Erro ao buscar usuários:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível carregar os usuários.',
+        description: describeError('Não foi possível carregar os usuários', error),
         variant: 'destructive',
       });
     } finally {

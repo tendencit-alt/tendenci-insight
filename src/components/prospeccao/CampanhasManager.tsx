@@ -34,6 +34,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { AudioRecorder } from "./AudioRecorder";
 import { CampanhaRelatorio } from "./CampanhaRelatorio";
 import { CampaignProgressMonitor } from "./CampaignProgressMonitor";
+import { describeError } from '@/lib/errorMessage';
 
 interface Campanha {
   id: string;
@@ -778,7 +779,7 @@ export function CampanhasManager() {
     } catch (err) {
       toast({
         title: "❌ Erro ao verificar servidor",
-        description: "Não foi possível verificar se o servidor WhatsApp está online. Tente novamente.",
+        description: describeError('Não foi possível verificar se o servidor WhatsApp está online. Tente novamente', err),
         variant: "destructive",
       });
       return;

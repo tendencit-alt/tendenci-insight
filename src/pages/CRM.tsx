@@ -18,6 +18,7 @@ import { MasterGoalsPanel } from "@/components/crm/MasterGoalsPanel";
 import { TaskReminderAlert } from "@/components/crm/TaskReminderAlert";
 import { AutomationFailureAlert } from "@/components/crm/AutomationFailureAlert";
 import { useCRMStatePersistence } from "@/hooks/useCRMStatePersistence";
+import { describeError } from '@/lib/errorMessage';
 
 export default function CRM() {
   const { toast } = useToast();
@@ -115,7 +116,7 @@ export default function CRM() {
       console.error('Erro ao carregar pipelines:', error);
       toast({
         title: "Erro",
-        description: "Falha ao carregar funis de vendas",
+        description: describeError('Falha ao carregar funis de vendas', error),
         variant: "destructive"
       });
     } finally {

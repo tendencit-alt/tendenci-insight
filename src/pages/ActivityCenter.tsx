@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getStartOfDayBrasilAsUTC, getDaysAgoBrasilAsUTC } from "@/utils/timezone";
+import { describeError } from '@/lib/errorMessage';
 
 export interface SystemActivity {
   id: string;
@@ -133,7 +134,7 @@ export default function ActivityCenter() {
       console.error("Erro ao buscar atividades:", error);
       toast({
         title: "Erro",
-        description: "Não foi possível carregar as atividades",
+        description: describeError('Não foi possível carregar as atividades', error),
         variant: "destructive",
       });
     } finally {

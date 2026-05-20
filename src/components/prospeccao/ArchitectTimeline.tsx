@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Paperclip, Send, MessageSquare, Phone, Users, Bot, Download, Edit2, X, Check, Mic, Square, Play, Pause } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { describeError } from '@/lib/errorMessage';
 
 interface TimelineUpdate {
   id: string;
@@ -384,7 +385,7 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
     } else {
       toast({
         title: "Erro",
-        description: "Erro ao remover entrada",
+        description: describeError('Erro ao remover entrada', error),
         variant: "destructive",
       });
     }
@@ -407,7 +408,7 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
     } else {
       toast({
         title: "Erro",
-        description: "Erro ao atualizar entrada",
+        description: describeError('Erro ao atualizar entrada', error),
         variant: "destructive",
       });
     }
@@ -542,7 +543,7 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
     } catch (error) {
       toast({
         title: "Erro",
-        description: "Não foi possível reproduzir o áudio",
+        description: describeError('Não foi possível reproduzir o áudio', error),
         variant: "destructive",
       });
     }
