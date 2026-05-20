@@ -1386,8 +1386,11 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
                             <div className="col-span-2 space-y-1">
                               <Label className="text-xs">Valor (R$)</Label>
-                              <Input
-                                type="number"
+                              <MoneyInput
+                                className="h-10"
+                                value={Math.round(valorParcela * 100) / 100}
+                                onChange={(v) => atualizarValorParcela(parcela.id, v)}
+                              />
                                 className="h-10"
                                 value={Math.round(valorParcela * 100) / 100}
                                 onChange={(e) => atualizarValorParcela(parcela.id, Number(e.target.value))}
