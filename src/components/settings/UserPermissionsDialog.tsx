@@ -76,6 +76,7 @@ export function UserPermissionsDialog({
   const [saving, setSaving] = useState(false);
   const [permissions, setPermissions] = useState<ModulePermissions[]>([]);
   const [userRole, setUserRole] = useState<string>('');
+  const [targetTenantId, setTargetTenantId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
