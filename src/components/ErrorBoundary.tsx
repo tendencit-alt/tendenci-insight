@@ -1,8 +1,10 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { newCorrelationId } from '@/lib/errorReporter';
+import { humanizeError } from '@/lib/errorMessage';
 
 interface Props {
   children: ReactNode;
@@ -13,6 +15,7 @@ interface State {
   hasError: boolean;
   error: Error | null;
   errorInfo: ErrorInfo | null;
+  correlationId: string | null;
 }
 
 const isRecoverableDomNotFoundError = (error: Error): boolean => {
@@ -32,38 +35,41 @@ const isRecoverableDomNotFoundError = (error: Error): boolean => {
 class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
+    this.state = { hasError: false, error: null, errorInfo: null, correlationId: null };
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
     if (isRecoverableDomNotFoundError(error)) {
-      return { hasError: false, error: null, errorInfo: null };
+      return { hasError: false, error: null, errorInfo: null, correlationId: null };
     }
 
-    return { hasError: true, error };
+    return { hasError: true, error, correlationId: newCorrelationId() };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     if (isRecoverableDomNotFoundError(error)) {
       console.warn('Recoverable DOM error on auth flow:', error.message);
-      this.setState({ hasError: false, error: null, errorInfo: null });
+      this.setState({ hasError: false, error: null, errorInfo: null, correlationId: null });
       return;
     }
 
     this.setState({ errorInfo });
-    
+
+    const id = this.state.correlationId ?? newCorrelationId();
+    console.error(`[${id}] Frontend crash`, { error, errorInfo });
+
     // Log error to system_errors table
-    this.logErrorToBackend(error, errorInfo);
+    this.logErrorToBackend(error, errorInfo, id);
   }
 
-  private async logErrorToBackend(error: Error, errorInfo: ErrorInfo) {
+  private async logErrorToBackend(error: Error, errorInfo: ErrorInfo, correlationId: string) {
     try {
       const currentPath = window.location.pathname;
       const module = this.detectModule(currentPath);
 
       await supabase.functions.invoke('log-system-error', {
         body: {
-          title: `Frontend Error: ${error.name || 'Unknown'}`,
+          title: `Frontend Error: ${error.name || 'Unknown'} (${correlationId})`,
           description: error.message || 'Erro não tratado no frontend',
           module,
           severity: 'high',
@@ -71,6 +77,7 @@ class ErrorBoundary extends Component<Props, State> {
           error_code: error.name,
           stack_trace: `${error.stack || ''}\n\nComponent Stack:\n${errorInfo.componentStack || ''}`,
           metadata: {
+            correlation_id: correlationId,
             url: window.location.href,
             userAgent: navigator.userAgent,
             timestamp: new Date().toISOString(),
@@ -78,10 +85,10 @@ class ErrorBoundary extends Component<Props, State> {
           }
         }
       });
-      
-      console.log('✅ Frontend error logged to system');
+
+      console.log(`✅ [${correlationId}] Frontend error logged to system`);
     } catch (logError) {
-      console.error('Failed to log frontend error:', logError);
+      console.error(`[${correlationId}] Failed to log frontend error:`, logError);
     }
   }
 
@@ -105,7 +112,13 @@ class ErrorBoundary extends Component<Props, State> {
   };
 
   private handleReset = () => {
-    this.setState({ hasError: false, error: null, errorInfo: null });
+    this.setState({ hasError: false, error: null, errorInfo: null, correlationId: null });
+  };
+
+  private handleCopyId = () => {
+    if (this.state.correlationId) {
+      navigator.clipboard?.writeText(this.state.correlationId).catch(() => {});
+    }
   };
 
   render() {
@@ -131,8 +144,21 @@ class ErrorBoundary extends Component<Props, State> {
               {this.state.error && (
                 <div className="p-3 bg-muted rounded-lg">
                   <p className="text-sm font-mono text-destructive">
-                    {this.state.error.message}
+                    {humanizeError(this.state.error)}
                   </p>
+                </div>
+              )}
+
+              {this.state.correlationId && (
+                <div className="flex items-center justify-between gap-2 p-3 bg-muted/50 rounded-lg border border-border">
+                  <div className="text-xs">
+                    <span className="text-muted-foreground">Request ID: </span>
+                    <span className="font-mono font-medium">{this.state.correlationId}</span>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={this.handleCopyId} className="h-7">
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copiar
+                  </Button>
                 </div>
               )}
 
