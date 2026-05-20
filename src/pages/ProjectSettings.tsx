@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
   Landmark, FileSpreadsheet, FolderKanban, FolderCog, BriefcaseBusiness,
-  CreditCard, Zap, Bot, Shield, Database, Building2,
+  CreditCard, Shield, Database, Building2,
 } from "lucide-react";
 import { BankAccountsManager } from "@/components/financeiro/masters/BankAccountsManager";
 import { ChartAccountsManager } from "@/components/financeiro/masters/ChartAccountsManager";
@@ -15,13 +15,11 @@ import { FinProjectsManager } from "@/components/financeiro/masters/FinProjectsM
 import { StrategicResourceCategoriesManager } from "@/components/financeiro/masters/StrategicResourceCategoriesManager";
 import { OrderResponsiblesManager } from "@/components/financeiro/masters/OrderResponsiblesManager";
 import { CardRatesManager } from "@/components/financeiro/masters/CardRatesManager";
-import { OriginRulesMatrix } from "@/components/financeiro/masters/OriginRulesMatrix";
-import { EventAutomationRulesPanel } from "@/components/financeiro/masters/EventAutomationRulesPanel";
 import { FinancePermissionsMatrix } from "@/components/financeiro/masters/FinancePermissionsMatrix";
 
 const FIN_TABS = new Set([
   "bank-accounts", "chart", "cost-centers", "projects", "commitments",
-  "responsibles", "card-rates", "origin-rules", "event-automations", "fin-permissions",
+  "responsibles", "card-rates", "fin-permissions",
 ]);
 
 const ProjectSettings = () => {
@@ -107,14 +105,6 @@ const ProjectSettings = () => {
               <CreditCard className="h-4 w-4" />
               Taxas Financeiras
             </TabsTrigger>
-            <TabsTrigger value="origin-rules" className="flex items-center gap-2 px-4 py-2">
-              <Zap className="h-4 w-4" />
-              Automação por Origem
-            </TabsTrigger>
-            <TabsTrigger value="event-automations" className="flex items-center gap-2 px-4 py-2">
-              <Bot className="h-4 w-4" />
-              Automações por Evento
-            </TabsTrigger>
             <TabsTrigger value="fin-permissions" className="flex items-center gap-2 px-4 py-2">
               <Shield className="h-4 w-4" />
               Permissões Financeiras
@@ -128,8 +118,6 @@ const ProjectSettings = () => {
           <TabsContent value="commitments" className="mt-6"><StrategicResourceCategoriesManager /></TabsContent>
           <TabsContent value="responsibles" className="mt-6"><OrderResponsiblesManager /></TabsContent>
           <TabsContent value="card-rates" className="mt-6"><CardRatesManager /></TabsContent>
-          <TabsContent value="origin-rules" className="mt-6"><OriginRulesMatrix /></TabsContent>
-          <TabsContent value="event-automations" className="mt-6"><EventAutomationRulesPanel /></TabsContent>
           <TabsContent value="fin-permissions" className="mt-6"><FinancePermissionsMatrix /></TabsContent>
         </Tabs>
       </div>
