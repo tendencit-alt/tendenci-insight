@@ -21347,6 +21347,71 @@ export type Database = {
           },
         ]
       }
+      user_permission_overrides: {
+        Row: {
+          can_admin: boolean
+          can_approve: boolean
+          can_conciliate: boolean
+          can_create: boolean
+          can_delete: boolean
+          can_edit: boolean
+          can_export: boolean
+          can_view: boolean
+          created_at: string
+          created_by: string | null
+          has_override: boolean
+          id: string
+          module: string
+          tenant_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          can_admin?: boolean
+          can_approve?: boolean
+          can_conciliate?: boolean
+          can_create?: boolean
+          can_delete?: boolean
+          can_edit?: boolean
+          can_export?: boolean
+          can_view?: boolean
+          created_at?: string
+          created_by?: string | null
+          has_override?: boolean
+          id?: string
+          module: string
+          tenant_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          can_admin?: boolean
+          can_approve?: boolean
+          can_conciliate?: boolean
+          can_create?: boolean
+          can_delete?: boolean
+          can_edit?: boolean
+          can_export?: boolean
+          can_view?: boolean
+          created_at?: string
+          created_by?: string | null
+          has_override?: boolean
+          id?: string
+          module?: string
+          tenant_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permission_overrides_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_permissions: {
         Row: {
           can_create: boolean
