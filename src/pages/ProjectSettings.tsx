@@ -74,7 +74,7 @@ const ProjectSettings = () => {
         </div>
 
         <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
-          <TabsList className={`grid w-full grid-cols-${tabCount}`}>
+          <TabsList className={`grid w-full ${gridColsClass}`}>
             <TabsTrigger value="users" className="flex items-center gap-1.5">
               <Users className="h-4 w-4" />
               Usuários
