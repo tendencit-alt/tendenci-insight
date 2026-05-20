@@ -1391,12 +1391,6 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                                 value={Math.round(valorParcela * 100) / 100}
                                 onChange={(v) => atualizarValorParcela(parcela.id, v)}
                               />
-                                className="h-10"
-                                value={Math.round(valorParcela * 100) / 100}
-                                onChange={(e) => atualizarValorParcela(parcela.id, Number(e.target.value))}
-                                min={0}
-                                step={0.01}
-                              />
                             </div>
 
                             {/* Taxa inline - sempre Tendenci */}
