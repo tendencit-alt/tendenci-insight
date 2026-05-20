@@ -1847,13 +1847,10 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
                         <div className="col-span-2 space-y-1">
                           <Label className="text-xs">Valor (R$)</Label>
-                          <Input
-                            type="number"
+                          <MoneyInput
                             className="h-10"
                             value={Math.round(valorParcela * 100) / 100}
-                            onChange={(e) => atualizarValorParcela(parcela.id, Number(e.target.value))}
-                            min={0}
-                            step={0.01}
+                            onChange={(v) => atualizarValorParcela(parcela.id, v)}
                             disabled={!isEditable}
                           />
                         </div>
