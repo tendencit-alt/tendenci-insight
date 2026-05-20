@@ -373,67 +373,55 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       let totalCapitalSaida = 0;
       let totalImpostos = 0;
 
-      const rootAccounts = chartAccounts?.filter(a => !a.parent_id) || [];
-      
-      rootAccounts.forEach(account => {
-        const mainCode = parseFloat(account.code.split('.')[0]);
-        
-        // Code 5 is RESULTADO FINANCEIRO - handle its children separately
-        if (mainCode === 5) {
-          const children = tree.get(account.id) || [];
-          children.forEach(child => {
-            const childValue = accountValues.get(child.id) || 0;
-            const childChildrenTotal = calculateTotals(tree, accountValues, child.id);
-            const childTotal = childValue + childChildrenTotal;
-            
-            if (child.nature === "RECEITA") {
-              totalReceitasFinanceiras += childTotal;
-            } else if (child.nature === "DESPESA") {
-              totalDespesasFinanceiras += childTotal;
-            }
-          });
-          return;
-        }
-        
-        if (account.nature === "RESULTADO") return;
-        
-        const directValue = accountValues.get(account.id) || 0;
-        const childrenTotal = calculateTotals(tree, accountValues, account.id);
-        const total = directValue + childrenTotal;
-        
+      // Build account lookup for fast classification.
+      const accountById = new Map<string, ChartAccount>();
+      (chartAccounts || []).forEach(a => accountById.set(a.id, a));
+
+      // Aggregate totals directly from entries by chart account code.
+      // Robust to tree gaps (e.g. root "1" not visible in tenant) and
+      // ensures ALL non-CANCELADO entries are summed for competence DRE
+      // (status=ABERTO included — regime de competência).
+      entries?.forEach((e) => {
+        if (!e.chart_account_id) return;
+        const acc = accountById.get(e.chart_account_id);
+        if (!acc) return;
+        const parts = acc.code.split('.');
+        const mainCode = parseFloat(parts[0]);
+        const subCode = parseFloat(parts[1] || '0');
+        const amt = Number(e.amount) || 0;
+
         if (mainCode === 1) {
-          totalReceitas += total;
+          totalReceitas += amt;
         } else if (mainCode === 2) {
-          const children = tree.get(account.id) || [];
-          children.forEach(child => {
-            const childValue = accountValues.get(child.id) || 0;
-            const childChildrenTotal = calculateTotals(tree, accountValues, child.id);
-            const childTotal = childValue + childChildrenTotal;
-            const subCode = parseFloat(child.code.split('.')[1] || '0');
-            if (subCode === 1) totalImpostosVenda += childTotal;
-            else if (subCode === 2) totalTaxasVenda += childTotal;
-            else if (subCode === 3) totalCustosDiretos += childTotal;
-            else if (subCode === 4) totalComissoes += childTotal;
-            else if (subCode === 5) totalAntecipacao += childTotal;
-          });
+          if (subCode === 1) totalImpostosVenda += amt;
+          else if (subCode === 2) totalTaxasVenda += amt;
+          else if (subCode === 3) totalCustosDiretos += amt;
+          else if (subCode === 4) totalComissoes += amt;
+          else if (subCode === 5) totalAntecipacao += amt;
         } else if (mainCode === 3) {
-          totalDespesasOp += total;
+          totalDespesasOp += amt;
         } else if (mainCode === 4) {
-          totalDepreciacao += total;
+          totalDepreciacao += amt;
+        } else if (mainCode === 5) {
+          if (acc.nature === "RECEITA") totalReceitasFinanceiras += amt;
+          else if (acc.nature === "DESPESA") totalDespesasFinanceiras += amt;
         } else if (mainCode === 6) {
-          const children = tree.get(account.id) || [];
-          children.forEach(child => {
-            const childValue = accountValues.get(child.id) || 0;
-            const childChildrenTotal = calculateTotals(tree, accountValues, child.id);
-            const childTotal = childValue + childChildrenTotal;
-            const subCode = parseFloat(child.code.split('.')[1] || '0');
-            if (subCode === 1) totalCapitalEntrada += childTotal;
-            else if (subCode === 2) totalCapitalSaida += childTotal;
-          });
+          if (subCode === 1) totalCapitalEntrada += amt;
+          else if (subCode === 2) totalCapitalSaida += amt;
         } else if (mainCode === 7) {
-          totalImpostos += total;
+          totalImpostos += amt;
         }
       });
+
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.debug('[DRE competence]', {
+          entries: entries?.length || 0,
+          totalReceitas,
+          totalDespesasOp,
+          totalImpostosVenda,
+        });
+      }
 
       // Calculate derived values - clean managerial DRE
       const totalDespesasSobreVendas = totalImpostosVenda + totalTaxasVenda + totalCustosDiretos + totalComissoes + totalAntecipacao;
