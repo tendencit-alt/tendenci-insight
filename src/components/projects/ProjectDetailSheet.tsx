@@ -414,7 +414,7 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
                 </div>
                 <div>
                   <span className="text-sm text-muted-foreground">Valor</span>
-                  <p className="font-medium">R$ {project.value?.toLocaleString('pt-BR') || "0"}</p>
+                  <p className="font-medium">R$ {(project.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </div>
                 <div>
                   <span className="text-sm text-muted-foreground">Prazo</span>
@@ -443,8 +443,8 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
                       <TableRow key={quote.id}>
                         <TableCell>{quote.item}</TableCell>
                         <TableCell>{quote.quantity}</TableCell>
-                        <TableCell>R$ {quote.unit_price?.toLocaleString('pt-BR')}</TableCell>
-                        <TableCell className="font-semibold">R$ {quote.total?.toLocaleString('pt-BR')}</TableCell>
+                        <TableCell>R$ {(quote.unit_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                        <TableCell className="font-semibold">R$ {(quote.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

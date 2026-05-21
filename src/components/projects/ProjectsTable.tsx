@@ -255,7 +255,7 @@ export function ProjectsTable({ filters }: ProjectsTableProps) {
                     <TableCell>{project.client?.name || "N/A"}</TableCell>
                     <TableCell>{project.architect?.name || <span className="text-orange-500">Não atribuído</span>}</TableCell>
                     <TableCell>{getStageBadge(project.stage)}</TableCell>
-                    <TableCell>R$ {project.value?.toLocaleString('pt-BR') || "0"}</TableCell>
+                    <TableCell>R$ {(project.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                     <TableCell>
                       {project.deadline 
                         ? format(new Date(project.deadline), "dd/MM/yyyy", { locale: ptBR }) 

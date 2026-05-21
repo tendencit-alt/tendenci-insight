@@ -1177,7 +1177,7 @@ export function EditDealDialog({
                     <div key={ind.id} className="flex items-center justify-between bg-white dark:bg-background p-2 rounded border">
                       <div className="text-sm">
                         <span className="font-medium">{ind.architect?.name}</span>
-                        {ind.value && <span className="text-muted-foreground"> - R$ {Number(ind.value).toLocaleString('pt-BR')}</span>}
+                        {ind.value && <span className="text-muted-foreground"> - R$ {Number(ind.value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>}
                       </div>
                       <Button
                         type="button"
@@ -1203,7 +1203,7 @@ export function EditDealDialog({
                     <div key={index} className="flex items-center justify-between bg-white dark:bg-background p-2 rounded border border-dashed border-amber-400">
                       <div className="text-sm">
                         <span className="font-medium">{ind.architect_name}</span>
-                        {ind.value && <span className="text-muted-foreground"> - R$ {Number(ind.value).toLocaleString('pt-BR')}</span>}
+                        {ind.value && <span className="text-muted-foreground"> - R$ {Number(ind.value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>}
                       </div>
                       <Button
                         type="button"
