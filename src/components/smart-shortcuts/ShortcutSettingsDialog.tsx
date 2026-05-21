@@ -59,7 +59,7 @@ export function ShortcutSettingsDialog({ open, onOpenChange }: Props) {
   const categoryLabels: Record<string, string> = {
     create: "Criar",
     navigate: "Navegação",
-    report: "Relatórios",
+    report: "KPI's",
     action: "Ações",
     context: "Contextuais",
   };

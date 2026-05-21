@@ -103,7 +103,7 @@ export const CATEGORY_META: Record<string, { label: string; order: number }> = {
   comercial:     { label: "Comercial",     order: 10 },
   operacional:   { label: "Operação",      order: 20 },
   financeiro:    { label: "Financeiro",    order: 30 },
-  relatorios:    { label: "Relatórios",    order: 40 },
+  relatorios:    { label: "KPI's",    order: 40 },
   configuracoes: { label: "Configurações", order: 50 },
   futuro:        { label: "Em breve",      order: 90 },
   master:        { label: "Master",        order: 99 },

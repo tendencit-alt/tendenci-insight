@@ -95,7 +95,7 @@ export default function Relatorios() {
       <span className="text-xs text-muted-foreground hidden md:inline">Ações:</span>
       <Button size="sm" onClick={handleNew}>
         <Plus className="h-4 w-4 mr-1.5" />
-        Novo Relatório
+        Novo KPI
       </Button>
       <Button size="sm" variant="outline" onClick={handleImport}>
         <Upload className="h-4 w-4 mr-1.5" />
@@ -165,7 +165,7 @@ export default function Relatorios() {
                   Use o Report Builder ou os grupos para criar e salvar visões personalizadas.
                 </p>
                 <Button size="sm" className="mt-3" onClick={() => setActiveGroup("builder")}>
-                  Criar Relatório
+                  Criar KPI
                 </Button>
               </CardContent>
             </Card>
@@ -229,7 +229,7 @@ export default function Relatorios() {
               <CardContent className="py-3 flex items-center gap-3">
                 <g.icon className="h-5 w-5 text-primary shrink-0" />
                 <div>
-                  <p className="text-sm font-medium">Relatórios {g.label}</p>
+                  <p className="text-sm font-medium">KPI's {g.label}</p>
                   <p className="text-xs text-muted-foreground">{g.desc}</p>
                 </div>
               </CardContent>
@@ -251,7 +251,7 @@ export default function Relatorios() {
       <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6">
         <ModuleShell
           moduleKey="relatorios"
-          title="Relatórios"
+          title="KPI's"
           description="Executivos, analíticos, operacionais e de auditoria."
           icon={<FileBarChart className="h-5 w-5" />}
           headerActions={headerActions}

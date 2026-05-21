@@ -175,12 +175,12 @@ const ERP_MODULES: ModuleGroup[] = [
   },
   {
     key: "relatorios",
-    label: "Relatórios e BI",
+    label: "KPI's e BI",
     icon: BarChart3,
     requiredModules: ["dashboard"],
     items: [
       { label: "Dashboard", route: "/dashboard", icon: "LayoutDashboard", module: "dashboard", available: true },
-      { label: "Relatórios", route: "/relatorios", icon: "FileSpreadsheet", module: "dashboard", available: true },
+      { label: "KPI's", route: "/relatorios", icon: "FileSpreadsheet", module: "dashboard", available: true },
     ],
   },
   {

@@ -36,7 +36,7 @@ const TYPE_LABEL: Record<SearchEntityType, string> = {
   payable: "Conta a Pagar",
   receivable: "Conta a Receber",
   goal: "Meta",
-  report: "Relatório",
+  report: "KPI",
   dashboard: "Dashboard",
   ticket: "Ticket",
   integration: "Integração",

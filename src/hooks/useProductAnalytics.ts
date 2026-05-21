@@ -23,7 +23,7 @@ const ROUTE_MODULE_MAP: Record<string, string> = {
   "/projects": "Projetos",
   "/prospeccao": "Prospecção",
   "/fornecedores": "Fornecedores",
-  "/relatorios": "Relatórios",
+  "/relatorios": "KPI's",
   "/controladoria": "Controladoria",
   "/settings": "Configurações",
 };

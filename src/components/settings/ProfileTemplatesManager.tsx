@@ -33,7 +33,7 @@ const ALL_MODULES = [
 const MODULE_LABELS: Record<string, string> = {
   dashboard_executivo: 'Dashboard Executivo', comercial: 'Comercial', operacional: 'Operacional',
   financeiro: 'Financeiro', controladoria: 'Controladoria', planejamento: 'Planejamento',
-  cadastros: 'Cadastros', relatorios_bi: 'Relatórios & BI', configuracoes: 'Configurações',
+  cadastros: 'Cadastros', relatorios_bi: 'KPI's & BI', configuracoes: 'Configurações',
 };
 
 const FLAGS: { key: keyof TemplateFlagSet; label: string }[] = [

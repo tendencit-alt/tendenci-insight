@@ -25,7 +25,7 @@ export const commandBarStore = {
 };
 
 // ── Types ──
-type GroupKey = "Ações" | "Módulos" | "Registros" | "Relatórios" | "Configurações";
+type GroupKey = "Ações" | "Módulos" | "Registros" | "KPI's" | "Configurações";
 
 interface CommandItem {
   id: string;
@@ -230,30 +230,30 @@ export function CommandBar() {
         action: () => go("rec-produtos", "/estoque", "Produtos", "Registros") },
 
       // ───── RELATÓRIOS ─────
-      { id: "rep-dre", label: "DRE Gerencial", group: "Relatórios", icon: LineChart,
+      { id: "rep-dre", label: "DRE Gerencial", group: "KPI's", icon: LineChart,
         keywords: ["dre", "resultado", "demonstrativo", "lucro", "competencia"],
-        action: () => go("rep-dre", "/financeiro?tab=dre", "DRE", "Relatórios") },
-      { id: "rep-fluxo", label: "Fluxo de Caixa", group: "Relatórios", icon: BarChart,
+        action: () => go("rep-dre", "/financeiro?tab=dre", "DRE", "KPI's") },
+      { id: "rep-fluxo", label: "Fluxo de Caixa", group: "KPI's", icon: BarChart,
         keywords: ["fluxo", "caixa", "cash flow", "liquidez", "fc"],
-        action: () => go("rep-fluxo", "/financeiro?tab=cashflow", "Fluxo de Caixa", "Relatórios") },
-      { id: "rep-resultado", label: "Resultado Financeiro", group: "Relatórios", icon: Calculator,
+        action: () => go("rep-fluxo", "/financeiro?tab=cashflow", "Fluxo de Caixa", "KPI's") },
+      { id: "rep-resultado", label: "Resultado Financeiro", group: "KPI's", icon: Calculator,
         keywords: ["resultado", "financeiro", "juros", "rentabilidade"],
-        action: () => go("rep-resultado", "/financeiro?tab=financial-result", "Resultado", "Relatórios") },
-      { id: "rep-pagar", label: "Contas a Pagar", group: "Relatórios", icon: CreditCard,
+        action: () => go("rep-resultado", "/financeiro?tab=financial-result", "Resultado", "KPI's") },
+      { id: "rep-pagar", label: "Contas a Pagar", group: "KPI's", icon: CreditCard,
         keywords: ["contas a pagar", "ap", "vencidas", "despesas"],
-        action: () => go("rep-pagar", "/financeiro?tab=payables", "Contas a Pagar", "Relatórios") },
-      { id: "rep-receber", label: "Contas a Receber", group: "Relatórios", icon: TrendingUp,
+        action: () => go("rep-pagar", "/financeiro?tab=payables", "Contas a Pagar", "KPI's") },
+      { id: "rep-receber", label: "Contas a Receber", group: "KPI's", icon: TrendingUp,
         keywords: ["contas a receber", "ar", "recebiveis"],
-        action: () => go("rep-receber", "/financeiro?tab=receivables", "Contas a Receber", "Relatórios") },
-      { id: "rep-tesouraria", label: "Tesouraria", group: "Relatórios", icon: Landmark,
+        action: () => go("rep-receber", "/financeiro?tab=receivables", "Contas a Receber", "KPI's") },
+      { id: "rep-tesouraria", label: "Tesouraria", group: "KPI's", icon: Landmark,
         keywords: ["tesouraria", "saldo", "bancos"],
-        action: () => go("rep-tesouraria", "/financeiro?tab=treasury", "Tesouraria", "Relatórios") },
-      { id: "rep-relatorios", label: "Central de Relatórios", group: "Relatórios", icon: BarChart3,
+        action: () => go("rep-tesouraria", "/financeiro?tab=treasury", "Tesouraria", "KPI's") },
+      { id: "rep-relatorios", label: "Central de KPI's", group: "KPI's", icon: BarChart3,
         keywords: ["relatorios", "reports", "exportar"],
-        action: () => go("rep-relatorios", "/relatorios", "Relatórios", "Relatórios") },
-      { id: "rep-bi", label: "BI Analítico", group: "Relatórios", icon: PieChart,
+        action: () => go("rep-relatorios", "/relatorios", "KPI's", "KPI's") },
+      { id: "rep-bi", label: "BI Analítico", group: "KPI's", icon: PieChart,
         keywords: ["bi", "analitico", "indicadores", "dashboard"],
-        action: () => go("rep-bi", "/bi-dashboard", "BI", "Relatórios") },
+        action: () => go("rep-bi", "/bi-dashboard", "BI", "KPI's") },
 
       // ───── CONFIGURAÇÕES ─────
       { id: "cfg-empresa", label: "Configurações da Empresa", group: "Configurações", icon: Building2,
@@ -287,7 +287,7 @@ export function CommandBar() {
       let boost = 0;
       // Current route boost
       const path = location.pathname;
-      if (path.startsWith("/financeiro") && (item.group === "Relatórios" || item.id.startsWith("act-nova-"))) boost += 30;
+      if (path.startsWith("/financeiro") && (item.group === "KPI's" || item.id.startsWith("act-nova-"))) boost += 30;
       if (path.startsWith("/pedidos") && item.id.includes("pedido")) boost += 30;
       if (path.startsWith("/producao") && item.id.includes("producao")) boost += 30;
       // Role boost
@@ -349,7 +349,7 @@ export function CommandBar() {
 
   // ── Group results by GroupKey ──
   const groups = useMemo(() => {
-    const order: GroupKey[] = ["Ações", "Módulos", "Registros", "Relatórios", "Configurações"];
+    const order: GroupKey[] = ["Ações", "Módulos", "Registros", "KPI's", "Configurações"];
     const map = new Map<GroupKey, { item: CommandItem; score: number }[]>();
     order.forEach((g) => map.set(g, []));
     ranked.forEach((r) => map.get(r.item.group)!.push(r));
@@ -472,7 +472,7 @@ function Row({ item, icon }: { item: CommandItem; icon?: LucideIcon }) {
           item.group === "Ações" && "bg-primary/15 text-primary",
           item.group === "Módulos" && "bg-blue-500/15 text-blue-500",
           item.group === "Registros" && "bg-emerald-500/15 text-emerald-500",
-          item.group === "Relatórios" && "bg-amber-500/15 text-amber-600",
+          item.group === "KPI's" && "bg-amber-500/15 text-amber-600",
           item.group === "Configurações" && "bg-muted text-muted-foreground"
         )}
       >

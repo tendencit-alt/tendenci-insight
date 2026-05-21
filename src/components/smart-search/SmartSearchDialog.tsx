@@ -26,7 +26,7 @@ const GROUP_LABELS: Record<string, string> = {
   receivable: "Contas a Receber",
   expense: "Despesas",
   revenue: "Receitas",
-  report: "Relatórios",
+  report: "KPI's",
   dashboard: "Dashboards",
   integration: "Integrações",
   goal: "Metas",

@@ -62,7 +62,7 @@ export function useModulePreviews() {
       };
 
       // Defaults for others
-      previews.relatorios = { alerts: [], stats: [{ label: "Relatórios disponíveis", value: "13+" }] };
+      previews.relatorios = { alerts: [], stats: [{ label: "KPI's disponíveis", value: "13+" }] };
       previews.cadastros = { alerts: [], stats: [] };
       previews.configuracoes = { alerts: [], stats: [] };
 

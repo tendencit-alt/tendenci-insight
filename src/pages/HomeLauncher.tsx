@@ -75,7 +75,7 @@ const SEARCHABLE_ITEMS = [
   { label: "DRE Gerencial", route: "/bi-dashboard", module: "Analisar" },
   { label: "Forecast Financeiro", route: "/bi-dashboard", module: "Analisar" },
   { label: "Indicadores Executivos", route: "/executive", module: "Analisar" },
-  { label: "Relatórios", route: "/relatorios", module: "Analisar" },
+  { label: "KPI's", route: "/relatorios", module: "Analisar" },
   { label: "Benchmarks", route: "/benchmarking", module: "Analisar" },
   { label: "Criar Metas", route: "/planning", module: "Planejar" },
   { label: "Simular Cenários", route: "/planning", module: "Planejar" },
