@@ -22,7 +22,8 @@ function detectDefaultView(role: string | null | undefined, isMaster: boolean): 
 }
 
 export default function CRM() {
-  const { isMaster, userRole } = usePermissions();
+  const { isMaster } = usePermissions();
+  const userRole: string | null = null;
   const [view, setView] = useState<CRMView>(() => {
     const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
     if (stored === "sdr" || stored === "consultor" || stored === "gestor") return stored;
@@ -80,7 +81,7 @@ export default function CRM() {
         <CreateProjectDialog
           open={createOpen}
           onOpenChange={setCreateOpen}
-          onProjectCreated={() => setCreateOpen(false)}
+          onSuccess={() => setCreateOpen(false)}
         />
       </div>
     </DashboardLayout>
