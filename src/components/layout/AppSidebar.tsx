@@ -75,12 +75,12 @@ const ROLE_CONFIGS: Record<RoleKey, RoleConfig> = {
   },
   comercial: {
     autoExpandGroups: ["Vendas"],
-    highlightItems: ["/pedidos", "/crm-comercial"],
+    highlightItems: ["/pedidos", "/crm"],
     dimGroups: ["Operações"],
   },
   operacional: {
     autoExpandGroups: ["Operações"],
-    highlightItems: ["/producao", "/producao-operacoes", "/projetos"],
+    highlightItems: ["/producao", "/producao-operacoes"],
     dimGroups: ["Estratégia"],
   },
   admin: {
@@ -131,11 +131,8 @@ const menuGroups: MenuGroup[] = [
     icon: ShoppingCart,
     separator: true,
     items: [
-      { title: "CRM & Pipeline", url: "/crm-comercial", icon: Target, module: "comercial" },
-      { title: "Leads", url: "/leads", icon: Users, module: "comercial" },
-      { title: "Orçamentos", url: "/propostas", icon: FileText, comingSoon: true, module: "comercial" },
+      { title: "CRM", url: "/crm", icon: Target, module: "comercial" },
       { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, module: "pedidos" },
-      { title: "Contratos", url: "/contratos", icon: Briefcase, comingSoon: true, module: "comercial" },
       { title: "Clientes", url: "/clientes", icon: Users, module: "comercial" },
       { title: "Catálogo de Produtos", url: "/catalogo", icon: BookOpen, module: "comercial" },
       { title: "Comissões", url: "/comissoes", icon: DollarSign, comingSoon: true, module: "comercial" },
@@ -147,7 +144,6 @@ const menuGroups: MenuGroup[] = [
     icon: Factory,
     separator: true,
     items: [
-      { title: "Projetos", url: "/projetos", icon: Briefcase, module: "operacional" },
       { title: "Produção", url: "/producao-operacoes", icon: Factory, module: "operacional" },
       { title: "Produção (legado)", url: "/producao", icon: Factory, module: "producao" },
       { title: "Automações", url: "/automacoes", icon: Zap },
