@@ -158,9 +158,9 @@ const App = () => (
               <Route path="/leads" element={<ProtectedRoute><PermissionGuard module="comercial"><Leads /></PermissionGuard></ProtectedRoute>} />
               {/* CRM unificado (substitui projetos, crm-comercial, prospecção, propostas, contratos) */}
               <Route path="/crm" element={<ProtectedRoute><PermissionGuard module="comercial"><CRM /></PermissionGuard></ProtectedRoute>} />
-              <Route path="/crm-comercial" element={<Navigate to="/crm" replace />} />
-              <Route path="/propostas" element={<Navigate to="/crm" replace />} />
-              <Route path="/contratos" element={<Navigate to="/crm" replace />} />
+              <Route path="/crm-comercial" element={<Navigate to="/crm?view=gestor&tab=pipeline" replace />} />
+              <Route path="/propostas" element={<Navigate to="/crm?view=consultor&tab=propostas" replace />} />
+              <Route path="/contratos" element={<Navigate to="/crm?view=consultor&tab=clientes" replace />} />
               <Route path="/comissoes" element={<ProtectedRoute><PermissionGuard module="comercial"><Comissoes /></PermissionGuard></ProtectedRoute>} />
               <Route path="/notificacoes" element={<ProtectedRoute><Notificacoes /></ProtectedRoute>} />
               <Route path="/estoque" element={<ProtectedRoute><PermissionGuard module="estoque"><Inventory /></PermissionGuard></ProtectedRoute>} />
@@ -171,8 +171,8 @@ const App = () => (
               <Route path="/producao-operacoes" element={<ProtectedRoute><ProducaoOperacoes /></ProtectedRoute>} />
 
               {/* Projetos legado → redireciona para CRM */}
-              <Route path="/projetos" element={<Navigate to="/crm" replace />} />
-              <Route path="/projects" element={<Navigate to="/crm" replace />} />
+              <Route path="/projetos" element={<Navigate to="/crm?view=gestor&tab=overview" replace />} />
+              <Route path="/projects" element={<Navigate to="/crm?view=gestor&tab=overview" replace />} />
 
               <Route path="/suprimentos" element={<ProtectedRoute><Suprimentos /></ProtectedRoute>} />
               <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
@@ -183,7 +183,7 @@ const App = () => (
 
               {/* CRM / Leads (canonical: /crm) */}
               <Route path="/kanban" element={<Navigate to="/" replace />} />
-              <Route path="/prospeccao" element={<Navigate to="/crm" replace />} />
+              <Route path="/prospeccao" element={<Navigate to="/crm?view=sdr&tab=prospeccao" replace />} />
 
               {/* Planejamento */}
               <Route path="/planejamento" element={<ProtectedRoute><Planning /></ProtectedRoute>} />

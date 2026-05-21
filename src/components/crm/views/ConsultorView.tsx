@@ -5,9 +5,11 @@ import { Link } from "react-router-dom";
 import { PrjOverview } from "@/components/projects/PrjOverview";
 import CRMProposalsTab from "@/components/crm-commercial/CRMProposalsTab";
 
-export function ConsultorView() {
+export function ConsultorView({ initialTab }: { initialTab?: string } = {}) {
+  const allowed = ["funil", "propostas", "clientes"];
+  const defaultTab = initialTab && allowed.includes(initialTab) ? initialTab : "funil";
   return (
-    <Tabs defaultValue="funil" className="space-y-4">
+    <Tabs defaultValue={defaultTab} className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="funil" className="gap-1.5"><Briefcase className="h-4 w-4" />Meu funil</TabsTrigger>
