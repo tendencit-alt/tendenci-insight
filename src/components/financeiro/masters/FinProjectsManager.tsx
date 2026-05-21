@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,12 +11,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Pencil, FolderKanban, Loader2, TrendingUp, Eye, Target, DollarSign, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Plus, Pencil, FolderKanban, Loader2, TrendingUp, Eye, Target, DollarSign, AlertTriangle, CheckCircle2, Percent, Save } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { numericCodeSort } from "@/lib/numericCodeSort";
 import { ProjectKPIsDialog } from "./ProjectKPIsDialog";
+
 
 interface LedgerEntry {
   id: string;
