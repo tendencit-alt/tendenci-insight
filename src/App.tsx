@@ -27,8 +27,6 @@ import Orders from "./pages/Orders";
 import Suppliers from "./pages/Suppliers";
 import Clientes from "./pages/Clientes";
 import Leads from "./pages/Leads";
-import Propostas from "./pages/Propostas";
-import Contratos from "./pages/Contratos";
 import Comissoes from "./pages/Comissoes";
 import Notificacoes from "./pages/Notificacoes";
 import Inventory from "./pages/Inventory";
@@ -57,9 +55,10 @@ import DashboardSimple from "./pages/DashboardSimple";
 import DashboardBI from "./pages/DashboardBI";
 import RecursosHumanos from "./pages/RecursosHumanos";
 import ProducaoOperacoes from "./pages/ProducaoOperacoes";
-import Projetos from "./pages/Projetos";
+
+import CRM from "./pages/CRM";
 import Suprimentos from "./pages/Suprimentos";
-import CRMCommercial from "./pages/CRMCommercial";
+
 import Planning from "./pages/Planning";
 import ExecutiveCenter from "./pages/ExecutiveCenter";
 import AccessGovernance from "./pages/AccessGovernance";
@@ -157,10 +156,11 @@ const App = () => (
               <Route path="/fornecedores" element={<ProtectedRoute><PermissionGuard module="fornecedores"><Suppliers /></PermissionGuard></ProtectedRoute>} />
               <Route path="/clientes" element={<ProtectedRoute><PermissionGuard module="comercial"><Clientes /></PermissionGuard></ProtectedRoute>} />
               <Route path="/leads" element={<ProtectedRoute><PermissionGuard module="comercial"><Leads /></PermissionGuard></ProtectedRoute>} />
-              <Route path="/crm-comercial" element={<ProtectedRoute><PermissionGuard module="comercial"><CRMCommercial /></PermissionGuard></ProtectedRoute>} />
-              
-              <Route path="/propostas" element={<ProtectedRoute><PermissionGuard module="comercial"><Propostas /></PermissionGuard></ProtectedRoute>} />
-              <Route path="/contratos" element={<ProtectedRoute><PermissionGuard module="comercial"><Contratos /></PermissionGuard></ProtectedRoute>} />
+              {/* CRM unificado (substitui projetos, crm-comercial, prospecção, propostas, contratos) */}
+              <Route path="/crm" element={<ProtectedRoute><PermissionGuard module="comercial"><CRM /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/crm-comercial" element={<Navigate to="/crm" replace />} />
+              <Route path="/propostas" element={<Navigate to="/crm" replace />} />
+              <Route path="/contratos" element={<Navigate to="/crm" replace />} />
               <Route path="/comissoes" element={<ProtectedRoute><PermissionGuard module="comercial"><Comissoes /></PermissionGuard></ProtectedRoute>} />
               <Route path="/notificacoes" element={<ProtectedRoute><Notificacoes /></ProtectedRoute>} />
               <Route path="/estoque" element={<ProtectedRoute><PermissionGuard module="estoque"><Inventory /></PermissionGuard></ProtectedRoute>} />
@@ -170,9 +170,9 @@ const App = () => (
               <Route path="/rh" element={<ProtectedRoute><RecursosHumanos /></ProtectedRoute>} />
               <Route path="/producao-operacoes" element={<ProtectedRoute><ProducaoOperacoes /></ProtectedRoute>} />
 
-              {/* Projetos (PT canônico + redirect EN) */}
-              <Route path="/projetos" element={<ProtectedRoute><Projetos /></ProtectedRoute>} />
-              <Route path="/projects" element={<Navigate to="/projetos" replace />} />
+              {/* Projetos legado → redireciona para CRM */}
+              <Route path="/projetos" element={<Navigate to="/crm" replace />} />
+              <Route path="/projects" element={<Navigate to="/crm" replace />} />
 
               <Route path="/suprimentos" element={<ProtectedRoute><Suprimentos /></ProtectedRoute>} />
               <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
@@ -181,10 +181,9 @@ const App = () => (
               <Route path="/system-errors" element={<Navigate to="/" replace />} />
               <Route path="/excluidos" element={<Navigate to="/" replace />} />
 
-              {/* CRM / Leads (canonical routes are above with PermissionGuard) */}
+              {/* CRM / Leads (canonical: /crm) */}
               <Route path="/kanban" element={<Navigate to="/" replace />} />
-              <Route path="/crm" element={<Navigate to="/crm-comercial" replace />} />
-              <Route path="/prospeccao" element={<Navigate to="/" replace />} />
+              <Route path="/prospeccao" element={<Navigate to="/crm" replace />} />
 
               {/* Planejamento */}
               <Route path="/planejamento" element={<ProtectedRoute><Planning /></ProtectedRoute>} />
