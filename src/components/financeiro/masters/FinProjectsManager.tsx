@@ -360,8 +360,42 @@ export function FinProjectsManager() {
 
   return (
     <div className="space-y-6">
+      {/* Global Config: % Despesas do Projeto */}
+      <Card className="border-l-4 border-l-primary">
+        <CardContent className="pt-5 pb-5">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <Percent className="h-5 w-5 text-primary mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold">% Despesas do Projeto (Global)</p>
+                <p className="text-xs text-muted-foreground">
+                  Percentual aplicado automaticamente sobre o valor da venda de cada novo pedido para gerar o orçamento de despesas.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                step={0.5}
+                value={globalPct}
+                onChange={(e) => setGlobalPct(e.target.value)}
+                className="h-9 w-24 text-right"
+              />
+              <span className="text-sm text-muted-foreground">%</span>
+              <Button size="sm" onClick={saveGlobalPct} disabled={savingGlobalPct} className="gap-1">
+                {savingGlobalPct ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Salvar
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
