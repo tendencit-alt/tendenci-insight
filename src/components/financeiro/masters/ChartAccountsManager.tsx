@@ -693,7 +693,8 @@ export function ChartAccountsManager() {
       const { error } = await supabase
         .from("fin_chart_accounts")
         .update({ code: update.newCode })
-        .eq("id", update.id);
+        .eq("id", update.id)
+        .not("tenant_id", "is", null);
       
       if (error) {
         console.error("Error updating code:", error);
@@ -1146,7 +1147,10 @@ export function ChartAccountsManager() {
           const { error } = await supabase
             .from("fin_chart_accounts")
             .update({ ...data, code: newCode })
-            .eq("id", editing.id);
+            .eq("id", editing.id)
+            .not("tenant_id", "is", null)
+            .select("id")
+            .single();
           if (error) throw error;
 
           // Update descendants
@@ -1173,7 +1177,10 @@ export function ChartAccountsManager() {
           const { error } = await supabase
             .from("fin_chart_accounts")
             .update(data)
-            .eq("id", editing.id);
+            .eq("id", editing.id)
+            .not("tenant_id", "is", null)
+            .select("id")
+            .single();
           if (error) throw error;
         }
 
