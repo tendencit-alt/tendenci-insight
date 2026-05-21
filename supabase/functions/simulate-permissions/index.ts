@@ -40,14 +40,17 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Verify caller is Owner
+    // Verify caller is Owner (via is_owner flag, role column, or profile_types.name)
     const { data: callerProfile } = await admin
       .from("profiles")
-      .select("profile_type_id, profile_types!inner(name)")
+      .select("is_owner, role, profile_type_id, profile_types(name)")
       .eq("id", callerId)
-      .single();
+      .maybeSingle();
 
-    const isOwner = (callerProfile?.profile_types as { name: string } | null)?.name === "owner";
+    const isOwner =
+      callerProfile?.is_owner === true ||
+      callerProfile?.role === "owner" ||
+      (callerProfile?.profile_types as { name: string } | null)?.name === "owner";
     if (!isOwner) return json({ error: "Owner only" }, 403);
 
     const body = (await req.json().catch(() => ({}))) as Body;
