@@ -373,16 +373,42 @@ export function ChartAccountsManager() {
   const { data: accounts, isLoading, refetch } = useQuery({
     queryKey: ["fin-chart-accounts-all"],
     queryFn: async () => {
-      // Only show accounts belonging to the current tenant.
-      // Templates (tenant_id IS NULL) are readable via RLS but must not
-      // appear in the manager — otherwise roots like Receitas/Despesas
-      // duplicate (one from template + one from tenant).
       const { data } = await supabase
         .from("fin_chart_accounts")
         .select("*")
-        .not("tenant_id", "is", null)
         .order("code");
-      return data || [];
+
+      const visibleAccounts = data || [];
+      const accountsById = new Map(visibleAccounts.map((account) => [account.id, account]));
+      const preferredByCode = new Map<string, any>();
+
+      visibleAccounts.forEach((account) => {
+        const current = preferredByCode.get(account.code);
+        if (!current) {
+          preferredByCode.set(account.code, account);
+          return;
+        }
+
+        const currentScore = current.tenant_id ? 1 : 0;
+        const nextScore = account.tenant_id ? 1 : 0;
+
+        if (nextScore > currentScore) {
+          preferredByCode.set(account.code, account);
+        }
+      });
+
+      return Array.from(preferredByCode.values()).map((account) => {
+        const explicitParent = account.parent_id ? accountsById.get(account.parent_id) : null;
+        const parentCode = explicitParent?.code || (account.code.includes(".")
+          ? account.code.replace(/\.[^.]+$/, "")
+          : null);
+        const resolvedParent = parentCode ? preferredByCode.get(parentCode) : null;
+
+        return {
+          ...account,
+          parent_id: resolvedParent?.id ?? null,
+        };
+      });
     },
     refetchOnWindowFocus: true,
     staleTime: 0, // Always refetch when component mounts
