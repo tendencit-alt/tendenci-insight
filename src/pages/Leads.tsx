@@ -362,11 +362,8 @@ export function LeadsContent() {
               if (dealId) navigate(`/crm-comercial?dealId=${dealId}`);
             }}
           />
-        </div>
-      </DashboardLayout>
-    </ProtectedRoute>
-  );
-}
+        </>
+    />
 
 /* ----------------- Create Lead Dialog ----------------- */
 function CreateLeadDialog({
