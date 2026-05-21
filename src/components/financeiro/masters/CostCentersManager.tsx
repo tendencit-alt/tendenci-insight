@@ -27,6 +27,7 @@ type CC = {
 };
 
 export function CostCentersManager() {
+  const { activeTenantId } = useActiveTenant();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<CC | null>(null);
   const [loading, setLoading] = useState(false);
@@ -38,12 +39,12 @@ export function CostCentersManager() {
   });
 
   const { data: centers, isLoading, refetch } = useQuery({
-    queryKey: ["fin-cost-centers-all"],
+    queryKey: ["fin-cost-centers-all", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("fin_cost_centers")
-        .select("*")
-        .order("code");
+      let q = supabase.from("fin_cost_centers").select("*").order("code");
+      if (activeTenantId) q = q.eq("tenant_id", activeTenantId);
+      const { data } = await q;
       return (data as CC[]) || [];
     },
   });
