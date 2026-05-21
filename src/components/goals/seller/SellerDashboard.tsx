@@ -200,13 +200,13 @@ export function SellerDashboard({
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Meta Total</p>
                     <p className="text-2xl font-bold">
-                      R$ {companyGoal.valor_meta?.toLocaleString()}
+                      R$ {(companyGoal.valor_meta || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Valor Vendido</p>
                     <p className="text-2xl font-bold text-success">
-                      R$ {(companyGoal.tendenci_goal_progress?.[0]?.valor_vendido || 0).toLocaleString()}
+                      R$ {(companyGoal.tendenci_goal_progress?.[0]?.valor_vendido || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                 </div>

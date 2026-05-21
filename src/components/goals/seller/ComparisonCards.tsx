@@ -77,15 +77,15 @@ export function ComparisonCards({ ranking, trend, pace }: ComparisonCardsProps) 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Vendido até agora:</span>
-                <span className="font-bold">R$ {trend.currentSales.toLocaleString()}</span>
+                <span className="font-bold">R$ {trend.currentSales.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Projeção mês:</span>
-                <span className="font-bold text-primary">R$ {trend.projectedSales.toLocaleString()}</span>
+                <span className="font-bold text-primary">R$ {trend.projectedSales.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Meta:</span>
-                <span className="font-medium">R$ {trend.goalAmount.toLocaleString()}</span>
+                <span className="font-medium">R$ {trend.goalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
 
@@ -117,15 +117,15 @@ export function ComparisonCards({ ranking, trend, pace }: ComparisonCardsProps) 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Média diária:</span>
-                <span className="font-bold">R$ {pace.dailyAverage.toLocaleString()}</span>
+                <span className="font-bold">R$ {pace.dailyAverage.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Ideal por dia:</span>
-                <span className="font-medium">R$ {pace.idealDaily.toLocaleString()}</span>
+                <span className="font-medium">R$ {pace.idealDaily.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Fechará em:</span>
-                <span className="font-bold text-primary">R$ {pace.projectedMonth.toLocaleString()}</span>
+                <span className="font-bold text-primary">R$ {pace.projectedMonth.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
 

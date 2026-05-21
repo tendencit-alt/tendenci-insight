@@ -257,7 +257,7 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete, 
           {/* Valor e Tempo */}
           <div className="flex items-center justify-between pt-2 border-t gap-1.5">
             <Badge variant="secondary" className="text-xs font-bold truncate px-2 py-1">
-              R$ {Number(deal.value || 0).toLocaleString("pt-BR")}
+              R$ {Number(deal.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Badge>
             <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
               <Clock className="h-3 w-3" />
