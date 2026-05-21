@@ -590,6 +590,16 @@ export function ChartAccountsManager() {
     return result;
   }, []);
 
+  const dedupeDisplayAccounts = useCallback((items: any[]) => {
+    const seen = new Set<string>();
+    return items.filter((item) => {
+      const key = item.code;
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, []);
+
   const treeData = useMemo(() => accounts ? buildTree(accounts) : [], [accounts]);
   const hierarchicalAccounts = useMemo(() => {
     const flattenedAccounts = flattenTree(treeData);
@@ -599,8 +609,8 @@ export function ChartAccountsManager() {
           if (a.isCalculated) return true;
           return originFilter === "core" ? !!a.is_core : !a.is_core;
         });
-    return injectCalculatedRows(filtered);
-  }, [treeData, expandedIds, injectCalculatedRows, originFilter]);
+    return dedupeDisplayAccounts(injectCalculatedRows(filtered));
+  }, [treeData, expandedIds, injectCalculatedRows, originFilter, dedupeDisplayAccounts]);
 
   // Get all descendants of an account (for preventing invalid drops)
   const getDescendantIds = useCallback((accountId: string, accountsList: any[]): Set<string> => {
