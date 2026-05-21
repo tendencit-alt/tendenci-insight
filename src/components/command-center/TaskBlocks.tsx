@@ -106,7 +106,7 @@ export function AnalisarBlock() {
         { label: "Forecast Financeiro", icon: Calculator, route: "/bi-dashboard", color: "text-blue-600 dark:text-blue-400" },
         { label: "Indicadores Executivos", icon: BarChart3, route: "/executive", color: "text-emerald-600 dark:text-emerald-400" },
         { label: "Comparativos", icon: PieChart, route: "/benchmarking", color: "text-sky-600 dark:text-sky-400" },
-        { label: "Relatórios Executivos", icon: FileBarChart, route: "/relatorios", color: "text-amber-600 dark:text-amber-400" },
+        { label: "KPI's Executivos", icon: FileBarChart, route: "/relatorios", color: "text-amber-600 dark:text-amber-400" },
       ]}
     />
   );

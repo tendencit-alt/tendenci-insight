@@ -187,7 +187,7 @@ export const SHORTCUT_REGISTRY: Shortcut[] = [
   // ── Reports ──
   {
     id: "go-reports",
-    label: "Relatórios",
+    label: "KPI's",
     icon: "FileBarChart",
     route: "/relatorios",
     profiles: ["owner", "financeiro", "comercial", "operacional"],

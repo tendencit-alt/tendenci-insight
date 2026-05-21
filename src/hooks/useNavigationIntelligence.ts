@@ -12,7 +12,7 @@ const CONTEXTUAL_ACTIONS: Record<string, { label: string; route: string; reason:
   "/bi-dashboard": [
     { label: "Criar Meta", route: "/financeiro?tab=goals", reason: "Definir meta baseada nos indicadores" },
     { label: "Simular Cenário", route: "/planning", reason: "Projetar impacto de decisões" },
-    { label: "Gerar Relatório", route: "/relatorios", reason: "Exportar análise executiva" },
+    { label: "Gerar KPI", route: "/relatorios", reason: "Exportar análise executiva" },
   ],
   "/pedidos": [
     { label: "Verificar Financeiro", route: "/financeiro", reason: "Conferir contas geradas do pedido" },
@@ -56,7 +56,7 @@ const CONTEXTUAL_SHORTCUTS: Record<string, { label: string; route: string; icon:
     { label: "Criar Meta", route: "/financeiro?tab=goals", icon: "Target" },
     { label: "Simular Cenário", route: "/planning", icon: "Calculator" },
     { label: "Abrir Forecast", route: "/bi-dashboard", icon: "TrendingUp" },
-    { label: "Exportar Relatório", route: "/relatorios", icon: "FileBarChart" },
+    { label: "Exportar KPI", route: "/relatorios", icon: "FileBarChart" },
   ],
   "/crm-comercial": [
     { label: "Criar Proposta", route: "/pedidos", icon: "FileText" },

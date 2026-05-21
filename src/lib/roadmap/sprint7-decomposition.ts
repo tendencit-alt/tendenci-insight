@@ -497,7 +497,7 @@ const BLOCK_12: DecompositionBlock = {
     "Tabela inventory_counts com produto, qtd_sistema, qtd_fisica, diferença",
     "Agrupamento por sessão de inventário (batch)",
     "Geração automática de ajustes de estoque para diferenças",
-    "Relatório de divergências",
+    "KPI de divergências",
     "Bloqueio de movimentações durante inventário (opcional)",
   ],
   items: [
@@ -516,7 +516,7 @@ const BLOCK_12: DecompositionBlock = {
         "Status da sessão: aberta, em_contagem, concluida, cancelada",
         "UI: criar sessão → listar produtos → registrar contagem → gerar ajustes",
         "Ao concluir: gerar stock_movements tipo 'ajuste_inventario' para diferenças",
-        "Relatório de divergências com filtro por sessão",
+        "KPI de divergências com filtro por sessão",
       ],
       files: [],
       estimatedHoursRemaining: 10,

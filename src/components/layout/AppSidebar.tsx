@@ -150,7 +150,7 @@ const menuGroups: MenuGroup[] = [
       { title: "Suprimentos", url: "/suprimentos", icon: Package },
       { title: "Estoque", url: "/estoque", icon: Layers },
       { title: "Fornecedores", url: "/fornecedores", icon: Package },
-      { title: "Relatórios", url: "/relatorios", icon: FileText, comingSoon: true },
+      { title: "KPI's", url: "/relatorios", icon: FileText, comingSoon: true },
     ],
   },
   // ── PESSOAS ──

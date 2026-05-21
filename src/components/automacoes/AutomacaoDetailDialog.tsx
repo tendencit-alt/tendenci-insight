@@ -242,7 +242,7 @@ export const AUTOMACOES_DETAILS: Record<string, Omit<AutomacaoDetail, 'id' | 'at
       'Disparo é iniciado com delay entre mensagens (evitar bloqueio)',
       'Cada envio é registrado individualmente',
       'Status é atualizado em tempo real',
-      'Relatório final com taxa de sucesso/falha'
+      'KPI final com taxa de sucesso/falha'
     ],
     quandoExecuta: 'Manual - iniciado pelo usuário',
     triggerType: 'manual',

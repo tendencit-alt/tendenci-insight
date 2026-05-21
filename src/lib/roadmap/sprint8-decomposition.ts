@@ -175,7 +175,7 @@ const BLOCK_5: DecompositionBlock = {
     "Apontamento tipo 'indireto' na tabela time_entries",
     "Atividades: manutenção, limpeza, organização, reunião, treinamento + custom",
     "Vínculo a centro de custo",
-    "Relatório de horas indiretas por período/colaborador",
+    "KPI de horas indiretas por período/colaborador",
   ],
   items: [
     {
@@ -190,7 +190,7 @@ const BLOCK_5: DecompositionBlock = {
         "UI: TimesheetIndirectForm com seleção de centro de custo e atividade",
         "Lista de atividades padrão + campo livre para custom",
         "Tabela 'indirect_activities' (id, tenant_id, name, active) para atividades configuráveis",
-        "Relatório de horas indiretas agrupado por atividade/CC/colaborador",
+        "KPI de horas indiretas agrupado por atividade/CC/colaborador",
       ],
       files: [],
       estimatedHoursRemaining: 4,

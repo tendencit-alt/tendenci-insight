@@ -15,7 +15,7 @@ const moduleLabels: Record<string, string> = {
   integracoes: "Integrações",
   permissoes: "Permissões",
   auditoria: "Auditoria",
-  relatorios: "Relatórios",
+  relatorios: "KPI's",
 };
 
 export function PermissionAnalyticsCard({ sinceDays = 30 }: { sinceDays?: number }) {

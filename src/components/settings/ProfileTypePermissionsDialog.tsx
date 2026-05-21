@@ -89,7 +89,7 @@ const ALL_MODULES = [
 const MODULE_LABELS: Record<string, string> = {
   dashboard_executivo: 'Dashboard Executivo', comercial: 'Comercial', operacional: 'Operacional',
   financeiro: 'Financeiro', controladoria: 'Controladoria', planejamento: 'Planejamento',
-  cadastros: 'Cadastros', relatorios_bi: 'Relatórios & BI', configuracoes: 'Configurações',
+  cadastros: 'Cadastros', relatorios_bi: 'KPI's & BI', configuracoes: 'Configurações',
 };
 
 // Simplificado: 4 permissões essenciais por módulo. As permissões avançadas

@@ -22,7 +22,7 @@ const DEFAULT_MODULE_NAMES: Record<string, string> = {
   financeiro: 'Financeiro',
   clientes: 'Clientes',
   projetos: 'Projetos',
-  relatorios: 'Relatórios',
+  relatorios: 'KPI's',
   crm: 'CRM',
   arquitetos: 'Parceiros Profissionais',
   compras: 'Compras',

@@ -179,7 +179,7 @@ export function ReportBuilder({ initialSource, initialGroup }: Props) {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: "Relatório salvo com sucesso" });
+      toast({ title: "KPI salvo com sucesso" });
       setSaveDialog(false);
       setSaveName("");
       setSaveDesc("");
@@ -208,7 +208,7 @@ export function ReportBuilder({ initialSource, initialGroup }: Props) {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Filter className="h-4 w-4" /> Configuração do Relatório
+            <Filter className="h-4 w-4" /> Configuração do KPI
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -280,7 +280,7 @@ export function ReportBuilder({ initialSource, initialGroup }: Props) {
           <div className="flex items-center gap-2 mt-3 pt-3 border-t">
             <Button size="sm" onClick={() => refetch()} disabled={!source}>
               {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
-              Gerar Relatório
+              Gerar KPI
             </Button>
             <Button size="sm" variant="outline" onClick={exportCSV} disabled={!reportData?.length}>
               <Download className="h-3.5 w-3.5 mr-1" /> CSV
@@ -403,7 +403,7 @@ export function ReportBuilder({ initialSource, initialGroup }: Props) {
       <Dialog open={saveDialog} onOpenChange={setSaveDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Salvar Relatório</DialogTitle>
+            <DialogTitle>Salvar KPI</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1">
