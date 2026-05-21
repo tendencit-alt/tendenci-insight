@@ -179,7 +179,7 @@ const ERP_MODULES: ModuleGroup[] = [
     icon: BarChart3,
     requiredModules: ["dashboard"],
     items: [
-      { label: "Dashboard", route: "/dashboard", icon: "LayoutDashboard", module: "dashboard", available: true },
+      { label: "BI", route: "/dashboard", icon: "LayoutDashboard", module: "dashboard", available: true },
       { label: "KPI's", route: "/relatorios", icon: "FileSpreadsheet", module: "dashboard", available: true },
     ],
   },
