@@ -255,7 +255,7 @@ export function PrjOverview() {
                 </span>
                 {kpi.showValue && (
                   <span className="text-[11px] text-muted-foreground truncate">
-                    R$ {((kpi.key === 'total_orcado' ? metrics.total_orcado_value : getMetricValue(kpi.key)) || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                    {((kpi.key === 'total_orcado' ? metrics.total_orcado_value : getMetricValue(kpi.key)) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </span>
                 )}
               </div>
@@ -284,7 +284,7 @@ export function PrjOverview() {
                       {getMetricCount(kpi.key)}
                     </span>
                     <span className="text-[11px] text-muted-foreground truncate">
-                      R$ {(getMetricValue(kpi.key) || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                      {(getMetricValue(kpi.key) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </span>
                   </div>
                 </button>

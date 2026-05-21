@@ -1,51 +1,57 @@
-## Causa raiz
+# Padronização: exibir centavos (R$ 0,00) em todo o sistema
 
-A tabela `fin_chart_accounts` tem 2 conjuntos de policies de RLS conflitantes:
+## Diagnóstico
 
-- ✅ `tenant_isolation_select_fin_chart_accounts` — correta (mostra tenant + templates `is_core`)
-- ❌ `Authenticated users can view fin_chart_accounts` com `USING (true)` — **vaza tudo**, inclusive os 79 registros template (`tenant_id IS NULL`)
+O padrão `Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })` já formata com 2 casas (R$ 1.234,56). O problema é que ~15 arquivos sobrescrevem com `minimumFractionDigits: 0` / `maximumFractionDigits: 0`, truncando os centavos. A correção é remover esses overrides.
 
-Resultado: o usuário vê **a linha do próprio tenant + a linha do template** lado a lado. A Raiz 2 aparece duplicada (e na verdade Raízes 1, 3, 4, 5 e 6 também estão duplicando — só não foram notadas ainda).
+## Arquivos a corrigir (remover `minimumFractionDigits:0` / `maximumFractionDigits:0`)
 
-Estado atual dos dados:
-- Tenant `a1b2…7890` tem: `1`, `2`, `2.1` + filhos CMV, `3`, `4`, `5`, `6` (raízes vazias)
-- Template (`tenant_id NULL`) tem: estrutura completa (79 contas) com `2.1` CMV, `2.2` Impostos, `2.3` Taxas, `2.4` Custos diretos, `2.5` Comissões, `2.6` Antecipação, etc.
+KPIs e cards do Home/Dashboard:
+- `src/pages/HomeHoje.tsx` (linha 46) — fmtBRL dos 4 cards da Central
+- `src/pages/DashboardSimple.tsx` (linha 10)
+- `src/components/ui/ComparisonKPICard.tsx` (linhas 128-129)
 
-## Correções
+CRM / Metas:
+- `src/components/crm/CRMBoard.tsx` (linhas 330-331)
+- `src/components/crm/MasterGoalsPanel.tsx` (linhas 322-323)
+- `src/components/goals/GoalsAnalytics.tsx` (linhas 266, 313)
 
-### 1. Remover policies permissivas (RLS)
-Migration removendo:
-- `Authenticated users can view fin_chart_accounts` (USING true)
-- `Authenticated users can update fin_chart_accounts` (USING true)
-- `Authenticated users can insert fin_chart_accounts` (sem qualificação)
-- `Tenant users delete fin_chart_accounts` (duplicado de `tenant_isolation_delete_…`)
+Projetos:
+- `src/components/projects/PrjOverview.tsx` (linhas 258, 287)
+- `src/components/projects/ArchitectPerformance.tsx` (linha 114)
 
-Sobram apenas as `tenant_isolation_*` + a leitura pública dos templates core, que é o comportamento correto multi-tenant.
+Pedidos / Produção:
+- `src/components/orders/OrdersKPIs.tsx` (linha 18)
+- `src/components/orders/OrdersReports.tsx` (linha 39)
+- `src/components/production/ProductionKPIs.tsx` (linha 87)
+- `src/components/production/ProductionCardSimple.tsx` (linha 408)
+- `src/components/production/OptimizedDroppableColumn.tsx` (linha 119)
+- `src/components/production/DroppableColumn.tsx` (linha 49)
 
-### 2. Completar a estrutura do tenant
-Após a correção de RLS, o tenant deixa de ver as contas template e fica só com `1`, `2`, `2.1` (+ filhos CMV), `3`, `4`, `5`, `6`. Precisa receber o restante via cópia da árvore template:
-
-- `2.2 Impostos sobre venda` (+ 4 filhos: ICMS, ISS, PIS/COFINS, Simples Nacional)
-- `2.3 Taxas sobre venda` (+ 4 filhos: cartão crédito, cartão débito, Pix, boleto)
-- `2.4 Custos diretos da venda` (+ filhos atuais do template)
-- `2.5 Comissões sobre venda` (+ filhos)
-- `2.6 Antecipação de recebíveis` (+ filhos)
-- E também os filhos de `1`, `3`, `4`, `5`, `6` que existem no template mas não no tenant
-
-Será feito com um bloco recursivo que clona toda subárvore template → tenant, preservando `code`, `name`, `parent_id` (remapeando para os novos UUIDs) e demais campos, pulando `code`s que o tenant já tem.
-
-### 3. Verificação
-Após a migration:
-```sql
-SELECT code, name FROM fin_chart_accounts 
-WHERE tenant_id = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-ORDER BY code;
-```
-Deve listar a estrutura completa sem duplicatas, e a UI mostrar uma única Raiz 2.
+Exceção mantida:
+- `src/components/ui/currency-input.tsx` — é input de digitação (o componente controla decimais internamente; alterar quebraria a UX de entrada). Não tocar.
 
 ## Detalhes técnicos
 
-- Tipo: 1 migration SQL (DROP POLICY + DO block recursivo de cópia)
-- Sem alteração de código front-end (a query atual já filtra por `order("code")` e RLS fará o resto)
-- Sem impacto em outros tenants (só existe 1 tenant real hoje)
-- Templates (`tenant_id NULL`, `is_core=true`) permanecem intactos para futuros tenants
+A mudança em cada arquivo é remover a chave que zera as casas decimais. Exemplo:
+
+Antes:
+```ts
+new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(n)
+```
+
+Depois:
+```ts
+new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n)
+```
+
+Para os casos com `R$ {n.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}` (PrjOverview, ArchitectPerformance), trocar por:
+```ts
+n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+```
+(remove o "R$ " manual e usa o formatador padrão, que já inclui o símbolo e 2 casas).
+
+## Escopo / fora do escopo
+
+- Somente apresentação (frontend). Sem mudanças de schema, queries ou lógica.
+- O helper `formatCurrency` em `src/lib/utils.ts` já usa o padrão de 2 casas — nenhum ajuste necessário lá.

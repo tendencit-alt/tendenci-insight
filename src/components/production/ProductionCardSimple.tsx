@@ -405,7 +405,7 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
             </div>
             {order.value && order.value > 0 ? (
               <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold text-[11px] px-2">
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(order.value)}
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.value)}
               </Badge>
             ) : (
               <span className="text-muted-foreground text-[10px]">Não informado</span>

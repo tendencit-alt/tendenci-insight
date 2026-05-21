@@ -36,7 +36,7 @@ function getRange(period: Period): { from: Date; to: Date } {
 }
 
 const fmtBRL = (v: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v || 0);
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
 const fmtNum = (v: number) => new Intl.NumberFormat("pt-BR").format(v || 0);
 
 function downloadCSV(filename: string, rows: (string | number)[][]) {

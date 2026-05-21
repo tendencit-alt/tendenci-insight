@@ -263,7 +263,6 @@ export function GoalsAnalytics({ refreshTrigger }: GoalsAnalyticsProps) {
                         {seller.valor_total_vendido.toLocaleString("pt-BR", {
                           style: "currency",
                           currency: "BRL",
-                          maximumFractionDigits: 0,
                         })}
                       </p>
                     </div>
@@ -310,7 +309,6 @@ export function GoalsAnalytics({ refreshTrigger }: GoalsAnalyticsProps) {
                         {seller.valor_total_vendido.toLocaleString("pt-BR", {
                           style: "currency",
                           currency: "BRL",
-                          maximumFractionDigits: 0,
                         })}
                       </p>
                     </div>
