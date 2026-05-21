@@ -495,15 +495,17 @@ export function FinProjectsManager() {
                 <TableRow>
                   <TableHead>Código</TableHead>
                   <TableHead>Nome</TableHead>
+                  <TableHead className="text-right">Valor da Venda</TableHead>
+                  <TableHead className="text-center">% Despesas</TableHead>
                   <TableHead className="text-right">Orçamento</TableHead>
                   <TableHead className="text-right">Realizado</TableHead>
                   <TableHead className="text-right">Saldo</TableHead>
                   <TableHead>Progresso</TableHead>
-                  <TableHead>Período</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
+
               <TableBody>
                 {filteredProjects.map((project) => {
                   const budget = Number(project.budget) || 0;
