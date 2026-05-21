@@ -183,7 +183,7 @@ const App = () => (
 
               {/* CRM / Leads (canonical: /crm) */}
               <Route path="/kanban" element={<Navigate to="/" replace />} />
-              <Route path="/prospeccao" element={<Navigate to="/crm" replace />} />
+              <Route path="/prospeccao" element={<Navigate to="/crm?view=sdr&tab=prospeccao" replace />} />
 
               {/* Planejamento */}
               <Route path="/planejamento" element={<ProtectedRoute><Planning /></ProtectedRoute>} />
