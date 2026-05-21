@@ -21,7 +21,7 @@ export const TEMPLATE_MODULE_LABELS: Record<string, string> = {
   controladoria: 'Controladoria',
   planejamento: 'Planejamento',
   cadastros: 'Cadastros',
-  relatorios_bi: 'KPI's & BI',
+  relatorios_bi: "KPI's & BI",
   configuracoes: 'Configurações',
 };
 
