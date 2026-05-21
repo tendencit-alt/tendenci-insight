@@ -52,6 +52,9 @@ export interface ModuleShellProps {
   /** Ações globais do módulo (botões à direita do header). */
   headerActions?: ReactNode;
 
+  /** Barra de filtros padrão — renderizada entre as abas e o conteúdo, sempre visível. */
+  filters?: ReactNode;
+
   /** Slots de conteúdo. Quando ausente → placeholder "Em breve". */
   overview?: ReactNode;
   records?: ReactNode;
