@@ -27,8 +27,6 @@ import Orders from "./pages/Orders";
 import Suppliers from "./pages/Suppliers";
 import Clientes from "./pages/Clientes";
 import Leads from "./pages/Leads";
-import Propostas from "./pages/Propostas";
-import Contratos from "./pages/Contratos";
 import Comissoes from "./pages/Comissoes";
 import Notificacoes from "./pages/Notificacoes";
 import Inventory from "./pages/Inventory";
