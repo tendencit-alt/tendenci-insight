@@ -10,7 +10,7 @@ import { FolderCog, Info, Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-const PARENT_ACCOUNT_CODE = "2.3";
+const PARENT_ACCOUNT_CODE = "2.2";
 const TABLE_NAME = "fin_strategic_resource_account_configs";
 
 type ChartChild = { id: string; code: string; name: string };

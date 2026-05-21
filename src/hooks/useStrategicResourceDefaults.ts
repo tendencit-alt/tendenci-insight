@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-const PARENT_CODE = "2.3";
+const PARENT_CODE = "2.2";
 const TABLE_NAME = "fin_strategic_resource_account_configs";
 
 type ResourceType = "rt" | "vendedor" | "orcamentista" | "projetista" | "montador" | "producao";
