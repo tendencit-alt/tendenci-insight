@@ -93,7 +93,7 @@ export default function DashboardSimple() {
         <div className="flex items-center gap-3">
           <LayoutDashboard className="h-7 w-7 text-primary" />
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+            <h1 className="text-2xl font-bold tracking-tight">BI</h1>
             <p className="text-sm text-muted-foreground">Indicadores essenciais do mês</p>
           </div>
         </div>
