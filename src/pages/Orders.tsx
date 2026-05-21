@@ -161,6 +161,7 @@ export default function Orders() {
                 </Button>
               </div>
             }
+            reports={<OrdersReports />}
           />
 
           <CreateOrderDialog
