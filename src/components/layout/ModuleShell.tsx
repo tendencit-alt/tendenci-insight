@@ -105,6 +105,7 @@ export function ModuleShell({
   description,
   icon,
   headerActions,
+  filters,
   overview,
   records,
   actions,
