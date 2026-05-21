@@ -13,6 +13,7 @@ import { BulkEditOrdersDialog } from '@/components/orders/BulkEditOrdersDialog';
 import { OrderDetailSheet } from '@/components/orders/OrderDetailSheet';
 import { EditOrderDialog } from '@/components/orders/EditOrderDialog';
 import { DeleteOrderDialog } from '@/components/orders/DeleteOrderDialog';
+import { OrdersReports } from '@/components/orders/OrdersReports';
 import { Button } from '@/components/ui/button';
 import { Plus, ShoppingCart } from 'lucide-react';
 import { startOfMonth } from 'date-fns';
