@@ -136,7 +136,7 @@ const TEMPLATES: Template[] = [
   {
     id: 'comercial',
     label: 'Comercial / Vendas',
-    description: 'Edição no módulo Comercial, leitura em Dashboard e KPI's.',
+    description: "Edição no módulo Comercial, leitura em Dashboard e KPI's.",
     slug: 'comercial_template', display_name: 'Comercial', color: '#F59E0B', icon: 'briefcase',
     iconNode: <Briefcase className="w-4 h-4" />,
     buildPermissions: () => buildFor(m => {
