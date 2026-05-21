@@ -125,6 +125,9 @@ export default function Orders() {
                 Novo Pedido
               </Button>
             }
+            filters={
+              <OrdersFilters filters={filters} onFiltersChange={setFilters} />
+            }
             overview={
               <OrdersKPIs
                 orders={orders || []}
@@ -133,19 +136,16 @@ export default function Orders() {
               />
             }
             records={
-              <div className="space-y-4">
-                <OrdersFilters filters={filters} onFiltersChange={setFilters} />
-                <OrdersTable
-                  orders={orders || []}
-                  isLoading={isLoading}
-                  onSelectOrder={setSelectedOrderId}
-                  onEditOrder={setEditingOrderId}
-                  onDeleteOrder={(id, orderNumber) => setDeletingOrder({ id, orderNumber })}
-                  selectedIds={selectedOrderIds}
-                  onSelectedIdsChange={setSelectedOrderIds}
-                  onBulkEdit={() => setBulkEditOpen(true)}
-                />
-              </div>
+              <OrdersTable
+                orders={orders || []}
+                isLoading={isLoading}
+                onSelectOrder={setSelectedOrderId}
+                onEditOrder={setEditingOrderId}
+                onDeleteOrder={(id, orderNumber) => setDeletingOrder({ id, orderNumber })}
+                selectedIds={selectedOrderIds}
+                onSelectedIdsChange={setSelectedOrderIds}
+                onBulkEdit={() => setBulkEditOpen(true)}
+              />
             }
             actions={
               <div className="space-y-3">

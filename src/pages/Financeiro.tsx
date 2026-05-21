@@ -96,6 +96,7 @@ export default function Financeiro() {
             </DropdownMenu>
           </div>
         }
+        filters={<FinanceiroFilters filters={filters} onChange={setFilters} />}
         records={
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <div className="w-full rounded-xl bg-card border border-border p-1.5 overflow-x-auto">
@@ -127,7 +128,6 @@ export default function Financeiro() {
               </TabsList>
             </div>
 
-            <FinanceiroFilters filters={filters} onChange={setFilters} />
             <OrphanEntriesAlert />
 
             <TabsContent value="receivables" forceMount className={activeTab === "receivables" ? "space-y-4" : "hidden"}>

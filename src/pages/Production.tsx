@@ -187,39 +187,39 @@ export default function Production() {
             Nova OP
           </Button>
         }
+        filters={
+          <ProductionFilters
+            filters={filters}
+            onFiltersChange={setFilters}
+            onExport={handleExport}
+            onUnifyOps={() => setUnifyDialogOpen(true)}
+          />
+        }
         overview={<ProductionKPIs productionTypeId={currentTypeId} filters={filters} />}
         records={
-          <div className="space-y-3">
-            <ProductionFilters
-              filters={filters}
-              onFiltersChange={setFilters}
-              onExport={handleExport}
-              onUnifyOps={() => setUnifyDialogOpen(true)}
-            />
-            <Tabs value={selectedType || productionTypes[0]?.id || ''} onValueChange={setSelectedType} className="w-full">
-              <TabsList className="w-full justify-start overflow-x-auto">
-                {productionTypes.map((type) => (
-                  <TabsTrigger key={type.id} value={type.id} className="min-w-fit gap-2">
-                    <span
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: getTailwindColor(type.color) }}
-                    />
-                    {type.name}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-
+          <Tabs value={selectedType || productionTypes[0]?.id || ''} onValueChange={setSelectedType} className="w-full">
+            <TabsList className="w-full justify-start overflow-x-auto">
               {productionTypes.map((type) => (
-                <TabsContent key={type.id} value={type.id} className="mt-3">
-                  <ProductionKanban
-                    productionTypeId={type.id}
-                    filters={filters}
-                    onOrderClick={(orderId) => setSelectedOrderId(orderId)}
+                <TabsTrigger key={type.id} value={type.id} className="min-w-fit gap-2">
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: getTailwindColor(type.color) }}
                   />
-                </TabsContent>
+                  {type.name}
+                </TabsTrigger>
               ))}
-            </Tabs>
-          </div>
+            </TabsList>
+
+            {productionTypes.map((type) => (
+              <TabsContent key={type.id} value={type.id} className="mt-3">
+                <ProductionKanban
+                  productionTypeId={type.id}
+                  filters={filters}
+                  onOrderClick={(orderId) => setSelectedOrderId(orderId)}
+                />
+              </TabsContent>
+            ))}
+          </Tabs>
         }
         actions={
           <div className="space-y-3">

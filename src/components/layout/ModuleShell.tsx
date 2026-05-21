@@ -52,6 +52,9 @@ export interface ModuleShellProps {
   /** Ações globais do módulo (botões à direita do header). */
   headerActions?: ReactNode;
 
+  /** Barra de filtros padrão — renderizada entre as abas e o conteúdo, sempre visível. */
+  filters?: ReactNode;
+
   /** Slots de conteúdo. Quando ausente → placeholder "Em breve". */
   overview?: ReactNode;
   records?: ReactNode;
@@ -102,6 +105,7 @@ export function ModuleShell({
   description,
   icon,
   headerActions,
+  filters,
   overview,
   records,
   actions,
@@ -193,13 +197,19 @@ export function ModuleShell({
           })}
         </TabsList>
 
+        {filters && (
+          <div className="mt-3 rounded-lg border bg-card/50 px-3 py-2 md:px-4 md:py-3">
+            {filters}
+          </div>
+        )}
+
         {visibleSections.map((s) => (
           <TabsContent key={s.key} value={s.key} className="mt-4">
             {initial === s.key ? (
               <Suspense fallback={<Skeleton className="h-64 w-full" />}>
                 {s.key === "records" ? (
                   <div className="space-y-4">
-                    {overview /* KPIs movidos para o topo de Registros */}
+                    {overview /* KPIs ficam acima da tabela, abaixo dos filtros */}
                     {slots.records ?? <ComingSoon label={s.label} hint={s.hint} />}
                   </div>
                 ) : (

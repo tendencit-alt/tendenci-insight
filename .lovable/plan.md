@@ -1,60 +1,53 @@
-# Relatórios de Pedidos
+## Objetivo
+Mover os filtros para a faixa entre **abas (Registros/Relatórios…)** e os **cards de KPIs**, tornando-os a primeira ação visível em qualquer módulo. Essa posição vira o padrão do ERP via `ModuleShell`.
 
-Hoje a aba **Relatórios** em `/pedidos` está vazia ("Em breve"). A proposta é preencher esse slot com um painel didático focado no que o dono do negócio realmente precisa enxergar todo dia/mês — sem virar mais um "mini-BI" duplicando o Dashboard.
+## Layout final (padrão único)
 
-## Princípios
+```text
+[ Header: ícone + título + descrição ················· Ações ]
+[ Abas: Registros | Relatórios | … ]
+[ FILTROS — faixa única, sticky leve ]      ← nova posição padrão
+[ KPIs (cards) ]                             ← só na aba Registros
+[ Conteúdo da aba ativa (tabela / relatórios) ]
+```
 
-- **Tudo em uma tela só**, com um filtro global de período no topo (Hoje · 7d · Este mês · 30d · Customizado) — sem sub-abas.
-- **Cada bloco responde uma pergunta de negócio** em linguagem simples.
-- **Drill-down**: clicar em qualquer linha/barra abre os pedidos correspondentes na aba Registros já filtrados.
-- **Export CSV** por bloco (botão discreto no cabeçalho de cada card).
-- Visual coerente com o resto: tokens semânticos, sem gradientes/emojis.
+Regras:
+- Filtros aparecem sempre logo abaixo das abas, independente da aba ativa.
+- Os cards de KPIs continuam no topo de Registros, mas agora **abaixo** dos filtros.
+- Em Relatórios, os filtros do módulo se aplicam também ao dashboard (mesma fonte de verdade).
 
-## Os 6 relatórios
+## Mudanças
 
-### 1. Resumo do período (linha de KPIs)
-Faixa horizontal compacta no topo, comparando com o período anterior (variação % colorida):
-- Pedidos emitidos · Faturamento bruto · Ticket médio · Taxa de conversão (recebidos → aprovados) · Tempo médio até aprovação
+### 1. `src/components/layout/ModuleShell.tsx`
+- Adicionar slot opcional `filters?: ReactNode`.
+- Renderizar `filters` numa faixa fixa logo após o `TabsList` e antes do `TabsContent`, com estilo enxuto (`rounded-lg border bg-card/50 p-2 md:p-3`).
+- Remover a injeção implícita de `overview` dentro de `records` quando `filters` estiver presente — a ordem passa a ser: filtros → KPIs (overview) → tabela (records).
 
-### 2. Evolução de vendas
-Gráfico de barras (dia ou mês conforme período). Mostra: nº de pedidos + valor faturado. Tendência ajuda a ver sazonalidade.
+### 2. `src/pages/Orders.tsx`
+- Tirar `<OrdersFilters />` de dentro do slot `records`.
+- Passar via novo prop: `filters={<OrdersFilters filters={filters} onFiltersChange={setFilters} />}`.
+- `records` fica só com `<OrdersTable />`.
 
-### 3. Ranking de vendedores
-Tabela compacta: Vendedor · Pedidos · Faturamento · Ticket médio · % do total. Ordenada por faturamento. Atende quem precisa decidir comissão e meta.
+### 3. Aplicar o padrão nas demais páginas que já usam ModuleShell + filtros próprios
+Mover o componente de filtros de dentro de `records=` (ou de tabs internas) para o novo slot `filters=`:
+- `src/pages/Production.tsx` → `ProductionFilters`
+- `src/pages/Suppliers.tsx` → `SuppliersFilters`
+- `src/pages/Inventory.tsx` → `InventoryFilters`
+- `src/pages/Financeiro.tsx` → `FinanceiroFilters` (hoje renderizado no topo do records; passar para o slot)
+- `src/pages/Clientes.tsx`, `src/pages/Produtos.tsx`, `src/pages/Leads.tsx` → extrair a barra de filtros inline para o slot
 
-### 4. Vendas por Centro de Custo
-Tabela ou barras horizontais agregando `order_items.centro_custo`. Mostra de onde vem a receita (qual unidade de negócio vende mais). Útil para mix de produto.
+Páginas sem filtros estruturados (CRM, Cadastros, RH, Suprimentos, Projetos, Relatórios) ficam como estão — slot opcional, nada quebra.
 
-### 5. Top clientes
-Tabela: Cliente · Nº pedidos · Faturamento · Último pedido. Top 20. Identifica concentração de receita e ajuda em ações de relacionamento.
+### 4. Pequenos ajustes visuais
+- `OrdersFilters` perde a borda/wrap externos (o slot já fornece o container).
+- `OrdersKPIs` continua igual.
 
-### 6. Pedidos por status (funil)
-Mini-funil horizontal: Rascunho → Confirmado → Em produção → Entregue → Cancelado. Cada barra clicável abre Registros filtrado pelo status. Mostra onde os pedidos "travam".
+## Fora do escopo
+- Não mexer nas queries nem nos componentes de filtro em si (só na posição).
+- Não alterar layout do CRM (que já tem topbar própria com atalhos).
+- Sem mudanças em RLS, schema ou edge functions.
 
-## O que NÃO vamos colocar aqui
-
-- Análise financeira (DRE/Cashflow) → já vive no módulo BI.
-- Performance de produção (OPs, prazos) → módulo Produção.
-- Forecast de vendas → CRM (Visão Gestor).
-
-Isso evita duplicar dados e mantém o relatório de Pedidos focado em **o que foi vendido e por quem**.
-
-## Implementação (técnico)
-
-- Novo componente `src/components/orders/OrdersReports.tsx` agrupando os 6 blocos.
-- Componentes filhos por bloco: `ReportKPIs`, `ReportSalesChart`, `ReportSellerRanking`, `ReportByCostCenter`, `ReportTopClients`, `ReportStatusFunnel`.
-- Um único hook `useOrdersReports(filters)` consolida as queries direto no Supabase (regra do projeto: Dashboard/relatórios **sempre** via Postgres direto, nunca API externa).
-- Filtro global: período + vendedor + centro de custo, persistido em `?reportPeriod=` na URL.
-- `Orders.tsx` passa `<OrdersReports />` no slot `reports={...}` do `ModuleShell`.
-- Gráficos com `recharts` (já no projeto).
-- Export CSV usando função utilitária simples (sem nova lib).
-
-## Não-objetivos
-
-- Não criar nova tabela nem migração — todos os dados saem de `orders`, `order_items`, `clients`, `profiles`.
-- Não mexer em RLS (já restringe por tenant).
-- Não alterar o `ModuleShell`.
-
-## Próximo passo
-
-Se aprovado, implemento os 6 blocos em uma única passada e ligo na aba Relatórios. Algum bloco você quer cortar ou adicionar antes de eu começar?
+## Validação
+- Em `/pedidos?section=records`: filtros aparecem entre abas e os 4 cards (Pedidos / Valor Total / Em Produção / Ticket Médio).
+- Em `/pedidos?section=reports`: filtros continuam visíveis logo abaixo das abas, aplicando-se ao relatório.
+- Mesmo padrão verificado em Produção, Fornecedores, Estoque, Financeiro, Clientes, Produtos, Leads.
