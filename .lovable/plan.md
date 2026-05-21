@@ -1,90 +1,60 @@
-# Reestruturação visual do CRM
+# Relatórios de Pedidos
 
-Hoje a página `/crm` empilha 4 camadas de UI (cabeçalho → banner → abas do papel → conteúdo com filtros + 5 KPIs + alertas + sub-abas Board/Tabela/Performance). Isso gera ruído, filtros no meio da tela e o usuário leigo se perde.
+Hoje a aba **Relatórios** em `/pedidos` está vazia ("Em breve"). A proposta é preencher esse slot com um painel didático focado no que o dono do negócio realmente precisa enxergar todo dia/mês — sem virar mais um "mini-BI" duplicando o Dashboard.
 
-A proposta é manter o que já existe, mas reorganizar em **3 zonas claras**: Topbar fixo → KPIs compactos → Conteúdo único. Tudo no frontend, sem mexer em dados.
+## Princípios
 
-## Antes x Depois (Visão Consultor — a mais usada)
+- **Tudo em uma tela só**, com um filtro global de período no topo (Hoje · 7d · Este mês · 30d · Customizado) — sem sub-abas.
+- **Cada bloco responde uma pergunta de negócio** em linguagem simples.
+- **Drill-down**: clicar em qualquer linha/barra abre os pedidos correspondentes na aba Registros já filtrados.
+- **Export CSV** por bloco (botão discreto no cabeçalho de cada card).
+- Visual coerente com o resto: tokens semânticos, sem gradientes/emojis.
 
-Antes:
-```
-┌ Cabeçalho CRM + Switcher + Novo negócio
-├ Banner "Sparkles" (tagline)
-├ Abas: Meu funil | Propostas | Clientes
-│  └ Filtros (linha 1) ......... [Atualizar][Exportar][Novo Projeto]
-│     Card gigante "Valor Total Orçado"
-│     4 Cards KPI coloridos com emojis
-│     Toggle "Detalhes do funil" + 3 KPIs
-│     Bloco DeadlineAlerts
-│     Sub-abas: Board | Tabela | Performance
-│        └ Kanban
-```
+## Os 6 relatórios
 
-Depois:
-```
-┌ Topbar sticky:
-│   [Ícone] CRM   • Funil • Propostas • Clientes      [Visão ▾][🔍 Buscar][Filtros ▾][⚠ 3][Kanban|Tabela][+ Novo ▾]
-├ KPI Strip compacto (1 linha, sem emojis):
-│   Total Orçado · Recebidos · Em Orçamento · Aprovado · Perdido    [▾ mais]
-└ Área de conteúdo (uma única view ativa: Kanban OU Tabela)
-```
+### 1. Resumo do período (linha de KPIs)
+Faixa horizontal compacta no topo, comparando com o período anterior (variação % colorida):
+- Pedidos emitidos · Faturamento bruto · Ticket médio · Taxa de conversão (recebidos → aprovados) · Tempo médio até aprovação
 
-## Mudanças por arquivo
+### 2. Evolução de vendas
+Gráfico de barras (dia ou mês conforme período). Mostra: nº de pedidos + valor faturado. Tendência ajuda a ver sazonalidade.
 
-**`src/pages/CRM.tsx`**
-- Remover o banner Sparkles (vira `aria-description` discreta no header).
-- Header compacto em uma linha; `CRMViewSwitcher` vira um menu suspenso "Visão" pequeno (SDR / Consultor / Gestor) em vez de pílulas largas.
-- Adicionar `sticky top-0 bg-background/80 backdrop-blur z-20` na toolbar.
-- Botão "Novo negócio" vira um dropdown "+ Novo" (Negócio · Cliente · Lead) para juntar entradas hoje espalhadas.
+### 3. Ranking de vendedores
+Tabela compacta: Vendedor · Pedidos · Faturamento · Ticket médio · % do total. Ordenada por faturamento. Atende quem precisa decidir comissão e meta.
 
-**`src/components/crm/views/ConsultorView.tsx`** (principal alvo)
-- Abas (Funil / Propostas / Clientes) sobem para a toolbar do CRM como navegação principal — eliminando uma camada de tabs.
-- Aba Clientes deixa de ser um placeholder grande com botão "Abrir Clientes": vira simplesmente um redirect direto (`<Navigate to="/clientes"/>`) ou um link no menu superior.
+### 4. Vendas por Centro de Custo
+Tabela ou barras horizontais agregando `order_items.centro_custo`. Mostra de onde vem a receita (qual unidade de negócio vende mais). Útil para mix de produto.
 
-**`src/components/projects/PrjOverview.tsx`** (refatoração visual, sem mudar lógica de dados)
-- Remover linha de `ProjectsFilters` do meio da página. Filtros passam a viver no botão **"Filtros"** da topbar (Popover): período, etapa, responsável, busca. Apenas chips dos filtros ativos ficam visíveis abaixo da topbar.
-- Trocar o card-hero "Valor Total Orçado" + 4 cards + bloco expandível por **um KPI strip horizontal único** (`flex` com 5 itens, sem gradientes nem emojis, usando tokens semânticos). Um botão "▾ mais" abre os 3 KPIs secundários (Orçado / Apresentado / Em Negociação) em popover.
-- `DeadlineAlerts` deixa de ser bloco grande: vira um **badge ⚠ com contador na topbar** que abre um Sheet/Popover com a mesma lista.
-- Eliminar as sub-abas internas "Board | Tabela | Performance":
-  - Board/Tabela viram um **toggle de visualização** (ícones `LayoutGrid` / `Table`) na topbar — só um aparece por vez.
-  - "Desempenho dos Parceiros" sai daqui (já existe na Visão Gestor) → remove duplicidade.
-- Botões "Atualizar / Exportar / Novo Projeto" colapsam num menu "⋯" na topbar (Exportar e Atualizar) + o "+ Novo" global.
+### 5. Top clientes
+Tabela: Cliente · Nº pedidos · Faturamento · Último pedido. Top 20. Identifica concentração de receita e ajuda em ações de relacionamento.
 
-**`src/components/crm/CRMFilters.tsx`** e **`src/components/projects/ProjectsFilters.tsx`**
-- Sem mudança de API. Apenas serão renderizados dentro de um `Popover` "Filtros" em vez de na linha principal.
+### 6. Pedidos por status (funil)
+Mini-funil horizontal: Rascunho → Confirmado → Em produção → Entregue → Cancelado. Cada barra clicável abre Registros filtrado pelo status. Mostra onde os pedidos "travam".
 
-**`src/components/crm/views/SDRView.tsx`** e **`GestorView.tsx`**
-- Mesmo padrão: as TabsList saem do corpo e sobem para a topbar do CRM (uma única barra de navegação contextual ao papel selecionado).
-- GestorView: manter Performance e Analytics só aqui.
+## O que NÃO vamos colocar aqui
 
-## O que removemos (poluição)
+- Análise financeira (DRE/Cashflow) → já vive no módulo BI.
+- Performance de produção (OPs, prazos) → módulo Produção.
+- Forecast de vendas → CRM (Visão Gestor).
 
-- Banner "Sparkles" com tagline repetida do título.
-- Card-hero gigante "Valor Total Orçado" (vira item do strip).
-- Emojis nos KPIs (🔵 📥 📝 ✅ ❌ 💰 📊 🤝) → ícones lucide neutros.
-- Gradientes coloridos `from-primary/20 to-primary/5` e `border-l-4` coloridos → cards lisos com tokens.
-- Sub-abas Board/Tabela/Performance dentro de aba dentro de aba.
-- Placeholder "Sua carteira de clientes" com botão grande.
-- Botão "Limpar filtros" vermelho — vira um "x" discreto no chip.
-- Linha `ProjectsFilters` no meio da página.
-- `DeadlineAlerts` como bloco grande.
+Isso evita duplicar dados e mantém o relatório de Pedidos focado em **o que foi vendido e por quem**.
 
-## O que adicionamos (usabilidade)
+## Implementação (técnico)
 
-- **Topbar sticky** com tudo essencial em uma linha.
-- **Dropdown "+ Novo"** unificando Negócio/Cliente/Lead.
-- **Chips de filtros ativos** logo abaixo da topbar (clicar = remove).
-- **Toggle Kanban/Tabela** com persistência em `localStorage`.
-- **Badge ⚠ de alertas de prazo** na topbar com popover.
-- **Atalhos de teclado básicos** (`/` foca busca, `n` abre Novo).
-- **Estado vazio amigável** no Kanban quando filtros zeram resultados ("Nenhum negócio com esses filtros · limpar").
+- Novo componente `src/components/orders/OrdersReports.tsx` agrupando os 6 blocos.
+- Componentes filhos por bloco: `ReportKPIs`, `ReportSalesChart`, `ReportSellerRanking`, `ReportByCostCenter`, `ReportTopClients`, `ReportStatusFunnel`.
+- Um único hook `useOrdersReports(filters)` consolida as queries direto no Supabase (regra do projeto: Dashboard/relatórios **sempre** via Postgres direto, nunca API externa).
+- Filtro global: período + vendedor + centro de custo, persistido em `?reportPeriod=` na URL.
+- `Orders.tsx` passa `<OrdersReports />` no slot `reports={...}` do `ModuleShell`.
+- Gráficos com `recharts` (já no projeto).
+- Export CSV usando função utilitária simples (sem nova lib).
 
 ## Não-objetivos
 
-- Não mexer em RLS, queries, schema, edge functions.
-- Não alterar regras de pipeline, automações ou DRE.
-- Não renomear rotas existentes.
+- Não criar nova tabela nem migração — todos os dados saem de `orders`, `order_items`, `clients`, `profiles`.
+- Não mexer em RLS (já restringe por tenant).
+- Não alterar o `ModuleShell`.
 
 ## Próximo passo
 
-Posso já implementar exatamente este desenho, ou prefere que eu mostre 2-3 direções visuais renderizadas (mais minimal vs. mais "dashboard") antes de aplicar?
+Se aprovado, implemento os 6 blocos em uma única passada e ligo na aba Relatórios. Algum bloco você quer cortar ou adicionar antes de eu começar?
