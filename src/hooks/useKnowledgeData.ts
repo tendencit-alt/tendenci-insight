@@ -117,7 +117,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   fluxo_de_caixa: 'Fluxo de Caixa',
   conciliacao_bancaria: 'Conciliação Bancária',
   crm: 'CRM',
-  relatorios: 'KPI's',
+  relatorios: "KPI's",
   usuarios: 'Usuários',
   integracoes: 'Integrações',
   automacoes: 'Automações',

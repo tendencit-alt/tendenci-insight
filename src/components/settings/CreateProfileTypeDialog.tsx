@@ -136,7 +136,7 @@ const TEMPLATES: Template[] = [
   {
     id: 'comercial',
     label: 'Comercial / Vendas',
-    description: 'Edição no módulo Comercial, leitura em Dashboard e KPI's.',
+    description: "Edição no módulo Comercial, leitura em Dashboard e KPI's.",
     slug: 'comercial_template', display_name: 'Comercial', color: '#F59E0B', icon: 'briefcase',
     iconNode: <Briefcase className="w-4 h-4" />,
     buildPermissions: () => buildFor(m => {
@@ -446,7 +446,7 @@ export function CreateProfileTypeDialog({
                 const MODULE_LABELS: Record<string, string> = {
                   dashboard_executivo: 'Dashboard Executivo', comercial: 'Comercial', operacional: 'Operacional',
                   financeiro: 'Financeiro', controladoria: 'Controladoria', planejamento: 'Planejamento',
-                  cadastros: 'Cadastros', relatorios_bi: 'KPI's & BI', configuracoes: 'Configurações',
+                  cadastros: 'Cadastros', relatorios_bi: "KPI's & BI", configuracoes: 'Configurações',
                 };
                 const rows = ALL_MODULES
                   .map(m => {
