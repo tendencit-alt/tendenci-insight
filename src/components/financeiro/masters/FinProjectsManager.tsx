@@ -514,6 +514,12 @@ export function FinProjectsManager() {
                   const percent = budget > 0 ? (realized / budget) * 100 : 0;
                   const budgetStatus = getBudgetStatus(budget, realized);
                   const entryCount = realizedByProject[project.id]?.entries.length || 0;
+                  const valorVenda = orderTotalsByProject?.[project.id] || 0;
+                  const projectPct = project.budget_percent !== null && project.budget_percent !== undefined
+                    ? Number(project.budget_percent)
+                    : Number(companySettings?.default_project_budget_percent || 60);
+                  const pctEditing = pctEdits[project.id] !== undefined;
+                  const pctValue = pctEditing ? pctEdits[project.id] : String(projectPct);
 
                   return (
                     <TableRow key={project.id}>
@@ -525,6 +531,35 @@ export function FinProjectsManager() {
                             <span className="text-xs text-muted-foreground ml-2">
                               ({entryCount} lançamentos)
                             </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {valorVenda > 0 ? formatCurrency(valorVenda) : "-"}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={0.5}
+                            value={pctValue}
+                            onChange={(e) => setPctEdits((p) => ({ ...p, [project.id]: e.target.value }))}
+                            disabled={savingPctId === project.id}
+                            className="h-7 w-16 text-right text-xs"
+                          />
+                          <span className="text-xs text-muted-foreground">%</span>
+                          {pctEditing && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-1.5"
+                              disabled={savingPctId === project.id}
+                              onClick={() => saveProjectPct(project.id)}
+                            >
+                              {savingPctId === project.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                            </Button>
                           )}
                         </div>
                       </TableCell>
@@ -556,12 +591,6 @@ export function FinProjectsManager() {
                             {budgetStatus && <budgetStatus.icon className={`h-4 w-4 ${budgetStatus.color}`} />}
                           </div>
                         ) : "-"}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {project.start_date && format(new Date(project.start_date), "dd/MM/yy", { locale: ptBR })}
-                        {project.start_date && project.end_date && " - "}
-                        {project.end_date && format(new Date(project.end_date), "dd/MM/yy", { locale: ptBR })}
-                        {!project.start_date && !project.end_date && "-"}
                       </TableCell>
                       <TableCell>{getStatusBadge(project.status)}</TableCell>
                       <TableCell>
