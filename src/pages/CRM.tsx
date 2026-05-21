@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Target, Plus } from "lucide-react";
+import { Target, Plus, Sparkles, LayoutGrid, FileText, Users } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { CRMViewSwitcher, CRM_VIEWS, type CRMView } from "@/components/crm/CRMViewSwitcher";
 import { SDRView } from "@/components/crm/views/SDRView";
 import { ConsultorView } from "@/components/crm/views/ConsultorView";
 import { GestorView } from "@/components/crm/views/GestorView";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
+import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "crm_view_preference";
 
@@ -21,10 +22,18 @@ function detectDefaultView(role: string | null | undefined, isMaster: boolean): 
   return "consultor";
 }
 
+type Shortcut = { key: string; label: string; icon: any; view: CRMView; tab: string };
+const SHORTCUTS: Shortcut[] = [
+  { key: "leads", label: "Leads", icon: Sparkles, view: "sdr", tab: "leads" },
+  { key: "prospeccao", label: "Prospecção", icon: LayoutGrid, view: "sdr", tab: "prospeccao" },
+  { key: "propostas", label: "Propostas", icon: FileText, view: "consultor", tab: "propostas" },
+  { key: "contratos", label: "Contratos", icon: Users, view: "consultor", tab: "clientes" },
+];
+
 export default function CRM() {
   const { isMaster } = usePermissions();
   const userRole: string | null = null;
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const viewParam = searchParams.get("view");
   const tabParam = searchParams.get("tab") || undefined;
   const [view, setView] = useState<CRMView>(() => {
@@ -48,6 +57,24 @@ export default function CRM() {
 
   const current = CRM_VIEWS.find((v) => v.key === view)!;
 
+  const goTo = (s: Shortcut) => {
+    setView(s.view);
+    const next = new URLSearchParams(searchParams);
+    next.set("view", s.view);
+    next.set("tab", s.tab);
+    setSearchParams(next, { replace: true });
+  };
+
+  const handleViewChange = (v: CRMView) => {
+    setView(v);
+    const next = new URLSearchParams(searchParams);
+    next.set("view", v);
+    next.delete("tab");
+    setSearchParams(next, { replace: true });
+  };
+
+  const activeShortcut = SHORTCUTS.find((s) => s.view === view && s.tab === tabParam)?.key;
+
   return (
     <DashboardLayout>
       <div className="space-y-4">
@@ -62,20 +89,50 @@ export default function CRM() {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <CRMViewSwitcher value={view} onChange={setView} />
+              <CRMViewSwitcher value={view} onChange={handleViewChange} />
               <Button onClick={() => setCreateOpen(true)} size="sm" className="gap-1.5">
                 <Plus className="h-4 w-4" />
                 Novo
               </Button>
             </div>
           </div>
+
+          {/* Atalhos rápidos — navegação interna sem sair do CRM */}
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] uppercase tracking-wide text-muted-foreground mr-1">
+              Atalhos:
+            </span>
+            {SHORTCUTS.map((s) => {
+              const Icon = s.icon;
+              const active = activeShortcut === s.key;
+              return (
+                <button
+                  key={s.key}
+                  onClick={() => goTo(s)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors",
+                    active
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background hover:bg-muted text-foreground border-border"
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* View content */}
+        {/* View content — key força remount ao trocar tab via atalho */}
         <div>
-          {view === "sdr" && <SDRView initialTab={tabParam} />}
-          {view === "consultor" && <ConsultorView initialTab={tabParam} />}
-          {view === "gestor" && <GestorView initialTab={tabParam} />}
+          {view === "sdr" && <SDRView key={`sdr-${tabParam ?? "default"}`} initialTab={tabParam} />}
+          {view === "consultor" && (
+            <ConsultorView key={`consultor-${tabParam ?? "default"}`} initialTab={tabParam} />
+          )}
+          {view === "gestor" && (
+            <GestorView key={`gestor-${tabParam ?? "default"}`} initialTab={tabParam} />
+          )}
         </div>
 
         <CreateProjectDialog
