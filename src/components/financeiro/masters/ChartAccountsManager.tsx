@@ -376,6 +376,7 @@ export function ChartAccountsManager() {
       const { data } = await supabase
         .from("fin_chart_accounts")
         .select("*")
+        .not("tenant_id", "is", null)
         .order("code");
 
       const visibleAccounts = data || [];
@@ -756,6 +757,7 @@ export function ChartAccountsManager() {
       const { data: freshAccounts } = await supabase
         .from("fin_chart_accounts")
         .select("*")
+        .not("tenant_id", "is", null)
         .order("code");
 
       if (!freshAccounts) throw new Error("Erro ao buscar dados");
@@ -960,6 +962,7 @@ export function ChartAccountsManager() {
       const { data: freshAccounts } = await supabase
         .from("fin_chart_accounts")
         .select("*")
+        .not("tenant_id", "is", null)
         .order("code");
 
       if (!freshAccounts) throw new Error("Erro ao buscar dados atualizados");
@@ -1131,6 +1134,7 @@ export function ChartAccountsManager() {
           const { data: freshAccounts } = await supabase
             .from("fin_chart_accounts")
             .select("*")
+            .not("tenant_id", "is", null)
             .order("code");
 
           if (!freshAccounts) throw new Error("Erro ao buscar dados");
@@ -1155,7 +1159,11 @@ export function ChartAccountsManager() {
           await applyCodeUpdates(oldParentRenumber);
 
           // Renumber new parent's siblings
-          const { data: finalAccounts } = await supabase.from("fin_chart_accounts").select("*").order("code");
+          const { data: finalAccounts } = await supabase
+            .from("fin_chart_accounts")
+            .select("*")
+            .not("tenant_id", "is", null)
+            .order("code");
           if (finalAccounts) {
             const newParentRenumber = fullRenumberSiblings(parentId, finalAccounts);
             await applyCodeUpdates(newParentRenumber);
