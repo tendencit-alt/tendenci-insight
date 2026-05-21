@@ -2634,6 +2634,7 @@ export type Database = {
           cnpj: string | null
           company_name: string
           created_at: string
+          default_project_budget_percent: number
           email: string | null
           id: string
           inscricao_estadual: string | null
@@ -2655,6 +2656,7 @@ export type Database = {
           cnpj?: string | null
           company_name?: string
           created_at?: string
+          default_project_budget_percent?: number
           email?: string | null
           id?: string
           inscricao_estadual?: string | null
@@ -2676,6 +2678,7 @@ export type Database = {
           cnpj?: string | null
           company_name?: string
           created_at?: string
+          default_project_budget_percent?: number
           email?: string | null
           id?: string
           inscricao_estadual?: string | null
