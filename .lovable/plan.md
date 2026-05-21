@@ -1,53 +1,51 @@
-## Objetivo
-Mover os filtros para a faixa entre **abas (Registros/Relatórios…)** e os **cards de KPIs**, tornando-os a primeira ação visível em qualquer módulo. Essa posição vira o padrão do ERP via `ModuleShell`.
+## Causa raiz
 
-## Layout final (padrão único)
+A tabela `fin_chart_accounts` tem 2 conjuntos de policies de RLS conflitantes:
 
-```text
-[ Header: ícone + título + descrição ················· Ações ]
-[ Abas: Registros | Relatórios | … ]
-[ FILTROS — faixa única, sticky leve ]      ← nova posição padrão
-[ KPIs (cards) ]                             ← só na aba Registros
-[ Conteúdo da aba ativa (tabela / relatórios) ]
+- ✅ `tenant_isolation_select_fin_chart_accounts` — correta (mostra tenant + templates `is_core`)
+- ❌ `Authenticated users can view fin_chart_accounts` com `USING (true)` — **vaza tudo**, inclusive os 79 registros template (`tenant_id IS NULL`)
+
+Resultado: o usuário vê **a linha do próprio tenant + a linha do template** lado a lado. A Raiz 2 aparece duplicada (e na verdade Raízes 1, 3, 4, 5 e 6 também estão duplicando — só não foram notadas ainda).
+
+Estado atual dos dados:
+- Tenant `a1b2…7890` tem: `1`, `2`, `2.1` + filhos CMV, `3`, `4`, `5`, `6` (raízes vazias)
+- Template (`tenant_id NULL`) tem: estrutura completa (79 contas) com `2.1` CMV, `2.2` Impostos, `2.3` Taxas, `2.4` Custos diretos, `2.5` Comissões, `2.6` Antecipação, etc.
+
+## Correções
+
+### 1. Remover policies permissivas (RLS)
+Migration removendo:
+- `Authenticated users can view fin_chart_accounts` (USING true)
+- `Authenticated users can update fin_chart_accounts` (USING true)
+- `Authenticated users can insert fin_chart_accounts` (sem qualificação)
+- `Tenant users delete fin_chart_accounts` (duplicado de `tenant_isolation_delete_…`)
+
+Sobram apenas as `tenant_isolation_*` + a leitura pública dos templates core, que é o comportamento correto multi-tenant.
+
+### 2. Completar a estrutura do tenant
+Após a correção de RLS, o tenant deixa de ver as contas template e fica só com `1`, `2`, `2.1` (+ filhos CMV), `3`, `4`, `5`, `6`. Precisa receber o restante via cópia da árvore template:
+
+- `2.2 Impostos sobre venda` (+ 4 filhos: ICMS, ISS, PIS/COFINS, Simples Nacional)
+- `2.3 Taxas sobre venda` (+ 4 filhos: cartão crédito, cartão débito, Pix, boleto)
+- `2.4 Custos diretos da venda` (+ filhos atuais do template)
+- `2.5 Comissões sobre venda` (+ filhos)
+- `2.6 Antecipação de recebíveis` (+ filhos)
+- E também os filhos de `1`, `3`, `4`, `5`, `6` que existem no template mas não no tenant
+
+Será feito com um bloco recursivo que clona toda subárvore template → tenant, preservando `code`, `name`, `parent_id` (remapeando para os novos UUIDs) e demais campos, pulando `code`s que o tenant já tem.
+
+### 3. Verificação
+Após a migration:
+```sql
+SELECT code, name FROM fin_chart_accounts 
+WHERE tenant_id = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+ORDER BY code;
 ```
+Deve listar a estrutura completa sem duplicatas, e a UI mostrar uma única Raiz 2.
 
-Regras:
-- Filtros aparecem sempre logo abaixo das abas, independente da aba ativa.
-- Os cards de KPIs continuam no topo de Registros, mas agora **abaixo** dos filtros.
-- Em Relatórios, os filtros do módulo se aplicam também ao dashboard (mesma fonte de verdade).
+## Detalhes técnicos
 
-## Mudanças
-
-### 1. `src/components/layout/ModuleShell.tsx`
-- Adicionar slot opcional `filters?: ReactNode`.
-- Renderizar `filters` numa faixa fixa logo após o `TabsList` e antes do `TabsContent`, com estilo enxuto (`rounded-lg border bg-card/50 p-2 md:p-3`).
-- Remover a injeção implícita de `overview` dentro de `records` quando `filters` estiver presente — a ordem passa a ser: filtros → KPIs (overview) → tabela (records).
-
-### 2. `src/pages/Orders.tsx`
-- Tirar `<OrdersFilters />` de dentro do slot `records`.
-- Passar via novo prop: `filters={<OrdersFilters filters={filters} onFiltersChange={setFilters} />}`.
-- `records` fica só com `<OrdersTable />`.
-
-### 3. Aplicar o padrão nas demais páginas que já usam ModuleShell + filtros próprios
-Mover o componente de filtros de dentro de `records=` (ou de tabs internas) para o novo slot `filters=`:
-- `src/pages/Production.tsx` → `ProductionFilters`
-- `src/pages/Suppliers.tsx` → `SuppliersFilters`
-- `src/pages/Inventory.tsx` → `InventoryFilters`
-- `src/pages/Financeiro.tsx` → `FinanceiroFilters` (hoje renderizado no topo do records; passar para o slot)
-- `src/pages/Clientes.tsx`, `src/pages/Produtos.tsx`, `src/pages/Leads.tsx` → extrair a barra de filtros inline para o slot
-
-Páginas sem filtros estruturados (CRM, Cadastros, RH, Suprimentos, Projetos, Relatórios) ficam como estão — slot opcional, nada quebra.
-
-### 4. Pequenos ajustes visuais
-- `OrdersFilters` perde a borda/wrap externos (o slot já fornece o container).
-- `OrdersKPIs` continua igual.
-
-## Fora do escopo
-- Não mexer nas queries nem nos componentes de filtro em si (só na posição).
-- Não alterar layout do CRM (que já tem topbar própria com atalhos).
-- Sem mudanças em RLS, schema ou edge functions.
-
-## Validação
-- Em `/pedidos?section=records`: filtros aparecem entre abas e os 4 cards (Pedidos / Valor Total / Em Produção / Ticket Médio).
-- Em `/pedidos?section=reports`: filtros continuam visíveis logo abaixo das abas, aplicando-se ao relatório.
-- Mesmo padrão verificado em Produção, Fornecedores, Estoque, Financeiro, Clientes, Produtos, Leads.
+- Tipo: 1 migration SQL (DROP POLICY + DO block recursivo de cópia)
+- Sem alteração de código front-end (a query atual já filtra por `order("code")` e RLS fará o resto)
+- Sem impacto em outros tenants (só existe 1 tenant real hoje)
+- Templates (`tenant_id NULL`, `is_core=true`) permanecem intactos para futuros tenants
