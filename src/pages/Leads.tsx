@@ -90,6 +90,18 @@ const SOURCES = [
 ];
 
 export default function Leads() {
+  return (
+    <ProtectedRoute>
+      <DashboardLayout>
+        <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6">
+          <LeadsContent />
+        </div>
+      </DashboardLayout>
+    </ProtectedRoute>
+  );
+}
+
+export function LeadsContent() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -149,10 +161,8 @@ export default function Leads() {
   };
 
   return (
-    <ProtectedRoute>
-      <DashboardLayout>
-        <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6">
-          <ModuleShell
+    <>
+    <ModuleShell
             moduleKey="leads"
             title="Leads"
             description="Pré-qualificação de contatos antes de virarem clientes."
@@ -353,11 +363,11 @@ export default function Leads() {
               if (dealId) navigate(`/crm-comercial?dealId=${dealId}`);
             }}
           />
-        </div>
-      </DashboardLayout>
-    </ProtectedRoute>
+    </>
   );
 }
+
+
 
 /* ----------------- Create Lead Dialog ----------------- */
 function CreateLeadDialog({

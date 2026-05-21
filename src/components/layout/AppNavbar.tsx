@@ -98,7 +98,7 @@ const ERP_MODULES: ModuleGroup[] = [
       { label: "Pedidos", route: "/pedidos", icon: "ClipboardList", module: "pedidos", available: true },
       { label: "Clientes", route: "/clientes", icon: "Users", module: "comercial", available: true },
       { label: "Catálogo de Produtos", route: "/catalogo", icon: "BookOpen", module: "comercial", available: true },
-      { label: "Leads", route: "/leads", icon: "UserPlus", module: "comercial", available: true },
+      { label: "Leads", route: "/crm?view=sdr&tab=leads", icon: "UserPlus", module: "comercial", available: true },
       { label: "Comissões", route: "/comissoes", icon: "Percent", module: "comercial", available: false },
     ],
   },

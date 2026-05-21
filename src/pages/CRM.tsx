@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Target, Plus } from "lucide-react";
@@ -23,12 +24,23 @@ function detectDefaultView(role: string | null | undefined, isMaster: boolean): 
 export default function CRM() {
   const { isMaster } = usePermissions();
   const userRole: string | null = null;
+  const [searchParams] = useSearchParams();
+  const viewParam = searchParams.get("view");
+  const tabParam = searchParams.get("tab") || undefined;
   const [view, setView] = useState<CRMView>(() => {
+    if (viewParam === "sdr" || viewParam === "consultor" || viewParam === "gestor") return viewParam;
     const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
     if (stored === "sdr" || stored === "consultor" || stored === "gestor") return stored;
     return detectDefaultView(userRole, isMaster);
   });
   const [createOpen, setCreateOpen] = useState(false);
+
+  // Sync view if URL changes
+  useEffect(() => {
+    if (viewParam === "sdr" || viewParam === "consultor" || viewParam === "gestor") {
+      setView(viewParam);
+    }
+  }, [viewParam]);
 
   useEffect(() => {
     if (typeof window !== "undefined") localStorage.setItem(STORAGE_KEY, view);
@@ -61,7 +73,7 @@ export default function CRM() {
 
         {/* View content */}
         <div>
-          {view === "sdr" && <SDRView />}
+          {view === "sdr" && <SDRView initialTab={tabParam} />}
           {view === "consultor" && <ConsultorView />}
           {view === "gestor" && <GestorView />}
         </div>
