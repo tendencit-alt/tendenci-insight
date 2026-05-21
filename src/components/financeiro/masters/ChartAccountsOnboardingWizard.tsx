@@ -51,9 +51,13 @@ export function ChartAccountsOnboardingWizard({
   const [saving, setSaving] = useState(false);
 
   const { data: accounts } = useQuery({
-    queryKey: ["fin-chart-accounts-all"],
+    queryKey: ["fin-chart-accounts-onboarding"],
     queryFn: async () => {
-      const { data } = await supabase.from("fin_chart_accounts").select("*").order("code");
+      const { data } = await supabase
+        .from("fin_chart_accounts")
+        .select("*")
+        .not("tenant_id", "is", null)
+        .order("code");
       return data || [];
     },
   });
@@ -143,7 +147,10 @@ export function ChartAccountsOnboardingWizard({
       }
 
       localStorage.setItem(COMPLETION_KEY, new Date().toISOString());
-      await queryClient.invalidateQueries({ queryKey: ["fin-chart-accounts-all"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["fin-chart-accounts-all"] }),
+        queryClient.invalidateQueries({ queryKey: ["fin-chart-accounts-onboarding"] }),
+      ]);
       toast.success(
         validDrafts.length || hiddenIds.size
           ? `Plano configurado! ${validDrafts.length} conta(s) criada(s), ${hiddenIds.size} ocultada(s).`
