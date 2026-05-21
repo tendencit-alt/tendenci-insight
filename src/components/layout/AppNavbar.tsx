@@ -94,13 +94,11 @@ const ERP_MODULES: ModuleGroup[] = [
     icon: ShoppingCart,
     requiredModules: ["pedidos"],
     items: [
-      { label: "CRM & Pipeline", route: "/crm-comercial", icon: "Target", module: "comercial", available: true },
-      { label: "Leads", route: "/leads", icon: "UserPlus", module: "comercial", available: true },
-      { label: "Orçamentos", route: "/propostas", icon: "FileText", module: "comercial", available: false },
+      { label: "CRM", route: "/crm", icon: "Target", module: "comercial", available: true },
       { label: "Pedidos", route: "/pedidos", icon: "ClipboardList", module: "pedidos", available: true },
-      { label: "Contratos", route: "/contratos", icon: "FileSignature", module: "comercial", available: false },
       { label: "Clientes", route: "/clientes", icon: "Users", module: "comercial", available: true },
       { label: "Catálogo de Produtos", route: "/catalogo", icon: "BookOpen", module: "comercial", available: true },
+      { label: "Leads", route: "/leads", icon: "UserPlus", module: "comercial", available: true },
       { label: "Comissões", route: "/comissoes", icon: "Percent", module: "comercial", available: false },
     ],
   },
@@ -110,7 +108,6 @@ const ERP_MODULES: ModuleGroup[] = [
     icon: Factory,
     requiredModules: ["producao"],
     items: [
-      { label: "Projetos", route: "/projetos-op", icon: "FolderKanban", available: false },
       { label: "Produção", route: "/producao", icon: "Factory", module: "producao", available: true },
       { label: "Ordens de Produção", route: "/ordens-producao", icon: "ListChecks", available: false },
       { label: "Execução / Obras", route: "/execucao-obras", icon: "HardHat", available: false },
