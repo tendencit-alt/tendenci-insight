@@ -161,15 +161,6 @@ export function LeadsContent() {
   };
 
   return (
-    <ProtectedRoute>
-      <DashboardLayout>
-        <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6">
-          <ModuleShell
-            moduleKey="leads"
-            title="Leads"
-            description="Pré-qualificação de contatos antes de virarem clientes."
-            icon={<Sparkles className="h-5 w-5" />}
-  return (
     <ModuleShell
             moduleKey="leads"
             title="Leads"
