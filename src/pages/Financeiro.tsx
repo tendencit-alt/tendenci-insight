@@ -127,7 +127,6 @@ export default function Financeiro() {
               </TabsList>
             </div>
 
-            <FinanceiroFilters filters={filters} onChange={setFilters} />
             <OrphanEntriesAlert />
 
             <TabsContent value="receivables" forceMount className={activeTab === "receivables" ? "space-y-4" : "hidden"}>
