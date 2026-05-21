@@ -118,11 +118,12 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
   });
 
   const { data: chartAccounts } = useQuery({
-    queryKey: ["fin-chart-accounts-all"],
+    queryKey: ["fin-chart-accounts-options"],
     queryFn: async () => {
       const { data } = await supabase
         .from("fin_chart_accounts")
         .select("id, code, name, nature")
+        .not("tenant_id", "is", null)
         .eq("active", true)
         .order("code");
       return data || [];
