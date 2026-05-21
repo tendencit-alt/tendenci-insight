@@ -71,10 +71,10 @@ const ROLE_CONFIGS: Record<RoleKey, RoleConfig> = {
   financeiro: {
     autoExpandGroups: ["Financeiro"],
     highlightItems: ["/financeiro", "/cadastros-financeiros", "/bi-dashboard"],
-    dimGroups: ["Operações", "Vendas"],
+    dimGroups: ["Operações", "Comercial"],
   },
   comercial: {
-    autoExpandGroups: ["Vendas"],
+    autoExpandGroups: ["Comercial"],
     highlightItems: ["/pedidos", "/crm"],
     dimGroups: ["Operações"],
   },
