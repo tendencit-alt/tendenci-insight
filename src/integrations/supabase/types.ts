@@ -6814,6 +6814,7 @@ export type Database = {
           is_system_default: boolean
           name: string
           owner_id: string | null
+          parent_id: string | null
           tenant_id: string | null
         }
         Insert: {
@@ -6824,6 +6825,7 @@ export type Database = {
           is_system_default?: boolean
           name: string
           owner_id?: string | null
+          parent_id?: string | null
           tenant_id?: string | null
         }
         Update: {
@@ -6834,6 +6836,7 @@ export type Database = {
           is_system_default?: boolean
           name?: string
           owner_id?: string | null
+          parent_id?: string | null
           tenant_id?: string | null
         }
         Relationships: [
@@ -6842,6 +6845,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_cost_centers_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
             referencedColumns: ["id"]
           },
           {
@@ -22726,6 +22736,10 @@ export type Database = {
       run_capacity_sweep: { Args: never; Returns: Json }
       run_inactive_architects_check: { Args: never; Returns: Json }
       run_predictive_sweep: { Args: never; Returns: Json }
+      seed_default_cost_centers: {
+        Args: { _tenant_id: string }
+        Returns: number
+      }
       seed_tenant_profile_templates: { Args: never; Returns: number }
       seed_tenant_profile_types: { Args: never; Returns: number }
       set_active_tenant: { Args: { target_tenant_id: string }; Returns: string }
