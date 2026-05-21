@@ -158,9 +158,9 @@ const App = () => (
               <Route path="/leads" element={<ProtectedRoute><PermissionGuard module="comercial"><Leads /></PermissionGuard></ProtectedRoute>} />
               {/* CRM unificado (substitui projetos, crm-comercial, prospecção, propostas, contratos) */}
               <Route path="/crm" element={<ProtectedRoute><PermissionGuard module="comercial"><CRM /></PermissionGuard></ProtectedRoute>} />
-              <Route path="/crm-comercial" element={<Navigate to="/crm" replace />} />
-              <Route path="/propostas" element={<Navigate to="/crm" replace />} />
-              <Route path="/contratos" element={<Navigate to="/crm" replace />} />
+              <Route path="/crm-comercial" element={<Navigate to="/crm?view=gestor&tab=pipeline" replace />} />
+              <Route path="/propostas" element={<Navigate to="/crm?view=consultor&tab=propostas" replace />} />
+              <Route path="/contratos" element={<Navigate to="/crm?view=consultor&tab=clientes" replace />} />
               <Route path="/comissoes" element={<ProtectedRoute><PermissionGuard module="comercial"><Comissoes /></PermissionGuard></ProtectedRoute>} />
               <Route path="/notificacoes" element={<ProtectedRoute><Notificacoes /></ProtectedRoute>} />
               <Route path="/estoque" element={<ProtectedRoute><PermissionGuard module="estoque"><Inventory /></PermissionGuard></ProtectedRoute>} />
