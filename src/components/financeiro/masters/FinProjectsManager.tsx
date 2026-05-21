@@ -259,6 +259,60 @@ export function FinProjectsManager() {
     }
   };
 
+  const saveGlobalPct = async () => {
+    const val = parseFloat(globalPct.replace(",", "."));
+    if (isNaN(val) || val < 0 || val > 100) {
+      toast.error("Informe um percentual entre 0 e 100");
+      return;
+    }
+    setSavingGlobalPct(true);
+    try {
+      if (companySettings?.id) {
+        const { error } = await supabase
+          .from("company_settings")
+          .update({ default_project_budget_percent: val })
+          .eq("id", companySettings.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("company_settings")
+          .insert({ default_project_budget_percent: val } as any);
+        if (error) throw error;
+      }
+      toast.success("Percentual global salvo!");
+      qc.invalidateQueries({ queryKey: ["company-settings-budget-pct"] });
+    } catch (e: any) {
+      toast.error("Erro: " + e.message);
+    } finally {
+      setSavingGlobalPct(false);
+    }
+  };
+
+  const saveProjectPct = async (projectId: string) => {
+    const raw = pctEdits[projectId];
+    const val = parseFloat((raw || "").replace(",", "."));
+    if (isNaN(val) || val < 0 || val > 100) {
+      toast.error("Informe um percentual entre 0 e 100");
+      return;
+    }
+    setSavingPctId(projectId);
+    try {
+      const { error } = await supabase
+        .from("fin_projects")
+        .update({ budget_percent: val })
+        .eq("id", projectId);
+      if (error) throw error;
+      setPctEdits((p) => { const c = { ...p }; delete c[projectId]; return c; });
+      toast.success("Percentual atualizado!");
+      refetch();
+    } catch (e: any) {
+      toast.error("Erro: " + e.message);
+    } finally {
+      setSavingPctId(null);
+    }
+  };
+
+
   const formatCurrency = (value: number) => {
     return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   };
