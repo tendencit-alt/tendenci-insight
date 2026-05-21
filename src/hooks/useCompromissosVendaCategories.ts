@@ -30,6 +30,7 @@ export function useCompromissosVendaCategories(enabled = true) {
         .select("id")
         .eq("code", PARENT_CODE)
         .eq("active", true)
+        .not("tenant_id", "is", null)
         .maybeSingle();
 
       if (!parent) return [];

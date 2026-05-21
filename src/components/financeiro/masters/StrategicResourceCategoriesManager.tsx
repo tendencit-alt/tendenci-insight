@@ -35,6 +35,7 @@ export function StrategicResourceCategoriesManager() {
         .select("id")
         .eq("code", PARENT_ACCOUNT_CODE)
         .eq("active", true)
+        .not("tenant_id", "is", null)
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -131,7 +132,7 @@ export function StrategicResourceCategoriesManager() {
         </CardTitle>
         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
           <Info className="h-3 w-3 shrink-0" />
-          Espelha as categorias do Plano de Contas (2.3). Para adicionar ou renomear, edite o Plano de Contas.
+          Espelha as categorias do Plano de Contas (2.2). Para adicionar ou renomear, edite o Plano de Contas.
         </p>
       </CardHeader>
       <CardContent className="space-y-1.5">
@@ -141,7 +142,7 @@ export function StrategicResourceCategoriesManager() {
           </div>
         ) : !children?.length ? (
           <p className="text-sm text-muted-foreground py-4 text-center">
-            Nenhuma subcategoria encontrada em 2.3 - Compromissos Sobre Vendas.
+            Nenhuma subcategoria encontrada em 2.2 - Custos diretos da venda.
           </p>
         ) : (
           children.map((child) => {
