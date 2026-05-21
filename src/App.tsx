@@ -55,10 +55,10 @@ import DashboardSimple from "./pages/DashboardSimple";
 import DashboardBI from "./pages/DashboardBI";
 import RecursosHumanos from "./pages/RecursosHumanos";
 import ProducaoOperacoes from "./pages/ProducaoOperacoes";
-import Projetos from "./pages/Projetos";
+
 import CRM from "./pages/CRM";
 import Suprimentos from "./pages/Suprimentos";
-import CRMCommercial from "./pages/CRMCommercial";
+
 import Planning from "./pages/Planning";
 import ExecutiveCenter from "./pages/ExecutiveCenter";
 import AccessGovernance from "./pages/AccessGovernance";
