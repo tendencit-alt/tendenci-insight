@@ -127,7 +127,7 @@ const menuGroups: MenuGroup[] = [
   },
   // ── VENDAS ──
   {
-    label: "Vendas",
+    label: "Comercial",
     icon: ShoppingCart,
     separator: true,
     items: [
