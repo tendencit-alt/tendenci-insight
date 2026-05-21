@@ -14,6 +14,7 @@ export interface ModuleConfig {
 /** Maps module_key from modules_config → real app route. Source of truth for menu links. */
 export const MODULE_ROUTE_MAP: Record<string, string> = {
   // MVP
+  "crm": "/crm",
   "clientes": "/clientes",
   "catalogo-produtos": "/catalogo",
   "pedidos": "/pedidos",
@@ -68,6 +69,36 @@ export const MODULE_ROUTE_MAP: Record<string, string> = {
   "relatorios": "/relatorios",
 };
 
+const COMMERCIAL_ORDER: Record<string, number> = {
+  crm: 10,
+  pedidos: 20,
+  clientes: 30,
+  "catalogo-produtos": 40,
+  leads: 50,
+  comissoes: 60,
+};
+
+function normalizeMenuModule(module: ModuleConfig): ModuleConfig {
+  if (module.module_key === "projetos" || module.module_key === "crm-comercial") {
+    return {
+      ...module,
+      module_key: "crm",
+      label: "CRM",
+      category: "comercial",
+      sort_order: COMMERCIAL_ORDER.crm,
+    };
+  }
+
+  if (module.category === "comercial" && module.module_key in COMMERCIAL_ORDER) {
+    return {
+      ...module,
+      sort_order: COMMERCIAL_ORDER[module.module_key],
+    };
+  }
+
+  return module;
+}
+
 export const CATEGORY_META: Record<string, { label: string; order: number }> = {
   comercial:     { label: "Comercial",     order: 10 },
   operacional:   { label: "Operação",      order: 20 },
@@ -96,7 +127,22 @@ export function useModulesConfig() {
 /** Returns only modules with visible_in_menu=true, grouped by category (excluding 'master'). */
 export function useVisibleModuleGroups() {
   const { data = [], isLoading } = useModulesConfig();
-  const visible = data.filter((m) => m.visible_in_menu && m.category !== "master");
+  const normalized = data
+    .filter((m) => m.visible_in_menu && m.category !== "master")
+    .map(normalizeMenuModule);
+
+  const visible = Array.from(
+    normalized.reduce((acc, module) => {
+      const key = `${module.category}:${module.module_key}`;
+      const current = acc.get(key);
+
+      if (!current || module.sort_order < current.sort_order) {
+        acc.set(key, module);
+      }
+
+      return acc;
+    }, new Map<string, ModuleConfig>()).values()
+  );
 
   const groupsMap = new Map<string, ModuleConfig[]>();
   for (const m of visible) {
