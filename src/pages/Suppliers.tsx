@@ -59,16 +59,14 @@ export default function Suppliers() {
             Novo Fornecedor
           </Button>
         }
+        filters={<SuppliersFilters filters={filters} setFilters={setFilters} />}
         overview={<SuppliersKPIs />}
         records={
-          <div className="space-y-4">
-            <SuppliersFilters filters={filters} setFilters={setFilters} />
-            <SuppliersTable
-              suppliers={suppliers}
-              isLoading={isLoading}
-              onSelect={setSelectedSupplier}
-            />
-          </div>
+          <SuppliersTable
+            suppliers={suppliers}
+            isLoading={isLoading}
+            onSelect={setSelectedSupplier}
+          />
         }
       />
 
