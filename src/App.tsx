@@ -171,8 +171,8 @@ const App = () => (
               <Route path="/producao-operacoes" element={<ProtectedRoute><ProducaoOperacoes /></ProtectedRoute>} />
 
               {/* Projetos legado → redireciona para CRM */}
-              <Route path="/projetos" element={<Navigate to="/crm" replace />} />
-              <Route path="/projects" element={<Navigate to="/crm" replace />} />
+              <Route path="/projetos" element={<Navigate to="/crm?view=gestor&tab=overview" replace />} />
+              <Route path="/projects" element={<Navigate to="/crm?view=gestor&tab=overview" replace />} />
 
               <Route path="/suprimentos" element={<ProtectedRoute><Suprimentos /></ProtectedRoute>} />
               <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
