@@ -9,11 +9,13 @@ import WhatsAppConnectionManager from "@/components/prospeccao/WhatsAppConnectio
 import { ManageStagesDialog } from "@/components/prospeccao/ManageStagesDialog";
 import { LeadsContent } from "@/pages/Leads";
 
-export function SDRView() {
+export function SDRView({ initialTab }: { initialTab?: string }) {
   const [manageStagesOpen, setManageStagesOpen] = useState(false);
+  const allowed = ["leads", "prospeccao", "tarefas", "campanhas", "whatsapp"];
+  const defaultTab = initialTab && allowed.includes(initialTab) ? initialTab : "leads";
 
   return (
-    <Tabs defaultValue="leads" className="space-y-4">
+    <Tabs defaultValue={defaultTab} className="space-y-4">
       <TabsList className="flex-wrap h-auto gap-1">
         <TabsTrigger value="leads" className="gap-1.5"><Sparkles className="h-4 w-4" />Leads</TabsTrigger>
         <TabsTrigger value="prospeccao" className="gap-1.5"><LayoutGrid className="h-4 w-4" />Prospecção</TabsTrigger>
