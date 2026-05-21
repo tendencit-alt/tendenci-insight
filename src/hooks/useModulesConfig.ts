@@ -79,6 +79,22 @@ const COMMERCIAL_ORDER: Record<string, number> = {
 };
 
 function normalizeMenuModule(module: ModuleConfig): ModuleConfig {
+  if (module.module_key === "dashboard") {
+    return {
+      ...module,
+      label: "BI",
+      category: "relatorios",
+    };
+  }
+
+  if (module.module_key === "relatorios") {
+    return {
+      ...module,
+      label: "KPI's",
+      category: "relatorios",
+    };
+  }
+
   if (module.module_key === "projetos" || module.module_key === "crm-comercial") {
     return {
       ...module,
