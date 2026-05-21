@@ -111,7 +111,7 @@ export function ArchitectPerformance() {
             <div>
               <p className="text-sm text-muted-foreground">Valor Total</p>
               <p className="text-2xl font-bold text-green-700">
-                R$ {topPerformer.total_value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
+                {topPerformer.total_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </p>
             </div>
           </div>
