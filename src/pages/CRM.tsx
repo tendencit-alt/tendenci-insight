@@ -74,8 +74,8 @@ export default function CRM() {
         {/* View content */}
         <div>
           {view === "sdr" && <SDRView initialTab={tabParam} />}
-          {view === "consultor" && <ConsultorView />}
-          {view === "gestor" && <GestorView />}
+          {view === "consultor" && <ConsultorView initialTab={tabParam} />}
+          {view === "gestor" && <GestorView initialTab={tabParam} />}
         </div>
 
         <CreateProjectDialog
