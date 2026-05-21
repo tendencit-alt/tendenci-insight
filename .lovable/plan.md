@@ -1,95 +1,90 @@
-# Unificação Comercial: Projetos → CRM
+# Reestruturação visual do CRM
 
-Hoje o sistema tem **cinco entradas comerciais** que se sobrepõem e confundem:
+Hoje a página `/crm` empilha 4 camadas de UI (cabeçalho → banner → abas do papel → conteúdo com filtros + 5 KPIs + alertas + sub-abas Board/Tabela/Performance). Isso gera ruído, filtros no meio da tela e o usuário leigo se perde.
 
-| Rota | Conteúdo real |
-|---|---|
-| `/projetos` | Funil de obras (Recebido → Aprovado/Perdido) + KPIs + Performance de arquiteto |
-| `/crm-comercial` | Pipeline + Propostas + Forecast de receita |
-| `/prospeccao` | Overview + CRM de arquitetos + Tarefas + WhatsApp + Campanhas |
-| `/propostas` | Stub "Em breve" |
-| `/contratos` | Stub "Em breve" |
+A proposta é manter o que já existe, mas reorganizar em **3 zonas claras**: Topbar fixo → KPIs compactos → Conteúdo único. Tudo no frontend, sem mexer em dados.
 
-Vamos consolidar tudo em **um único módulo CRM** com três visões por papel.
+## Antes x Depois (Visão Consultor — a mais usada)
 
-## Decisão de arquitetura
+Antes:
+```
+┌ Cabeçalho CRM + Switcher + Novo negócio
+├ Banner "Sparkles" (tagline)
+├ Abas: Meu funil | Propostas | Clientes
+│  └ Filtros (linha 1) ......... [Atualizar][Exportar][Novo Projeto]
+│     Card gigante "Valor Total Orçado"
+│     4 Cards KPI coloridos com emojis
+│     Toggle "Detalhes do funil" + 3 KPIs
+│     Bloco DeadlineAlerts
+│     Sub-abas: Board | Tabela | Performance
+│        └ Kanban
+```
 
-- Rota canônica passa a ser **`/crm`** (rótulo "CRM").
-- `/projetos`, `/crm-comercial`, `/prospeccao`, `/propostas`, `/contratos` viram **redirects** para `/crm` (preservando bookmarks).
-- Página única `src/pages/CRM.tsx` substitui `Projetos.tsx`, `CRMCommercial.tsx`, `Prospeccao.tsx`, `Propostas.tsx`, `Contratos.tsx`.
-- Componentes já existentes são **reaproveitados** (não reescritos). Só a casca/abas muda.
+Depois:
+```
+┌ Topbar sticky:
+│   [Ícone] CRM   • Funil • Propostas • Clientes      [Visão ▾][🔍 Buscar][Filtros ▾][⚠ 3][Kanban|Tabela][+ Novo ▾]
+├ KPI Strip compacto (1 linha, sem emojis):
+│   Total Orçado · Recebidos · Em Orçamento · Aprovado · Perdido    [▾ mais]
+└ Área de conteúdo (uma única view ativa: Kanban OU Tabela)
+```
 
-## Visões por perfil
+## Mudanças por arquivo
 
-Seletor no topo do módulo (chip-style, salva preferência por usuário):
+**`src/pages/CRM.tsx`**
+- Remover o banner Sparkles (vira `aria-description` discreta no header).
+- Header compacto em uma linha; `CRMViewSwitcher` vira um menu suspenso "Visão" pequeno (SDR / Consultor / Gestor) em vez de pílulas largas.
+- Adicionar `sticky top-0 bg-background/80 backdrop-blur z-20` na toolbar.
+- Botão "Novo negócio" vira um dropdown "+ Novo" (Negócio · Cliente · Lead) para juntar entradas hoje espalhadas.
 
-**Visão SDR — "Captar e qualificar"**
-- Abas: `Leads` · `Prospecção (Kanban arquitetos)` · `Campanhas WhatsApp` · `Tarefas do dia`
-- Componentes: `ProspeccaoCRM`, `ProspeccaoTasksManager`, `CampanhasManager`, `WhatsAppConnectionManager`, `Leads`
-- Esconde: forecast, custos, performance de arquiteto, contratos
+**`src/components/crm/views/ConsultorView.tsx`** (principal alvo)
+- Abas (Funil / Propostas / Clientes) sobem para a toolbar do CRM como navegação principal — eliminando uma camada de tabs.
+- Aba Clientes deixa de ser um placeholder grande com botão "Abrir Clientes": vira simplesmente um redirect direto (`<Navigate to="/clientes"/>`) ou um link no menu superior.
 
-**Visão Consultor — "Vender e fechar"**
-- Abas: `Meu funil` · `Propostas` · `Contratos` · `Clientes`
-- Componentes: `ProjectsBoard` (filtrado por responsável = usuário logado), `CRMProposalsTab`, lista de clientes simples
-- Card de obra/projeto vira "Negociação" com botão único **Avançar etapa**
-- Esconde: campanhas, KPIs gerenciais, performance comparativa
+**`src/components/projects/PrjOverview.tsx`** (refatoração visual, sem mudar lógica de dados)
+- Remover linha de `ProjectsFilters` do meio da página. Filtros passam a viver no botão **"Filtros"** da topbar (Popover): período, etapa, responsável, busca. Apenas chips dos filtros ativos ficam visíveis abaixo da topbar.
+- Trocar o card-hero "Valor Total Orçado" + 4 cards + bloco expandível por **um KPI strip horizontal único** (`flex` com 5 itens, sem gradientes nem emojis, usando tokens semânticos). Um botão "▾ mais" abre os 3 KPIs secundários (Orçado / Apresentado / Em Negociação) em popover.
+- `DeadlineAlerts` deixa de ser bloco grande: vira um **badge ⚠ com contador na topbar** que abre um Sheet/Popover com a mesma lista.
+- Eliminar as sub-abas internas "Board | Tabela | Performance":
+  - Board/Tabela viram um **toggle de visualização** (ícones `LayoutGrid` / `Table`) na topbar — só um aparece por vez.
+  - "Desempenho dos Parceiros" sai daqui (já existe na Visão Gestor) → remove duplicidade.
+- Botões "Atualizar / Exportar / Novo Projeto" colapsam num menu "⋯" na topbar (Exportar e Atualizar) + o "+ Novo" global.
 
-**Visão Gestor — "Acompanhar pipeline"**
-- Abas: `Visão Geral` · `Pipeline completo` · `Forecast` · `Performance` · `Analytics`
-- Componentes: `PrjOverview` (KPIs), `CRMPipelineTab`, `CRMForecastTab`, `ArchitectPerformance`, `PrjAnalyticsTab`, `DeadlineAlerts`
-- Esconde: WhatsApp/Campanhas operacionais
+**`src/components/crm/CRMFilters.tsx`** e **`src/components/projects/ProjectsFilters.tsx`**
+- Sem mudança de API. Apenas serão renderizados dentro de um `Popover` "Filtros" em vez de na linha principal.
 
-A visão padrão é detectada pelo papel RBAC do usuário (`useRBACPermissions`), com fallback "Gestor" para owner/admin.
+**`src/components/crm/views/SDRView.tsx`** e **`GestorView.tsx`**
+- Mesmo padrão: as TabsList saem do corpo e sobem para a topbar do CRM (uma única barra de navegação contextual ao papel selecionado).
+- GestorView: manter Performance e Analytics só aqui.
 
-## O que sai do módulo (poluição removida)
+## O que removemos (poluição)
 
-- `PrjPlanningTab` e `PrjExecutionTab` (planejamento de tarefas e execução de obra) — **movidos para Operações → Produção**, onde realmente pertencem. Continuam acessíveis lá, não somem.
-- `PrjCostsTab` — **movido para Financeiro → Custos por Projeto** (já existe lógica de `fin_origin_links`). Some do CRM.
-- Sub-abas duplicadas de Propostas (existem hoje em `/crm-comercial` e como stub em `/propostas`) — unificadas numa única `CRMProposalsTab`.
-- Stub "Coming soon" de Contratos — substituído por aba real reutilizando esqueleto de Propostas (lista + status + vincula a pedido). Se for vazio, mostra empty-state didático em vez de página "em breve".
-- Aba "Produção (legado)" no sidebar (já estava lá, fica) — não é deste módulo.
+- Banner "Sparkles" com tagline repetida do título.
+- Card-hero gigante "Valor Total Orçado" (vira item do strip).
+- Emojis nos KPIs (🔵 📥 📝 ✅ ❌ 💰 📊 🤝) → ícones lucide neutros.
+- Gradientes coloridos `from-primary/20 to-primary/5` e `border-l-4` coloridos → cards lisos com tokens.
+- Sub-abas Board/Tabela/Performance dentro de aba dentro de aba.
+- Placeholder "Sua carteira de clientes" com botão grande.
+- Botão "Limpar filtros" vermelho — vira um "x" discreto no chip.
+- Linha `ProjectsFilters` no meio da página.
+- `DeadlineAlerts` como bloco grande.
 
-## O que entra (faltava para um CRM completo e didático)
+## O que adicionamos (usabilidade)
 
-1. **Onboarding de 1 linha** no topo: "Você está em **Visão Consultor**. Aqui você acompanha seus negócios, envia propostas e fecha contratos." Troca conforme a visão. Botão "Trocar visão".
-2. **Botão único de ação por card** (`Avançar etapa`) — hoje o usuário precisa abrir sheet e mexer em dropdown. Vamos expor o próximo passo direto no card (Recebido → "Pedir orçamento", Orçado → "Apresentar", etc.).
-3. **Linha do tempo do lead** no detalhe — junta interações de WhatsApp (`prospeccao`), notas (`ProjectNotes`), mudanças de etapa e propostas enviadas num único histórico cronológico. Hoje está espalhado em 3 lugares.
-4. **Resumo do dia** (topo da Visão SDR e Consultor): "Você tem X leads novos, Y tarefas atrasadas, Z propostas aguardando resposta." Usa hooks que já existem (`useActivityFeed`, `useAttentionLayer`).
-5. **Empty states didáticos** em cada aba vazia, com botão de ação primária (ex.: "Nenhum lead ainda. Importar planilha de arquitetos →").
-6. **Atalho de criação único** ("Novo negócio") no header, que abre wizard de 3 passos: cliente → etapa do funil → responsável. Substitui `CreateProjectDialog` complexo (15+ campos) para o usuário leigo. Campos avançados ficam num accordion "Mais opções".
+- **Topbar sticky** com tudo essencial em uma linha.
+- **Dropdown "+ Novo"** unificando Negócio/Cliente/Lead.
+- **Chips de filtros ativos** logo abaixo da topbar (clicar = remove).
+- **Toggle Kanban/Tabela** com persistência em `localStorage`.
+- **Badge ⚠ de alertas de prazo** na topbar com popover.
+- **Atalhos de teclado básicos** (`/` foca busca, `n` abre Novo).
+- **Estado vazio amigável** no Kanban quando filtros zeram resultados ("Nenhum negócio com esses filtros · limpar").
 
-## Mudanças técnicas
+## Não-objetivos
 
-Arquivos novos:
-- `src/pages/CRM.tsx` — casca com seletor de visão + tabs dinâmicas
-- `src/components/crm/CRMViewSwitcher.tsx` — chips SDR/Consultor/Gestor + persistência (`localStorage` + `ui_preferences` se existir)
-- `src/components/crm/views/SDRView.tsx`
-- `src/components/crm/views/ConsultorView.tsx`
-- `src/components/crm/views/GestorView.tsx`
-- `src/components/crm/NewDealWizard.tsx` — wizard 3-passos substituindo o `CreateProjectDialog` no fluxo padrão
-- `src/components/crm/DealTimeline.tsx` — timeline unificada
+- Não mexer em RLS, queries, schema, edge functions.
+- Não alterar regras de pipeline, automações ou DRE.
+- Não renomear rotas existentes.
 
-Arquivos editados:
-- `src/App.tsx` — adicionar `/crm` apontando para `CRM.tsx`; transformar `/projetos`, `/crm-comercial`, `/prospeccao`, `/propostas`, `/contratos` em `<Navigate to="/crm" replace />`
-- `src/components/layout/AppSidebar.tsx` — bloco "Vendas" passa a ter um único item **CRM** (`/crm`). Remover entradas de `Projetos`, `CRM & Pipeline`, `Orçamentos`, `Contratos`, `Leads`. `Pedidos`, `Clientes`, `Catálogo`, `Comissões` ficam (não são CRM).
-- `src/lib/roadmap/screen-inventory.ts` e `src/components/smart-search/intentRegistry.ts` — atualizar slugs antigos para `/crm`.
+## Próximo passo
 
-Arquivos **mantidos como estão** (reaproveitados):
-- `PrjOverview`, `ProjectsBoard`, `ProjectCard`, `ProjectDetailSheet`, `DeadlineAlerts`, `ArchitectPerformance`, `PrjAnalyticsTab`
-- `CRMPipelineTab`, `CRMProposalsTab`, `CRMForecastTab`, `CRMAnalyticsTab`
-- `ProspeccaoCRM`, `ProspeccaoTasksManager`, `CampanhasManager`, `WhatsAppConnectionManager`
-- Tabelas `prj_projects`, `crm_*`, `prospeccao_*` — **sem mudança de schema**
-
-Movimentações:
-- `PrjPlanningTab` e `PrjExecutionTab` referenciados em `src/pages/ProducaoOperacoes.tsx` como abas novas "Planejamento de Obra" e "Execução"
-- `PrjCostsTab` referenciado em `src/pages/Financeiro.tsx` (aba "Custos por Projeto")
-
-## Validação
-
-1. `/projetos`, `/crm-comercial`, `/prospeccao`, `/propostas`, `/contratos` redirecionam para `/crm`.
-2. Sidebar mostra apenas **CRM** no bloco Vendas.
-3. Trocar visão (SDR/Consultor/Gestor) muda as abas e persiste após reload.
-4. Card de negócio mostra botão "Avançar etapa" e move o card de coluna ao clicar.
-5. Timeline do lead mostra mensagens WhatsApp + notas + mudanças de etapa juntas.
-6. Planejamento/Execução de obra agora aparecem em **Operações → Produção**, e Custos por Projeto em **Financeiro**.
-7. Owner consegue navegar pela visão Gestor sem erros 403 (corrigir guardas que estavam barrando).
+Posso já implementar exatamente este desenho, ou prefere que eu mostre 2-3 direções visuais renderizadas (mais minimal vs. mais "dashboard") antes de aplicar?
