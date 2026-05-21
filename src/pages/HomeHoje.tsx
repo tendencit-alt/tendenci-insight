@@ -58,31 +58,36 @@ export default function HomeHoje() {
       const end = format(endOfMonth(new Date()), "yyyy-MM-dd");
       const today = format(new Date(), "yyyy-MM-dd");
 
-      const [receivables, openOrders, banks, overdue] = await Promise.all([
+      const [revenueEntries, openOrders, banks, overdueReceivables] = await Promise.all([
+        // Receita do mês: mesma fonte do DRE Competência
         supabase
-          .from("fin_receivables")
-          .select("amount,liquidation_date")
-          .gte("liquidation_date", start)
-          .lte("liquidation_date", end)
-          .eq("status", "received"),
+          .from("fin_ledger_entries")
+          .select("amount,status")
+          .eq("type", "RECEITA")
+          .gte("competence_date", start)
+          .lte("competence_date", end)
+          .neq("status", "CANCELADO"),
+        // Pedidos abertos: status real = 'ativo' (mesmo critério da tela /pedidos)
         supabase
           .from("orders")
           .select("id", { count: "exact", head: true })
-          .in("status", ["draft", "in_progress", "approved", "production"]),
-        supabase.from("fin_bank_accounts").select("current_balance"),
+          .eq("status", "ativo"),
+        // Saldo em caixa: mesma lógica do módulo Financeiro (opening_balance, contas ativas)
+        supabase.from("fin_bank_accounts").select("opening_balance").eq("active", true),
+        // Contas vencidas (recebíveis): due_date < hoje AND status NOT IN (RECEBIDO,PAGO,CANCELADO)
         supabase
-          .from("fin_payables")
+          .from("fin_receivables")
           .select("amount", { count: "exact" })
           .lt("due_date", today)
-          .neq("status", "paid"),
+          .not("status", "in", "(RECEBIDO,PAGO,CANCELADO)"),
       ]);
 
       return {
-        revenue: (receivables.data || []).reduce((s, r: any) => s + Number(r.amount || 0), 0),
+        revenue: (revenueEntries.data || []).reduce((s, r: any) => s + Math.abs(Number(r.amount || 0)), 0),
         openOrders: openOrders.count || 0,
-        cash: (banks.data || []).reduce((s, b: any) => s + Number(b.current_balance || 0), 0),
-        overdueCount: overdue.count || 0,
-        overdueAmount: (overdue.data || []).reduce((s, p: any) => s + Number(p.amount || 0), 0),
+        cash: (banks.data || []).reduce((s, b: any) => s + Number(b.opening_balance || 0), 0),
+        overdueCount: overdueReceivables.count || 0,
+        overdueAmount: (overdueReceivables.data || []).reduce((s, p: any) => s + Number(p.amount || 0), 0),
       };
     },
   });
