@@ -58,19 +58,43 @@ Deno.serve(async (req) => {
     // Resolve target profile_type_id
     let targetProfileTypeId = body.target_profile_type_id ?? null;
     let targetUserName: string | null = null;
+    let targetIsOwner = false;
+    let targetProfileName: string | null = null;
 
     if (body.target_user_id) {
       const { data: target } = await admin
         .from("profiles")
-        .select("id, full_name, email, profile_type_id")
+        .select("id, full_name, email, profile_type_id, is_owner, role, profile_types(name, display_name)")
         .eq("id", body.target_user_id)
         .single();
       targetProfileTypeId = target?.profile_type_id ?? null;
       targetUserName = (target?.full_name as string | null) ?? (target?.email as string | null);
+      targetIsOwner =
+        target?.is_owner === true ||
+        target?.role === "owner" ||
+        ((target?.profile_types as { name?: string; display_name?: string } | null)?.name === "owner");
+      targetProfileName =
+        ((target?.profile_types as { name?: string; display_name?: string } | null)?.display_name as string | undefined) ??
+        ((target?.profile_types as { name?: string; display_name?: string } | null)?.name as string | undefined) ??
+        (targetIsOwner ? "Owner" : null);
     }
 
-    if (!targetProfileTypeId) {
+    if (!targetProfileTypeId && !targetIsOwner) {
       return json({ error: "Provide target_user_id or target_profile_type_id" }, 400);
+    }
+
+    const map: Record<string, boolean> = {};
+
+    if (targetIsOwner) {
+      const { data: catalog } = await admin
+        .from("rbac_permission_catalog")
+        .select("permission_key");
+      catalog?.forEach((c: { permission_key: string }) => (map[c.permission_key] = true));
+      return json({
+        permissions: map,
+        profile_name: targetProfileName,
+        user_name: targetUserName,
+      });
     }
 
     const { data: profileType } = await admin
@@ -84,18 +108,9 @@ Deno.serve(async (req) => {
       .select("permission_key, allowed")
       .eq("profile_type_id", targetProfileTypeId);
 
-    const map: Record<string, boolean> = {};
     perms?.forEach((p: { permission_key: string; allowed: boolean }) => {
       map[p.permission_key] = !!p.allowed;
     });
-
-    // Owner profile: grant everything implicitly
-    if (profileType?.name === "owner") {
-      const { data: catalog } = await admin
-        .from("rbac_permission_catalog")
-        .select("permission_key");
-      catalog?.forEach((c: { permission_key: string }) => (map[c.permission_key] = true));
-    }
 
     return json({
       permissions: map,
