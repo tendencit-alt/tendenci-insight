@@ -32,6 +32,7 @@ interface LedgerEntry {
 }
 
 export function FinProjectsManager() {
+  const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -48,6 +49,30 @@ export function FinProjectsManager() {
   const [viewEntriesOpen, setViewEntriesOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<any>(null);
 
+  // Global default % despesas
+  const [globalPct, setGlobalPct] = useState<string>("");
+  const [savingGlobalPct, setSavingGlobalPct] = useState(false);
+  const [pctEdits, setPctEdits] = useState<Record<string, string>>({});
+  const [savingPctId, setSavingPctId] = useState<string | null>(null);
+
+  const { data: companySettings } = useQuery({
+    queryKey: ["company-settings-budget-pct"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("company_settings")
+        .select("id, default_project_budget_percent")
+        .limit(1)
+        .maybeSingle();
+      return data as any;
+    },
+  });
+
+  useEffect(() => {
+    if (companySettings?.default_project_budget_percent !== undefined && globalPct === "") {
+      setGlobalPct(String(companySettings.default_project_budget_percent));
+    }
+  }, [companySettings]);
+
   const { data: projects, isLoading, refetch } = useQuery({
     queryKey: ["fin-projects-all"],
     queryFn: async () => {
@@ -58,6 +83,25 @@ export function FinProjectsManager() {
       return data || [];
     },
   });
+
+  // Fetch order valor_total per project (for "Valor da Venda" column)
+  const { data: orderTotalsByProject } = useQuery({
+    queryKey: ["orders-totals-by-project"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("orders")
+        .select("project_id, valor_total, status")
+        .not("project_id", "is", null);
+      const map: Record<string, number> = {};
+      (data || []).forEach((o: any) => {
+        if (!o.project_id) return;
+        if (["rascunho", "cancelado"].includes(o.status)) return;
+        map[o.project_id] = (map[o.project_id] || 0) + Number(o.valor_total || 0);
+      });
+      return map;
+    },
+  });
+
 
   // Fetch all ledger entries grouped by project
   const { data: projectEntries } = useQuery({
