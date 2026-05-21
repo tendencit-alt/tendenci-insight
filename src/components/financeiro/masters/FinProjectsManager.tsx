@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,12 +11,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Pencil, FolderKanban, Loader2, TrendingUp, Eye, Target, DollarSign, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Plus, Pencil, FolderKanban, Loader2, TrendingUp, Eye, Target, DollarSign, AlertTriangle, CheckCircle2, Percent, Save } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { numericCodeSort } from "@/lib/numericCodeSort";
 import { ProjectKPIsDialog } from "./ProjectKPIsDialog";
+
 
 interface LedgerEntry {
   id: string;
@@ -31,6 +32,7 @@ interface LedgerEntry {
 }
 
 export function FinProjectsManager() {
+  const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -47,6 +49,30 @@ export function FinProjectsManager() {
   const [viewEntriesOpen, setViewEntriesOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<any>(null);
 
+  // Global default % despesas
+  const [globalPct, setGlobalPct] = useState<string>("");
+  const [savingGlobalPct, setSavingGlobalPct] = useState(false);
+  const [pctEdits, setPctEdits] = useState<Record<string, string>>({});
+  const [savingPctId, setSavingPctId] = useState<string | null>(null);
+
+  const { data: companySettings } = useQuery({
+    queryKey: ["company-settings-budget-pct"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("company_settings")
+        .select("id, default_project_budget_percent")
+        .limit(1)
+        .maybeSingle();
+      return data as any;
+    },
+  });
+
+  useEffect(() => {
+    if (companySettings?.default_project_budget_percent !== undefined && globalPct === "") {
+      setGlobalPct(String(companySettings.default_project_budget_percent));
+    }
+  }, [companySettings]);
+
   const { data: projects, isLoading, refetch } = useQuery({
     queryKey: ["fin-projects-all"],
     queryFn: async () => {
@@ -57,6 +83,25 @@ export function FinProjectsManager() {
       return data || [];
     },
   });
+
+  // Fetch order valor_total per project (for "Valor da Venda" column)
+  const { data: orderTotalsByProject } = useQuery({
+    queryKey: ["orders-totals-by-project"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("orders")
+        .select("project_id, valor_total, status")
+        .not("project_id", "is", null);
+      const map: Record<string, number> = {};
+      (data || []).forEach((o: any) => {
+        if (!o.project_id) return;
+        if (["rascunho", "cancelado"].includes(o.status)) return;
+        map[o.project_id] = (map[o.project_id] || 0) + Number(o.valor_total || 0);
+      });
+      return map;
+    },
+  });
+
 
   // Fetch all ledger entries grouped by project
   const { data: projectEntries } = useQuery({
@@ -214,6 +259,60 @@ export function FinProjectsManager() {
     }
   };
 
+  const saveGlobalPct = async () => {
+    const val = parseFloat(globalPct.replace(",", "."));
+    if (isNaN(val) || val < 0 || val > 100) {
+      toast.error("Informe um percentual entre 0 e 100");
+      return;
+    }
+    setSavingGlobalPct(true);
+    try {
+      if (companySettings?.id) {
+        const { error } = await supabase
+          .from("company_settings")
+          .update({ default_project_budget_percent: val })
+          .eq("id", companySettings.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("company_settings")
+          .insert({ default_project_budget_percent: val } as any);
+        if (error) throw error;
+      }
+      toast.success("Percentual global salvo!");
+      qc.invalidateQueries({ queryKey: ["company-settings-budget-pct"] });
+    } catch (e: any) {
+      toast.error("Erro: " + e.message);
+    } finally {
+      setSavingGlobalPct(false);
+    }
+  };
+
+  const saveProjectPct = async (projectId: string) => {
+    const raw = pctEdits[projectId];
+    const val = parseFloat((raw || "").replace(",", "."));
+    if (isNaN(val) || val < 0 || val > 100) {
+      toast.error("Informe um percentual entre 0 e 100");
+      return;
+    }
+    setSavingPctId(projectId);
+    try {
+      const { error } = await supabase
+        .from("fin_projects")
+        .update({ budget_percent: val })
+        .eq("id", projectId);
+      if (error) throw error;
+      setPctEdits((p) => { const c = { ...p }; delete c[projectId]; return c; });
+      toast.success("Percentual atualizado!");
+      refetch();
+    } catch (e: any) {
+      toast.error("Erro: " + e.message);
+    } finally {
+      setSavingPctId(null);
+    }
+  };
+
+
   const formatCurrency = (value: number) => {
     return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   };
@@ -261,8 +360,42 @@ export function FinProjectsManager() {
 
   return (
     <div className="space-y-6">
+      {/* Global Config: % Despesas do Projeto */}
+      <Card className="border-l-4 border-l-primary">
+        <CardContent className="pt-5 pb-5">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <Percent className="h-5 w-5 text-primary mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold">% Despesas do Projeto (Global)</p>
+                <p className="text-xs text-muted-foreground">
+                  Percentual aplicado automaticamente sobre o valor da venda de cada novo pedido para gerar o orçamento de despesas.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                step={0.5}
+                value={globalPct}
+                onChange={(e) => setGlobalPct(e.target.value)}
+                className="h-9 w-24 text-right"
+              />
+              <span className="text-sm text-muted-foreground">%</span>
+              <Button size="sm" onClick={saveGlobalPct} disabled={savingGlobalPct} className="gap-1">
+                {savingGlobalPct ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Salvar
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -362,15 +495,17 @@ export function FinProjectsManager() {
                 <TableRow>
                   <TableHead>Código</TableHead>
                   <TableHead>Nome</TableHead>
+                  <TableHead className="text-right">Valor da Venda</TableHead>
+                  <TableHead className="text-center">% Despesas</TableHead>
                   <TableHead className="text-right">Orçamento</TableHead>
                   <TableHead className="text-right">Realizado</TableHead>
                   <TableHead className="text-right">Saldo</TableHead>
                   <TableHead>Progresso</TableHead>
-                  <TableHead>Período</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
+
               <TableBody>
                 {filteredProjects.map((project) => {
                   const budget = Number(project.budget) || 0;
@@ -379,6 +514,12 @@ export function FinProjectsManager() {
                   const percent = budget > 0 ? (realized / budget) * 100 : 0;
                   const budgetStatus = getBudgetStatus(budget, realized);
                   const entryCount = realizedByProject[project.id]?.entries.length || 0;
+                  const valorVenda = orderTotalsByProject?.[project.id] || 0;
+                  const projectPct = project.budget_percent !== null && project.budget_percent !== undefined
+                    ? Number(project.budget_percent)
+                    : Number(companySettings?.default_project_budget_percent || 60);
+                  const pctEditing = pctEdits[project.id] !== undefined;
+                  const pctValue = pctEditing ? pctEdits[project.id] : String(projectPct);
 
                   return (
                     <TableRow key={project.id}>
@@ -390,6 +531,35 @@ export function FinProjectsManager() {
                             <span className="text-xs text-muted-foreground ml-2">
                               ({entryCount} lançamentos)
                             </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {valorVenda > 0 ? formatCurrency(valorVenda) : "-"}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={0.5}
+                            value={pctValue}
+                            onChange={(e) => setPctEdits((p) => ({ ...p, [project.id]: e.target.value }))}
+                            disabled={savingPctId === project.id}
+                            className="h-7 w-16 text-right text-xs"
+                          />
+                          <span className="text-xs text-muted-foreground">%</span>
+                          {pctEditing && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-1.5"
+                              disabled={savingPctId === project.id}
+                              onClick={() => saveProjectPct(project.id)}
+                            >
+                              {savingPctId === project.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                            </Button>
                           )}
                         </div>
                       </TableCell>
@@ -422,12 +592,6 @@ export function FinProjectsManager() {
                           </div>
                         ) : "-"}
                       </TableCell>
-                      <TableCell className="text-sm">
-                        {project.start_date && format(new Date(project.start_date), "dd/MM/yy", { locale: ptBR })}
-                        {project.start_date && project.end_date && " - "}
-                        {project.end_date && format(new Date(project.end_date), "dd/MM/yy", { locale: ptBR })}
-                        {!project.start_date && !project.end_date && "-"}
-                      </TableCell>
                       <TableCell>{getStatusBadge(project.status)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -449,7 +613,7 @@ export function FinProjectsManager() {
                 })}
                 {filteredProjects.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                       Nenhum projeto {statusFilter === "ativo" ? "ativo" : statusFilter === "concluido" ? "finalizado" : ""} encontrado
                     </TableCell>
                   </TableRow>
