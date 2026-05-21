@@ -161,6 +161,7 @@ export function LeadsContent() {
   };
 
   return (
+    <>
     <ModuleShell
             moduleKey="leads"
             title="Leads"
