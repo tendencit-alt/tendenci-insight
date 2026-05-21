@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-const PARENT_CODE = "2.3";
+const PARENT_CODE = "2.2";
 
 export interface CompromissoCategory {
   id: string; // chart_account_id
