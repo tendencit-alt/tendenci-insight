@@ -373,9 +373,14 @@ export function ChartAccountsManager() {
   const { data: accounts, isLoading, refetch } = useQuery({
     queryKey: ["fin-chart-accounts-all"],
     queryFn: async () => {
+      // Only show accounts belonging to the current tenant.
+      // Templates (tenant_id IS NULL) are readable via RLS but must not
+      // appear in the manager — otherwise roots like Receitas/Despesas
+      // duplicate (one from template + one from tenant).
       const { data } = await supabase
         .from("fin_chart_accounts")
         .select("*")
+        .not("tenant_id", "is", null)
         .order("code");
       return data || [];
     },
