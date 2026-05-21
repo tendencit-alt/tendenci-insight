@@ -7,7 +7,7 @@ import { LayoutDashboard, DollarSign, TrendingUp, Wallet, AlertTriangle } from "
 import { format, startOfMonth, endOfMonth } from "date-fns";
 
 const fmtBRL = (n: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(n || 0);
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n || 0);
 
 const fmtPct = (n: number) => `${(n || 0).toFixed(1)}%`;
 

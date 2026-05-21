@@ -15,7 +15,7 @@ interface OrdersKPIsProps {
 
 export function OrdersKPIs({ orders, isLoading, selectedIds = [] }: OrdersKPIsProps) {
   const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(value || 0);
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
 
   if (isLoading) {
     return (

@@ -46,7 +46,7 @@ export function DroppableColumn({ id, title, color, orders, onCardClick }: Dropp
       {totalValue > 0 && (
         <div className="mb-2 px-3 py-1.5 rounded-md bg-emerald-500/15 text-center">
           <span className="text-sm font-bold text-emerald-500">
-            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(totalValue)}
+            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue)}
           </span>
         </div>
       )}
