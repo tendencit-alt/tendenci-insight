@@ -169,6 +169,12 @@ export function LeadsContent() {
             title="Leads"
             description="Pré-qualificação de contatos antes de virarem clientes."
             icon={<Sparkles className="h-5 w-5" />}
+  return (
+    <ModuleShell
+            moduleKey="leads"
+            title="Leads"
+            description="Pré-qualificação de contatos antes de virarem clientes."
+            icon={<Sparkles className="h-5 w-5" />}
             headerActions={
               <Button size="sm" onClick={() => setCreateOpen(true)}>
                 <Plus className="h-4 w-4 mr-1.5" />
