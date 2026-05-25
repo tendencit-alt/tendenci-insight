@@ -69,7 +69,8 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
 
   // Buscar ordens de produção com suas fases atuais
   const { data: orders = [], isLoading: ordersLoading } = useQuery({
-    queryKey: ['production-orders', productionTypeId, filters],
+    queryKey: ['production-orders', activeTenantId, productionTypeId, filters],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       // First get the base query
       let query = supabase
@@ -88,11 +89,13 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
           client:clients!production_orders_client_id_fkey(name),
           deal:crm_deals!production_orders_deal_id_fkey(id, title)
         `)
+        .eq('tenant_id', activeTenantId!)
         .neq('status', 'cancelado');
       
       if (productionTypeId) {
         query = query.eq('production_type_id', productionTypeId);
       }
+
 
       if (filters?.status && filters.status !== 'all') {
         query = query.eq('status', filters.status);
