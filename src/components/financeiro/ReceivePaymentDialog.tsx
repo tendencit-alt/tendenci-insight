@@ -128,7 +128,7 @@ export function ReceivePaymentDialog({ open, onOpenChange, receivable, onSuccess
             <Label>Data do Recebimento *</Label>
             <DateBrInput
               value={form.receipt_date}
-              onChange={(e) =/> setForm({ ...form, receipt_date: e.target.value })}
+              onChange={(iso) => setForm({ ...form, receipt_date: iso })}
             />
           </div>
 

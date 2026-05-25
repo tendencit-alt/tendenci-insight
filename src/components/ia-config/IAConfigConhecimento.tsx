@@ -946,7 +946,7 @@ export default function IAConfigConhecimento() {
                     <DateBrInput
                       id="validade"
                       value={form.validade}
-                      onChange={(e) =/> setForm({ ...form, validade: e.target.value })}
+                      onChange={(iso) => setForm({ ...form, validade: iso })}
                     />
                   </div>
                 </div>

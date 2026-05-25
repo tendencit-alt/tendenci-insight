@@ -232,11 +232,11 @@ export function ReportBuilder({ initialSource, initialGroup }: Props) {
             {/* Period */}
             <div className="space-y-1">
               <Label className="text-xs">Data Início</Label>
-              <DateBrInput className="h-9 text-xs" value={filters.dateFrom} onChange={(e) =/> setFilters({ ...filters, dateFrom: e.target.value })} />
+              <DateBrInput className="h-9 text-xs" value={filters.dateFrom} onChange={(iso) => setFilters({ ...filters, dateFrom: iso })} />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Data Fim</Label>
-              <DateBrInput className="h-9 text-xs" value={filters.dateTo} onChange={(e) =/> setFilters({ ...filters, dateTo: e.target.value })} />
+              <DateBrInput className="h-9 text-xs" value={filters.dateTo} onChange={(iso) => setFilters({ ...filters, dateTo: iso })} />
             </div>
 
             {/* Grouping */}

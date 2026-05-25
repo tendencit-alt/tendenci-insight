@@ -617,7 +617,7 @@ export function ReconcileDialog({
                     <DateBrInput
                       id="dataMovimento"
                       value={dataMovimento}
-                      onChange={(e) =/> setDataMovimento(e.target.value)}
+                      onChange={(iso) => setDataMovimento(iso)}
                       required
                     />
                   </div>

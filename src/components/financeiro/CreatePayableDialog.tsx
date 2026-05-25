@@ -348,8 +348,8 @@ export function CreatePayableDialog({ open, onOpenChange, onSuccess, initialData
               </Label>
               <DateBrInput
                 value={form.due_date}
-                onChange={(e) =/> {
-                  setForm({ ...form, due_date: e.target.value });
+                onChange={(iso) => {
+                  setForm({ ...form, due_date: iso });
                   if (errors.due_date) setErrors({ ...errors, due_date: undefined });
                 }}
                 className={cn(errors.due_date && "border-destructive")}
@@ -368,8 +368,8 @@ export function CreatePayableDialog({ open, onOpenChange, onSuccess, initialData
               </Label>
               <DateBrInput
                 value={form.competence_date}
-                onChange={(e) =/> {
-                  setForm({ ...form, competence_date: e.target.value });
+                onChange={(iso) => {
+                  setForm({ ...form, competence_date: iso });
                   if (errors.competence_date) setErrors({ ...errors, competence_date: undefined });
                 }}
                 className={cn(errors.competence_date && "border-destructive")}

@@ -307,7 +307,7 @@ export function ViewEditReceivableDialog({ open, onOpenChange, receivable, onSuc
             <div className="space-y-2">
               <Label>Data de Vencimento {isEditing && <span className="text-destructive">*</span>}</Label>
               {isEditing ? (
-                <DateBrInput value={form.due_date} onChange={(e) =/> setForm({ ...form, due_date: e.target.value })} className={cn(errors.due_date && "border-destructive")} />
+                <DateBrInput value={form.due_date} onChange={(iso) => setForm({ ...form, due_date: iso })} className={cn(errors.due_date && "border-destructive")} />
               ) : (
                 <p className="text-sm font-medium p-2 bg-muted rounded">{receivable.due_date ? format(new Date(receivable.due_date), "dd/MM/yyyy", { locale: ptBR }) : "-"}</p>
               )}
@@ -316,7 +316,7 @@ export function ViewEditReceivableDialog({ open, onOpenChange, receivable, onSuc
             <div className="space-y-2">
               <Label>Data de Competência</Label>
               {isEditing ? (
-                <DateBrInput value={form.competence_date} onChange={(e) =/> setForm({ ...form, competence_date: e.target.value })} />
+                <DateBrInput value={form.competence_date} onChange={(iso) => setForm({ ...form, competence_date: iso })} />
               ) : (
                 <p className="text-sm font-medium p-2 bg-muted rounded">{receivable.competence_date ? format(new Date(receivable.competence_date), "dd/MM/yyyy", { locale: ptBR }) : "-"}</p>
               )}

@@ -432,11 +432,11 @@ function CreateRecurringContractDialog({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Data Início *</Label>
-              <DateBrInput value={form.start_date} onChange={e =/> setForm(p => ({ ...p, start_date: e.target.value }))} />
+              <DateBrInput value={form.start_date} onChange={(iso) => setForm(p => ({ ...p, start_date: iso }))} />
             </div>
             <div>
               <Label className="text-xs">Data Término</Label>
-              <DateBrInput value={form.end_date} onChange={e =/> setForm(p => ({ ...p, end_date: e.target.value }))} />
+              <DateBrInput value={form.end_date} onChange={(iso) => setForm(p => ({ ...p, end_date: iso }))} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">

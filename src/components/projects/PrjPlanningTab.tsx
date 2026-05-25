@@ -56,8 +56,8 @@ export function PrjPlanningTab() {
                       </Select>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                      <div><Label>Início Previsto</Label><DateBrInput value={phaseForm.planned_start} onChange={e =/> setPhaseForm({ ...phaseForm, planned_start: e.target.value })} /></div>
-                      <div><Label>Fim Previsto</Label><DateBrInput value={phaseForm.planned_end} onChange={e =/> setPhaseForm({ ...phaseForm, planned_end: e.target.value })} /></div>
+                      <div><Label>Início Previsto</Label><DateBrInput value={phaseForm.planned_start} onChange={(iso) => setPhaseForm({ ...phaseForm, planned_start: iso })} /></div>
+                      <div><Label>Fim Previsto</Label><DateBrInput value={phaseForm.planned_end} onChange={(iso) => setPhaseForm({ ...phaseForm, planned_end: iso })} /></div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div><Label>Horas Est.</Label><Input type="number" value={phaseForm.estimated_hours} onChange={e => setPhaseForm({ ...phaseForm, estimated_hours: e.target.value })} /></div>

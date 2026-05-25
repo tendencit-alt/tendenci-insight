@@ -201,7 +201,7 @@ export function CreateSellerGoalDialog({ open, onOpenChange, onSuccess }: Create
                 id="data_inicio"
                 required
                 value={formData.data_inicio}
-                onChange={(e) =/> setFormData({ ...formData, data_inicio: e.target.value })}
+                onChange={(iso) => setFormData({ ...formData, data_inicio: iso })}
               />
             </div>
 
@@ -211,7 +211,7 @@ export function CreateSellerGoalDialog({ open, onOpenChange, onSuccess }: Create
                 id="data_fim"
                 required
                 value={formData.data_fim}
-                onChange={(e) =/> setFormData({ ...formData, data_fim: e.target.value })}
+                onChange={(iso) => setFormData({ ...formData, data_fim: iso })}
               />
             </div>
           </div>
