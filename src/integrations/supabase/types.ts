@@ -13210,6 +13210,35 @@ export type Database = {
           },
         ]
       }
+      plan_modules: {
+        Row: {
+          created_at: string
+          id: string
+          module_key: string
+          plan_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          module_key: string
+          plan_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          module_key?: string
+          plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_modules_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_scenarios: {
         Row: {
           cash_need: number | null
