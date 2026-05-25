@@ -2390,7 +2390,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
               <div className="space-y-2">
                 <Label>Data de Entrega Prevista</Label>
-                <Input type="date" value={formData.data_entrega_prevista} onChange={(e) => setFormData({ ...formData, data_entrega_prevista: e.target.value })} disabled={!isEditable} />
+                <DateBrInput value={formData.data_entrega_prevista} onChange={(iso) => setFormData({ ...formData, data_entrega_prevista: iso })} disabled={!isEditable} />
               </div>
             </div>
 
