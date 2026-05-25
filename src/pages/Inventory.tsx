@@ -62,7 +62,8 @@ export default function Inventory() {
   }), [filters.categoryId, filters.locationId, filters.status, debouncedSearch]);
 
   const { data: products = [], isLoading: loadingProducts, refetch: refetchProducts } = useQuery({
-    queryKey: ["products", searchFilters],
+    queryKey: ["products", activeTenantId, searchFilters],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       console.log('[Inventory] Buscando produtos com filtros:', searchFilters);
       
@@ -73,14 +74,16 @@ export default function Inventory() {
           category:product_categories(id, name, color),
           location:stock_locations(id, name),
           cost_centers:product_cost_centers(
-            id,
+          id,
             cost_center:cost_center_tags(id, name, color)
           ),
           ficha_tecnica:production_products!production_products_product_id_fkey(
             id, cmv_total, status
           )
         `)
+        .eq("tenant_id", activeTenantId!)
         .order("name");
+
 
       if (searchFilters.search && searchFilters.search.trim()) {
         const searchTerm = searchFilters.search.trim();
