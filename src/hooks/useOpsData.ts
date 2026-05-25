@@ -2,17 +2,17 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// ── Orders ──
+// ── Orders ── (canonical table: production_orders)
 export function useOpsOrders(filters?: { status?: string; type?: string }) {
   return useQuery({
     queryKey: ["ops-orders", filters],
     queryFn: async () => {
       let q = supabase
-        .from("ops_orders")
-        .select("*, clients(name), fin_cost_centers(name), hr_teams(name)")
+        .from("production_orders")
+        .select("*, clients(name), production_types(name), suppliers(name)")
         .order("created_at", { ascending: false });
       if (filters?.status) q = q.eq("status", filters.status);
-      if (filters?.type) q = q.eq("order_type", filters.type);
+      if (filters?.type) q = q.eq("production_type_id", filters.type);
       const { data, error } = await q.limit(500);
       if (error) throw error;
       return data ?? [];
@@ -24,7 +24,7 @@ export function useCreateOpsOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (values: any) => {
-      const { error } = await supabase.from("ops_orders").insert(values);
+      const { error } = await supabase.from("production_orders").insert(values);
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["ops-orders"] }); toast.success("Ordem criada"); },
@@ -36,7 +36,7 @@ export function useUpdateOpsOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...values }: any) => {
-      const { error } = await supabase.from("ops_orders").update(values).eq("id", id);
+      const { error } = await supabase.from("production_orders").update(values).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["ops-orders"] }); toast.success("Ordem atualizada"); },
@@ -48,11 +48,23 @@ export function useDeleteOpsOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("ops_orders").delete().eq("id", id);
+      const { error } = await supabase.from("production_orders").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["ops-orders"] }); toast.success("Ordem excluída"); },
     onError: (e: any) => toast.error(e.message),
+  });
+}
+
+// ── Production types (for select inputs) ──
+export function useProductionTypes() {
+  return useQuery({
+    queryKey: ["production-types"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("production_types").select("id, name").order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 }
 
