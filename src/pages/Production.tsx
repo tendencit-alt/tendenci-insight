@@ -38,6 +38,8 @@ export default function Production() {
   });
   
   const { isMaster } = usePermissions();
+  const { activeTenantId } = useActiveTenant();
+
 
   const { data: productionTypes = [] } = useQuery({
     queryKey: ['production-types'],
