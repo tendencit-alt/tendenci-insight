@@ -9,6 +9,7 @@ import { ptBR } from "date-fns/locale";
 import { DollarSign, ShoppingCart, Wallet, AlertTriangle, Inbox } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useIsModuleVisible } from "@/hooks/useModulesConfig";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 
 function Kpi({
   icon: Icon,
@@ -50,19 +51,23 @@ export default function HomeHoje() {
   const { visible: leadsVisible } = useIsModuleVisible("leads");
   const { visible: ordersVisible } = useIsModuleVisible("pedidos");
   const { visible: orcamentosVisible } = useIsModuleVisible("orcamentos");
+  const { activeTenantId } = useActiveTenant();
 
   const { data: kpis, isLoading } = useQuery({
-    queryKey: ["home-hoje-kpis"],
+    queryKey: ["home-hoje-kpis", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const start = format(startOfMonth(new Date()), "yyyy-MM-dd");
       const end = format(endOfMonth(new Date()), "yyyy-MM-dd");
       const today = format(new Date(), "yyyy-MM-dd");
+      const tid = activeTenantId as string;
 
       const [revenueEntries, openOrders, banks, overdueReceivables] = await Promise.all([
-        // Receita do mês: mesma fonte do DRE Competência
+        // Receita do mês: mesma fonte do DRE Competência — escopada ao tenant ativo
         supabase
           .from("fin_ledger_entries")
           .select("amount,status")
+          .eq("tenant_id", tid)
           .eq("type", "RECEITA")
           .gte("competence_date", start)
           .lte("competence_date", end)
@@ -71,13 +76,19 @@ export default function HomeHoje() {
         supabase
           .from("orders")
           .select("id", { count: "exact", head: true })
+          .eq("tenant_id", tid)
           .eq("status", "ativo"),
-        // Saldo em caixa: mesma lógica do módulo Financeiro (opening_balance, contas ativas)
-        supabase.from("fin_bank_accounts").select("opening_balance").eq("active", true),
-        // Contas vencidas (recebíveis): due_date < hoje AND status NOT IN (RECEBIDO,PAGO,CANCELADO)
+        // Saldo em caixa: contas bancárias ativas do tenant
+        supabase
+          .from("fin_bank_accounts")
+          .select("opening_balance")
+          .eq("tenant_id", tid)
+          .eq("active", true),
+        // Contas vencidas (recebíveis) do tenant ativo
         supabase
           .from("fin_receivables")
           .select("amount", { count: "exact" })
+          .eq("tenant_id", tid)
           .lt("due_date", today)
           .not("status", "in", "(RECEBIDO,PAGO,CANCELADO)"),
       ]);
