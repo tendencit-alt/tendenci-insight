@@ -2,7 +2,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2, CreditCard, ArrowLeft, Wrench, LayoutDashboard, Shield, Activity, Rocket, BarChart3, GitBranch, Settings2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { TenantsManager } from '@/components/superadmin/TenantsManager';
 import { PlansManager } from '@/components/superadmin/PlansManager';
 import { PlanModulesManager } from '@/components/superadmin/PlanModulesManager';
@@ -17,6 +17,8 @@ import { ConfigGovernancePanel } from '@/components/superadmin/ConfigGovernanceP
 
 const SuperAdmin = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab') ?? 'dashboard';
 
   return (
     <DashboardLayout>
@@ -36,7 +38,7 @@ const SuperAdmin = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="dashboard" className="w-full">
+        <Tabs value={tabFromUrl} onValueChange={(v) => setSearchParams({ tab: v })} className="w-full">
           <TabsList className="flex flex-wrap gap-1">
             <TabsTrigger value="dashboard" className="flex items-center gap-1.5">
               <LayoutDashboard className="h-4 w-4" />
