@@ -37,7 +37,7 @@ export function ExecutiveKPIPanel({ filters }: Props) {
     queryKey: ["kpi-chart-accounts", activeTenantId],
     enabled: !!activeTenantId,
     queryFn: async () => {
-      const { data } = await supabase.from("fin_chart_accounts").select("id, code, name, nature").eq("tenant_id", activeTenantId!).eq("active", true);
+      const { data } = await supabase.from("fin_chart_accounts").select("id, code, name, nature").eq("active", true);
       return data || [];
     },
     staleTime: 5 * 60 * 1000,
