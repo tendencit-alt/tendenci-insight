@@ -81,17 +81,29 @@ export function TenantsManager() {
   const { data: tenantMemberships } = useQuery({
     queryKey: ['tenant-memberships-admin'],
     queryFn: async () => {
-      // Cross-tenant: query user_tenants (owner can read all rows) and join profile data.
-      const { data, error } = await supabase
+      // Cross-tenant: owner can read all user_tenants rows.
+      const { data: uts, error } = await supabase
         .from('user_tenants')
-        .select('tenant_id, user_id, role, profiles:user_id(full_name, email)');
+        .select('tenant_id, user_id, role');
       if (error) throw error;
-      return (data ?? []) as Array<{
-        tenant_id: string;
-        user_id: string;
-        role: string;
-        profiles: { full_name: string | null; email: string | null } | null;
-      }>;
+      const rows = uts ?? [];
+      const userIds = Array.from(new Set(rows.map(r => r.user_id)));
+      let profilesById: Record<string, { full_name: string | null; email: string | null }> = {};
+      if (userIds.length > 0) {
+        const { data: profs } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', userIds);
+        (profs ?? []).forEach((p: any) => {
+          profilesById[p.id] = { full_name: p.full_name, email: p.email };
+        });
+      }
+      return rows.map(r => ({
+        tenant_id: r.tenant_id,
+        user_id: r.user_id,
+        role: r.role,
+        profile: profilesById[r.user_id] ?? null,
+      }));
     },
   });
 
@@ -109,8 +121,8 @@ export function TenantsManager() {
     );
     if (!found) return null;
     return {
-      full_name: found.profiles?.full_name ?? null,
-      email: found.profiles?.email ?? null,
+      full_name: found.profile?.full_name ?? null,
+      email: found.profile?.email ?? null,
       role: found.role,
     };
   };
