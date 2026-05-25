@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -231,11 +232,11 @@ export function ReportBuilder({ initialSource, initialGroup }: Props) {
             {/* Period */}
             <div className="space-y-1">
               <Label className="text-xs">Data Início</Label>
-              <Input type="date" className="h-9 text-xs" value={filters.dateFrom} onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })} />
+              <DateBrInput className="h-9 text-xs" value={filters.dateFrom} onChange={(e) =/> setFilters({ ...filters, dateFrom: e.target.value })} />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Data Fim</Label>
-              <Input type="date" className="h-9 text-xs" value={filters.dateTo} onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })} />
+              <DateBrInput className="h-9 text-xs" value={filters.dateTo} onChange={(e) =/> setFilters({ ...filters, dateTo: e.target.value })} />
             </div>
 
             {/* Grouping */}

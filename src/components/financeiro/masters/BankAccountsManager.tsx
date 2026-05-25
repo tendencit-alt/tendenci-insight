@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -237,10 +238,9 @@ export function BankAccountsManager() {
               </div>
               <div className="space-y-2">
                 <Label>Data do Saldo</Label>
-                <Input
-                  type="date"
+                <DateBrInput
                   value={form.opening_balance_date}
-                  onChange={(e) => setForm({ ...form, opening_balance_date: e.target.value })}
+                  onChange={(e) =/> setForm({ ...form, opening_balance_date: e.target.value })}
                 />
               </div>
             </div>

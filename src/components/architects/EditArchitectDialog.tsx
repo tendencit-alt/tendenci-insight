@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -339,11 +340,10 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
 
             <div className="space-y-2">
               <Label htmlFor="birthday">Aniversário</Label>
-              <Input
+              <DateBrInput
                 id="birthday"
-                type="date"
                 value={formData.birthday}
-                onChange={(e) => setFormData({ ...formData, birthday: e.target.value })}
+                onChange={(e) =/> setFormData({ ...formData, birthday: e.target.value })}
               />
             </div>
 
@@ -377,21 +377,19 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
               <div className="grid grid-cols-2 gap-4 pt-2">
                 <div className="space-y-2">
                   <Label htmlFor="data_primeiro_contato">Data do Primeiro Contato</Label>
-                  <Input
+                  <DateBrInput
                     id="data_primeiro_contato"
-                    type="date"
                     value={formData.data_primeiro_contato}
-                    onChange={(e) => setFormData({ ...formData, data_primeiro_contato: e.target.value })}
+                    onChange={(e) =/> setFormData({ ...formData, data_primeiro_contato: e.target.value })}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="data_ultimo_contato">Data do Último Contato</Label>
-                  <Input
+                  <DateBrInput
                     id="data_ultimo_contato"
-                    type="date"
                     value={formData.data_ultimo_contato}
-                    onChange={(e) => setFormData({ ...formData, data_ultimo_contato: e.target.value })}
+                    onChange={(e) =/> setFormData({ ...formData, data_ultimo_contato: e.target.value })}
                   />
                 </div>
               </div>

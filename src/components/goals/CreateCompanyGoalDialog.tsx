@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -154,23 +155,21 @@ export function CreateCompanyGoalDialog({ open, onOpenChange, onSuccess }: Creat
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="data_inicio">Data Início *</Label>
-              <Input
+              <DateBrInput
                 id="data_inicio"
-                type="date"
                 required
                 value={formData.data_inicio}
-                onChange={(e) => setFormData({ ...formData, data_inicio: e.target.value })}
+                onChange={(e) =/> setFormData({ ...formData, data_inicio: e.target.value })}
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="data_fim">Data Fim *</Label>
-              <Input
+              <DateBrInput
                 id="data_fim"
-                type="date"
                 required
                 value={formData.data_fim}
-                onChange={(e) => setFormData({ ...formData, data_fim: e.target.value })}
+                onChange={(e) =/> setFormData({ ...formData, data_fim: e.target.value })}
               />
             </div>
           </div>

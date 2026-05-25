@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -99,7 +100,7 @@ export function SupRequestsTab() {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Data Necessidade</Label><Input type="date" value={form.needed_by} onChange={e => setForm({ ...form, needed_by: e.target.value })} /></div>
+                  <div><Label>Data Necessidade</Label><DateBrInput value={form.needed_by} onChange={e =/> setForm({ ...form, needed_by: e.target.value })} /></div>
                   <div><Label>Valor Estimado</Label><Input type="number" value={form.estimated_value} onChange={e => setForm({ ...form, estimated_value: e.target.value })} /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">

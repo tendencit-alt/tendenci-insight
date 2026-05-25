@@ -3,6 +3,7 @@ import { CostCenterApportionmentPanel, ApportionmentItem } from "./CostCenterApp
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -345,10 +346,9 @@ export function CreatePayableDialog({ open, onOpenChange, onSuccess, initialData
               <Label className="flex items-center gap-1">
                 Data de Vencimento <span className="text-destructive">*</span>
               </Label>
-              <Input
-                type="date"
+              <DateBrInput
                 value={form.due_date}
-                onChange={(e) => {
+                onChange={(e) =/> {
                   setForm({ ...form, due_date: e.target.value });
                   if (errors.due_date) setErrors({ ...errors, due_date: undefined });
                 }}
@@ -366,10 +366,9 @@ export function CreatePayableDialog({ open, onOpenChange, onSuccess, initialData
               <Label className="flex items-center gap-1">
                 Data de Competência <span className="text-destructive">*</span>
               </Label>
-              <Input
-                type="date"
+              <DateBrInput
                 value={form.competence_date}
-                onChange={(e) => {
+                onChange={(e) =/> {
                   setForm({ ...form, competence_date: e.target.value });
                   if (errors.competence_date) setErrors({ ...errors, competence_date: undefined });
                 }}

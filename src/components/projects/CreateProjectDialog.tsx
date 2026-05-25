@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -402,11 +403,10 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
 
               <div className="space-y-2 col-span-2">
                 <Label htmlFor="deadline">Prazo de Entrega</Label>
-                <Input
+                <DateBrInput
                   id="deadline"
-                  type="date"
                   value={formData.deadline}
-                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                  onChange={(e) =/> setFormData({ ...formData, deadline: e.target.value })}
                 />
               </div>
 

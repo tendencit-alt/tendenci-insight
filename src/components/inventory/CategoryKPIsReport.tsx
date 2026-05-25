@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -196,19 +197,17 @@ export default function CategoryKPIsReport() {
           <div className="flex flex-wrap items-end gap-3">
             <div className="space-y-1">
               <Label className="text-xs">De</Label>
-              <Input
-                type="date"
+              <DateBrInput
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) =/> setStartDate(e.target.value)}
                 className="w-[160px]"
               />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Até</Label>
-              <Input
-                type="date"
+              <DateBrInput
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) =/> setEndDate(e.target.value)}
                 className="w-[160px]"
               />
             </div>

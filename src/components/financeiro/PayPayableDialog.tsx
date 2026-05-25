@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -125,10 +126,9 @@ export function PayPayableDialog({ open, onOpenChange, payable, onSuccess }: Pay
 
           <div className="space-y-2">
             <Label>Data do Pagamento *</Label>
-            <Input
-              type="date"
+            <DateBrInput
               value={form.payment_date}
-              onChange={(e) => setForm({ ...form, payment_date: e.target.value })}
+              onChange={(e) =/> setForm({ ...form, payment_date: e.target.value })}
             />
           </div>
 

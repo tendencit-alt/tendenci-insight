@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/currency-input";
@@ -187,11 +188,10 @@ export default function CreatePurchaseOrderDialog({ open, onOpenChange, onSucces
             </div>
             <div className="space-y-2">
               <Label htmlFor="expected_date">Previsão de Entrega</Label>
-              <Input
+              <DateBrInput
                 id="expected_date"
-                type="date"
                 value={form.expected_date}
-                onChange={(e) => setForm({ ...form, expected_date: e.target.value })}
+                onChange={(e) =/> setForm({ ...form, expected_date: e.target.value })}
               />
             </div>
           </div>

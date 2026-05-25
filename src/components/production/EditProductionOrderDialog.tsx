@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -389,19 +390,17 @@ export function EditProductionOrderDialog({ open, onOpenChange, orderId }: EditP
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Data Início Prevista</Label>
-                <Input
-                  type="date"
+                <DateBrInput
                   value={formData.planned_start_date}
-                  onChange={(e) => setFormData(prev => ({ ...prev, planned_start_date: e.target.value }))}
+                  onChange={(e) =/> setFormData(prev => ({ ...prev, planned_start_date: e.target.value }))}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label>Data Fim Prevista</Label>
-                <Input
-                  type="date"
+                <DateBrInput
                   value={formData.planned_end_date}
-                  onChange={(e) => setFormData(prev => ({ ...prev, planned_end_date: e.target.value }))}
+                  onChange={(e) =/> setFormData(prev => ({ ...prev, planned_end_date: e.target.value }))}
                 />
               </div>
             </div>

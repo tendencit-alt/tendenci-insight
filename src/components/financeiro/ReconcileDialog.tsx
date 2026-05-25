@@ -9,6 +9,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -613,11 +614,10 @@ export function ReconcileDialog({
                       Data do Movimento
                       <span className="text-red-500">*</span>
                     </Label>
-                    <Input
+                    <DateBrInput
                       id="dataMovimento"
-                      type="date"
                       value={dataMovimento}
-                      onChange={(e) => setDataMovimento(e.target.value)}
+                      onChange={(e) =/> setDataMovimento(e.target.value)}
                       required
                     />
                   </div>

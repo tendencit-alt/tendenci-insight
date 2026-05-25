@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -173,11 +174,10 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
 
             <div className="space-y-2">
               <Label htmlFor="edit-deadline">Prazo de Entrega</Label>
-              <Input
+              <DateBrInput
                 id="edit-deadline"
-                type="date"
                 value={formData.deadline}
-                onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                onChange={(e) =/> setFormData({ ...formData, deadline: e.target.value })}
               />
             </div>
           </div>
