@@ -1704,13 +1704,12 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                           {/* Vencimento */}
                           <div className="col-span-3 space-y-1">
                             <Label className="text-xs">Vencimento</Label>
-                            <Input
-                              type="date"
+                            <DateBrInput
                               className="h-10"
                               value={parcela.data_vencimento}
-                              onChange={(e) => {
+                              onChange={(iso) => {
                                 const newParcelas = [...parcelas];
-                                newParcelas[index].data_vencimento = e.target.value;
+                                newParcelas[index].data_vencimento = iso;
                                 setParcelas(newParcelas);
                               }}
                               disabled={!isEditable}
