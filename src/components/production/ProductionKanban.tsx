@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useActiveTenant } from '@/hooks/useActiveTenant';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, pointerWithin, PointerSensor, useSensor, useSensors, TouchSensor, KeyboardSensor } from '@dnd-kit/core';
 import { ProductionCardSimple } from './ProductionCardSimple';
 import { OptimizedDroppableColumn } from './OptimizedDroppableColumn';
@@ -8,6 +9,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { subDays, startOfMonth } from 'date-fns';
+
 
 interface ProductionKanbanProps {
   productionTypeId?: string;
@@ -23,7 +25,9 @@ interface ProductionKanbanProps {
 
 export function ProductionKanban({ productionTypeId, filters, onOrderClick }: ProductionKanbanProps) {
   const queryClient = useQueryClient();
+  const { activeTenantId } = useActiveTenant();
   const [activeOrder, setActiveOrder] = useState<any>(null);
+
 
   // Sensores otimizados para melhor responsividade
   const sensors = useSensors(
@@ -65,7 +69,8 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
 
   // Buscar ordens de produção com suas fases atuais
   const { data: orders = [], isLoading: ordersLoading } = useQuery({
-    queryKey: ['production-orders', productionTypeId, filters],
+    queryKey: ['production-orders', activeTenantId, productionTypeId, filters],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       // First get the base query
       let query = supabase
@@ -84,11 +89,13 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
           client:clients!production_orders_client_id_fkey(name),
           deal:crm_deals!production_orders_deal_id_fkey(id, title)
         `)
+        .eq('tenant_id', activeTenantId!)
         .neq('status', 'cancelado');
       
       if (productionTypeId) {
         query = query.eq('production_type_id', productionTypeId);
       }
+
 
       if (filters?.status && filters.status !== 'all') {
         query = query.eq('status', filters.status);

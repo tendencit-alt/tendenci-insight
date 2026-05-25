@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
+
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ModuleShell } from "@/components/layout/ModuleShell";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -75,6 +77,7 @@ interface ClientRow {
 
 export default function Clientes() {
   const queryClient = useQueryClient();
+  const { activeTenantId } = useActiveTenant();
   const { costCenters } = useCostCenters();
   const [createOpen, setCreateOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientRow | null>(null);
@@ -88,19 +91,22 @@ export default function Clientes() {
   });
 
   const { data: clients, isLoading } = useQuery({
-    queryKey: ["clients-list"],
+    queryKey: ["clients-list", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
         .select(
           "id, name, cpf_cnpj, email, phone, city, state, tipo_pessoa, razao_social, nome_fantasia, created_at"
         )
+        .eq("tenant_id", activeTenantId!)
         .order("created_at", { ascending: false })
         .limit(1000);
       if (error) throw error;
       return (data || []) as ClientRow[];
     },
   });
+
 
   const filtered = useMemo(() => {
     let rows = clients || [];

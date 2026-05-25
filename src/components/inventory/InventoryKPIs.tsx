@@ -1,12 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Package, DollarSign, AlertTriangle, TrendingUp, TrendingDown, XCircle } from "lucide-react";
 
 export default function InventoryKPIs() {
+  const { activeTenantId } = useActiveTenant();
   const { data: metrics, isLoading } = useQuery({
-    queryKey: ["inventory-metrics"],
+    queryKey: ["inventory-metrics", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("inventory_metrics");
       if (error) throw error;
@@ -22,17 +25,20 @@ export default function InventoryKPIs() {
   });
 
   const { data: negativeCount } = useQuery({
-    queryKey: ["inventory-negative-stock-count"],
+    queryKey: ["inventory-negative-stock-count", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { count, error } = await supabase
         .from("products")
         .select("id", { count: "exact", head: true })
+        .eq("tenant_id", activeTenantId!)
         .eq("active", true)
         .lt("current_stock", 0);
       if (error) throw error;
       return count ?? 0;
     },
   });
+
 
   if (isLoading) {
     return (

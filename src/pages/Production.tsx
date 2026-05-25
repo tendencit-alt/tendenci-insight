@@ -19,6 +19,8 @@ import { getTailwindColor } from '@/utils/tailwindColors';
 import { toast } from 'sonner';
 import { format, subDays, startOfMonth } from 'date-fns';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useActiveTenant } from '@/hooks/useActiveTenant';
+
 
 export default function Production() {
   const [selectedType, setSelectedType] = useState<string>('');
@@ -36,6 +38,8 @@ export default function Production() {
   });
   
   const { isMaster } = usePermissions();
+  const { activeTenantId } = useActiveTenant();
+
 
   const { data: productionTypes = [] } = useQuery({
     queryKey: ['production-types'],
@@ -55,6 +59,10 @@ export default function Production() {
 
   // Função para exportar OPs para Excel
   const handleExport = async () => {
+    if (!activeTenantId) {
+      toast.error('Selecione uma empresa ativa antes de exportar.');
+      return;
+    }
     try {
       let query = supabase
         .from('production_orders')
@@ -71,7 +79,9 @@ export default function Production() {
           client:clients(name),
           responsible:profiles!production_orders_responsible_id_fkey(full_name)
         `)
+        .eq('tenant_id', activeTenantId)
         .order('order_number', { ascending: false });
+
 
       // Aplicar filtros
       if (currentTypeId) {

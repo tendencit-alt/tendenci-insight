@@ -1,15 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { toast } from "sonner";
 
 // ── Orders ── (canonical table: production_orders)
 export function useOpsOrders(filters?: { status?: string; type?: string }) {
+  const { activeTenantId } = useActiveTenant();
   return useQuery({
-    queryKey: ["ops-orders", filters],
+    queryKey: ["ops-orders", activeTenantId, filters],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       let q = supabase
         .from("production_orders")
         .select("*, clients(name), production_types(name), suppliers(name)")
+        .eq("tenant_id", activeTenantId!)
         .order("created_at", { ascending: false });
       if (filters?.status) q = q.eq("status", filters.status);
       if (filters?.type) q = q.eq("production_type_id", filters.type);
@@ -19,6 +23,7 @@ export function useOpsOrders(filters?: { status?: string; type?: string }) {
     },
   });
 }
+
 
 export function useCreateOpsOrder() {
   const qc = useQueryClient();
