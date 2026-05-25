@@ -225,7 +225,6 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       const { data: chartAccounts } = await supabase
         .from("fin_chart_accounts")
         .select("id, code, name, nature, parent_id, dre_order")
-        .eq("tenant_id", activeTenantId!)
         .eq("in_dre", true)
         .eq("active", true)
         .order("code");
