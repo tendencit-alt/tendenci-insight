@@ -11,6 +11,7 @@ import {
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { formatKpiNumber, isKpiValid, KPI_EMPTY } from "@/lib/formatKpi";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 
 interface Props {
   filters: FinanceiroFiltersState;
