@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { Button } from "@/components/ui/button";
 import { Plus, Tags, Loader2, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -26,19 +27,22 @@ export function CatalogoAdminBar({ onProductCreated }: Props) {
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
   const qc = useQueryClient();
+  const { activeTenantId } = useActiveTenant();
 
   const { data: categories = [], refetch } = useQuery({
-    queryKey: ["product-categories"],
-    enabled: categoriesOpen,
+    queryKey: ["product-categories", activeTenantId],
+    enabled: categoriesOpen && !!activeTenantId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("product_categories")
         .select("id, name, active")
+        .eq("tenant_id", activeTenantId!)
         .order("position");
       if (error) throw error;
       return data || [];
     },
   });
+
 
   const addCategory = async () => {
     if (!newCategory.trim()) return;
