@@ -152,6 +152,7 @@ export default function HomeHoje() {
         const { data } = await (supabase as any)
           .from("propostas")
           .select("id, numero, status")
+          .eq("tenant_id", tid)
           .order("created_at", { ascending: false })
           .limit(3);
         for (const p of data || []) {
