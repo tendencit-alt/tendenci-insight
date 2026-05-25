@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 import {
   Dialog,
   DialogContent,
@@ -73,6 +74,7 @@ export function SplitEntryDialog({
   onSuccess,
 }: SplitEntryDialogProps) {
   const queryClient = useQueryClient();
+  const { activeTenantId } = useActiveTenant();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [splits, setSplits] = useState<SplitLine[]>([]);
 
@@ -94,16 +96,17 @@ export function SplitEntryDialog({
 
   // Fetch cost centers
   const { data: costCenters } = useQuery({
-    queryKey: ["cost-centers-split"],
+    queryKey: ["cost-centers-split", activeTenantId],
     queryFn: async () => {
       const { data } = await supabase
         .from("fin_cost_centers")
         .select("id, code, name")
+        .eq("tenant_id", activeTenantId!)
         .eq("active", true)
         .order("name");
       return data || [];
     },
-    enabled: open,
+    enabled: open && !!activeTenantId,
   });
 
   // Group chart accounts by parent

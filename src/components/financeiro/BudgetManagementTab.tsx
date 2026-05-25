@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
 import { BudgetVersionLabel, VERSION_LABELS } from "@/hooks/useBudgetData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -96,10 +97,12 @@ export function BudgetManagementTab({ filters }: BudgetManagementTabProps) {
   });
 
   // Cost centers for dimensional
+  const { activeTenantId: _budgetTenant } = useActiveTenant();
   const { data: costCenters } = useQuery({
-    queryKey: ["fin-cost-centers-budget"],
+    queryKey: ["fin-cost-centers-budget", _budgetTenant],
+    enabled: !!_budgetTenant,
     queryFn: async () => {
-      const { data } = await supabase.from("fin_cost_centers").select("id, name").eq("active", true).order("name");
+      const { data } = await supabase.from("fin_cost_centers").select("id, name").eq("tenant_id", _budgetTenant!).eq("active", true).order("name");
       return data || [];
     },
   });

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
 import { Card, CardContent } from "@/components/ui/card";
 import { DateBrInput } from "@/components/ui/date-br-input";
@@ -323,10 +324,12 @@ function CreateRecurringContractDialog({
     },
   });
 
+  const { activeTenantId: _ccTenant } = useActiveTenant();
   const { data: costCenters } = useQuery({
-    queryKey: ["fin-cost-centers-select"],
+    queryKey: ["fin-cost-centers-select", _ccTenant],
+    enabled: !!_ccTenant,
     queryFn: async () => {
-      const { data } = await supabase.from("fin_cost_centers").select("id, name").eq("active", true).order("name");
+      const { data } = await supabase.from("fin_cost_centers").select("id, name").eq("tenant_id", _ccTenant!).eq("active", true).order("name");
       return data || [];
     },
   });

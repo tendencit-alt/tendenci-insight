@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
@@ -131,12 +132,16 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
     },
   });
 
+  const { activeTenantId } = useActiveTenant();
+
   const { data: costCenters } = useQuery({
-    queryKey: ["fin-cost-centers"],
+    queryKey: ["fin-cost-centers", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data } = await supabase
         .from("fin_cost_centers")
         .select("id, name")
+        .eq("tenant_id", activeTenantId!)
         .eq("active", true)
         .order("name");
       return data || [];
@@ -144,11 +149,13 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
   });
 
   const { data: projects } = useQuery({
-    queryKey: ["fin-projects"],
+    queryKey: ["fin-projects", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data } = await supabase
         .from("fin_projects")
         .select("id, name")
+        .eq("tenant_id", activeTenantId!)
         .eq("status", "ativo")
         .order("name");
       return data || [];
@@ -157,11 +164,13 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
 
   // Fetch suppliers for linking
   const { data: suppliers } = useQuery({
-    queryKey: ["suppliers-ledger"],
+    queryKey: ["suppliers-ledger", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data } = await supabase
         .from("suppliers")
         .select("id, name")
+        .eq("tenant_id", activeTenantId!)
         .order("name");
       return data || [];
     },

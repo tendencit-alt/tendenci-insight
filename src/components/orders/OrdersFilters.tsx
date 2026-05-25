@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useActiveTenant } from '@/hooks/useActiveTenant';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -60,12 +61,15 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
     },
   });
 
+  const { activeTenantId } = useActiveTenant();
   const { data: centrosCusto } = useQuery({
-    queryKey: ['centros-custo-list'],
+    queryKey: ['centros-custo-list', activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data } = await supabase
         .from('fin_cost_centers')
         .select('id, name')
+        .eq('tenant_id', activeTenantId!)
         .eq('active', true)
         .order('name');
       return data || [];

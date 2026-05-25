@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,12 +28,15 @@ export function CostCenterApportionmentPanel({
   onChange,
   readOnly = false,
 }: CostCenterApportionmentPanelProps) {
+  const { activeTenantId } = useActiveTenant();
   const { data: costCenters } = useQuery({
-    queryKey: ["fin-cost-centers-active-apportionment"],
+    queryKey: ["fin-cost-centers-active-apportionment", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data } = await supabase
         .from("fin_cost_centers")
         .select("id, name")
+        .eq("tenant_id", activeTenantId!)
         .eq("active", true)
         .order("name");
       return data || [];

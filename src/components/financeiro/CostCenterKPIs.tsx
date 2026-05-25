@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,12 +52,14 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
   const [metaValue, setMetaValue] = useState("");
   const [drillDown, setDrillDown] = useState<CostCenterDrillDownFilter | null>(null);
   const queryClient = useQueryClient();
+  const { activeTenantId } = useActiveTenant();
 
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["fin-cost-center-kpis", filters],
+    queryKey: ["fin-cost-center-kpis", filters, activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const dateFrom = filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : null;
       const dateTo = filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : null;
@@ -65,6 +68,7 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
       const { data: costCenters } = await supabase
         .from("fin_cost_centers")
         .select("id, code, name")
+        .eq("tenant_id", activeTenantId!)
         .eq("active", true)
         .order("code");
 

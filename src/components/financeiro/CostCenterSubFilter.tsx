@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Building2, X } from "lucide-react";
@@ -13,12 +14,15 @@ interface CostCenterSubFilterProps {
 }
 
 export function CostCenterSubFilter({ value, onChange, className }: CostCenterSubFilterProps) {
+  const { activeTenantId } = useActiveTenant();
   const { data: costCenters, isLoading } = useQuery({
-    queryKey: ["fin-cost-centers-filter"],
+    queryKey: ["fin-cost-centers-filter", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data } = await supabase
         .from("fin_cost_centers")
         .select("id, code, name")
+        .eq("tenant_id", activeTenantId!)
         .eq("active", true)
         .order("code");
       return data || [];

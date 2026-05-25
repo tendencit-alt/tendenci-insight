@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { CostCenterApportionmentPanel, ApportionmentItem } from "./CostCenterApportionmentPanel";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
@@ -118,12 +119,16 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
     },
   });
 
+  const { activeTenantId } = useActiveTenant();
+
   const { data: costCenters } = useQuery({
-    queryKey: ["fin-cost-centers"],
+    queryKey: ["fin-cost-centers", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data } = await supabase
         .from("fin_cost_centers")
         .select("id, name")
+        .eq("tenant_id", activeTenantId!)
         .eq("active", true)
         .order("name");
       return data || [];
@@ -131,11 +136,13 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
   });
 
   const { data: projects } = useQuery({
-    queryKey: ["fin-projects"],
+    queryKey: ["fin-projects", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data } = await supabase
         .from("fin_projects")
         .select("id, name")
+        .eq("tenant_id", activeTenantId!)
         .eq("status", "ativo")
         .order("name");
       return data || [];
