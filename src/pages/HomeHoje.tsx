@@ -9,6 +9,7 @@ import { ptBR } from "date-fns/locale";
 import { DollarSign, ShoppingCart, Wallet, AlertTriangle, Inbox } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useIsModuleVisible } from "@/hooks/useModulesConfig";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 
 function Kpi({
   icon: Icon,
