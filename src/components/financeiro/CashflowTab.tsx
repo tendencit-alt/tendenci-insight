@@ -17,6 +17,7 @@ import {
 import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 
 interface CashflowTabProps {
   filters: FinanceiroFiltersState;
