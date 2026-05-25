@@ -25,7 +25,9 @@ interface ProductionKanbanProps {
 
 export function ProductionKanban({ productionTypeId, filters, onOrderClick }: ProductionKanbanProps) {
   const queryClient = useQueryClient();
+  const { activeTenantId } = useActiveTenant();
   const [activeOrder, setActiveOrder] = useState<any>(null);
+
 
   // Sensores otimizados para melhor responsividade
   const sensors = useSensors(
