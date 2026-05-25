@@ -19,6 +19,7 @@ export type Database = {
           deal_id: string | null
           id: string
           notes: string | null
+          tenant_id: string | null
           type: string | null
           user_id: string | null
           when_at: string | null
@@ -27,6 +28,7 @@ export type Database = {
           deal_id?: string | null
           id?: string
           notes?: string | null
+          tenant_id?: string | null
           type?: string | null
           user_id?: string | null
           when_at?: string | null
@@ -35,6 +37,7 @@ export type Database = {
           deal_id?: string | null
           id?: string
           notes?: string | null
+          tenant_id?: string | null
           type?: string | null
           user_id?: string | null
           when_at?: string | null
@@ -4435,6 +4438,7 @@ export type Database = {
           pipeline_id: string | null
           stage_id: string | null
           status: string | null
+          tenant_id: string | null
           title: string | null
         }
         Insert: {
@@ -4447,6 +4451,7 @@ export type Database = {
           pipeline_id?: string | null
           stage_id?: string | null
           status?: string | null
+          tenant_id?: string | null
           title?: string | null
         }
         Update: {
@@ -4459,6 +4464,7 @@ export type Database = {
           pipeline_id?: string | null
           stage_id?: string | null
           status?: string | null
+          tenant_id?: string | null
           title?: string | null
         }
         Relationships: [
