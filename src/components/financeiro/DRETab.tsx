@@ -175,6 +175,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
   const [showBudget, setShowBudget] = useState(false);
   const [budgetVersion, setBudgetVersion] = useState<BudgetVersionLabel>("base");
   const queryClient = useQueryClient();
+  const { activeTenantId } = useActiveTenant();
   const dateField = "competence_date";
 
   // Derive year/month from filters for budget lookup
