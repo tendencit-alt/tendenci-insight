@@ -517,6 +517,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       const { data: goalsData } = await supabase
         .from("fin_financial_goals")
         .select("metric_key, target_amount")
+        .eq("tenant_id", activeTenantId!)
         .eq("month", month)
         .eq("year", year)
         .is("cost_center_id", null)
