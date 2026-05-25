@@ -44,18 +44,6 @@ const SuperAdmin = () => {
               <LayoutDashboard className="h-4 w-4" />
               Visão Geral
             </TabsTrigger>
-            <TabsTrigger value="activation" className="flex items-center gap-1.5">
-              <Rocket className="h-4 w-4" />
-              Ativação
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-1.5">
-              <BarChart3 className="h-4 w-4" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="releases" className="flex items-center gap-1.5">
-              <GitBranch className="h-4 w-4" />
-              Releases
-            </TabsTrigger>
             <TabsTrigger value="tenants" className="flex items-center gap-1.5">
               <Building2 className="h-4 w-4" />
               Empresas
@@ -68,22 +56,8 @@ const SuperAdmin = () => {
               <CreditCard className="h-4 w-4" />
               Módulos por Plano
             </TabsTrigger>
-            <TabsTrigger value="support" className="flex items-center gap-1.5">
-              <Shield className="h-4 w-4" />
-              Suporte
-            </TabsTrigger>
-            <TabsTrigger value="technical" className="flex items-center gap-1.5">
-              <Wrench className="h-4 w-4" />
-              Técnico
-            </TabsTrigger>
-            <TabsTrigger value="config-governance" className="flex items-center gap-1.5">
-              <Settings2 className="h-4 w-4" />
-              Governança Config
-            </TabsTrigger>
-            <TabsTrigger value="observability" className="flex items-center gap-1.5">
-              <Activity className="h-4 w-4" />
-              Observabilidade
-            </TabsTrigger>
+            {/* Abas avançadas ocultas (preservadas para reativação futura):
+                Ativação, Analytics, Releases, Suporte, Técnico, Governança Config, Observabilidade */}
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6 pt-6">

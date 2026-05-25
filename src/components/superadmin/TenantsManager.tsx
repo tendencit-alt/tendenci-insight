@@ -78,26 +78,53 @@ export function TenantsManager() {
     },
   });
 
-  const { data: tenantProfiles } = useQuery({
-    queryKey: ['tenant-profiles-admin'],
+  const { data: tenantMemberships } = useQuery({
+    queryKey: ['tenant-memberships-admin'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('tenant_id, full_name, email, role');
+      // Cross-tenant: owner can read all user_tenants rows.
+      const { data: uts, error } = await supabase
+        .from('user_tenants')
+        .select('tenant_id, user_id, role');
       if (error) throw error;
-      return data;
+      const rows = uts ?? [];
+      const userIds = Array.from(new Set(rows.map(r => r.user_id)));
+      let profilesById: Record<string, { full_name: string | null; email: string | null }> = {};
+      if (userIds.length > 0) {
+        const { data: profs } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', userIds);
+        (profs ?? []).forEach((p: any) => {
+          profilesById[p.id] = { full_name: p.full_name, email: p.email };
+        });
+      }
+      return rows.map(r => ({
+        tenant_id: r.tenant_id,
+        user_id: r.user_id,
+        role: r.role,
+        profile: profilesById[r.user_id] ?? null,
+      }));
     },
   });
 
   const userCounts: Record<string, number> = {};
-  tenantProfiles?.forEach(p => {
-    if (p.tenant_id) {
-      userCounts[p.tenant_id] = (userCounts[p.tenant_id] || 0) + 1;
+  tenantMemberships?.forEach(m => {
+    if (m.tenant_id) {
+      userCounts[m.tenant_id] = (userCounts[m.tenant_id] || 0) + 1;
     }
   });
 
   const getAdminForTenant = (tenantId: string) => {
-    return tenantProfiles?.find(p => p.tenant_id === tenantId && p.role === 'admin');
+    const adminRoles = ['owner', 'admin'];
+    const found = tenantMemberships?.find(
+      m => m.tenant_id === tenantId && adminRoles.includes((m.role || '').toLowerCase())
+    );
+    if (!found) return null;
+    return {
+      full_name: found.profile?.full_name ?? null,
+      email: found.profile?.email ?? null,
+      role: found.role,
+    };
   };
 
   const saveMutation = useMutation({
@@ -168,7 +195,7 @@ export function TenantsManager() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
       queryClient.invalidateQueries({ queryKey: ['super-admin-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['tenant-profiles-admin'] });
+      queryClient.invalidateQueries({ queryKey: ['tenant-memberships-admin'] });
       toast.success(editingTenant ? 'Empresa atualizada!' : 'Empresa e administrador criados com sucesso!');
       resetForm();
     },

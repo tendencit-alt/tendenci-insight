@@ -7,15 +7,16 @@ export function SuperAdminDashboard() {
   const { data: stats } = useQuery({
     queryKey: ['super-admin-stats'],
     queryFn: async () => {
-      const [tenantsRes, profilesRes, plansRes] = await Promise.all([
+      const [tenantsRes, userTenantsRes, plansRes] = await Promise.all([
         supabase.from('tenants').select('id, active', { count: 'exact' }),
-        supabase.from('profiles').select('id, tenant_id', { count: 'exact' }),
+        supabase.from('user_tenants').select('user_id, tenant_id', { count: 'exact' }),
         supabase.from('tenant_plans').select('id', { count: 'exact' }),
       ]);
 
       const activeTenants = tenantsRes.data?.filter(t => t.active).length || 0;
       const totalTenants = tenantsRes.count || 0;
-      const totalUsers = profilesRes.count || 0;
+      // Count cross-tenant memberships via user_tenants (avoids profiles RLS per-tenant scope)
+      const totalUsers = userTenantsRes.count ?? userTenantsRes.data?.length ?? 0;
       const totalPlans = plansRes.count || 0;
 
       return { activeTenants, totalTenants, totalUsers, totalPlans };
