@@ -203,73 +203,20 @@ const ERP_MODULES: ModuleGroup[] = [
     items: [],
     sections: [
       {
-        title: "Operação do Sistema",
-        description: "Acompanhamento geral e priorização",
+        title: "Operação do SaaS",
+        description: "Visão e gestão essencial dos tenants",
         items: [
           { label: "Owner Control Tower", route: "/owner/control-tower", icon: "Landmark", available: true },
-          { label: "Global Control Tower", route: "/control-tower", icon: "Telescope", available: true },
-          { label: "Execution Priority", route: "/owner/execution-priority", icon: "Target", available: true },
-        ],
-      },
-      {
-        title: "Receita & Clientes",
-        description: "Receita, planos, clientes e monetização",
-        items: [
-          { label: "Billing Ops", route: "/owner/billing-ops", icon: "CreditCard", available: true },
-          { label: "Billing & Subscriptions", route: "/billing", icon: "DollarSign", available: true },
-          { label: "Upgrade Center", route: "/owner/upgrade-center", icon: "Rocket", available: true },
-          { label: "Offer Center", route: "/owner/offer-center", icon: "Star", available: true },
-          { label: "Customer Lifecycle", route: "/customer-lifecycle", icon: "Users", available: true },
-          { label: "Customer Success", route: "/customer-success", icon: "UserCheck", available: true },
-          { label: "Benchmarking", route: "/benchmarking", icon: "PieChart", available: true },
-          { label: "Entitlements", route: "/owner/entitlements", icon: "Tag", available: true },
-        ],
-      },
-      {
-        title: "Automação & Inteligência",
-        description: "Automações e IA operacional",
-        items: [
-          { label: "Automation Center", route: "/owner/automation-center", icon: "Sparkles", available: true },
-          { label: "AI Decision", route: "/ai-decision", icon: "Brain", available: true },
-          { label: "Lifecycle (tenants)", route: "/owner/lifecycle", icon: "Users", available: true },
-        ],
-      },
-      {
-        title: "Estabilidade & Recuperação",
-        description: "Falhas, incidentes e recuperação",
-        items: [
-          { label: "Incident Timeline", route: "/owner/incident-timeline", icon: "Clock3", available: true },
-          { label: "Recovery Actions", route: "/owner/recovery-actions", icon: "LifeBuoy", available: true },
-          { label: "Runbooks", route: "/owner/runbooks", icon: "ListChecks", available: true },
-          { label: "Self-Healing Policies", route: "/owner/self-healing", icon: "Shield", available: true },
-          { label: "Autonomous Recovery", route: "/owner/autonomous-recovery", icon: "Wrench", available: true },
-          { label: "Predictive Failures", route: "/owner/predictive-failures", icon: "Brain", available: true },
-          { label: "Capacity Risk", route: "/owner/capacity-risk", icon: "Gauge", available: true },
-          { label: "Stability Gates", route: "/owner/stability-gates", icon: "ShieldCheck", available: true },
-          { label: "Dependency Impact", route: "/owner/dependency-impact", icon: "GitBranch", available: true },
-        ],
-      },
-      {
-        title: "Arquitetura & Governança",
-        description: "Decisões estruturais",
-        items: [
-          { label: "Architecture Board", route: "/owner/architecture-board", icon: "LayoutGrid", available: true },
-          { label: "Integration Map", route: "/owner/integration-map", icon: "Network", available: true },
-        ],
-      },
-      {
-        title: "Administração Técnica",
-        description: "Ferramentas técnicas internas",
-        items: [
-          { label: "Painel Owner (legado)", route: "/super-admin", icon: "Building2", available: true },
-          { label: "Smart Admin", route: "/owner/admin", icon: "ShieldCheck", available: true },
-          { label: "Permission Debug", route: "/owner/permission-debug", icon: "Bug", available: true },
-          { label: "Base de Conhecimento", route: "/support-knowledge", icon: "BookOpen", available: true },
+          { label: "Empresas / Tenants", route: "/super-administrador?tab=companies", icon: "Building2", available: true },
+          { label: "Planos & Módulos", route: "/super-administrador?tab=plan-modules", icon: "Package", available: true },
         ],
       },
     ],
   },
 ];
+
+// Advanced/legacy owner items intentionally hidden from the slim Painel Master menu.
+// Routes remain registered in App.tsx and can be re-enabled here later if needed.
 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
