@@ -36,7 +36,6 @@ export function FinancialResultTab({ filters }: FinancialResultTabProps) {
       const { data: accounts } = await supabase
         .from("fin_chart_accounts")
         .select("id, code, name, nature")
-        .eq("tenant_id", activeTenantId!)
         .or(`id.eq.${root5.id},parent_id.eq.${root5.id}`);
 
       if (!accounts) return [];
