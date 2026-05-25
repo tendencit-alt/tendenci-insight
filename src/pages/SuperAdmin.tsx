@@ -38,7 +38,7 @@ const SuperAdmin = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="dashboard" className="w-full">
+        <Tabs value={tabFromUrl} onValueChange={(v) => setSearchParams({ tab: v })} className="w-full">
           <TabsList className="flex flex-wrap gap-1">
             <TabsTrigger value="dashboard" className="flex items-center gap-1.5">
               <LayoutDashboard className="h-4 w-4" />
