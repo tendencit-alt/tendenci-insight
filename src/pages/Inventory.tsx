@@ -42,7 +42,9 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function Inventory() {
+  const { activeTenantId } = useActiveTenant();
   const [activeTab, setActiveTab] = useState("products");
+
   const [createProductOpen, setCreateProductOpen] = useState(false);
   const [createMovementOpen, setCreateMovementOpen] = useState(false);
   const [filters, setFilters] = useState({
