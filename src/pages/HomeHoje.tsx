@@ -104,14 +104,17 @@ export default function HomeHoje() {
   });
 
   const { data: inbox, isLoading: loadingInbox } = useQuery({
-    queryKey: ["home-hoje-inbox", { leadsVisible, ordersVisible, orcamentosVisible }],
+    queryKey: ["home-hoje-inbox", activeTenantId, { leadsVisible, ordersVisible, orcamentosVisible }],
+    enabled: !!activeTenantId,
     queryFn: async () => {
+      const tid = activeTenantId as string;
       const items: Array<{ id: string; type: "lead" | "order" | "proposta"; title: string; subtitle: string; route: string; meta?: string }> = [];
 
       if (ordersVisible) {
         const { data } = await supabase
           .from("orders")
           .select("id, order_number, status, client:clients(name)")
+          .eq("tenant_id", tid)
           .order("created_at", { ascending: false })
           .limit(4);
         for (const o of data || []) {
@@ -130,6 +133,7 @@ export default function HomeHoje() {
         const { data } = await (supabase as any)
           .from("crm_deals")
           .select("id, title, stage")
+          .eq("tenant_id", tid)
           .order("created_at", { ascending: false })
           .limit(3);
         for (const l of data || []) {
@@ -148,6 +152,7 @@ export default function HomeHoje() {
         const { data } = await (supabase as any)
           .from("propostas")
           .select("id, numero, status")
+          .eq("tenant_id", tid)
           .order("created_at", { ascending: false })
           .limit(3);
         for (const p of data || []) {
