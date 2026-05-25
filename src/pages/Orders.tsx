@@ -24,7 +24,9 @@ import { useActiveTenant } from '@/hooks/useActiveTenant';
 export default function Orders() {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const { activeTenantId } = useActiveTenant();
   useOrdersRealtime();
+
   const [createOpen, setCreateOpen] = useState(false);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
