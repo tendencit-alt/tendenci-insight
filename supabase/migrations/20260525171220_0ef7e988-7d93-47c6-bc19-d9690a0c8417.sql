@@ -1,0 +1,18 @@
+ALTER TABLE public.deals ADD COLUMN IF NOT EXISTS tenant_id uuid;
+CREATE INDEX IF NOT EXISTS idx_deals_tenant_id ON public.deals(tenant_id);
+DROP POLICY IF EXISTS "Apenas admins podem deletar deals" ON public.deals;
+DROP POLICY IF EXISTS "Autenticados podem atualizar deals" ON public.deals;
+DROP POLICY IF EXISTS "Autenticados podem criar deals" ON public.deals;
+DROP POLICY IF EXISTS "Autenticados podem ler deals" ON public.deals;
+CREATE POLICY "Tenant isolation - deals select" ON public.deals FOR SELECT TO authenticated USING (public.tenant_rls_check(tenant_id));
+CREATE POLICY "Tenant isolation - deals insert" ON public.deals FOR INSERT TO authenticated WITH CHECK (public.tenant_rls_check(tenant_id));
+CREATE POLICY "Tenant isolation - deals update" ON public.deals FOR UPDATE TO authenticated USING (public.tenant_rls_check(tenant_id)) WITH CHECK (public.tenant_rls_check(tenant_id));
+CREATE POLICY "Tenant isolation - deals delete" ON public.deals FOR DELETE TO authenticated USING (public.tenant_rls_check(tenant_id));
+ALTER TABLE public.activities ADD COLUMN IF NOT EXISTS tenant_id uuid;
+CREATE INDEX IF NOT EXISTS idx_activities_tenant_id ON public.activities(tenant_id);
+DROP POLICY IF EXISTS "Autenticados podem criar atividades" ON public.activities;
+DROP POLICY IF EXISTS "Autenticados podem ler atividades" ON public.activities;
+CREATE POLICY "Tenant isolation - activities select" ON public.activities FOR SELECT TO authenticated USING (public.tenant_rls_check(tenant_id));
+CREATE POLICY "Tenant isolation - activities insert" ON public.activities FOR INSERT TO authenticated WITH CHECK (public.tenant_rls_check(tenant_id));
+CREATE POLICY "Tenant isolation - activities update" ON public.activities FOR UPDATE TO authenticated USING (public.tenant_rls_check(tenant_id)) WITH CHECK (public.tenant_rls_check(tenant_id));
+CREATE POLICY "Tenant isolation - activities delete" ON public.activities FOR DELETE TO authenticated USING (public.tenant_rls_check(tenant_id));
