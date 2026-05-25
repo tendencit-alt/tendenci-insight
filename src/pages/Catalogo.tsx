@@ -89,17 +89,35 @@ export default function Catalogo() {
   }, [whatsappUrl]);
   const primaryColor = settings?.primary_color || "#C41E3A";
 
+  // Tenant da vitrine: mesma fonte usada para tenant_catalogo_settings.
+  // Sem tenant resolvido (ex.: anon sem domínio/slug), NÃO carregamos
+  // produtos para evitar vazamento cross-tenant (defesa em profundidade
+  // do lado cliente — RLS continua valendo no servidor).
+  const catalogTenantId = activeTenantId;
+
   useEffect(() => {
+    if (!catalogTenantId) {
+      setProducts([]);
+      setLoading(false);
+      return;
+    }
     loadProducts();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalogTenantId]);
 
   const loadProducts = async () => {
     try {
+      if (!catalogTenantId) {
+        setProducts([]);
+        return;
+      }
+      setLoading(true);
       const { data, error } = await supabase
         .from("products")
         .select(
           "id, name, description, descricao_curta, descricao_longa, sale_price, image_url, imagens, galeria, current_stock, dimensoes, prazo_producao_dias, ativo_no_catalogo, category_id, product_categories(name)"
         )
+        .eq("tenant_id", catalogTenantId)
         .eq("ativo_no_catalogo", true)
         .eq("active", true)
         .order("name");
