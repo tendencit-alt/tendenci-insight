@@ -47,7 +47,7 @@ interface ProdutoEstoque {
   id: string;
   name: string;
   code: string | null;
-  cost_price: number | null;
+  sale_price: number | null;
   current_stock: number | null;
   unit: string | null;
   active: boolean | null;
