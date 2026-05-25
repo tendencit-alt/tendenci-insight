@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -680,18 +681,16 @@ export function FinProjectsManager() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Data de Início</Label>
-                <Input
-                  type="date"
+                <DateBrInput
                   value={form.start_date}
-                  onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+                  onChange={(e) =/> setForm({ ...form, start_date: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
                 <Label>Data de Término</Label>
-                <Input
-                  type="date"
+                <DateBrInput
                   value={form.end_date}
-                  onChange={(e) => setForm({ ...form, end_date: e.target.value })}
+                  onChange={(e) =/> setForm({ ...form, end_date: e.target.value })}
                 />
               </div>
             </div>

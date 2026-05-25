@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -136,11 +137,10 @@ export function BulkEditOrdersDialog({ open, onOpenChange, selectedIds, onSucces
           {/* Data Entrega */}
           <div className="space-y-1.5">
             <Label className="text-sm">Data de Entrega Prevista</Label>
-            <Input
-              type="date"
+            <DateBrInput
               className="h-9"
               value={fields.data_entrega_prevista || ''}
-              onChange={(e) => setFields({ ...fields, data_entrega_prevista: e.target.value || undefined })}
+              onChange={(e) =/> setFields({ ...fields, data_entrega_prevista: e.target.value || undefined })}
             />
           </div>
 

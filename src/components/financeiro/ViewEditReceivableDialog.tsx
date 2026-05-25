@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -306,7 +307,7 @@ export function ViewEditReceivableDialog({ open, onOpenChange, receivable, onSuc
             <div className="space-y-2">
               <Label>Data de Vencimento {isEditing && <span className="text-destructive">*</span>}</Label>
               {isEditing ? (
-                <Input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} className={cn(errors.due_date && "border-destructive")} />
+                <DateBrInput value={form.due_date} onChange={(e) =/> setForm({ ...form, due_date: e.target.value })} className={cn(errors.due_date && "border-destructive")} />
               ) : (
                 <p className="text-sm font-medium p-2 bg-muted rounded">{receivable.due_date ? format(new Date(receivable.due_date), "dd/MM/yyyy", { locale: ptBR }) : "-"}</p>
               )}
@@ -315,7 +316,7 @@ export function ViewEditReceivableDialog({ open, onOpenChange, receivable, onSuc
             <div className="space-y-2">
               <Label>Data de Competência</Label>
               {isEditing ? (
-                <Input type="date" value={form.competence_date} onChange={(e) => setForm({ ...form, competence_date: e.target.value })} />
+                <DateBrInput value={form.competence_date} onChange={(e) =/> setForm({ ...form, competence_date: e.target.value })} />
               ) : (
                 <p className="text-sm font-medium p-2 bg-muted rounded">{receivable.competence_date ? format(new Date(receivable.competence_date), "dd/MM/yyyy", { locale: ptBR }) : "-"}</p>
               )}

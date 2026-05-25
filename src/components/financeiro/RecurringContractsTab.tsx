@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
 import { Card, CardContent } from "@/components/ui/card";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -431,11 +432,11 @@ function CreateRecurringContractDialog({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Data Início *</Label>
-              <Input type="date" value={form.start_date} onChange={e => setForm(p => ({ ...p, start_date: e.target.value }))} />
+              <DateBrInput value={form.start_date} onChange={e =/> setForm(p => ({ ...p, start_date: e.target.value }))} />
             </div>
             <div>
               <Label className="text-xs">Data Término</Label>
-              <Input type="date" value={form.end_date} onChange={e => setForm(p => ({ ...p, end_date: e.target.value }))} />
+              <DateBrInput value={form.end_date} onChange={e =/> setForm(p => ({ ...p, end_date: e.target.value }))} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">

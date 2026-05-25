@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -75,8 +76,8 @@ export default function PlanGoalsTab() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>Início</Label><Input type="date" value={form.period_start} onChange={e => setForm({ ...form, period_start: e.target.value })} /></div>
-                <div><Label>Fim</Label><Input type="date" value={form.period_end} onChange={e => setForm({ ...form, period_end: e.target.value })} /></div>
+                <div><Label>Início</Label><DateBrInput value={form.period_start} onChange={e =/> setForm({ ...form, period_start: e.target.value })} /></div>
+                <div><Label>Fim</Label><DateBrInput value={form.period_end} onChange={e =/> setForm({ ...form, period_end: e.target.value })} /></div>
               </div>
               <div><Label>Valor Meta</Label><Input type="number" value={form.target_value} onChange={e => setForm({ ...form, target_value: e.target.value })} /></div>
               <Button onClick={handleCreate} disabled={!form.title || !form.period_start || createMut.isPending}>Criar Meta</Button>

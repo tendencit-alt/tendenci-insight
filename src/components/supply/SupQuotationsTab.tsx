@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -85,7 +86,7 @@ export function SupQuotationsTab() {
                 <div><Label>Frete</Label><Input type="number" value={form.shipping_cost} onChange={e => setForm({ ...form, shipping_cost: e.target.value })} /></div>
                 <div><Label>Total</Label><Input type="number" value={form.total} onChange={e => setForm({ ...form, total: e.target.value })} /></div>
               </div>
-              <div><Label>Validade</Label><Input type="date" value={form.valid_until} onChange={e => setForm({ ...form, valid_until: e.target.value })} /></div>
+              <div><Label>Validade</Label><DateBrInput value={form.valid_until} onChange={e =/> setForm({ ...form, valid_until: e.target.value })} /></div>
               <Button onClick={handleCreate} disabled={!form.supplier_id || createMut.isPending}>Registrar Cotação</Button>
             </div>
           </DialogContent>

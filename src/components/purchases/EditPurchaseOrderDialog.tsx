@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/currency-input";
@@ -218,10 +219,9 @@ export default function EditPurchaseOrderDialog({ order, open, onOpenChange, onS
             </div>
             <div className="space-y-2">
               <Label>Previsão de Entrega</Label>
-              <Input
-                type="date"
+              <DateBrInput
                 value={form.expected_date}
-                onChange={(e) => setForm({ ...form, expected_date: e.target.value })}
+                onChange={(e) =/> setForm({ ...form, expected_date: e.target.value })}
               />
             </div>
           </div>

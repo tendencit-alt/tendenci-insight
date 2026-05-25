@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -87,7 +88,7 @@ export function HREmployeesTab() {
                   <div><Label>% Encargos</Label><Input type="number" value={form.benefits_percent} onChange={e => setForm({ ...form, benefits_percent: e.target.value })} /></div>
                   <div><Label>Horas/Mês</Label><Input type="number" value={form.monthly_hours} onChange={e => setForm({ ...form, monthly_hours: e.target.value })} /></div>
                 </div>
-                <div><Label>Data Admissão</Label><Input type="date" value={form.admission_date} onChange={e => setForm({ ...form, admission_date: e.target.value })} /></div>
+                <div><Label>Data Admissão</Label><DateBrInput value={form.admission_date} onChange={e =/> setForm({ ...form, admission_date: e.target.value })} /></div>
                 <Button onClick={handleCreate} disabled={!form.name || createMut.isPending}>Salvar</Button>
               </div>
             </DialogContent>

@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/input";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -83,11 +84,10 @@ export function FormFieldRenderer({ fields, values, onChange, onBatchChange, err
             )}
 
             {field.type === "date" && (
-              <Input
+              <DateBrInput
                 id={field.key}
-                type="date"
                 value={value || ""}
-                onChange={(e) => handleChange(field, e.target.value)}
+                onChange={(e) =/> handleChange(field, e.target.value)}
                 disabled={field.disabled}
                 className={cn("h-9", error && "border-destructive")}
               />

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -942,11 +943,10 @@ export default function IAConfigConhecimento() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="validade">Válido até</Label>
-                    <Input
+                    <DateBrInput
                       id="validade"
-                      type="date"
                       value={form.validade}
-                      onChange={(e) => setForm({ ...form, validade: e.target.value })}
+                      onChange={(e) =/> setForm({ ...form, validade: e.target.value })}
                     />
                   </div>
                 </div>

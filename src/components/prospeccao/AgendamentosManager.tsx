@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -332,11 +333,10 @@ export function AgendamentosManager() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="data">Data *</Label>
-                  <Input
+                  <DateBrInput
                     id="data"
-                    type="date"
                     value={formData.data_agendamento}
-                    onChange={(e) => setFormData({ ...formData, data_agendamento: e.target.value })}
+                    onChange={(e) =/> setFormData({ ...formData, data_agendamento: e.target.value })}
                   />
                 </div>
 

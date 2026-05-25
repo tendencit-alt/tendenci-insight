@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -408,19 +409,17 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Data de Competência *</Label>
-              <Input
-                type="date"
+              <DateBrInput
                 value={form.competence_date}
-                onChange={(e) => setForm({ ...form, competence_date: e.target.value })}
+                onChange={(e) =/> setForm({ ...form, competence_date: e.target.value })}
               />
             </div>
 
             <div className="space-y-2">
               <Label>Data de Caixa (Pagamento/Recebimento)</Label>
-              <Input
-                type="date"
+              <DateBrInput
                 value={form.cash_date}
-                onChange={(e) => setForm({ ...form, cash_date: e.target.value })}
+                onChange={(e) =/> setForm({ ...form, cash_date: e.target.value })}
               />
             </div>
           </div>
@@ -555,10 +554,9 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
 
                 <div className="space-y-2">
                   <Label>Data de Vencimento *</Label>
-                  <Input
-                    type="date"
+                  <DateBrInput
                     value={form.due_date}
-                    onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+                    onChange={(e) =/> setForm({ ...form, due_date: e.target.value })}
                   />
                 </div>
               </div>

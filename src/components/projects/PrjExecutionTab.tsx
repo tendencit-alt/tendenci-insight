@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DateBrInput } from "@/components/ui/date-br-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -73,7 +74,7 @@ export function PrjExecutionTab() {
                 <div><Label>Descrição</Label><Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label>Horas</Label><Input type="number" step="0.5" value={form.hours} onChange={e => setForm({ ...form, hours: e.target.value })} /></div>
-                  <div><Label>Data</Label><Input type="date" value={form.work_date} onChange={e => setForm({ ...form, work_date: e.target.value })} /></div>
+                  <div><Label>Data</Label><DateBrInput value={form.work_date} onChange={e =/> setForm({ ...form, work_date: e.target.value })} /></div>
                 </div>
                 {form.log_type !== "hours" && <div><Label>Custo</Label><Input type="number" value={form.cost} onChange={e => setForm({ ...form, cost: e.target.value })} /></div>}
                 <Button onClick={handleCreate} disabled={createLog.isPending}>Registrar</Button>
