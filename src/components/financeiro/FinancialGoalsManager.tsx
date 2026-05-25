@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -133,18 +134,21 @@ export function FinancialGoalsManager() {
     },
   });
 
+  const { activeTenantId: _goalsTenant } = useActiveTenant();
   const { data: costCenters } = useQuery({
-    queryKey: ["fin-cost-centers"],
+    queryKey: ["fin-cost-centers", _goalsTenant],
+    enabled: !!_goalsTenant,
     queryFn: async () => {
-      const { data } = await supabase.from("fin_cost_centers").select("id, name").eq("active", true).order("name");
+      const { data } = await supabase.from("fin_cost_centers").select("id, name").eq("tenant_id", _goalsTenant!).eq("active", true).order("name");
       return data || [];
     },
   });
 
   const { data: projects } = useQuery({
-    queryKey: ["fin-projects"],
+    queryKey: ["fin-projects", _goalsTenant],
+    enabled: !!_goalsTenant,
     queryFn: async () => {
-      const { data } = await supabase.from("fin_projects").select("id, name").eq("status", "ativo").order("name");
+      const { data } = await supabase.from("fin_projects").select("id, name").eq("tenant_id", _goalsTenant!).eq("status", "ativo").order("name");
       return data || [];
     },
   });

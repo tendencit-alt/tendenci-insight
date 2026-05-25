@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useActiveTenant } from '@/hooks/useActiveTenant';
 
 export interface CostCenterOption {
   value: string;
@@ -16,12 +17,15 @@ const FALLBACK: CostCenterOption[] = [
 ];
 
 export function useCostCenters() {
+  const { activeTenantId } = useActiveTenant();
   const { data, isLoading } = useQuery({
-    queryKey: ['fin-cost-centers-active'],
+    queryKey: ['fin-cost-centers-active', activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('fin_cost_centers')
         .select('id, name')
+        .eq('tenant_id', activeTenantId!)
         .eq('active', true)
         .order('name');
       if (error) throw error;

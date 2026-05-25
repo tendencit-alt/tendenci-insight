@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export type SortDirection = "asc" | "desc" | null;
@@ -38,13 +39,16 @@ interface FinanceiroFiltersProps {
 
 export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { activeTenantId } = useActiveTenant();
 
   const { data: bankAccounts } = useQuery({
-    queryKey: ["fin-bank-accounts"],
+    queryKey: ["fin-bank-accounts", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data } = await supabase
         .from("fin_bank_accounts")
         .select("id, nickname")
+        .eq("tenant_id", activeTenantId!)
         .eq("active", true)
         .order("nickname");
       return data || [];
@@ -52,11 +56,13 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
   });
 
   const { data: costCenters } = useQuery({
-    queryKey: ["fin-cost-centers"],
+    queryKey: ["fin-cost-centers", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data } = await supabase
         .from("fin_cost_centers")
         .select("id, name")
+        .eq("tenant_id", activeTenantId!)
         .eq("active", true)
         .order("name");
       return data || [];
@@ -64,11 +70,13 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
   });
 
   const { data: projects } = useQuery({
-    queryKey: ["fin-projects"],
+    queryKey: ["fin-projects", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data } = await supabase
         .from("fin_projects")
         .select("id, name")
+        .eq("tenant_id", activeTenantId!)
         .eq("status", "ativo")
         .order("name");
       return data || [];
