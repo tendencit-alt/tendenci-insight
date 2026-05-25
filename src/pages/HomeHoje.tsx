@@ -133,6 +133,7 @@ export default function HomeHoje() {
         const { data } = await (supabase as any)
           .from("crm_deals")
           .select("id, title, stage")
+          .eq("tenant_id", tid)
           .order("created_at", { ascending: false })
           .limit(3);
         for (const l of data || []) {
