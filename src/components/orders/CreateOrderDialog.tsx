@@ -2018,10 +2018,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
                 <div className="space-y-2">
                   <Label>Data de Entrega Prevista</Label>
-                  <Input
-                    type="date"
+                  <DateBrInput
                     value={formData.data_entrega_prevista}
-                    onChange={(e) => setFormData({ ...formData, data_entrega_prevista: e.target.value })}
+                    onChange={(iso) => setFormData({ ...formData, data_entrega_prevista: iso })}
                   />
                 </div>
               </div>
