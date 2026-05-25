@@ -28,7 +28,6 @@ export function FinancialResultTab({ filters }: FinancialResultTabProps) {
       const { data: root5 } = await supabase
         .from("fin_chart_accounts")
         .select("id")
-        .eq("tenant_id", activeTenantId!)
         .eq("code", "5")
         .maybeSingle();
 
