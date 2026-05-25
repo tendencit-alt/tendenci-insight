@@ -237,7 +237,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
     setNewItem({
       descricao: produto.name,
       quantidade: 1,
-      valor_unitario: produto.cost_price || 0,
+      valor_unitario: produto.sale_price || 0,
       codigo_produto: produto.code || '',
       unidade: produto.unit || 'UN',
       especificacoes: '',
