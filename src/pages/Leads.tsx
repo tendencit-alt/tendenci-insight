@@ -106,25 +106,29 @@ export default function Leads() {
 export function LeadsContent() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { activeTenantId } = useActiveTenant();
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({ status: "all", source: "all" });
   const [createOpen, setCreateOpen] = useState(false);
   const [convertingLead, setConvertingLead] = useState<LeadRow | null>(null);
 
   const { data: leads, isLoading } = useQuery({
-    queryKey: ["leads-list"],
+    queryKey: ["leads-list", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("leads")
         .select(
           "id, name, email, phone, company, source_label, status, temperature, notes, created_at, client_id, converted_at, converted_deal_id"
         )
+        .eq("tenant_id", activeTenantId!)
         .order("created_at", { ascending: false })
         .limit(1000);
       if (error) throw error;
       return (data || []) as LeadRow[];
     },
   });
+
 
   const filtered = useMemo(() => {
     let rows = leads || [];
