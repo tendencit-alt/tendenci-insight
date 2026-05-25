@@ -9,22 +9,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Trash2 } from "lucide-react";
-import { useOpsOrders, useCreateOpsOrder, useDeleteOpsOrder } from "@/hooks/useOpsData";
-import { useCostCenters } from "@/hooks/useCostCenters";
-
-const ORDER_TYPES = [
-  { value: "production", label: "Produção" },
-  { value: "assembly", label: "Montagem" },
-  { value: "service", label: "Serviço" },
-  { value: "rework", label: "Retrabalho" },
-];
+import { useOpsOrders, useCreateOpsOrder, useDeleteOpsOrder, useProductionTypes } from "@/hooks/useOpsData";
 
 const STATUS_MAP: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  pending: { label: "Pendente", variant: "secondary" },
-  in_progress: { label: "Em Execução", variant: "default" },
-  completed: { label: "Concluída", variant: "outline" },
-  cancelled: { label: "Cancelada", variant: "destructive" },
-  delayed: { label: "Atrasada", variant: "destructive" },
+  aguardando: { label: "Aguardando", variant: "secondary" },
+  em_producao: { label: "Em Produção", variant: "default" },
+  em_andamento: { label: "Em Andamento", variant: "default" },
+  concluido: { label: "Concluído", variant: "outline" },
+  entregue: { label: "Entregue", variant: "outline" },
+  cancelado: { label: "Cancelado", variant: "destructive" },
 };
 
 const PRIORITY_MAP: Record<string, { label: string; variant: "default" | "secondary" | "destructive" }> = {
@@ -43,11 +36,11 @@ export function OpsOrdersTab() {
   });
   const createMut = useCreateOpsOrder();
   const deleteMut = useDeleteOpsOrder();
-  const { costCenters } = useCostCenters();
+  const { data: productionTypes = [] } = useProductionTypes();
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<any>({
-    title: "", order_type: "production", priority: "normal", start_date: "", expected_end_date: "", notes: "", cost_center_id: "",
+    title: "", production_type_id: "", priority: "normal", planned_start_date: "", planned_end_date: "", notes: "",
   });
 
   const filtered = orders.filter((o: any) => o.title?.toLowerCase().includes(search.toLowerCase()));
@@ -55,9 +48,14 @@ export function OpsOrdersTab() {
 
   const handleCreate = () => {
     createMut.mutate({
-      ...form,
-      cost_center_id: form.cost_center_id || null,
-    }, { onSuccess: () => { setOpen(false); setForm({ title: "", order_type: "production", priority: "normal", start_date: "", expected_end_date: "", notes: "", cost_center_id: "" }); } });
+      title: form.title,
+      production_type_id: form.production_type_id,
+      priority: form.priority,
+      planned_start_date: form.planned_start_date || null,
+      planned_end_date: form.planned_end_date || null,
+      notes: form.notes || null,
+      status: "aguardando",
+    }, { onSuccess: () => { setOpen(false); setForm({ title: "", production_type_id: "", priority: "normal", planned_start_date: "", planned_end_date: "", notes: "" }); } });
   };
 
   return (
@@ -70,14 +68,14 @@ export function OpsOrdersTab() {
             <Input placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 w-44" />
           </div>
           <Select value={typeFilter} onValueChange={v => setTypeFilter(v === "all" ? "" : v)}>
-            <SelectTrigger className="w-32"><SelectValue placeholder="Tipo" /></SelectTrigger>
+            <SelectTrigger className="w-40"><SelectValue placeholder="Tipo" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
-              {ORDER_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+              {productionTypes.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={v => setStatusFilter(v === "all" ? "" : v)}>
-            <SelectTrigger className="w-32"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
               {Object.entries(STATUS_MAP).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
@@ -86,14 +84,14 @@ export function OpsOrdersTab() {
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />Nova Ordem</Button></DialogTrigger>
             <DialogContent className="max-w-lg">
-              <DialogHeader><DialogTitle>Nova Ordem Operacional</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>Nova Ordem de Produção</DialogTitle></DialogHeader>
               <div className="grid gap-3">
                 <div><Label>Título *</Label><Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Tipo</Label>
-                    <Select value={form.order_type} onValueChange={v => setForm({ ...form, order_type: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{ORDER_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                  <div><Label>Tipo de Produção *</Label>
+                    <Select value={form.production_type_id} onValueChange={v => setForm({ ...form, production_type_id: v })}>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>{productionTypes.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div><Label>Prioridade</Label>
@@ -104,17 +102,11 @@ export function OpsOrdersTab() {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Início</Label><DateBrInput value={form.start_date} onChange={(iso) => setForm({ ...form, start_date: iso })} /></div>
-                  <div><Label>Previsão Conclusão</Label><DateBrInput value={form.expected_end_date} onChange={(iso) => setForm({ ...form, expected_end_date: iso })} /></div>
-                </div>
-                <div><Label>Centro de Custo</Label>
-                  <Select value={form.cost_center_id} onValueChange={v => setForm({ ...form, cost_center_id: v })}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>{costCenters.map(cc => <SelectItem key={cc.value} value={cc.value}>{cc.label}</SelectItem>)}</SelectContent>
-                  </Select>
+                  <div><Label>Início Planejado</Label><DateBrInput value={form.planned_start_date} onChange={(iso) => setForm({ ...form, planned_start_date: iso })} /></div>
+                  <div><Label>Previsão Conclusão</Label><DateBrInput value={form.planned_end_date} onChange={(iso) => setForm({ ...form, planned_end_date: iso })} /></div>
                 </div>
                 <div><Label>Observações</Label><Input value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
-                <Button onClick={handleCreate} disabled={!form.title || createMut.isPending}>Criar Ordem</Button>
+                <Button onClick={handleCreate} disabled={!form.title || !form.production_type_id || createMut.isPending}>Criar Ordem</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -131,10 +123,10 @@ export function OpsOrdersTab() {
                   <TableHead>Tipo</TableHead>
                   <TableHead>Prioridade</TableHead>
                   <TableHead>Cliente</TableHead>
-                  <TableHead>Centro Custo</TableHead>
+                  <TableHead>Fornecedor</TableHead>
                   <TableHead>Início</TableHead>
                   <TableHead>Previsão</TableHead>
-                  <TableHead className="text-right">Custo Real</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
@@ -142,20 +134,19 @@ export function OpsOrdersTab() {
               <TableBody>
                 {filtered.length === 0 && <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground">Nenhuma ordem</TableCell></TableRow>}
                 {filtered.map((o: any) => {
-                  const st = STATUS_MAP[o.status] || STATUS_MAP.pending;
+                  const st = STATUS_MAP[o.status] || { label: o.status, variant: "secondary" as const };
                   const pr = PRIORITY_MAP[o.priority] || PRIORITY_MAP.normal;
-                  const tp = ORDER_TYPES.find(t => t.value === o.order_type);
                   return (
                     <TableRow key={o.id}>
                       <TableCell className="font-mono text-xs">{o.order_number}</TableCell>
                       <TableCell className="font-medium">{o.title}</TableCell>
-                      <TableCell><Badge variant="outline">{tp?.label || o.order_type}</Badge></TableCell>
+                      <TableCell><Badge variant="outline">{o.production_types?.name || "—"}</Badge></TableCell>
                       <TableCell><Badge variant={pr.variant}>{pr.label}</Badge></TableCell>
                       <TableCell>{o.clients?.name || "—"}</TableCell>
-                      <TableCell>{o.fin_cost_centers?.name || "—"}</TableCell>
-                      <TableCell className="text-sm">{o.start_date ? new Date(o.start_date + "T12:00:00").toLocaleDateString("pt-BR") : "—"}</TableCell>
-                      <TableCell className="text-sm">{o.expected_end_date ? new Date(o.expected_end_date + "T12:00:00").toLocaleDateString("pt-BR") : "—"}</TableCell>
-                      <TableCell className="text-right font-mono text-sm">{fmt(o.actual_cost)}</TableCell>
+                      <TableCell>{o.suppliers?.name || "—"}</TableCell>
+                      <TableCell className="text-sm">{o.planned_start_date ? new Date(o.planned_start_date).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                      <TableCell className="text-sm">{o.planned_end_date ? new Date(o.planned_end_date).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                      <TableCell className="text-right font-mono text-sm">{fmt(o.value)}</TableCell>
                       <TableCell><Badge variant={st.variant}>{st.label}</Badge></TableCell>
                       <TableCell>
                         <Button variant="ghost" size="icon" onClick={() => deleteMut.mutate(o.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
