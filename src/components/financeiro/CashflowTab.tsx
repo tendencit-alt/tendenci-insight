@@ -185,6 +185,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       let compQuery = supabase
         .from("fin_ledger_entries")
         .select("type, amount, status, chart_account_id")
+        .eq("tenant_id", activeTenantId!)
         .neq("status", "CANCELADO")
         .gte("competence_date", dateFrom)
         .lte("competence_date", dateTo)
