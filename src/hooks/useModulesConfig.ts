@@ -141,12 +141,42 @@ export function useModulesConfig() {
   });
 }
 
-/** Returns only modules with visible_in_menu=true, grouped by category (excluding 'master'). */
+/**
+ * Returns the set of module_keys allowed by the active tenant's plan.
+ * SAFE FALLBACK: if no tenant, no plan, or plan has no plan_modules rows,
+ * returns null → caller must treat as "allow everything visible".
+ */
+export function useTenantPlanModules() {
+  const { profile } = useAuth() as any;
+  const tenantId = profile?.current_tenant_id ?? profile?.tenant_id ?? null;
+
+  return useQuery({
+    queryKey: ["tenant-plan-modules", tenantId],
+    enabled: !!tenantId,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async (): Promise<Set<string> | null> => {
+      const { data: tenant, error: tErr } = await (supabase as any)
+        .from("tenants").select("plan_id").eq("id", tenantId).maybeSingle();
+      if (tErr || !tenant?.plan_id) return null; // fallback
+      const { data: rows, error: pErr } = await (supabase as any)
+        .from("plan_modules").select("module_key").eq("plan_id", tenant.plan_id);
+      if (pErr) return null; // fallback
+      if (!rows || rows.length === 0) return null; // fallback
+      return new Set(rows.map((r: any) => r.module_key));
+    },
+  });
+}
+
+/** Returns only modules with visible_in_menu=true, gated by tenant plan (with safe fallback). */
 export function useVisibleModuleGroups() {
   const { data = [], isLoading } = useModulesConfig();
+  const { data: planModules } = useTenantPlanModules();
+
   const normalized = data
     .filter((m) => m.visible_in_menu && m.category !== "master")
-    .map(normalizeMenuModule);
+    .map(normalizeMenuModule)
+    // Plan gating: if planModules is null/undefined → no gating (safe fallback).
+    .filter((m) => !planModules || planModules.has(m.module_key));
 
   const visible = Array.from(
     normalized.reduce((acc, module) => {
