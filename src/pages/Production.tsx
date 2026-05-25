@@ -59,6 +59,10 @@ export default function Production() {
 
   // Função para exportar OPs para Excel
   const handleExport = async () => {
+    if (!activeTenantId) {
+      toast.error('Selecione uma empresa ativa antes de exportar.');
+      return;
+    }
     try {
       let query = supabase
         .from('production_orders')
@@ -75,7 +79,9 @@ export default function Production() {
           client:clients(name),
           responsible:profiles!production_orders_responsible_id_fkey(full_name)
         `)
+        .eq('tenant_id', activeTenantId)
         .order('order_number', { ascending: false });
+
 
       // Aplicar filtros
       if (currentTypeId) {
