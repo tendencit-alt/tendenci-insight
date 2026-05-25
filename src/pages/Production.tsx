@@ -19,6 +19,8 @@ import { getTailwindColor } from '@/utils/tailwindColors';
 import { toast } from 'sonner';
 import { format, subDays, startOfMonth } from 'date-fns';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useActiveTenant } from '@/hooks/useActiveTenant';
+
 
 export default function Production() {
   const [selectedType, setSelectedType] = useState<string>('');
