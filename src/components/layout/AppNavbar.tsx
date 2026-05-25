@@ -207,7 +207,7 @@ const ERP_MODULES: ModuleGroup[] = [
         description: "Visão e gestão essencial dos tenants",
         items: [
           { label: "Owner Control Tower", route: "/owner/control-tower", icon: "Landmark", available: true },
-          { label: "Empresas / Tenants", route: "/super-administrador?tab=companies", icon: "Building2", available: true },
+          { label: "Empresas / Tenants", route: "/super-administrador?tab=tenants", icon: "Building2", available: true },
           { label: "Planos & Módulos", route: "/super-administrador?tab=plan-modules", icon: "Package", available: true },
         ],
       },
