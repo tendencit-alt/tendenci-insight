@@ -11,6 +11,7 @@ import {
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { formatKpiNumber, isKpiValid, KPI_EMPTY } from "@/lib/formatKpi";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 
 interface Props {
   filters: FinanceiroFiltersState;
@@ -29,12 +30,14 @@ export function ExecutiveKPIPanel({ filters }: Props) {
   const dateTo = filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
   const currentYear = (filters.dateFrom || new Date()).getFullYear();
   const currentMonth = (filters.dateFrom || new Date()).getMonth() + 1;
+  const { activeTenantId } = useActiveTenant();
 
   // Chart accounts
   const { data: chartAccounts } = useQuery({
-    queryKey: ["kpi-chart-accounts"],
+    queryKey: ["kpi-chart-accounts", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
-      const { data } = await supabase.from("fin_chart_accounts").select("id, code, name, nature").eq("active", true);
+      const { data } = await supabase.from("fin_chart_accounts").select("id, code, name, nature").eq("tenant_id", activeTenantId!).eq("active", true);
       return data || [];
     },
     staleTime: 5 * 60 * 1000,
@@ -42,9 +45,11 @@ export function ExecutiveKPIPanel({ filters }: Props) {
 
   // DRE entries (competence)
   const { data: dreEntries, isLoading: loadDre } = useQuery({
-    queryKey: ["kpi-dre", dateFrom, dateTo, filters.costCenterId, filters.projectId],
+    queryKey: ["kpi-dre", dateFrom, dateTo, filters.costCenterId, filters.projectId, activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       let q = supabase.from("fin_ledger_entries").select("chart_account_id, amount")
+        .eq("tenant_id", activeTenantId!)
         .neq("status", "CANCELADO").gte("competence_date", dateFrom).lte("competence_date", dateTo)
         .not("competence_date", "is", null);
       if (filters.costCenterId) q = q.eq("cost_center_id", filters.costCenterId);
@@ -56,10 +61,12 @@ export function ExecutiveKPIPanel({ filters }: Props) {
 
   // YTD entries
   const { data: ytdEntries } = useQuery({
-    queryKey: ["kpi-ytd", currentYear, filters.costCenterId, filters.projectId],
+    queryKey: ["kpi-ytd", currentYear, filters.costCenterId, filters.projectId, activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const ytdFrom = `${currentYear}-01-01`;
       let q = supabase.from("fin_ledger_entries").select("chart_account_id, amount")
+        .eq("tenant_id", activeTenantId!)
         .neq("status", "CANCELADO").gte("competence_date", ytdFrom).lte("competence_date", dateTo)
         .not("competence_date", "is", null);
       if (filters.costCenterId) q = q.eq("cost_center_id", filters.costCenterId);
@@ -71,16 +78,19 @@ export function ExecutiveKPIPanel({ filters }: Props) {
 
   // Cash balance
   const { data: cashBalance } = useQuery({
-    queryKey: ["kpi-cash-balance", filters.bankAccountId],
+    queryKey: ["kpi-cash-balance", filters.bankAccountId, activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
-      let q = supabase.from("fin_bank_accounts").select("opening_balance").eq("active", true);
+      let q = supabase.from("fin_bank_accounts").select("opening_balance").eq("tenant_id", activeTenantId!).eq("active", true);
       if (filters.bankAccountId) q = q.eq("id", filters.bankAccountId);
       const { data } = await q;
       const openBal = (data || []).reduce((s, a: any) => s + Number(a.opening_balance || 0), 0);
 
       // Add all realized cash movements
       const { data: cashEntries } = await supabase.from("fin_ledger_entries")
-        .select("amount, type").neq("status", "CANCELADO").not("cash_date", "is", null);
+        .select("amount, type")
+        .eq("tenant_id", activeTenantId!)
+        .neq("status", "CANCELADO").not("cash_date", "is", null);
       let netCash = openBal;
       (cashEntries || []).forEach((e: any) => {
         netCash += e.type === "CREDITO" ? Number(e.amount) : -Number(e.amount);
@@ -91,10 +101,13 @@ export function ExecutiveKPIPanel({ filters }: Props) {
 
   // Goals for current month
   const { data: goals } = useQuery({
-    queryKey: ["kpi-goals", currentYear, currentMonth],
+    queryKey: ["kpi-goals", currentYear, currentMonth, activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data } = await supabase.from("fin_financial_goals")
-        .select("metric_key, target_amount").eq("year", currentYear).eq("month", currentMonth);
+        .select("metric_key, target_amount")
+        .eq("tenant_id", activeTenantId!)
+        .eq("year", currentYear).eq("month", currentMonth);
       const m = new Map<string, number>();
       (data || []).forEach((g: any) => m.set(g.metric_key, Number(g.target_amount)));
       return m;
@@ -103,10 +116,13 @@ export function ExecutiveKPIPanel({ filters }: Props) {
 
   // Budget for current month
   const { data: budgetData } = useQuery({
-    queryKey: ["kpi-budget", currentYear, currentMonth],
+    queryKey: ["kpi-budget", currentYear, currentMonth, activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data } = await supabase.from("fin_budgets")
-        .select("chart_account_id, amount, budget_type").eq("year", currentYear).eq("month", currentMonth).eq("version_label", "base");
+        .select("chart_account_id, amount, budget_type")
+        .eq("tenant_id", activeTenantId!)
+        .eq("year", currentYear).eq("month", currentMonth).eq("version_label", "base");
       let bReceita = 0, bDespesa = 0;
       (data || []).forEach((e: any) => {
         if (e.budget_type === "RECEITA") bReceita += Number(e.amount);
@@ -118,10 +134,13 @@ export function ExecutiveKPIPanel({ filters }: Props) {
 
   // Recurring contracts
   const { data: recurringData } = useQuery({
-    queryKey: ["kpi-recurring"],
+    queryKey: ["kpi-recurring", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data } = await supabase.from("fin_recurring_contracts")
-        .select("base_amount, entry_type, periodicity").eq("status", "active");
+        .select("base_amount, entry_type, periodicity")
+        .eq("tenant_id", activeTenantId!)
+        .eq("status", "active");
       let recReceita = 0, recDespesa = 0;
       (data || []).forEach((c: any) => {
         const monthly = periodicityToMonthly(Number(c.base_amount), c.periodicity);

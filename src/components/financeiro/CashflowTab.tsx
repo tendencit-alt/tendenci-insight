@@ -17,6 +17,7 @@ import {
 import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 
 interface CashflowTabProps {
   filters: FinanceiroFiltersState;
@@ -119,6 +120,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
   const [executiveMode, setExecutiveMode] = useState(false);
   const [hiddenBlocks, setHiddenBlocks] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
+  const { activeTenantId } = useActiveTenant();
 
   useEffect(() => {
     const channel = supabase
@@ -131,7 +133,8 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
   }, [queryClient]);
 
   const { data: cashflowData, isLoading } = useQuery({
-    queryKey: ["fin-cashflow-list", filters],
+    queryKey: ["fin-cashflow-list", filters, activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const dateFrom = filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : "2000-01-01";
       const dateTo = filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : "2099-12-31";
@@ -140,6 +143,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       const { data: chartAccounts } = await supabase
         .from("fin_chart_accounts")
         .select("id, code, name, nature, parent_id, grupo_fluxo")
+        .eq("tenant_id", activeTenantId!)
         .eq("in_cashflow", true)
         .eq("active", true)
         .order("code");
@@ -148,6 +152,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       let balanceQuery = supabase
         .from("fin_bank_accounts")
         .select("opening_balance")
+        .eq("tenant_id", activeTenantId!)
         .eq("active", true);
       if (filters.bankAccountId) {
         balanceQuery = balanceQuery.eq("id", filters.bankAccountId);
@@ -159,6 +164,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       let query = supabase
         .from("fin_ledger_entries")
         .select("id, chart_account_id, description, amount, cash_date, document_number, has_splits, type, status")
+        .eq("tenant_id", activeTenantId!)
         .neq("status", "CANCELADO")
         .not("cash_date", "is", null)
         .gte("cash_date", dateFrom)
@@ -179,6 +185,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       let compQuery = supabase
         .from("fin_ledger_entries")
         .select("type, amount, status, chart_account_id")
+        .eq("tenant_id", activeTenantId!)
         .neq("status", "CANCELADO")
         .gte("competence_date", dateFrom)
         .lte("competence_date", dateTo)

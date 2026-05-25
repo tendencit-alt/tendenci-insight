@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TrendingUp, TrendingDown, DollarSign, Percent } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 
 interface FinancialResultTabProps {
   filters: FinanceiroFiltersState;
@@ -16,23 +17,27 @@ interface FinancialResultTabProps {
 export function FinancialResultTab({ filters }: FinancialResultTabProps) {
   const dateFrom = filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : format(startOfMonth(new Date()), "yyyy-MM-dd");
   const dateTo = filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : format(endOfMonth(new Date()), "yyyy-MM-dd");
+  const { activeTenantId } = useActiveTenant();
 
   // Buscar lançamentos da raiz 5 (Resultado Financeiro)
   const { data: entries, isLoading } = useQuery({
-    queryKey: ["fin-result-entries", dateFrom, dateTo, filters.costCenterId],
+    queryKey: ["fin-result-entries", dateFrom, dateTo, filters.costCenterId, activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       // Buscar contas da raiz 5
       const { data: root5 } = await supabase
         .from("fin_chart_accounts")
         .select("id")
+        .eq("tenant_id", activeTenantId!)
         .eq("code", "5")
-        .single();
+        .maybeSingle();
 
       if (!root5) return [];
 
       const { data: accounts } = await supabase
         .from("fin_chart_accounts")
         .select("id, code, name, nature")
+        .eq("tenant_id", activeTenantId!)
         .or(`id.eq.${root5.id},parent_id.eq.${root5.id}`);
 
       if (!accounts) return [];
@@ -41,6 +46,7 @@ export function FinancialResultTab({ filters }: FinancialResultTabProps) {
       let query = supabase
         .from("fin_ledger_entries")
         .select("id, description, amount, type, competence_date, cash_date, status, chart_account_id")
+        .eq("tenant_id", activeTenantId!)
         .in("chart_account_id", accountIds)
         .gte("competence_date", dateFrom)
         .lte("competence_date", dateTo)

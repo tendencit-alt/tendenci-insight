@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useMemo } from "react";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 
 interface DRETabProps {
   filters: FinanceiroFiltersState;
@@ -174,6 +175,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
   const [showBudget, setShowBudget] = useState(false);
   const [budgetVersion, setBudgetVersion] = useState<BudgetVersionLabel>("base");
   const queryClient = useQueryClient();
+  const { activeTenantId } = useActiveTenant();
   const dateField = "competence_date";
 
   // Derive year/month from filters for budget lookup
@@ -213,7 +215,8 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
   }, [queryClient]);
 
   const { data: dreData, isLoading } = useQuery({
-    queryKey: ["fin-dre", filters],
+    queryKey: ["fin-dre", filters, activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const dateFrom = filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : "2000-01-01";
       const dateTo = filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : "2099-12-31";
@@ -222,6 +225,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       const { data: chartAccounts } = await supabase
         .from("fin_chart_accounts")
         .select("id, code, name, nature, parent_id, dre_order")
+        .eq("tenant_id", activeTenantId!)
         .eq("in_dre", true)
         .eq("active", true)
         .order("code");
@@ -230,6 +234,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       let query = supabase
         .from("fin_ledger_entries")
         .select("id, chart_account_id, description, amount, competence_date, cash_date, document_number, party_type, party_id, has_splits, status")
+        .eq("tenant_id", activeTenantId!)
         .neq("status", "CANCELADO")
         .gte(dateField, dateFrom)
         .lte(dateField, dateTo)
@@ -512,6 +517,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       const { data: goalsData } = await supabase
         .from("fin_financial_goals")
         .select("metric_key, target_amount")
+        .eq("tenant_id", activeTenantId!)
         .eq("month", month)
         .eq("year", year)
         .is("cost_center_id", null)
