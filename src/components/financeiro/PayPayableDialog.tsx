@@ -128,7 +128,7 @@ export function PayPayableDialog({ open, onOpenChange, payable, onSuccess }: Pay
             <Label>Data do Pagamento *</Label>
             <DateBrInput
               value={form.payment_date}
-              onChange={(e) =/> setForm({ ...form, payment_date: e.target.value })}
+              onChange={(iso) => setForm({ ...form, payment_date: iso })}
             />
           </div>
 

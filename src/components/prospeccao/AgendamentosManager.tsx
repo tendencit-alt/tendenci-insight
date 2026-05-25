@@ -336,7 +336,7 @@ export function AgendamentosManager() {
                   <DateBrInput
                     id="data"
                     value={formData.data_agendamento}
-                    onChange={(e) =/> setFormData({ ...formData, data_agendamento: e.target.value })}
+                    onChange={(iso) => setFormData({ ...formData, data_agendamento: iso })}
                   />
                 </div>
 

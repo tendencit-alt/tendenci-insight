@@ -240,7 +240,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
               <DateBrInput
                 id="birthday"
                 value={formData.birthday}
-                onChange={(e) =/> setFormData({ ...formData, birthday: e.target.value })}
+                onChange={(iso) => setFormData({ ...formData, birthday: iso })}
               />
             </div>
           </div>
@@ -271,7 +271,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
                   <DateBrInput
                     id="data_primeiro_contato"
                     value={formData.data_primeiro_contato}
-                    onChange={(e) =/> setFormData({ ...formData, data_primeiro_contato: e.target.value })}
+                    onChange={(iso) => setFormData({ ...formData, data_primeiro_contato: iso })}
                   />
                 </div>
 
@@ -280,7 +280,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
                   <DateBrInput
                     id="data_ultimo_contato"
                     value={formData.data_ultimo_contato}
-                    onChange={(e) =/> setFormData({ ...formData, data_ultimo_contato: e.target.value })}
+                    onChange={(iso) => setFormData({ ...formData, data_ultimo_contato: iso })}
                   />
                 </div>
               </div>

@@ -45,7 +45,7 @@ export function HRTimesheetsTab() {
                     <SelectContent>{employees.filter((e: any) => e.status === "active").map((e: any) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><Label>Data *</Label><DateBrInput value={form.work_date} onChange={e =/> setForm({ ...form, work_date: e.target.value })} /></div>
+                <div><Label>Data *</Label><DateBrInput value={form.work_date} onChange={(iso) => setForm({ ...form, work_date: iso })} /></div>
                 <div className="grid grid-cols-3 gap-2">
                   <div><Label>Previstas</Label><Input type="number" value={form.planned_hours} onChange={e => setForm({ ...form, planned_hours: e.target.value })} /></div>
                   <div><Label>Realizadas</Label><Input type="number" value={form.worked_hours} onChange={e => setForm({ ...form, worked_hours: e.target.value })} /></div>

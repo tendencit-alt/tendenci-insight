@@ -87,7 +87,7 @@ export function FormFieldRenderer({ fields, values, onChange, onBatchChange, err
               <DateBrInput
                 id={field.key}
                 value={value || ""}
-                onChange={(e) =/> handleChange(field, e.target.value)}
+                onChange={(iso) => handleChange(field, iso)}
                 disabled={field.disabled}
                 className={cn("h-9", error && "border-destructive")}
               />

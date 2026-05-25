@@ -240,7 +240,7 @@ export function BankAccountsManager() {
                 <Label>Data do Saldo</Label>
                 <DateBrInput
                   value={form.opening_balance_date}
-                  onChange={(e) =/> setForm({ ...form, opening_balance_date: e.target.value })}
+                  onChange={(iso) => setForm({ ...form, opening_balance_date: iso })}
                 />
               </div>
             </div>

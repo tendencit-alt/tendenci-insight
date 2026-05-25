@@ -100,7 +100,7 @@ export function SupRequestsTab() {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Data Necessidade</Label><DateBrInput value={form.needed_by} onChange={e =/> setForm({ ...form, needed_by: e.target.value })} /></div>
+                  <div><Label>Data Necessidade</Label><DateBrInput value={form.needed_by} onChange={(iso) => setForm({ ...form, needed_by: iso })} /></div>
                   <div><Label>Valor Estimado</Label><Input type="number" value={form.estimated_value} onChange={e => setForm({ ...form, estimated_value: e.target.value })} /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">

@@ -406,7 +406,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
                 <DateBrInput
                   id="deadline"
                   value={formData.deadline}
-                  onChange={(e) =/> setFormData({ ...formData, deadline: e.target.value })}
+                  onChange={(iso) => setFormData({ ...formData, deadline: iso })}
                 />
               </div>
 

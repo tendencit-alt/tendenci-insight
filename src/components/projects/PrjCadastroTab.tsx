@@ -81,8 +81,8 @@ export function PrjCadastroTab() {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Início</Label><DateBrInput value={form.start_date} onChange={e =/> setForm({ ...form, start_date: e.target.value })} /></div>
-                  <div><Label>Previsão Entrega</Label><DateBrInput value={form.expected_end_date} onChange={e =/> setForm({ ...form, expected_end_date: e.target.value })} /></div>
+                  <div><Label>Início</Label><DateBrInput value={form.start_date} onChange={(iso) => setForm({ ...form, start_date: iso })} /></div>
+                  <div><Label>Previsão Entrega</Label><DateBrInput value={form.expected_end_date} onChange={(iso) => setForm({ ...form, expected_end_date: iso })} /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label>Valor Vendido</Label><Input type="number" value={form.sold_value} onChange={e => setForm({ ...form, sold_value: e.target.value })} /></div>

@@ -199,7 +199,7 @@ export default function CategoryKPIsReport() {
               <Label className="text-xs">De</Label>
               <DateBrInput
                 value={startDate}
-                onChange={(e) =/> setStartDate(e.target.value)}
+                onChange={(iso) => setStartDate(iso)}
                 className="w-[160px]"
               />
             </div>
@@ -207,7 +207,7 @@ export default function CategoryKPIsReport() {
               <Label className="text-xs">Até</Label>
               <DateBrInput
                 value={endDate}
-                onChange={(e) =/> setEndDate(e.target.value)}
+                onChange={(iso) => setEndDate(iso)}
                 className="w-[160px]"
               />
             </div>

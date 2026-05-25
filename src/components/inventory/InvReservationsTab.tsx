@@ -89,7 +89,7 @@ export default function InvReservationsTab() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>Quantidade</Label><Input type="number" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} /></div>
-                <div><Label>Data Necessidade</Label><DateBrInput value={form.needed_by} onChange={e =/> setForm({ ...form, needed_by: e.target.value })} /></div>
+                <div><Label>Data Necessidade</Label><DateBrInput value={form.needed_by} onChange={(iso) => setForm({ ...form, needed_by: iso })} /></div>
               </div>
               <div><Label>Observações</Label><Input value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
               <Button onClick={handleCreate} disabled={!form.product_id || !form.quantity || createMut.isPending}>Reservar</Button>

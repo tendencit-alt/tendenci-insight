@@ -221,7 +221,7 @@ export default function EditPurchaseOrderDialog({ order, open, onOpenChange, onS
               <Label>Previsão de Entrega</Label>
               <DateBrInput
                 value={form.expected_date}
-                onChange={(e) =/> setForm({ ...form, expected_date: e.target.value })}
+                onChange={(iso) => setForm({ ...form, expected_date: iso })}
               />
             </div>
           </div>

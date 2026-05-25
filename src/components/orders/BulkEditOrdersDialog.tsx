@@ -140,7 +140,7 @@ export function BulkEditOrdersDialog({ open, onOpenChange, selectedIds, onSucces
             <DateBrInput
               className="h-9"
               value={fields.data_entrega_prevista || ''}
-              onChange={(e) =/> setFields({ ...fields, data_entrega_prevista: e.target.value || undefined })}
+              onChange={(iso) => setFields({ ...fields, data_entrega_prevista: iso || undefined })}
             />
           </div>
 

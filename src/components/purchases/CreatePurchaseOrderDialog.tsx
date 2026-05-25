@@ -191,7 +191,7 @@ export default function CreatePurchaseOrderDialog({ open, onOpenChange, onSucces
               <DateBrInput
                 id="expected_date"
                 value={form.expected_date}
-                onChange={(e) =/> setForm({ ...form, expected_date: e.target.value })}
+                onChange={(iso) => setForm({ ...form, expected_date: iso })}
               />
             </div>
           </div>

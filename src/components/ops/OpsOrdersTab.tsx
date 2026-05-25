@@ -104,8 +104,8 @@ export function OpsOrdersTab() {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Início</Label><DateBrInput value={form.start_date} onChange={e =/> setForm({ ...form, start_date: e.target.value })} /></div>
-                  <div><Label>Previsão Conclusão</Label><DateBrInput value={form.expected_end_date} onChange={e =/> setForm({ ...form, expected_end_date: e.target.value })} /></div>
+                  <div><Label>Início</Label><DateBrInput value={form.start_date} onChange={(iso) => setForm({ ...form, start_date: iso })} /></div>
+                  <div><Label>Previsão Conclusão</Label><DateBrInput value={form.expected_end_date} onChange={(iso) => setForm({ ...form, expected_end_date: iso })} /></div>
                 </div>
                 <div><Label>Centro de Custo</Label>
                   <Select value={form.cost_center_id} onValueChange={v => setForm({ ...form, cost_center_id: v })}>

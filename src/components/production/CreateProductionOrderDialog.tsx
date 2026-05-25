@@ -375,7 +375,7 @@ export function CreateProductionOrderDialog({ open, onOpenChange, productionType
                 <Label>Data Início Prevista</Label>
                 <DateBrInput
                   value={formData.planned_start_date}
-                  onChange={(e) =/> setFormData(prev => ({ ...prev, planned_start_date: e.target.value }))}
+                  onChange={(iso) => setFormData(prev => ({ ...prev, planned_start_date: iso }))}
                 />
               </div>
 
@@ -383,7 +383,7 @@ export function CreateProductionOrderDialog({ open, onOpenChange, productionType
                 <Label>Data Fim Prevista</Label>
                 <DateBrInput
                   value={formData.planned_end_date}
-                  onChange={(e) =/> setFormData(prev => ({ ...prev, planned_end_date: e.target.value }))}
+                  onChange={(iso) => setFormData(prev => ({ ...prev, planned_end_date: iso }))}
                 />
               </div>
             </div>

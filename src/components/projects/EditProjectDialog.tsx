@@ -177,7 +177,7 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
               <DateBrInput
                 id="edit-deadline"
                 value={formData.deadline}
-                onChange={(e) =/> setFormData({ ...formData, deadline: e.target.value })}
+                onChange={(iso) => setFormData({ ...formData, deadline: iso })}
               />
             </div>
           </div>

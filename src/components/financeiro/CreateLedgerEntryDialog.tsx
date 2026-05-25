@@ -411,7 +411,7 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
               <Label>Data de Competência *</Label>
               <DateBrInput
                 value={form.competence_date}
-                onChange={(e) =/> setForm({ ...form, competence_date: e.target.value })}
+                onChange={(iso) => setForm({ ...form, competence_date: iso })}
               />
             </div>
 
@@ -419,7 +419,7 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
               <Label>Data de Caixa (Pagamento/Recebimento)</Label>
               <DateBrInput
                 value={form.cash_date}
-                onChange={(e) =/> setForm({ ...form, cash_date: e.target.value })}
+                onChange={(iso) => setForm({ ...form, cash_date: iso })}
               />
             </div>
           </div>
@@ -556,7 +556,7 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
                   <Label>Data de Vencimento *</Label>
                   <DateBrInput
                     value={form.due_date}
-                    onChange={(e) =/> setForm({ ...form, due_date: e.target.value })}
+                    onChange={(iso) => setForm({ ...form, due_date: iso })}
                   />
                 </div>
               </div>
