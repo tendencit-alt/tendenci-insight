@@ -47,7 +47,7 @@ interface ProdutoEstoque {
   id: string;
   name: string;
   code: string | null;
-  cost_price: number | null;
+  sale_price: number | null;
   current_stock: number | null;
   unit: string | null;
   active: boolean | null;
@@ -175,7 +175,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
           id, 
           name, 
           code, 
-          cost_price, 
+          sale_price,
           current_stock, 
           unit, 
           active,
@@ -188,8 +188,8 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
       
       if (error) throw error;
       
-      // Se produto tem ia_produto_id e cost_price = 0, buscar preco_base da IA
-      const produtosComIA = (data || []).filter(p => p.ia_produto_id && (p.cost_price === 0 || p.cost_price === null));
+      // Se produto tem ia_produto_id e sale_price = 0/null, buscar preco_base da IA como fallback
+      const produtosComIA = (data || []).filter(p => p.ia_produto_id && (p.sale_price === 0 || p.sale_price === null));
       
       if (produtosComIA.length > 0) {
         const iaIds = produtosComIA.map(p => p.ia_produto_id);
@@ -198,23 +198,21 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
           .select('id, preco_base')
           .in('id', iaIds);
         
-        // Mapear preços da IA
         const iaPrecos = new Map((iaData || []).map(ia => [ia.id, ia.preco_base]));
         
-        // Atualizar produtos com preço da IA
         const produtosAtualizados = (data || []).map(p => {
-          if (p.ia_produto_id && (p.cost_price === 0 || p.cost_price === null)) {
+          if (p.ia_produto_id && (p.sale_price === 0 || p.sale_price === null)) {
             const precoIA = iaPrecos.get(p.ia_produto_id);
             if (precoIA) {
-              return { ...p, cost_price: precoIA };
+              return { ...p, sale_price: precoIA };
             }
           }
           return p;
         });
         
-        setProdutosEstoque(produtosAtualizados);
+        setProdutosEstoque(produtosAtualizados as ProdutoEstoque[]);
       } else {
-        setProdutosEstoque(data || []);
+        setProdutosEstoque((data || []) as ProdutoEstoque[]);
       }
     } catch (error) {
       console.error('Erro ao carregar produtos do estoque:', error);
@@ -239,7 +237,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
     setNewItem({
       descricao: produto.name,
       quantidade: 1,
-      valor_unitario: produto.cost_price || 0,
+      valor_unitario: produto.sale_price || 0,
       codigo_produto: produto.code || '',
       unidade: produto.unit || 'UN',
       especificacoes: '',
@@ -382,7 +380,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                           </p>
                         </div>
                         <div className="shrink-0 text-right space-y-1">
-                          <p className="font-medium">{formatCurrency(produto.cost_price || 0)}</p>
+                          <p className="font-medium">{formatCurrency(produto.sale_price || 0)}</p>
                           {(() => {
                             const s = produto.current_stock ?? 0;
                             if (s < 0) return <Badge variant="destructive">Negativo: {s} {produto.unit || 'UN'}</Badge>;

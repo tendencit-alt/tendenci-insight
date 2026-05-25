@@ -10,6 +10,7 @@ import { useOrderResponsibles } from '@/hooks/useOrderResponsibles';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DateBrInput } from '@/components/ui/date-br-input';
 import { MoneyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -1703,13 +1704,12 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                           {/* Vencimento */}
                           <div className="col-span-3 space-y-1">
                             <Label className="text-xs">Vencimento</Label>
-                            <Input
-                              type="date"
+                            <DateBrInput
                               className="h-10"
                               value={parcela.data_vencimento}
-                              onChange={(e) => {
+                              onChange={(iso) => {
                                 const newParcelas = [...parcelas];
-                                newParcelas[index].data_vencimento = e.target.value;
+                                newParcelas[index].data_vencimento = iso;
                                 setParcelas(newParcelas);
                               }}
                               disabled={!isEditable}
@@ -1857,13 +1857,12 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
                         <div className="col-span-2 space-y-1">
                           <Label className="text-xs">Vencimento</Label>
-                          <Input
-                            type="date"
+                          <DateBrInput
                             className="h-10"
                             value={parcela.data_vencimento}
-                            onChange={(e) => {
+                            onChange={(iso) => {
                               const newParcelas = [...parcelas];
-                              newParcelas[index].data_vencimento = e.target.value;
+                              newParcelas[index].data_vencimento = iso;
                               setParcelas(newParcelas);
                             }}
                             disabled={!isEditable}
@@ -2391,7 +2390,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
               <div className="space-y-2">
                 <Label>Data de Entrega Prevista</Label>
-                <Input type="date" value={formData.data_entrega_prevista} onChange={(e) => setFormData({ ...formData, data_entrega_prevista: e.target.value })} disabled={!isEditable} />
+                <DateBrInput value={formData.data_entrega_prevista} onChange={(iso) => setFormData({ ...formData, data_entrega_prevista: iso })} disabled={!isEditable} />
               </div>
             </div>
 

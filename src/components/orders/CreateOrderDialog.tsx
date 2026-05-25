@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DateBrInput } from '@/components/ui/date-br-input';
 import { MoneyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -1344,13 +1345,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                             {/* Vencimento */}
                             <div className="col-span-3 space-y-1">
                               <Label className="text-xs">Vencimento</Label>
-                              <Input
-                                type="date"
+                              <DateBrInput
                                 className="h-10"
                                 value={parcela.data_vencimento}
-                                onChange={(e) => {
+                                onChange={(iso) => {
                                   const newParcelas = [...parcelas];
-                                  newParcelas[index].data_vencimento = e.target.value;
+                                  newParcelas[index].data_vencimento = iso;
                                   setParcelas(newParcelas);
                                 }}
                               />
@@ -1492,13 +1492,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
                           <div className="col-span-2 space-y-1">
                             <Label className="text-xs">Vencimento</Label>
-                            <Input
-                              type="date"
+                            <DateBrInput
                               className="h-10"
                               value={parcela.data_vencimento}
-                              onChange={(e) => {
+                              onChange={(iso) => {
                                 const newParcelas = [...parcelas];
-                                newParcelas[index].data_vencimento = e.target.value;
+                                newParcelas[index].data_vencimento = iso;
                                 setParcelas(newParcelas);
                               }}
                             />
@@ -2019,10 +2018,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
                 <div className="space-y-2">
                   <Label>Data de Entrega Prevista</Label>
-                  <Input
-                    type="date"
+                  <DateBrInput
                     value={formData.data_entrega_prevista}
-                    onChange={(e) => setFormData({ ...formData, data_entrega_prevista: e.target.value })}
+                    onChange={(iso) => setFormData({ ...formData, data_entrega_prevista: iso })}
                   />
                 </div>
               </div>
