@@ -41,15 +41,17 @@ interface ProductionMetrics {
 }
 
 export function ProductionKPIs({ productionTypeId, filters }: ProductionKPIsProps) {
-  
+  const { activeTenantId } = useActiveTenant();
 
   // Query direta para calcular o TOTAL de TODOS os tipos em produção (exceto cancelado)
   const { data: totalEmProducao, isLoading: loadingTotal } = useQuery({
-    queryKey: ['production-total-all'],
+    queryKey: ['production-total-all', activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('production_orders')
         .select('value, status')
+        .eq('tenant_id', activeTenantId!)
         .neq('status', 'cancelado');
       
       if (error) throw error;
@@ -61,6 +63,7 @@ export function ProductionKPIs({ productionTypeId, filters }: ProductionKPIsProp
     },
     staleTime: 5000,
   });
+
 
   // Métricas do tipo selecionado (para atrasadas e urgentes)
   const { data: metrics, isLoading: loadingType } = useQuery({
