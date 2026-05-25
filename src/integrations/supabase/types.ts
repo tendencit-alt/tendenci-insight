@@ -11449,7 +11449,7 @@ export type Database = {
           id: string
           skipped: boolean
           step_key: string
-          tenant_id: string | null
+          tenant_id: string
           updated_at: string | null
         }
         Insert: {
@@ -11460,7 +11460,7 @@ export type Database = {
           id?: string
           skipped?: boolean
           step_key: string
-          tenant_id?: string | null
+          tenant_id: string
           updated_at?: string | null
         }
         Update: {
@@ -11471,7 +11471,7 @@ export type Database = {
           id?: string
           skipped?: boolean
           step_key?: string
-          tenant_id?: string | null
+          tenant_id?: string
           updated_at?: string | null
         }
         Relationships: [
@@ -12222,7 +12222,7 @@ export type Database = {
           order_id: string
           percentual: number
           responsavel_id: string | null
-          tenant_id: string | null
+          tenant_id: string
           updated_at: string
           valor: number
         }
@@ -12234,7 +12234,7 @@ export type Database = {
           order_id: string
           percentual?: number
           responsavel_id?: string | null
-          tenant_id?: string | null
+          tenant_id: string
           updated_at?: string
           valor?: number
         }
@@ -12246,7 +12246,7 @@ export type Database = {
           order_id?: string
           percentual?: number
           responsavel_id?: string | null
-          tenant_id?: string | null
+          tenant_id?: string
           updated_at?: string
           valor?: number
         }
@@ -22808,6 +22808,10 @@ export type Database = {
           product_name: string
           stock_value: number
         }[]
+      }
+      storage_tenant_for: {
+        Args: { _bucket: string; _name: string }
+        Returns: string
       }
       suggest_purchase_orders: {
         Args: never
