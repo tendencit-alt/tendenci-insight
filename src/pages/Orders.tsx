@@ -18,6 +18,8 @@ import { Button } from '@/components/ui/button';
 import { Plus, ShoppingCart } from 'lucide-react';
 import { startOfMonth } from 'date-fns';
 import { useOrdersRealtime } from '@/hooks/useOrdersRealtime';
+import { useActiveTenant } from '@/hooks/useActiveTenant';
+
 
 export default function Orders() {
   const [searchParams, setSearchParams] = useSearchParams();
