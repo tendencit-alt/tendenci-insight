@@ -380,7 +380,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                           </p>
                         </div>
                         <div className="shrink-0 text-right space-y-1">
-                          <p className="font-medium">{formatCurrency(produto.cost_price || 0)}</p>
+                          <p className="font-medium">{formatCurrency(produto.sale_price || 0)}</p>
                           {(() => {
                             const s = produto.current_stock ?? 0;
                             if (s < 0) return <Badge variant="destructive">Negativo: {s} {produto.unit || 'UN'}</Badge>;
