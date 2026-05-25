@@ -10,6 +10,7 @@ import { useOrderResponsibles } from '@/hooks/useOrderResponsibles';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DateBrInput } from '@/components/ui/date-br-input';
 import { MoneyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
