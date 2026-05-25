@@ -2,7 +2,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2, CreditCard, ArrowLeft, Wrench, LayoutDashboard, Shield, Activity, Rocket, BarChart3, GitBranch, Settings2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { TenantsManager } from '@/components/superadmin/TenantsManager';
 import { PlansManager } from '@/components/superadmin/PlansManager';
 import { PlanModulesManager } from '@/components/superadmin/PlanModulesManager';
