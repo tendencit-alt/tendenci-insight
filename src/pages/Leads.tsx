@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
+
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ModuleShell } from "@/components/layout/ModuleShell";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
