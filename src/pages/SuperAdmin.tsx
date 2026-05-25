@@ -17,6 +17,8 @@ import { ConfigGovernancePanel } from '@/components/superadmin/ConfigGovernanceP
 
 const SuperAdmin = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab') ?? 'dashboard';
 
   return (
     <DashboardLayout>
