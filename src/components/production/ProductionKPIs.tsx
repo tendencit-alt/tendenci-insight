@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useActiveTenant } from '@/hooks/useActiveTenant';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
@@ -7,6 +8,7 @@ import {
   AlertTriangle,
   Zap
 } from 'lucide-react';
+
 
 interface ProductionKPIsProps {
   productionTypeId?: string;
