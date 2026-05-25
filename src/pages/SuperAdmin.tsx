@@ -5,6 +5,7 @@ import { Building2, CreditCard, ArrowLeft, Wrench, LayoutDashboard, Shield, Acti
 import { useNavigate } from 'react-router-dom';
 import { TenantsManager } from '@/components/superadmin/TenantsManager';
 import { PlansManager } from '@/components/superadmin/PlansManager';
+import { PlanModulesManager } from '@/components/superadmin/PlanModulesManager';
 import { SuperAdminDashboard } from '@/components/superadmin/SuperAdminDashboard';
 import { OwnerTechnicalPanel } from '@/components/superadmin/OwnerTechnicalPanel';
 import { SupportDashboard } from '@/components/superadmin/SupportDashboard';
@@ -61,6 +62,10 @@ const SuperAdmin = () => {
               <CreditCard className="h-4 w-4" />
               Planos
             </TabsTrigger>
+            <TabsTrigger value="plan-modules" className="flex items-center gap-1.5">
+              <CreditCard className="h-4 w-4" />
+              Módulos por Plano
+            </TabsTrigger>
             <TabsTrigger value="support" className="flex items-center gap-1.5">
               <Shield className="h-4 w-4" />
               Suporte
@@ -93,6 +98,10 @@ const SuperAdmin = () => {
 
           <TabsContent value="plans" className="space-y-6 pt-6">
             <PlansManager />
+          </TabsContent>
+
+          <TabsContent value="plan-modules" className="space-y-6 pt-6">
+            <PlanModulesManager />
           </TabsContent>
 
           <TabsContent value="support" className="space-y-6 pt-6">
