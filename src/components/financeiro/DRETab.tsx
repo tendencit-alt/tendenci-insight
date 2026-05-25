@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useMemo } from "react";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 
 interface DRETabProps {
   filters: FinanceiroFiltersState;
