@@ -78,26 +78,41 @@ export function TenantsManager() {
     },
   });
 
-  const { data: tenantProfiles } = useQuery({
-    queryKey: ['tenant-profiles-admin'],
+  const { data: tenantMemberships } = useQuery({
+    queryKey: ['tenant-memberships-admin'],
     queryFn: async () => {
+      // Cross-tenant: query user_tenants (owner can read all rows) and join profile data.
       const { data, error } = await supabase
-        .from('profiles')
-        .select('tenant_id, full_name, email, role');
+        .from('user_tenants')
+        .select('tenant_id, user_id, role, profiles:user_id(full_name, email)');
       if (error) throw error;
-      return data;
+      return (data ?? []) as Array<{
+        tenant_id: string;
+        user_id: string;
+        role: string;
+        profiles: { full_name: string | null; email: string | null } | null;
+      }>;
     },
   });
 
   const userCounts: Record<string, number> = {};
-  tenantProfiles?.forEach(p => {
-    if (p.tenant_id) {
-      userCounts[p.tenant_id] = (userCounts[p.tenant_id] || 0) + 1;
+  tenantMemberships?.forEach(m => {
+    if (m.tenant_id) {
+      userCounts[m.tenant_id] = (userCounts[m.tenant_id] || 0) + 1;
     }
   });
 
   const getAdminForTenant = (tenantId: string) => {
-    return tenantProfiles?.find(p => p.tenant_id === tenantId && p.role === 'admin');
+    const adminRoles = ['owner', 'admin'];
+    const found = tenantMemberships?.find(
+      m => m.tenant_id === tenantId && adminRoles.includes((m.role || '').toLowerCase())
+    );
+    if (!found) return null;
+    return {
+      full_name: found.profiles?.full_name ?? null,
+      email: found.profiles?.email ?? null,
+      role: found.role,
+    };
   };
 
   const saveMutation = useMutation({
