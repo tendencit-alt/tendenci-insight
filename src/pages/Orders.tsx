@@ -58,7 +58,8 @@ export default function Orders() {
   });
 
   const { data: orders, isLoading, refetch } = useQuery({
-    queryKey: ['orders', filters],
+    queryKey: ['orders', activeTenantId, filters],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       // If filtering by centro_custo, first get order IDs that have items with that centro_custo
       let orderIdsWithCentroCusto: string[] | null = null;
@@ -82,7 +83,9 @@ export default function Orders() {
           project:fin_projects!orders_project_id_fkey(id, name),
           order_items(centro_custo)
         `)
+        .eq('tenant_id', activeTenantId!)
         .order('created_at', { ascending: false });
+
 
       if (filters.status) query = query.eq('status', filters.status);
       if (filters.vendedorId) query = query.eq('vendedor_id', filters.vendedorId);
