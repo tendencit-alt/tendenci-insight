@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 
 const PARENT_CODE = "2.2";
 const TABLE_NAME = "fin_strategic_resource_account_configs";
@@ -8,12 +9,12 @@ type ResourceType = "rt" | "vendedor" | "orcamentista" | "projetista" | "montado
 
 // Mapping from position index (0-5) to resource type key for backward compat
 const POSITION_TO_KEY: ResourceType[] = [
-  "rt",         // 2.3.1
-  "vendedor",   // 2.3.2
-  "orcamentista", // 2.3.3
-  "projetista",   // 2.3.4
-  "montador",     // 2.3.5
-  "producao",     // 2.3.6
+  "rt",         // 2.2.1
+  "vendedor",   // 2.2.2
+  "orcamentista", // 2.2.3
+  "projetista",   // 2.2.4
+  "montador",     // 2.2.5
+  "producao",     // 2.2.6
 ];
 
 type ResourceInfo = { active: boolean; percentage: number; label: string; chartAccountId?: string };
@@ -21,25 +22,27 @@ type ResourceInfo = { active: boolean; percentage: number; label: string; chartA
 export type StrategicResourceDefaults = Record<ResourceType, ResourceInfo>;
 
 const FALLBACK: StrategicResourceDefaults = {
-  rt: { active: true, percentage: 10, label: "Comissão do vendedor" },
-  vendedor: { active: true, percentage: 3, label: "Premiação de terceiros" },
-  orcamentista: { active: true, percentage: 0.2, label: "Comissão de parceiros" },
-  projetista: { active: true, percentage: 0.2, label: "Bônus comercial" },
-  montador: { active: true, percentage: 10, label: "Comissão de representantes" },
-  producao: { active: true, percentage: 0.3, label: "Afiliados e indicações" },
+  rt: { active: false, percentage: 0, label: "Comissão vendedor" },
+  vendedor: { active: false, percentage: 0, label: "Premiação comercial" },
+  orcamentista: { active: false, percentage: 0, label: "Comissão de parceiros" },
+  projetista: { active: false, percentage: 0, label: "Bônus produção" },
+  montador: { active: false, percentage: 0, label: "Comissão de representantes" },
+  producao: { active: false, percentage: 0, label: "Afiliados e indicações" },
 };
 
 export function useStrategicResourceDefaults() {
+  const { activeTenantId } = useActiveTenant();
   const { data, isSuccess } = useQuery({
-    queryKey: ["strategic-resource-defaults"],
+    queryKey: ["strategic-resource-defaults", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
-      // 1. Find parent account 2.3
+      // 1. Find parent account 2.2 for active tenant
       const { data: parent } = await supabase
         .from("fin_chart_accounts")
         .select("id")
         .eq("code", PARENT_CODE)
         .eq("active", true)
-        .not("tenant_id", "is", null)
+        .eq("tenant_id", activeTenantId!)
         .maybeSingle();
 
       if (!parent) return { ...FALLBACK };
@@ -85,3 +88,4 @@ export function useStrategicResourceDefaults() {
 
   return { defaults: data ?? FALLBACK, isLoaded: isSuccess };
 }
+
