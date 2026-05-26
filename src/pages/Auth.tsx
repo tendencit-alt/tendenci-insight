@@ -91,9 +91,9 @@ const Auth = () => {
       return;
     }
     setLoading(true);
-    
+
     const { error } = await signIn(loginData.email, loginData.password);
-    
+
     if (error) {
       console.error('Login error:', error);
       const message = error.message?.includes('Invalid login credentials')
@@ -104,41 +104,9 @@ const Auth = () => {
       window.requestAnimationFrame(() => toast.error(message));
       return;
     }
-    
-    toast.success('Login realizado com sucesso!');
 
-    // Buscar dados do usuário para determinar redirecionamento
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    
-    if (authUser) {
-      // Buscar profile
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', authUser.id)
-        .single();
-      
-      const isMaster = userProfile?.role === 'admin';
-      
-      if (isMaster) {
-        navigate('/');
-        setLoading(false);
-        return;
-      }
-      
-      // Buscar permissões do usuário
-      const { data: userPermissions } = await supabase
-        .from('user_permissions')
-        .select('module, can_view')
-        .eq('user_id', authUser.id)
-        .eq('can_view', true);
-      
-      const targetRoute = getFirstAllowedRoute(userPermissions, false);
-      navigate(targetRoute);
-    } else {
-      navigate('/');
-    }
-    
+    toast.success('Login realizado com sucesso!');
+    // Redirecionamento é tratado pelo useEffect quando profile carrega.
     setLoading(false);
   };
   const handleSignup = async (e: React.FormEvent) => {
