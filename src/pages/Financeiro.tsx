@@ -95,7 +95,8 @@ export default function Financeiro() {
                   Movimento de Tesouraria
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
+              </DropdownMenu>
+            </Can>
           </div>
         }
         filters={<FinanceiroFilters filters={filters} onChange={setFilters} />}
