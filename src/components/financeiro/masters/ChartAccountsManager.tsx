@@ -277,6 +277,18 @@ function DraggableAccountRow({
               <TooltipContent>Estrutura core do sistema — protegida</TooltipContent>
             </Tooltip>
           )}
+          {isCalculated && CALCULATED_LINE_TOOLTIPS[account.id] && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button type="button" className="inline-flex" aria-label="O que é este resultado?">
+                  <Info className="h-3.5 w-3.5 text-primary/70 hover:text-primary" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-xs leading-relaxed">
+                {CALCULATED_LINE_TOOLTIPS[account.id]}
+              </TooltipContent>
+            </Tooltip>
+          )}
         </span>
       </TableCell>
       <TableCell>{getNatureBadge(account.nature)}</TableCell>
