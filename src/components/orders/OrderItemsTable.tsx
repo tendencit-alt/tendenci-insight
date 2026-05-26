@@ -666,7 +666,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                     )}
                     <div className="grid grid-cols-2 gap-3">
                       <Input type="number" value={item.quantidade} onChange={(e) => handleUpdateItem(item.id, { quantidade: Number(e.target.value) })} min={1} placeholder="Quantidade" />
-                      <CurrencyInput value={formatToCurrencyDisplay(item.valor_unitario)} onChange={(v) => handleUpdateItem(item.id, { valor_unitario: parseCurrencyToNumber(v) })} />
+                      <MoneyInput value={item.valor_unitario ?? 0} onChange={(n) => handleUpdateItem(item.id, { valor_unitario: n })} />
                     </div>
                     <Textarea value={item.especificacoes || ''} onChange={(e) => handleUpdateItem(item.id, { especificacoes: e.target.value })} placeholder="Especificações / observações" rows={2} />
                   </div>
