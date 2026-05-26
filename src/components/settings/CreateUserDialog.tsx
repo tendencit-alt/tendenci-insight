@@ -66,17 +66,18 @@ export function CreateUserDialog({
         .from('profile_types')
         .select('*')
         .eq('is_active', true)
+        .neq('name', 'owner') // 'owner' é papel da plataforma, não atribuível por tenant
         .order('is_system', { ascending: false })
         .order('display_name');
 
       if (error) throw error;
       setProfileTypes(data || []);
-      
-      // Se não tem tipo selecionado, selecionar vendedor por padrão
+
+      // Default selection: comercial (substitui antigo 'vendedor')
       if (data && data.length > 0 && !formData.profile_type_id) {
-        const vendedor = data.find(pt => pt.name === 'vendedor');
-        if (vendedor) {
-          setFormData(prev => ({ ...prev, profile_type_id: vendedor.id, role: 'vendedor' }));
+        const def = data.find(pt => pt.name === 'comercial') ?? data.find(pt => pt.name === 'vendedor') ?? data[0];
+        if (def) {
+          setFormData(prev => ({ ...prev, profile_type_id: def.id, role: def.name === 'administrador' ? 'admin' : (def.name === 'comercial' ? 'vendedor' : prev.role) }));
         }
       }
     } catch (error) {
