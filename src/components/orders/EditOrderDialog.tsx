@@ -950,6 +950,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
             : (formData.observacao_pagamento || null),
           data_entrega_prevista: formData.data_entrega_prevista || null,
           tipo_entrega: formData.tipo_entrega || null,
+          requer_montagem: formData.requer_montagem,
           entrega_mesmo_endereco: formData.entrega_mesmo_endereco,
           entrega_cep: formData.entrega_mesmo_endereco ? null : formData.entrega_cep,
           entrega_logradouro: formData.entrega_mesmo_endereco ? null : formData.entrega_logradouro,
