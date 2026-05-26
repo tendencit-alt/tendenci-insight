@@ -110,19 +110,17 @@ const menuGroups: MenuGroup[] = [
     icon: Wallet,
     separator: true,
     items: [
-      // Operacional
-      { title: "Tesouraria", url: "/financeiro", icon: Wallet },
-      { title: "Contas a Receber", url: "/contas-receber", icon: TrendingUp, comingSoon: true },
-      { title: "Contas a Pagar", url: "/contas-pagar", icon: CreditCard, comingSoon: true },
-      { title: "Conciliação Bancária", url: "/conciliacao", icon: ArrowLeftRight, comingSoon: true },
-      // Estratégico
-      { title: "DRE Gerencial", url: "/dre", icon: LineChart, comingSoon: true },
-      { title: "Fluxo de Caixa", url: "/fluxo-caixa", icon: BarChart, comingSoon: true },
-      { title: "Forecast Financeiro", url: "/resultado-financeiro", icon: Calculator, comingSoon: true },
-      { title: "Metas Financeiras", url: "/planning", icon: Target },
+      { title: "Tesouraria", url: "/financeiro", icon: Wallet, module: "financeiro" },
+      { title: "Contas a Receber", url: "/contas-receber", icon: TrendingUp, comingSoon: true, module: "financeiro" },
+      { title: "Contas a Pagar", url: "/contas-pagar", icon: CreditCard, comingSoon: true, module: "financeiro" },
+      { title: "Conciliação Bancária", url: "/conciliacao", icon: ArrowLeftRight, comingSoon: true, module: "financeiro" },
+      { title: "DRE Gerencial", url: "/dre", icon: LineChart, comingSoon: true, module: "financeiro" },
+      { title: "Fluxo de Caixa", url: "/fluxo-caixa", icon: BarChart, comingSoon: true, module: "financeiro" },
+      { title: "Forecast Financeiro", url: "/resultado-financeiro", icon: Calculator, comingSoon: true, module: "financeiro" },
+      { title: "Metas Financeiras", url: "/planning", icon: Target, module: "financeiro" },
       { title: "Plano de Contas", url: "/cadastros-financeiros?tab=chart", icon: BookOpen, module: "cadastros_financeiros" },
       { title: "Cadastros Financeiros", url: "/cadastros-financeiros?tab=bank-accounts", icon: Database, module: "cadastros_financeiros" },
-      { title: "BI", url: "/dashboard", icon: PieChart },
+      { title: "BI", url: "/dashboard", icon: PieChart, module: "dashboard" },
     ],
   },
   // ── VENDAS ──
@@ -146,11 +144,11 @@ const menuGroups: MenuGroup[] = [
     items: [
       { title: "Produção", url: "/producao-operacoes", icon: Factory, module: "operacional" },
       { title: "Produção (legado)", url: "/producao", icon: Factory, module: "producao" },
-      { title: "Automações", url: "/automacoes", icon: Zap },
-      { title: "Suprimentos", url: "/suprimentos", icon: Package },
-      { title: "Estoque", url: "/estoque", icon: Layers },
-      { title: "Fornecedores", url: "/fornecedores", icon: Package },
-      { title: "KPI's", url: "/relatorios", icon: FileText, comingSoon: true },
+      { title: "Automações", url: "/automacoes", icon: Zap, module: "operacional" },
+      { title: "Suprimentos", url: "/suprimentos", icon: Package, module: "operacional" },
+      { title: "Estoque", url: "/estoque", icon: Layers, module: "operacional" },
+      { title: "Fornecedores", url: "/fornecedores", icon: Package, module: "operacional" },
+      { title: "KPI's", url: "/relatorios", icon: FileText, comingSoon: true, module: "operacional" },
     ],
   },
   // ── PESSOAS ──
@@ -159,10 +157,10 @@ const menuGroups: MenuGroup[] = [
     icon: Users,
     separator: true,
     items: [
-      { title: "RH & Colaboradores", url: "/rh", icon: UserCheck },
-      { title: "Usuários", url: "/settings/users", icon: UserCog },
-      { title: "Permissões", url: "/governanca", icon: Shield },
-      { title: "Smart Onboarding", url: "/smart-onboarding", icon: GraduationCap },
+      { title: "RH & Colaboradores", url: "/rh", icon: UserCheck, module: "configuracoes" },
+      { title: "Usuários", url: "/settings/users", icon: UserCog, module: "configuracoes" },
+      { title: "Permissões", url: "/governanca", icon: Shield, module: "configuracoes" },
+      { title: "Smart Onboarding", url: "/smart-onboarding", icon: GraduationCap, module: "configuracoes" },
     ],
   },
   // ── ESTRATÉGIA ──
@@ -185,9 +183,9 @@ const menuGroups: MenuGroup[] = [
     label: "Sistema",
     icon: Settings,
     items: [
-      { title: "Configurações", url: "/settings", icon: Settings },
-      { title: "Integrações", url: "/settings/integracoes", icon: Link2, comingSoon: true },
-      { title: "Logs do Sistema", url: "/settings/logs", icon: History, comingSoon: true },
+      { title: "Configurações", url: "/settings", icon: Settings, module: "configuracoes" },
+      { title: "Integrações", url: "/settings/integracoes", icon: Link2, comingSoon: true, module: "configuracoes" },
+      { title: "Logs do Sistema", url: "/settings/logs", icon: History, comingSoon: true, module: "configuracoes" },
     ],
   },
   // ============================================================
