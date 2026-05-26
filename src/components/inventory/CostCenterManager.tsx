@@ -216,56 +216,60 @@ export default function CostCenterManager() {
               </Button>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Cor</TableHead>
-                  <TableHead className="text-center">Produtos</TableHead>
-                  <TableHead className="text-center">Ativo</TableHead>
-                  <TableHead className="w-24">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tags.map(tag => (
-                  <TableRow key={tag.id} className={!tag.active ? "opacity-50" : ""}>
-                    <TableCell className="font-medium">{tag.name}</TableCell>
-                    <TableCell>
-                      <Badge className={cn(tag.color, "text-xs")}>{tag.name}</Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {usageCounts[tag.id] || 0}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Switch
-                        checked={tag.active}
-                        onCheckedChange={() => handleToggleActive(tag)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleOpenEdit(tag)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteMutation.mutate(tag.id)}
-                          disabled={(usageCounts[tag.id] || 0) > 0}
-                          title={(usageCounts[tag.id] || 0) > 0 ? "Remova os produtos antes de excluir" : "Excluir"}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Cor</TableHead>
+                    <TableHead className="text-center">Produtos</TableHead>
+                    <TableHead className="text-center">Ativo</TableHead>
+                    <TableHead className="w-24">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {tags.map(tag => (
+                    <TableRow key={tag.id} className={!tag.active ? "opacity-50" : ""}>
+                      <TableCell className="font-medium">{tag.name}</TableCell>
+                      <TableCell>
+                        <Badge className={cn(tag.color, "text-xs")}>{tag.name}</Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {usageCounts[tag.id] || 0}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Switch
+                          checked={tag.active}
+                          onCheckedChange={() => handleToggleActive(tag)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenEdit(tag)}
+                            aria-label={`Editar ${tag.name}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteMutation.mutate(tag.id)}
+                            disabled={(usageCounts[tag.id] || 0) > 0}
+                            title={(usageCounts[tag.id] || 0) > 0 ? "Remova os produtos antes de excluir" : "Excluir"}
+                            aria-label={`Excluir ${tag.name}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
