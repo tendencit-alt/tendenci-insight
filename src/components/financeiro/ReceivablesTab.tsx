@@ -371,7 +371,7 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-orange-600">
-                  <span className="text-sm">Vencidas</span>
+                  <span className="text-sm">Em Atraso</span>
                   <span className="font-semibold">
                     {summary?.vencidasCount || 0} lançamentos - R$ {(summary?.vencidasValor || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
