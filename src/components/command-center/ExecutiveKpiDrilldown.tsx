@@ -83,6 +83,16 @@ async function fetchData(key: KpiKey) {
       .limit(30);
     return { rows: data || [] };
   }
+  if (key === "overdueReceivables") {
+    const { data } = await supabase
+      .from("fin_receivables")
+      .select("id, description, amount, due_date, status, customer:clients(name)")
+      .in("status", ["ABERTO", "VENCIDO"])
+      .lt("due_date", today)
+      .order("due_date", { ascending: true })
+      .limit(30);
+    return { rows: data || [] };
+  }
   return { rows: [] };
 }
 
