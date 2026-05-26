@@ -53,31 +53,15 @@ export function DeleteOrderDialog({
         });
       }
 
-      // Delete order items first
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .delete()
-        .eq('order_id', orderId);
+      // Cascade delete: removes order + all derived records
+      // (projects, production orders, financial entries, quotes, contracts, etc.)
+      const { error: cascadeError } = await supabase.rpc('delete_order_cascade', {
+        _order_id: orderId,
+      });
 
-      if (itemsError) throw itemsError;
+      if (cascadeError) throw cascadeError;
 
-      // Delete order history
-      const { error: historyError } = await supabase
-        .from('order_history')
-        .delete()
-        .eq('order_id', orderId);
-
-      if (historyError) throw historyError;
-
-      // Delete order
-      const { error: orderError } = await supabase
-        .from('orders')
-        .delete()
-        .eq('id', orderId);
-
-      if (orderError) throw orderError;
-
-      toast.success(`Pedido #${orderNumber} excluído com sucesso`);
+      toast.success(`Pedido #${orderNumber} e registros vinculados excluídos`);
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
