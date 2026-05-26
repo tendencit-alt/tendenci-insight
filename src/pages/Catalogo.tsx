@@ -210,7 +210,7 @@ export default function Catalogo() {
   };
 
   return (
-    <div className="min-h-screen bg-white" style={{ ["--catalog-primary" as any]: primaryColor }}>
+    <div className="min-h-screen bg-background" style={{ ["--catalog-primary" as any]: primaryColor }}>
       <CatalogoHeader
         categories={categories}
         selectedCategory={selectedCategory}
@@ -232,27 +232,27 @@ export default function Catalogo() {
         )}
         {user && <CatalogoAdminBar onProductCreated={loadProducts} />}
         <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
             {heroTitle}
           </h1>
-          <p className="text-gray-600">{heroSubtitle}</p>
+          <p className="text-muted-foreground">{heroSubtitle}</p>
         </div>
 
         {/* Filtros: busca + ordenação */}
         <div className="flex flex-col md:flex-row gap-3 mb-4 max-w-3xl mx-auto">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Buscar por nome, descrição ou categoria..."
-              className="pl-9 pr-9 bg-white"
+              className="pl-9 pr-9 bg-background"
             />
             {searchTerm && (
               <button
                 type="button"
                 onClick={() => setSearchTerm("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-700"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
                 aria-label="Limpar busca"
               >
                 <X className="h-4 w-4" />
@@ -260,7 +260,7 @@ export default function Catalogo() {
             )}
           </div>
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-            <SelectTrigger className="md:w-56 bg-white">
+            <SelectTrigger className="md:w-56 bg-background">
               <SelectValue placeholder="Ordenar por" />
             </SelectTrigger>
             <SelectContent>
@@ -274,7 +274,7 @@ export default function Catalogo() {
         </div>
 
         {!loading && (
-          <p className="text-sm text-gray-500 text-center mb-6">
+          <p className="text-sm text-muted-foreground text-center mb-6">
             {filteredProducts.length} produto{filteredProducts.length === 1 ? "" : "s"}
             {selectedCategory && <> em <strong>{selectedCategory}</strong></>}
             {searchTerm && <> para "<strong>{searchTerm}</strong>"</>}
@@ -294,7 +294,7 @@ export default function Catalogo() {
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-gray-500 text-lg">
+            <p className="text-muted-foreground text-lg">
               {searchTerm
                 ? `Nenhum produto encontrado para "${searchTerm}"`
                 : selectedCategory
@@ -325,17 +325,17 @@ export default function Catalogo() {
         )}
       </main>
 
-      <footer className="bg-gray-50 border-t border-gray-100 mt-16">
+      <footer className="bg-muted/40 border-t border-border mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-gray-600 font-medium">{companyName}</p>
+            <p className="text-foreground font-medium">{companyName}</p>
             <div className="flex items-center gap-6">
               {whatsappUrl && (
                 <a
                   href={whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-gray-600 hover:opacity-80 transition-colors"
+                  className="flex items-center gap-2 text-muted-foreground hover:opacity-80 transition-colors"
                   style={{ color: primaryColor }}
                 >
                   <Phone className="h-5 w-5" />
@@ -347,7 +347,7 @@ export default function Catalogo() {
                   href={instagramUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-gray-600 hover:opacity-80 transition-colors"
+                  className="flex items-center gap-2 text-muted-foreground hover:opacity-80 transition-colors"
                   style={{ color: primaryColor }}
                 >
                   <Instagram className="h-5 w-5" />
@@ -356,7 +356,7 @@ export default function Catalogo() {
               )}
             </div>
           </div>
-          <div className="text-center mt-6 text-sm text-gray-400">{copyright}</div>
+          <div className="text-center mt-6 text-sm text-muted-foreground">{copyright}</div>
         </div>
       </footer>
 

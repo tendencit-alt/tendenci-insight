@@ -16436,7 +16436,7 @@ export type Database = {
           shipping_cost: number | null
           status: string | null
           subtotal: number | null
-          supplier_id: string
+          supplier_id: string | null
           tenant_id: string | null
           total: number | null
           updated_at: string | null
@@ -16460,7 +16460,7 @@ export type Database = {
           shipping_cost?: number | null
           status?: string | null
           subtotal?: number | null
-          supplier_id: string
+          supplier_id?: string | null
           tenant_id?: string | null
           total?: number | null
           updated_at?: string | null
@@ -16484,7 +16484,7 @@ export type Database = {
           shipping_cost?: number | null
           status?: string | null
           subtotal?: number | null
-          supplier_id?: string
+          supplier_id?: string | null
           tenant_id?: string | null
           total?: number | null
           updated_at?: string | null
@@ -22590,6 +22590,10 @@ export type Database = {
           p_result?: string
         }
         Returns: undefined
+      }
+      convert_material_request_to_po: {
+        Args: { _request_id: string }
+        Returns: string
       }
       create_daily_architect_goals: { Args: never; Returns: undefined }
       create_goal_reminder_notifications: { Args: never; Returns: undefined }

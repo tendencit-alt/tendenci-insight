@@ -21,8 +21,8 @@ export function ProductGallery({ images, videos = [], productName }: ProductGall
 
   if (allMedia.length === 0) {
     return (
-      <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center">
-        <span className="text-gray-400">Sem imagem</span>
+      <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
+        <span className="text-muted-foreground">Sem imagem</span>
       </div>
     );
   }
@@ -40,7 +40,7 @@ export function ProductGallery({ images, videos = [], productName }: ProductGall
   return (
     <div className="relative">
       {/* Main Image/Video */}
-      <div className="aspect-square bg-gray-50 rounded-xl overflow-hidden relative group">
+      <div className="aspect-square bg-muted/40 rounded-xl overflow-hidden relative group">
         {currentMedia.type === 'image' ? (
           <>
             <img
@@ -50,9 +50,9 @@ export function ProductGallery({ images, videos = [], productName }: ProductGall
             />
             <button
               onClick={() => setZoomOpen(true)}
-              className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute top-3 right-3 p-2 bg-background/80 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
             >
-              <ZoomIn className="h-5 w-5 text-gray-700" />
+              <ZoomIn className="h-5 w-5 text-foreground" />
             </button>
           </>
         ) : (
@@ -76,7 +76,7 @@ export function ProductGallery({ images, videos = [], productName }: ProductGall
               size="icon"
               onClick={goToPrevious}
               aria-label="Imagem anterior"
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm hover:bg-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm hover:bg-background shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
@@ -85,7 +85,7 @@ export function ProductGallery({ images, videos = [], productName }: ProductGall
               size="icon"
               onClick={goToNext}
               aria-label="Próxima imagem"
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm hover:bg-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm hover:bg-background shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <ChevronRight className="h-5 w-5" />
             </Button>
@@ -104,7 +104,7 @@ export function ProductGallery({ images, videos = [], productName }: ProductGall
                 "relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all",
                 currentIndex === index
                   ? "border-[#C41E3A] ring-2 ring-[#C41E3A]/20"
-                  : "border-transparent hover:border-gray-300"
+                  : "border-transparent hover:border-border"
               )}
             >
               {media.type === 'image' ? (
@@ -114,8 +114,8 @@ export function ProductGallery({ images, videos = [], productName }: ProductGall
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                  <Play className="h-4 w-4 text-gray-600" />
+                <div className="w-full h-full bg-muted flex items-center justify-center">
+                  <Play className="h-4 w-4 text-muted-foreground" />
                 </div>
               )}
             </button>
@@ -134,7 +134,7 @@ export function ProductGallery({ images, videos = [], productName }: ProductGall
                 "w-2 h-2 rounded-full transition-all",
                 currentIndex === index
                   ? "bg-[#C41E3A] w-4"
-                  : "bg-gray-300"
+                  : "bg-muted-foreground/40"
               )}
             />
           ))}

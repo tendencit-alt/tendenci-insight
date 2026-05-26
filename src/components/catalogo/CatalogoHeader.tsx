@@ -43,7 +43,7 @@ export function CatalogoHeader({
         </div>
       </div>
 
-      <div className="bg-white/95 backdrop-blur-md border-b border-gray-100">
+      <div className="bg-background/95 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="py-4">
             <div className="flex items-center justify-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
@@ -53,7 +53,7 @@ export function CatalogoHeader({
                   "px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200",
                   selectedCategory === null
                     ? "bg-[var(--catalog-primary,#C41E3A)] text-white shadow-md"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    : "bg-muted text-foreground hover:bg-muted/70"
                 )}
               >
                 Todos
@@ -66,7 +66,7 @@ export function CatalogoHeader({
                     "px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200",
                     selectedCategory === category
                       ? "bg-[var(--catalog-primary,#C41E3A)] text-white shadow-md"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      : "bg-muted text-foreground hover:bg-muted/70"
                   )}
                 >
                   {category}

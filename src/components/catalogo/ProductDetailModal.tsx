@@ -52,21 +52,21 @@ export function ProductDetailModal({ product, open, onOpenChange, onBuyNow }: Pr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 bg-white">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 bg-background">
         <VisuallyHidden>
           <DialogTitle>{product.nome}</DialogTitle>
         </VisuallyHidden>
         {/* Close button */}
         <button
           onClick={() => onOpenChange(false)}
-          className="absolute top-4 right-4 z-10 p-2 bg-white/80 backdrop-blur-sm rounded-full hover:bg-gray-100 transition-colors"
+          className="absolute top-4 right-4 z-10 p-2 bg-background/80 backdrop-blur-sm rounded-full hover:bg-muted transition-colors"
         >
-          <X className="h-5 w-5 text-gray-600" />
+          <X className="h-5 w-5 text-muted-foreground" />
         </button>
 
         <div className="grid md:grid-cols-2 gap-0">
           {/* Gallery Section */}
-          <div className="p-6 bg-gray-50">
+          <div className="p-6 bg-muted/40">
             <ProductGallery
               images={images}
               videos={product.videos}
@@ -91,7 +91,7 @@ export function ProductDetailModal({ product, open, onOpenChange, onBuyNow }: Pr
             </div>
 
             {/* Product Name */}
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
               {product.nome}
             </h2>
 
@@ -105,7 +105,7 @@ export function ProductDetailModal({ product, open, onOpenChange, onBuyNow }: Pr
             {/* Description */}
             {product.descricao && (
               <div className="mb-6">
-                <p className="text-gray-600 leading-relaxed">
+                <p className="text-muted-foreground leading-relaxed">
                   {product.descricao}
                 </p>
               </div>
@@ -116,10 +116,10 @@ export function ProductDetailModal({ product, open, onOpenChange, onBuyNow }: Pr
             {/* Diferenciais */}
             {product.diferenciais && product.diferenciais.length > 0 && (
               <div className="mb-6">
-                <h3 className="font-semibold text-gray-900 mb-3">Diferenciais</h3>
+                <h3 className="font-semibold text-foreground mb-3">Diferenciais</h3>
                 <ul className="space-y-2">
                   {product.diferenciais.map((item, index) => (
-                    <li key={index} className="flex items-start gap-2 text-gray-600">
+                    <li key={index} className="flex items-start gap-2 text-muted-foreground">
                       <Check className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
                       <span>{item}</span>
                     </li>
@@ -131,11 +131,11 @@ export function ProductDetailModal({ product, open, onOpenChange, onBuyNow }: Pr
             {/* Dimensions */}
             {hasDimensions && (
               <div className="mb-6">
-                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
                   <Ruler className="h-4 w-4" />
                   Dimensões
                 </h3>
-                <div className="flex flex-wrap gap-4 text-gray-600">
+                <div className="flex flex-wrap gap-4 text-muted-foreground">
                   {product.largura && (
                     <span>Largura: {product.largura}{unit}</span>
                   )}
