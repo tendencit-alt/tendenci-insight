@@ -2472,6 +2472,12 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                   <Label>Usar endereço do cliente</Label>
                 </div>
 
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                  <Switch checked={formData.requer_montagem} onCheckedChange={(checked) => setFormData({ ...formData, requer_montagem: checked })} disabled={!isEditable} />
+                  <Label>Requer montagem</Label>
+                </div>
+
+
                 {!formData.entrega_mesmo_endereco && (
                   <AddressForm
                     address={{
