@@ -59,6 +59,7 @@ import { Button as BtnUI } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { QuickCreateClientDialog } from "@/components/financeiro/QuickCreateClientDialog";
+import { DeleteClientDialog } from "@/components/clients/DeleteClientDialog";
 import { useCostCenters } from "@/hooks/useCostCenters";
 import { Can } from "@/components/auth/Can";
 
@@ -423,35 +424,14 @@ export default function Clientes() {
             onSaved={() => queryClient.invalidateQueries({ queryKey: ["clients-list"] })}
           />
 
-          <AlertDialog open={!!deletingClient} onOpenChange={(v) => !v && setDeletingClient(null)}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  O cliente "{deletingClient?.nome_fantasia || deletingClient?.name}" será removido permanentemente.
-                  Esta ação não pode ser desfeita.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={async () => {
-                    if (!deletingClient) return;
-                    const { error } = await supabase.from("clients").delete().eq("id", deletingClient.id);
-                    if (error) {
-                      toast.error("Erro ao excluir: " + error.message);
-                      return;
-                    }
-                    toast.success("Cliente excluído");
-                    setDeletingClient(null);
-                    queryClient.invalidateQueries({ queryKey: ["clients-list"] });
-                  }}
-                >
-                  Excluir
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <DeleteClientDialog
+            client={deletingClient}
+            onClose={() => setDeletingClient(null)}
+            onDeleted={() => {
+              setDeletingClient(null);
+              queryClient.invalidateQueries({ queryKey: ["clients-list"] });
+            }}
+          />
         </div>
       </DashboardLayout>
     </ProtectedRoute>
