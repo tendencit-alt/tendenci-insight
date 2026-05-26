@@ -64,6 +64,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Can } from "@/components/auth/Can";
 
 interface ProductRow {
   id: string;
