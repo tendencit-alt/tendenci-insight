@@ -6124,6 +6124,7 @@ export type Database = {
           file_path: string
           file_size: number | null
           id: string
+          tenant_id: string | null
           uploaded_by: string | null
         }
         Insert: {
@@ -6134,6 +6135,7 @@ export type Database = {
           file_path: string
           file_size?: number | null
           id?: string
+          tenant_id?: string | null
           uploaded_by?: string | null
         }
         Update: {
@@ -6144,6 +6146,7 @@ export type Database = {
           file_path?: string
           file_size?: number | null
           id?: string
+          tenant_id?: string | null
           uploaded_by?: string | null
         }
         Relationships: [
@@ -10913,6 +10916,7 @@ export type Database = {
           session_id: string | null
           status: string | null
           telefone: string
+          tenant_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -10924,6 +10928,7 @@ export type Database = {
           session_id?: string | null
           status?: string | null
           telefone: string
+          tenant_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -10935,6 +10940,7 @@ export type Database = {
           session_id?: string | null
           status?: string | null
           telefone?: string
+          tenant_id?: string | null
           updated_at?: string | null
         }
         Relationships: []
