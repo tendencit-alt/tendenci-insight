@@ -91,10 +91,12 @@ export default function CRM() {
             </div>
             <div className="flex items-center gap-2">
               <CRMViewSwitcher value={view} onChange={handleViewChange} />
-              <Button onClick={() => setCreateOpen(true)} size="sm" className="gap-1.5">
-                <Plus className="h-4 w-4" />
-                Novo
-              </Button>
+              <Can module="comercial" action="create">
+                <Button onClick={() => setCreateOpen(true)} size="sm" className="gap-1.5">
+                  <Plus className="h-4 w-4" />
+                  Novo
+                </Button>
+              </Can>
             </div>
           </div>
 
