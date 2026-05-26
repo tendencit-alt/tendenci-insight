@@ -24,20 +24,21 @@ type ConfigRow = {
 
 export function StrategicResourceCategoriesManager() {
   const qc = useQueryClient();
+  const { activeTenantId } = useActiveTenant();
   const [savingId, setSavingId] = useState<string | null>(null);
   const [localPct, setLocalPct] = useState<Record<string, string>>({});
 
   // First find the parent account by code (scoped to active tenant)
   const { data: parentAccount } = useQuery({
-    queryKey: ["fin-chart-parent-compromissos", (typeof window !== "undefined" ? null : null)],
+    queryKey: ["fin-chart-parent-compromissos", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("fin_chart_accounts")
         .select("id")
         .eq("code", PARENT_ACCOUNT_CODE)
         .eq("active", true)
-        .order("tenant_id", { ascending: false, nullsFirst: false })
-        .limit(1)
+        .eq("tenant_id", activeTenantId!)
         .maybeSingle();
       if (error) throw error;
       return data;
