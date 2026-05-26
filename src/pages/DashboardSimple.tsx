@@ -45,9 +45,9 @@ export default function DashboardSimple() {
         supabase
           .from("fin_ledger_entries")
           .select("amount, entry_type, type, status, chart_account:fin_chart_accounts(grupo_fluxo)")
-          .neq("status", "CANCELADO")
-          .gte("competence_date", start)
-          .lte("competence_date", end),
+          .in("status", ["PAGO_RECEBIDO", "CONCILIADO"])
+          .gte("cash_date", start)
+          .lte("cash_date", end),
         supabase.from("fin_bank_accounts").select("current_balance"),
         supabase
           .from("fin_receivables")
