@@ -46,8 +46,8 @@ export function useFirstAllowedRoute() {
     }
   }
   
-  // Se não encontrar nenhum, ir para auth
-  return { route: '/auth', loading: false };
+  // Sem módulo permitido: cair no Home Launcher (evita loop ao redirecionar para /auth)
+  return { route: '/', loading: false };
 }
 
 // Função helper para buscar primeira rota permitida baseada em permissões
@@ -56,17 +56,17 @@ export function getFirstAllowedRoute(
   isMaster: boolean
 ): string {
   if (isMaster) return '/bi-dashboard';
-  
+
   if (!userPermissions || userPermissions.length === 0) {
-    return '/auth';
+    return '/';
   }
-  
+
   for (const mod of routePriority) {
     const perm = userPermissions.find(p => p.module === mod);
     if (perm?.can_view) {
       return routeMap[mod] || '/';
     }
   }
-  
-  return '/auth';
+
+  return '/';
 }
