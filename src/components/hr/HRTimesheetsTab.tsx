@@ -63,41 +63,43 @@ export function HRTimesheetsTab() {
       </CardHeader>
       <CardContent>
         {isLoading ? <p className="text-muted-foreground text-sm">Carregando...</p> : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Colaborador</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead className="text-right">Previstas</TableHead>
-                <TableHead className="text-right">Realizadas</TableHead>
-                <TableHead className="text-right">Extras</TableHead>
-                <TableHead className="text-right">Faltas</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {timesheets.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Nenhum registro</TableCell></TableRow>}
-              {timesheets.map((ts: any) => (
-                <TableRow key={ts.id}>
-                  <TableCell>{ts.hr_employees?.name || "—"}</TableCell>
-                  <TableCell>{new Date(ts.work_date + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
-                  <TableCell className="text-right font-mono text-sm">{ts.planned_hours}h</TableCell>
-                  <TableCell className="text-right font-mono text-sm">{ts.worked_hours}h</TableCell>
-                  <TableCell className="text-right font-mono text-sm">{ts.overtime_hours}h</TableCell>
-                  <TableCell className="text-right font-mono text-sm">{ts.absence_hours}h</TableCell>
-                  <TableCell><Badge variant={ts.status === "approved" ? "default" : "secondary"}>{ts.status === "approved" ? "Aprovado" : "Pendente"}</Badge></TableCell>
-                  <TableCell>
-                    {ts.status !== "approved" && (
-                      <Button variant="ghost" size="icon" onClick={() => approveMut.mutate(ts.id)} title="Aprovar">
-                        <CheckCircle className="h-4 w-4 text-primary" />
-                      </Button>
-                    )}
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Colaborador</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead className="text-right">Previstas</TableHead>
+                  <TableHead className="text-right">Realizadas</TableHead>
+                  <TableHead className="text-right">Extras</TableHead>
+                  <TableHead className="text-right">Faltas</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead><span className="sr-only">Ações</span></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {timesheets.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Nenhum registro</TableCell></TableRow>}
+                {timesheets.map((ts: any) => (
+                  <TableRow key={ts.id}>
+                    <TableCell>{ts.hr_employees?.name || "—"}</TableCell>
+                    <TableCell>{new Date(ts.work_date + "T12:00:00").toLocaleDateString("pt-BR")}</TableCell>
+                    <TableCell className="text-right font-mono text-sm">{ts.planned_hours}h</TableCell>
+                    <TableCell className="text-right font-mono text-sm">{ts.worked_hours}h</TableCell>
+                    <TableCell className="text-right font-mono text-sm">{ts.overtime_hours}h</TableCell>
+                    <TableCell className="text-right font-mono text-sm">{ts.absence_hours}h</TableCell>
+                    <TableCell><Badge variant={ts.status === "approved" ? "default" : "secondary"}>{ts.status === "approved" ? "Aprovado" : "Pendente"}</Badge></TableCell>
+                    <TableCell>
+                      {ts.status !== "approved" && (
+                        <Button variant="ghost" size="icon" onClick={() => approveMut.mutate(ts.id)} title="Aprovar" aria-label="Aprovar timesheet">
+                          <CheckCircle className="h-4 w-4 text-primary" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>
