@@ -190,10 +190,11 @@ export default function Produtos() {
   const confirmDelete = async () => {
     if (!deletingProduct) return;
     // Hard delete first; if blocked by FK, fall back to soft-delete (inactivate)
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("products")
       .delete()
-      .eq("id", deletingProduct.id);
+      .eq("id", deletingProduct.id)
+      .select("id");
     if (error) {
       const code = (error as any).code;
       if (code === "23503") {
@@ -212,6 +213,17 @@ export default function Produtos() {
         toast.error("Erro ao excluir: " + error.message);
         return;
       }
+    } else if (!data || data.length === 0) {
+      // RLS bloqueou silenciosamente — faz soft-delete
+      const { error: softErr } = await supabase
+        .from("products")
+        .update({ active: false, ativo_no_catalogo: false })
+        .eq("id", deletingProduct.id);
+      if (softErr) {
+        toast.error("Erro ao inativar: " + softErr.message);
+        return;
+      }
+      toast.warning("Sem permissão para excluir definitivamente — produto inativado.");
     } else {
       toast.success("Produto excluído");
     }

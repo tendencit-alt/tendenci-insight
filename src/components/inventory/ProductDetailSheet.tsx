@@ -47,24 +47,39 @@ export default function ProductDetailSheet({ product, open, onOpenChange, onUpda
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("products")
         .delete()
-        .eq("id", product.id);
+        .eq("id", product.id)
+        .select("id");
 
       if (error) throw error;
 
-      toast({ title: "Produto excluído com sucesso!" });
+      if (!data || data.length === 0) {
+        // Nenhuma linha excluída: provavelmente bloqueado por RLS. Faz fallback para desativar.
+        const { error: updErr } = await supabase
+          .from("products")
+          .update({ active: false })
+          .eq("id", product.id);
+        if (updErr) throw updErr;
+        toast({
+          title: "Produto desativado",
+          description: "Não foi possível excluir definitivamente (sem permissão ou existem vínculos). O produto foi desativado.",
+        });
+      } else {
+        toast({ title: "Produto excluído com sucesso!" });
+      }
+
       queryClient.invalidateQueries({ queryKey: ["products"] });
       onOpenChange(false);
       onUpdate();
     } catch (error: any) {
-      toast({ 
-        title: "Erro ao excluir produto", 
-        description: error.message.includes("violates foreign key") 
-          ? "Este produto possui movimentações ou está vinculado a outros registros. Considere desativá-lo." 
-          : error.message, 
-        variant: "destructive" 
+      toast({
+        title: "Erro ao excluir produto",
+        description: error.message?.includes("violates foreign key")
+          ? "Este produto possui movimentações ou está vinculado a outros registros. Considere desativá-lo."
+          : error.message,
+        variant: "destructive"
       });
     } finally {
       setDeleting(false);
