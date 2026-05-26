@@ -88,10 +88,10 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     console.log('[Permissions] Fetching for user:', user.id, user.email);
 
     try {
-      // Buscar perfil do usuário
+      // 1) Profile + linked profile_type
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('role, is_owner')
+        .select('role, is_owner, profile_type_id, profile_types(name, display_name)')
         .eq('id', user.id)
         .single();
 
@@ -100,13 +100,17 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
         throw profileError;
       }
 
-      console.log('[Permissions] Profile loaded:', profile);
       const ownerFlag = profile?.is_owner === true;
-      const role = profile?.role as string;
-      const tenantOwnerFlag = role === 'tenant_owner';
-      const tenantAdminFlag = role === 'tenant_admin' || role === 'admin';
-      const isAdmin = tenantAdminFlag || tenantOwnerFlag || ownerFlag;
-      
+      const profileTypeName = (profile?.profile_types as any)?.name as string | undefined;
+      const roleString = profileTypeName ?? (profile?.role as string);
+
+      const tenantOwnerFlag = roleString === 'tenant_owner';
+      const tenantAdminFlag =
+        roleString === 'administrador' ||
+        roleString === 'admin' ||
+        roleString === 'tenant_admin';
+      const isAdmin = ownerFlag || tenantOwnerFlag || tenantAdminFlag;
+
       setIsMaster(isAdmin);
       setIsOwner(ownerFlag);
       setIsTenantOwner(tenantOwnerFlag);
@@ -118,40 +122,65 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
         'operational'
       );
 
-      // Se for admin, tem todas as permissões
+      // 2) Admin / Owner → full access bypass
       if (isAdmin) {
-        console.log('[Permissions] User is admin, granting all');
+        console.log('[Permissions] Admin/Owner: granting all');
         setPermissions({
-          role: profile.role,
+          role: roleString,
           permissions: ALL_MODULES.map(module => ({
-            module,
-            can_view: true,
-            can_create: true,
-            can_edit: true,
-            can_delete: true
+            module, can_view: true, can_create: true, can_edit: true, can_delete: true,
           })),
-          active: true
+          active: true,
         });
-      } else {
-        // Buscar permissões específicas do usuário
-        const { data: userPermissions, error: permError } = await supabase
-          .from('user_permissions')
-          .select('*')
-          .eq('user_id', user.id);
+        return;
+      }
 
-        if (permError) {
-          console.error('[Permissions] User permissions error:', permError);
-          throw permError;
-        }
+      // 3) Source of truth: profile_type_permissions matrix
+      const matrix: Record<string, ModulePermission> = {};
+      if (profile?.profile_type_id) {
+        const { data: matrixRows } = await supabase
+          .from('profile_type_permissions')
+          .select('module, can_view, can_create, can_edit, can_delete, can_approve, can_conciliate, can_export, can_admin')
+          .eq('profile_type_id', profile.profile_type_id);
 
-        console.log('[Permissions] User permissions loaded:', userPermissions?.length, 'items');
-        
-        setPermissions({
-          role: profile.role,
-          permissions: userPermissions as ModulePermission[],
-          active: true
+        matrixRows?.forEach((row: any) => {
+          matrix[row.module] = {
+            module: row.module,
+            can_view: !!row.can_view,
+            can_create: !!row.can_create,
+            can_edit: !!row.can_edit,
+            can_delete: !!row.can_delete,
+            ...{ can_approve: !!row.can_approve, can_conciliate: !!row.can_conciliate, can_export: !!row.can_export, can_admin: !!row.can_admin },
+          } as ModulePermission;
         });
       }
+
+      // 4) Optional per-user overrides (additive)
+      const { data: userOverrides } = await supabase
+        .from('user_permissions')
+        .select('module, can_view, can_create, can_edit, can_delete')
+        .eq('user_id', user.id);
+
+      userOverrides?.forEach((row: any) => {
+        const existing = matrix[row.module] ?? {
+          module: row.module, can_view: false, can_create: false, can_edit: false, can_delete: false,
+        };
+        matrix[row.module] = {
+          ...existing,
+          can_view: existing.can_view || !!row.can_view,
+          can_create: existing.can_create || !!row.can_create,
+          can_edit: existing.can_edit || !!row.can_edit,
+          can_delete: existing.can_delete || !!row.can_delete,
+        };
+      });
+
+      console.log('[Permissions] Matrix loaded modules:', Object.keys(matrix).length);
+
+      setPermissions({
+        role: roleString,
+        permissions: Object.values(matrix),
+        active: true,
+      });
     } catch (error) {
       console.error('[Permissions] Error:', error);
       setPermissions(null);
