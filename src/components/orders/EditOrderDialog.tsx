@@ -211,6 +211,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     observacao_pagamento: '',
     data_entrega_prevista: '',
     tipo_entrega: '',
+    requer_montagem: true,
     entrega_mesmo_endereco: true,
     entrega_cep: '',
     entrega_logradouro: '',
@@ -440,6 +441,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           ? order.observacao_pagamento : '',
         data_entrega_prevista: order.data_entrega_prevista?.split('T')[0] || '',
         tipo_entrega: order.tipo_entrega || '',
+        requer_montagem: (order as any).requer_montagem ?? true,
         entrega_mesmo_endereco: order.entrega_mesmo_endereco ?? true,
         entrega_cep: order.entrega_cep || '',
         entrega_logradouro: order.entrega_logradouro || '',
@@ -948,6 +950,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
             : (formData.observacao_pagamento || null),
           data_entrega_prevista: formData.data_entrega_prevista || null,
           tipo_entrega: formData.tipo_entrega || null,
+          requer_montagem: formData.requer_montagem,
           entrega_mesmo_endereco: formData.entrega_mesmo_endereco,
           entrega_cep: formData.entrega_mesmo_endereco ? null : formData.entrega_cep,
           entrega_logradouro: formData.entrega_mesmo_endereco ? null : formData.entrega_logradouro,
@@ -2468,6 +2471,12 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                   <Switch checked={formData.entrega_mesmo_endereco} onCheckedChange={(checked) => setFormData({ ...formData, entrega_mesmo_endereco: checked })} disabled={!isEditable} />
                   <Label>Usar endereço do cliente</Label>
                 </div>
+
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                  <Switch checked={formData.requer_montagem} onCheckedChange={(checked) => setFormData({ ...formData, requer_montagem: checked })} disabled={!isEditable} />
+                  <Label>Requer montagem</Label>
+                </div>
+
 
                 {!formData.entrega_mesmo_endereco && (
                   <AddressForm

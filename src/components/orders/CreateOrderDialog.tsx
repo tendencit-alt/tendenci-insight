@@ -143,6 +143,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     observacao_pagamento: '',
     data_entrega_prevista: '',
     tipo_entrega: '',
+    requer_montagem: true,
     entrega_mesmo_endereco: true,
     entrega_cep: '',
     entrega_logradouro: '',
@@ -810,6 +811,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
             : (formData.observacao_pagamento || null),
           data_entrega_prevista: formData.data_entrega_prevista || null,
           tipo_entrega: formData.tipo_entrega,
+          requer_montagem: formData.requer_montagem,
           entrega_mesmo_endereco: formData.entrega_mesmo_endereco,
           entrega_cep: formData.entrega_mesmo_endereco ? null : formData.entrega_cep,
           entrega_logradouro: formData.entrega_mesmo_endereco ? null : formData.entrega_logradouro,
@@ -2033,6 +2035,16 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                 />
                 <Label htmlFor="mesmo-endereco">Usar endereço do cliente</Label>
               </div>
+
+              <div className="flex items-center space-x-2 p-3 bg-muted rounded-lg">
+                <Switch
+                  id="requer-montagem"
+                  checked={formData.requer_montagem}
+                  onCheckedChange={(checked) => setFormData({ ...formData, requer_montagem: checked })}
+                />
+                <Label htmlFor="requer-montagem">Requer montagem</Label>
+              </div>
+
 
               {!formData.entrega_mesmo_endereco && (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
