@@ -22754,6 +22754,10 @@ export type Database = {
         }
         Returns: string
       }
+      fulfillment_evaluate_order_status: {
+        Args: { _order_id: string }
+        Returns: undefined
+      }
       generate_permission_recommendations: {
         Args: { _since_days?: number }
         Returns: number
