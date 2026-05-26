@@ -446,11 +446,18 @@ export function AppSidebar() {
     return 'tenant_admin';
   }, [userLevel, profileIsOwner, profileRole, profileTypeName]);
 
-  const visibleGroups = useMemo(() =>
-    menuGroups
-      .filter(g => !g.profiles || g.profiles.length === 0 || g.profiles.includes(currentProfile)),
-    [currentProfile]
-  );
+  const visibleGroups = useMemo(() => {
+    return menuGroups
+      .filter((g) => !g.profiles || g.profiles.length === 0 || g.profiles.includes(currentProfile))
+      .filter((g) => {
+        // Esconde o grupo inteiro se nenhum item gated estiver permitido.
+        if (permsLoading) return true;
+        const anyVisible = g.items.some(
+          (it) => !it.module || hasModuleAccess(it.module as any)
+        );
+        return anyVisible;
+      });
+  }, [currentProfile, permsLoading, hasModuleAccess]);
 
   // Favorites items
   const favoriteItems = useMemo(() => {
