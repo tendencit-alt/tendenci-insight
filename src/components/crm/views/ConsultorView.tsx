@@ -19,7 +19,10 @@ export function ConsultorView({ initialTab }: { initialTab?: string } = {}) {
       </div>
 
       <TabsContent value="funil">
-        <PrjOverview />
+        <PrjOverview
+          hideKpis
+          helpText="Arraste os cards entre as etapas para mover seus negócios. Use os filtros para refinar a visão."
+        />
       </TabsContent>
       <TabsContent value="propostas">
         <CRMProposalsTab />

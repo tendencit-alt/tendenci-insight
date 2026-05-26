@@ -2,7 +2,15 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Target, Plus, Sparkles, LayoutGrid, FileText, Users } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Target, Sparkles, LayoutGrid, FileText, Users, ChevronDown } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { CRMViewSwitcher, CRM_VIEWS, type CRMView } from "@/components/crm/CRMViewSwitcher";
 import { SDRView } from "@/components/crm/views/SDRView";
@@ -10,7 +18,6 @@ import { ConsultorView } from "@/components/crm/views/ConsultorView";
 import { GestorView } from "@/components/crm/views/GestorView";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
 import { cn } from "@/lib/utils";
-import { Can } from "@/components/auth/Can";
 
 const STORAGE_KEY = "crm_view_preference";
 
@@ -45,7 +52,6 @@ export default function CRM() {
   });
   const [createOpen, setCreateOpen] = useState(false);
 
-  // Sync view if URL changes
   useEffect(() => {
     if (viewParam === "sdr" || viewParam === "consultor" || viewParam === "gestor") {
       setView(viewParam);
@@ -79,8 +85,8 @@ export default function CRM() {
   return (
     <DashboardLayout>
       <div className="space-y-4">
-        {/* Topbar compacta sticky */}
-        <div className="sticky top-0 z-20 -mx-4 px-4 py-3 bg-background/85 backdrop-blur border-b">
+        {/* Cabeçalho compacto — uma única faixa */}
+        <div className="sticky top-0 z-20 -mx-4 px-4 py-2.5 bg-background/85 backdrop-blur border-b">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 min-w-0">
               <Target className="h-5 w-5 text-primary shrink-0" />
@@ -90,40 +96,38 @@ export default function CRM() {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <CRMViewSwitcher value={view} onChange={handleViewChange} />
-              <Can module="comercial" action="create">
-                <Button onClick={() => setCreateOpen(true)} size="sm" className="gap-1.5">
-                  <Plus className="h-4 w-4" />
-                  Novo
-                </Button>
-              </Can>
-            </div>
-          </div>
+              {/* Atalhos em dropdown — não competem com as abas */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground hover:text-foreground">
+                    Atalhos
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+                    Ir direto para
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {SHORTCUTS.map((s) => {
+                    const Icon = s.icon;
+                    const active = activeShortcut === s.key;
+                    return (
+                      <DropdownMenuItem
+                        key={s.key}
+                        onClick={() => goTo(s)}
+                        className={cn("gap-2", active && "bg-muted/60 font-medium")}
+                      >
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                        {s.label}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-          {/* Atalhos rápidos — navegação interna sem sair do CRM */}
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] uppercase tracking-wide text-muted-foreground mr-1">
-              Atalhos:
-            </span>
-            {SHORTCUTS.map((s) => {
-              const Icon = s.icon;
-              const active = activeShortcut === s.key;
-              return (
-                <button
-                  key={s.key}
-                  onClick={() => goTo(s)}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors",
-                    active
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background hover:bg-muted text-foreground border-border"
-                  )}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {s.label}
-                </button>
-              );
-            })}
+              <CRMViewSwitcher value={view} onChange={handleViewChange} />
+            </div>
           </div>
         </div>
 

@@ -15,13 +15,13 @@ interface ProjectsBoardProps {
 }
 
 const STAGE_CONFIG = [
-  { key: 'recebido', label: 'Recebido', icon: '📥', color: 'bg-blue-500/10', textColor: 'text-blue-700 dark:text-blue-400', borderColor: 'border-l-blue-500' },
-  { key: 'em_orcamento', label: 'Em Orçamento', icon: '📝', color: 'bg-purple-500/10', textColor: 'text-purple-700 dark:text-purple-400', borderColor: 'border-l-purple-500' },
-  { key: 'orcado', label: 'Orçado', icon: '💰', color: 'bg-indigo-500/10', textColor: 'text-indigo-700 dark:text-indigo-400', borderColor: 'border-l-indigo-500' },
-  { key: 'apresentado', label: 'Apresentado', icon: '📊', color: 'bg-cyan-500/10', textColor: 'text-cyan-700 dark:text-cyan-400', borderColor: 'border-l-cyan-500' },
-  { key: 'em_negociacao', label: 'Em Negociação', icon: '🤝', color: 'bg-orange-500/10', textColor: 'text-orange-700 dark:text-orange-400', borderColor: 'border-l-orange-500' },
-  { key: 'aprovado', label: 'Aprovado', icon: '✅', color: 'bg-green-500/10', textColor: 'text-green-700 dark:text-green-400', borderColor: 'border-l-green-500' },
-  { key: 'perdido', label: 'Perdido', icon: '❌', color: 'bg-red-500/10', textColor: 'text-red-700 dark:text-red-400', borderColor: 'border-l-red-500' }
+  { key: 'recebido', label: 'Recebido', dot: 'bg-blue-500', color: 'bg-blue-500/5', textColor: 'text-blue-700 dark:text-blue-400', borderColor: 'border-l-blue-500' },
+  { key: 'em_orcamento', label: 'Em Orçamento', dot: 'bg-purple-500', color: 'bg-purple-500/5', textColor: 'text-purple-700 dark:text-purple-400', borderColor: 'border-l-purple-500' },
+  { key: 'orcado', label: 'Orçado', dot: 'bg-indigo-500', color: 'bg-indigo-500/5', textColor: 'text-indigo-700 dark:text-indigo-400', borderColor: 'border-l-indigo-500' },
+  { key: 'apresentado', label: 'Apresentado', dot: 'bg-cyan-500', color: 'bg-cyan-500/5', textColor: 'text-cyan-700 dark:text-cyan-400', borderColor: 'border-l-cyan-500' },
+  { key: 'em_negociacao', label: 'Em Negociação', dot: 'bg-orange-500', color: 'bg-orange-500/5', textColor: 'text-orange-700 dark:text-orange-400', borderColor: 'border-l-orange-500' },
+  { key: 'aprovado', label: 'Aprovado', dot: 'bg-emerald-500', color: 'bg-emerald-500/5', textColor: 'text-emerald-700 dark:text-emerald-400', borderColor: 'border-l-emerald-500' },
+  { key: 'perdido', label: 'Perdido', dot: 'bg-rose-500', color: 'bg-rose-500/5', textColor: 'text-rose-700 dark:text-rose-400', borderColor: 'border-l-rose-500' }
 ];
 
 // Helper para ordenar projetos (vencidos primeiro, depois por dias restantes)
@@ -191,15 +191,18 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
       <div className="overflow-x-auto pb-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4 lg:gap-6 min-w-max lg:min-w-0">
           {STAGE_CONFIG.map((stage) => (
-            <div key={stage.key} className="space-y-4 min-w-[280px] lg:min-w-0">
-              <div className={`flex flex-col gap-1 px-4 py-2 ${stage.color} rounded-lg`}>
+            <div key={stage.key} className="space-y-3 min-w-[280px] lg:min-w-0">
+              <div className={`flex flex-col gap-1 px-3 py-2 ${stage.color} rounded-md border-l-2 ${stage.borderColor}`}>
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl">{stage.icon}</span>
-                  <h3 className={`font-semibold ${stage.textColor}`}>
-                    {stage.label} ({groupedProjects[stage.key]?.length || 0})
+                  <span className={`h-2 w-2 rounded-full ${stage.dot}`} aria-hidden />
+                  <h3 className={`text-sm font-semibold ${stage.textColor}`}>
+                    {stage.label}
                   </h3>
+                  <span className="ml-auto text-xs text-muted-foreground font-medium">
+                    {groupedProjects[stage.key]?.length || 0}
+                  </span>
                 </div>
-                <div className={`text-sm font-medium ${stage.textColor} opacity-80`}>
+                <div className={`text-xs font-medium ${stage.textColor} opacity-80 tabular-nums`}>
                   R$ {stageTotals[stage.key].toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </div>
               </div>
