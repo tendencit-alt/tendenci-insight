@@ -398,6 +398,7 @@ export default function CategoriesManager() {
                     className="h-8 w-8" 
                     onClick={() => openView(cat)}
                     title="Visualizar"
+                    aria-label="Visualizar categoria"
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
@@ -407,6 +408,7 @@ export default function CategoriesManager() {
                     className="h-8 w-8" 
                     onClick={() => openEdit(cat)}
                     title="Editar"
+                    aria-label="Editar categoria"
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
@@ -416,6 +418,7 @@ export default function CategoriesManager() {
                     className="h-8 w-8 text-destructive hover:text-destructive" 
                     onClick={() => openDelete(cat)}
                     title="Remover"
+                    aria-label="Remover categoria"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
