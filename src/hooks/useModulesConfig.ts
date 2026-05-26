@@ -174,9 +174,10 @@ export function useVisibleModuleGroups() {
 
   const normalized = data
     .filter((m) => m.visible_in_menu && m.category !== "master")
-    .map(normalizeMenuModule)
-    // Plan gating: if planModules is null/undefined → no gating (safe fallback).
-    .filter((m) => !planModules || planModules.has(m.module_key));
+    // Plan gating uses ORIGINAL module_key (matches plan_modules rows).
+    // Safe fallback: if planModules is null/undefined → no gating.
+    .filter((m) => !planModules || planModules.has(m.module_key))
+    .map(normalizeMenuModule);
 
   const visible = Array.from(
     normalized.reduce((acc, module) => {
