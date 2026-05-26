@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,19 +24,21 @@ type ConfigRow = {
 
 export function StrategicResourceCategoriesManager() {
   const qc = useQueryClient();
+  const { activeTenantId } = useActiveTenant();
   const [savingId, setSavingId] = useState<string | null>(null);
   const [localPct, setLocalPct] = useState<Record<string, string>>({});
 
-  // First find the parent account by code
+  // First find the parent account by code (scoped to active tenant)
   const { data: parentAccount } = useQuery({
-    queryKey: ["fin-chart-parent-compromissos"],
+    queryKey: ["fin-chart-parent-compromissos", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("fin_chart_accounts")
         .select("id")
         .eq("code", PARENT_ACCOUNT_CODE)
         .eq("active", true)
-        .not("tenant_id", "is", null)
+        .eq("tenant_id", activeTenantId!)
         .maybeSingle();
       if (error) throw error;
       return data;

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 
 const PARENT_CODE = "2.2";
 
@@ -20,17 +21,18 @@ export interface CompromissoState {
 }
 
 export function useCompromissosVendaCategories(enabled = true) {
+  const { activeTenantId } = useActiveTenant();
   return useQuery({
-    queryKey: ["compromissos-venda-categories"],
-    enabled,
+    queryKey: ["compromissos-venda-categories", activeTenantId],
+    enabled: enabled && !!activeTenantId,
     queryFn: async () => {
-      // 1. Find parent account 2.3
+      // 1. Find parent account 2.2 for the active tenant
       const { data: parent } = await supabase
         .from("fin_chart_accounts")
         .select("id")
         .eq("code", PARENT_CODE)
         .eq("active", true)
-        .not("tenant_id", "is", null)
+        .eq("tenant_id", activeTenantId!)
         .maybeSingle();
 
       if (!parent) return [];
@@ -45,7 +47,7 @@ export function useCompromissosVendaCategories(enabled = true) {
 
       if (!children?.length) return [];
 
-      // 3. Get configs
+      // 3. Get configs (RLS scopes to active tenant)
       const { data: configs } = await supabase
         .from("fin_strategic_resource_account_configs" as any)
         .select("chart_account_id, active, default_percentage");
@@ -62,7 +64,7 @@ export function useCompromissosVendaCategories(enabled = true) {
           code: child.code,
           name: child.name,
           active: cfg?.active ?? false,
-          defaultPercentage: Number(cfg?.default_percentage) ?? 0,
+          defaultPercentage: Number(cfg?.default_percentage) || 0,
         };
       });
     },
