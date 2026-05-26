@@ -441,6 +441,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           ? order.observacao_pagamento : '',
         data_entrega_prevista: order.data_entrega_prevista?.split('T')[0] || '',
         tipo_entrega: order.tipo_entrega || '',
+        requer_montagem: (order as any).requer_montagem ?? true,
         entrega_mesmo_endereco: order.entrega_mesmo_endereco ?? true,
         entrega_cep: order.entrega_cep || '',
         entrega_logradouro: order.entrega_logradouro || '',
