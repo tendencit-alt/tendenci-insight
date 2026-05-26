@@ -16,6 +16,7 @@ import { DeleteOrderDialog } from '@/components/orders/DeleteOrderDialog';
 import { OrdersReports } from '@/components/orders/OrdersReports';
 import { Button } from '@/components/ui/button';
 import { Plus, ShoppingCart } from 'lucide-react';
+import { Can } from '@/components/auth/Can';
 import { startOfMonth } from 'date-fns';
 import { useOrdersRealtime } from '@/hooks/useOrdersRealtime';
 import { useActiveTenant } from '@/hooks/useActiveTenant';
