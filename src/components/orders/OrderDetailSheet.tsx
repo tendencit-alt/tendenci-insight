@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useMinimizedDialogs } from '@/contexts/MinimizedDialogsContext';
 import { MinimizeButton } from '@/components/ui/MinimizeButton';
+import { OrderFulfillmentBadges } from '@/components/entregas/OrderFulfillmentBadges';
 
 interface OrderDetailSheetProps {
   orderId: string;
