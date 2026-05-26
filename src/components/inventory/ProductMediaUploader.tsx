@@ -326,6 +326,7 @@ export default function ProductMediaUploader({
                   size="icon"
                   className="h-6 w-6"
                   onClick={() => removeVideo(idx)}
+                  aria-label="Remover vídeo"
                 >
                   <X className="h-3 w-3" />
                 </Button>
