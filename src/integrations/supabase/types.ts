@@ -10020,6 +10020,7 @@ export type Database = {
           notes: string | null
           phone_number: string
           preferences: Json | null
+          tenant_id: string | null
           updated_at: string
         }
         Insert: {
@@ -10036,6 +10037,7 @@ export type Database = {
           notes?: string | null
           phone_number: string
           preferences?: Json | null
+          tenant_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -10052,6 +10054,7 @@ export type Database = {
           notes?: string | null
           phone_number?: string
           preferences?: Json | null
+          tenant_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -10068,6 +10071,7 @@ export type Database = {
           phone_number: string
           role: string
           sent_product_ids: string[] | null
+          tenant_id: string | null
         }
         Insert: {
           content: string
@@ -10080,6 +10084,7 @@ export type Database = {
           phone_number: string
           role: string
           sent_product_ids?: string[] | null
+          tenant_id?: string | null
         }
         Update: {
           content?: string
@@ -10092,6 +10097,7 @@ export type Database = {
           phone_number?: string
           role?: string
           sent_product_ids?: string[] | null
+          tenant_id?: string | null
         }
         Relationships: []
       }
