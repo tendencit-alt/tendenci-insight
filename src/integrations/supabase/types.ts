@@ -12841,6 +12841,7 @@ export type Database = {
           percentual_forma_2: number | null
           project_id: string | null
           quote_id: string | null
+          requer_montagem: boolean
           rt_habilitado: boolean | null
           rt_percentual: number | null
           rt_valor: number | null
@@ -12935,6 +12936,7 @@ export type Database = {
           percentual_forma_2?: number | null
           project_id?: string | null
           quote_id?: string | null
+          requer_montagem?: boolean
           rt_habilitado?: boolean | null
           rt_percentual?: number | null
           rt_valor?: number | null
@@ -13029,6 +13031,7 @@ export type Database = {
           percentual_forma_2?: number | null
           project_id?: string | null
           quote_id?: string | null
+          requer_montagem?: boolean
           rt_habilitado?: boolean | null
           rt_percentual?: number | null
           rt_valor?: number | null
