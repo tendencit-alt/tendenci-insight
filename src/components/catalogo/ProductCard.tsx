@@ -32,11 +32,11 @@ export function ProductCard({ product, onClick, onBuyNow }: ProductCardProps) {
 
   return (
     <Card 
-      className="group overflow-hidden bg-white border-gray-100 hover:shadow-xl transition-all duration-300 cursor-pointer"
+      className="group overflow-hidden bg-card border-border hover:shadow-xl transition-all duration-300 cursor-pointer"
       onClick={onClick}
     >
       {/* Image Container */}
-      <div className="aspect-square relative overflow-hidden bg-gray-50">
+      <div className="aspect-square relative overflow-hidden bg-muted/40">
         {product.imagem_url ? (
           <img
             src={product.imagem_url}
@@ -46,7 +46,7 @@ export function ProductCard({ product, onClick, onBuyNow }: ProductCardProps) {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Package className="h-16 w-16 text-gray-300" />
+            <Package className="h-16 w-16 text-muted-foreground/50" />
           </div>
         )}
         
@@ -58,7 +58,7 @@ export function ProductCard({ product, onClick, onBuyNow }: ProductCardProps) {
             </Badge>
           )}
           {product.categoria && (
-            <Badge variant="secondary" className="bg-white/90 backdrop-blur-sm text-gray-700 text-xs">
+            <Badge variant="secondary" className="bg-card/90 backdrop-blur-sm text-foreground text-xs">
               {product.categoria}
             </Badge>
           )}
@@ -67,15 +67,16 @@ export function ProductCard({ product, onClick, onBuyNow }: ProductCardProps) {
 
       {/* Content */}
       <div className="p-4 space-y-3">
-        <h3 className="font-semibold text-gray-900 line-clamp-2 min-h-[3rem] group-hover:text-[#C41E3A] transition-colors">
+        <h3 className="font-semibold text-foreground line-clamp-2 min-h-[3rem] group-hover:text-[#C41E3A] transition-colors">
           {product.nome}
         </h3>
 
         <div className="flex items-baseline gap-1">
-          <span className="text-2xl font-bold text-gray-900">
+          <span className="text-2xl font-bold text-foreground">
             {formatPrice(product.preco_base)}
           </span>
         </div>
+
 
         <Button
           onClick={(e) => {
