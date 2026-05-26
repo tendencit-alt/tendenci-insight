@@ -15,7 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useCostCenters } from '@/hooks/useCostCenters';
 import { useProjects } from '@/hooks/useProjects';
-import { CurrencyInput, parseCurrencyToNumber, formatToCurrencyDisplay } from '@/components/ui/currency-input';
+import { CurrencyInput, MoneyInput, parseCurrencyToNumber, formatToCurrencyDisplay } from '@/components/ui/currency-input';
 
 export interface OrderItem {
   id: string;
