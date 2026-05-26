@@ -4774,6 +4774,84 @@ export type Database = {
           },
         ]
       }
+      delivery_orders: {
+        Row: {
+          code: string | null
+          created_at: string
+          created_by: string | null
+          delivered_date: string | null
+          endereco: string | null
+          id: string
+          motorista: string | null
+          observacoes: string | null
+          order_id: string
+          production_order_id: string | null
+          proof_file_url: string | null
+          recebido_por: string | null
+          scheduled_date: string | null
+          status: string
+          tenant_id: string
+          transportadora: string | null
+          updated_at: string
+          veiculo: string | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivered_date?: string | null
+          endereco?: string | null
+          id?: string
+          motorista?: string | null
+          observacoes?: string | null
+          order_id: string
+          production_order_id?: string | null
+          proof_file_url?: string | null
+          recebido_por?: string | null
+          scheduled_date?: string | null
+          status?: string
+          tenant_id: string
+          transportadora?: string | null
+          updated_at?: string
+          veiculo?: string | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivered_date?: string | null
+          endereco?: string | null
+          id?: string
+          motorista?: string | null
+          observacoes?: string | null
+          order_id?: string
+          production_order_id?: string | null
+          proof_file_url?: string | null
+          recebido_por?: string | null
+          scheduled_date?: string | null
+          status?: string
+          tenant_id?: string
+          transportadora?: string | null
+          updated_at?: string
+          veiculo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_orders_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dependency_impact_events: {
         Row: {
           cascade_depth: number
@@ -10358,6 +10436,148 @@ export type Database = {
             columns: ["incident_id"]
             isOneToOne: false
             referencedRelation: "system_incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      installation_checklist_items: {
+        Row: {
+          concluido: boolean
+          created_at: string
+          descricao: string
+          id: string
+          installation_order_id: string
+          observacao: string | null
+          tenant_id: string
+        }
+        Insert: {
+          concluido?: boolean
+          created_at?: string
+          descricao: string
+          id?: string
+          installation_order_id: string
+          observacao?: string | null
+          tenant_id: string
+        }
+        Update: {
+          concluido?: boolean
+          created_at?: string
+          descricao?: string
+          id?: string
+          installation_order_id?: string
+          observacao?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installation_checklist_items_installation_order_id_fkey"
+            columns: ["installation_order_id"]
+            isOneToOne: false
+            referencedRelation: "installation_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      installation_issues: {
+        Row: {
+          created_at: string
+          descricao: string
+          foto_url: string | null
+          id: string
+          installation_order_id: string
+          severidade: string
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          foto_url?: string | null
+          id?: string
+          installation_order_id: string
+          severidade?: string
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          foto_url?: string | null
+          id?: string
+          installation_order_id?: string
+          severidade?: string
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installation_issues_installation_order_id_fkey"
+            columns: ["installation_order_id"]
+            isOneToOne: false
+            referencedRelation: "installation_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      installation_orders: {
+        Row: {
+          completed_date: string | null
+          created_at: string
+          created_by: string | null
+          delivery_order_id: string | null
+          endereco: string | null
+          equipe_responsavel: string | null
+          id: string
+          observacoes: string | null
+          order_id: string
+          scheduled_date: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivery_order_id?: string | null
+          endereco?: string | null
+          equipe_responsavel?: string | null
+          id?: string
+          observacoes?: string | null
+          order_id: string
+          scheduled_date?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivery_order_id?: string | null
+          endereco?: string | null
+          equipe_responsavel?: string | null
+          id?: string
+          observacoes?: string | null
+          order_id?: string
+          scheduled_date?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installation_orders_delivery_order_id_fkey"
+            columns: ["delivery_order_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installation_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
