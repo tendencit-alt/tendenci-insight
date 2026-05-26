@@ -143,6 +143,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     observacao_pagamento: '',
     data_entrega_prevista: '',
     tipo_entrega: '',
+    requer_montagem: true,
     entrega_mesmo_endereco: true,
     entrega_cep: '',
     entrega_logradouro: '',
