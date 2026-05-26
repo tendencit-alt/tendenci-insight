@@ -480,9 +480,11 @@ export default function Produtos() {
                 <Button variant="outline" size="sm" onClick={handleExport}>
                   <Download className="h-4 w-4 mr-1.5" />Exportar
                 </Button>
-                <Button size="sm" onClick={() => setCreateOpen(true)}>
-                  <Plus className="h-4 w-4 mr-1.5" />Novo Produto
-                </Button>
+                <Can module="operacional" action="create">
+                  <Button size="sm" onClick={() => setCreateOpen(true)}>
+                    <Plus className="h-4 w-4 mr-1.5" />Novo Produto
+                  </Button>
+                </Can>
               </div>
             }
             overview={overview}
