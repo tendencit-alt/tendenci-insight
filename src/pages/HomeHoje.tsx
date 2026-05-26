@@ -63,15 +63,15 @@ export default function HomeHoje() {
       const tid = activeTenantId as string;
 
       const [revenueEntries, openOrders, banks, overdueReceivables] = await Promise.all([
-        // Receita do mês: mesma fonte do DRE Competência — escopada ao tenant ativo
+        // Receita REALIZADA do mês: entradas liquidadas/conciliadas com cash_date no mês
         supabase
           .from("fin_ledger_entries")
           .select("amount,status")
           .eq("tenant_id", tid)
           .eq("type", "RECEITA")
-          .gte("competence_date", start)
-          .lte("competence_date", end)
-          .neq("status", "CANCELADO"),
+          .in("status", ["PAGO_RECEBIDO", "CONCILIADO"])
+          .gte("cash_date", start)
+          .lte("cash_date", end),
         // Pedidos abertos: status real = 'ativo' (mesmo critério da tela /pedidos)
         supabase
           .from("orders")
