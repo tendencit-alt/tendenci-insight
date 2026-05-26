@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { format, subDays, startOfMonth } from 'date-fns';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useActiveTenant } from '@/hooks/useActiveTenant';
+import { Can } from '@/components/auth/Can';
 
 
 export default function Production() {
