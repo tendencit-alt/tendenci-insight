@@ -132,7 +132,7 @@ export function PrjCadastroTab() {
                         <Badge variant={p.actual_margin >= 0 ? "default" : "destructive"}>{p.actual_margin?.toFixed(1)}%</Badge>
                       </TableCell>
                       <TableCell><Badge variant={st.variant}>{st.label}</Badge></TableCell>
-                      <TableCell><Button variant="ghost" size="icon" onClick={() => deleteMut.mutate(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
+                      <TableCell><Button variant="ghost" size="icon" onClick={() => deleteMut.mutate(p.id)} aria-label="Excluir projeto"><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
                     </TableRow>
                   );
                 })}
