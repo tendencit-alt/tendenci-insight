@@ -51,7 +51,7 @@ export function UpgradeNudge({ entitlementCode, signalType, surface = "unknown",
 
   const handleClick = () => {
     track.mutate({ signal_id: signal.id, signal_type: signal.signal_type, event_type: "clicked", surface });
-    // TODO: rota /billing/upgrade ou abrir modal — placeholder
+    navigate("/cobranca");
   };
   const handleDismiss = () => {
     track.mutate({ signal_id: signal.id, signal_type: signal.signal_type, event_type: "dismissed", surface });
