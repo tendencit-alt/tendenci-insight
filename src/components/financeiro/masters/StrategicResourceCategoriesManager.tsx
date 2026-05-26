@@ -142,7 +142,7 @@ export function StrategicResourceCategoriesManager() {
           </div>
         ) : !children?.length ? (
           <p className="text-sm text-muted-foreground py-4 text-center">
-            Nenhuma subcategoria encontrada em 2.2 - Custos diretos da venda.
+            Nenhuma subcategoria encontrada em 2.2 - Compromissos sobre vendas.
           </p>
         ) : (
           children.map((child) => {
