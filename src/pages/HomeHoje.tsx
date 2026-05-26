@@ -182,7 +182,7 @@ export default function HomeHoje() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <Kpi icon={DollarSign} label="Receita do mês" value={fmtBRL(kpis?.revenue || 0)} tone="success" loading={isLoading} />
+          <Kpi icon={DollarSign} label="Receita realizada do mês" value={fmtBRL(kpis?.revenue || 0)} tone="success" loading={isLoading} />
           <Kpi icon={ShoppingCart} label="Pedidos abertos" value={String(kpis?.openOrders ?? 0)} loading={isLoading} />
           <Kpi icon={Wallet} label="Saldo em caixa" value={fmtBRL(kpis?.cash || 0)} loading={isLoading} />
           <Kpi
