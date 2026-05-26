@@ -381,7 +381,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     enabled: !!orderId && open,
   });
 
-  const { data: orderItems } = useQuery({
+  const { data: orderItems, isLoading: orderItemsLoading } = useQuery({
     queryKey: ['order-items-for-edit', orderId],
     queryFn: async () => {
       const { data, error } = await supabase
