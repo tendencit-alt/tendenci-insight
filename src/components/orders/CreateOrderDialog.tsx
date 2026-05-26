@@ -2036,6 +2036,16 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                 <Label htmlFor="mesmo-endereco">Usar endereço do cliente</Label>
               </div>
 
+              <div className="flex items-center space-x-2 p-3 bg-muted rounded-lg">
+                <Switch
+                  id="requer-montagem"
+                  checked={formData.requer_montagem}
+                  onCheckedChange={(checked) => setFormData({ ...formData, requer_montagem: checked })}
+                />
+                <Label htmlFor="requer-montagem">Requer montagem</Label>
+              </div>
+
+
               {!formData.entrega_mesmo_endereco && (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
