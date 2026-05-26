@@ -867,9 +867,21 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
       return;
     }
 
+    // Guard contra zeragem acidental: nunca prosseguir se itens ainda não carregaram
+    // ou se o estado de itens está vazio (race condition que apagava os itens originais).
+    if (orderItemsLoading || orderItems === undefined) {
+      toast.error('Itens do pedido ainda não foram carregados. Aguarde e tente novamente.');
+      return;
+    }
+    if (items.length === 0) {
+      toast.error('O pedido precisa ter ao menos um item. Adicione itens antes de salvar.');
+      return;
+    }
+
     setLoading(true);
     try {
       const shouldBeAtivo = order.status === 'rascunho' && isFormValid;
+
       const parcelasPrincipal = parcelas[0];
       const parcelasSecundaria = parcelas.length > 1 ? parcelas[1] : null;
       // Resolve projects with naming convention after order update
