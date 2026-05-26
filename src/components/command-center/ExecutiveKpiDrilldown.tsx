@@ -65,7 +65,7 @@ async function fetchData(key: KpiKey) {
   if (key === "openOrders") {
     const { data } = await supabase
       .from("orders")
-      .select("id, order_number, client_name, total_amount, status, created_at")
+      .select("id, order_number, valor_total, status, created_at, client:clients(name)")
       .in("status", ["rascunho", "pendente_aprovacao", "aprovado", "liberado_producao", "em_producao"])
       .order("created_at", { ascending: false })
       .limit(30);
@@ -74,7 +74,7 @@ async function fetchData(key: KpiKey) {
   if (key === "overduePayables") {
     const { data } = await supabase
       .from("fin_payables")
-      .select("id, description, amount, due_date, status, supplier:fin_suppliers(name)")
+      .select("id, description, amount, due_date, status, supplier:suppliers(name)")
       .in("status", ["ABERTO", "VENCIDO"])
       .lt("due_date", today)
       .order("due_date", { ascending: true })
