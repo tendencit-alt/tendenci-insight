@@ -415,6 +415,7 @@ export function ProductionUpdates({ orderId }: ProductionUpdatesProps) {
                         variant="ghost"
                         className="h-6 w-6 bg-white hover:bg-gray-100"
                         onClick={() => deleteAttachmentMutation.mutate(attachment)}
+                        aria-label="Excluir anexo"
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
