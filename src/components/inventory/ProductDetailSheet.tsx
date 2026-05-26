@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Edit, Package, AlertTriangle, TrendingUp, DollarSign, BarChart3, Trash2, Loader2, FileSpreadsheet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { usePermissions } from "@/hooks/usePermissions";
+import { useCan } from "@/hooks/useCan";
 import EditProductDialog from "./EditProductDialog";
 import ProductMovements from "./ProductMovements";
 import ProductSuppliers from "./ProductSuppliers";
@@ -39,8 +39,8 @@ interface ProductDetailSheetProps {
 
 export default function ProductDetailSheet({ product, open, onOpenChange, onUpdate, defaultTab = "movements" }: ProductDetailSheetProps) {
   const { toast } = useToast();
-  const { isMaster } = usePermissions();
   const queryClient = useQueryClient();
+  const canDelete = useCan("estoque", "delete");
   const [editOpen, setEditOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -97,7 +97,7 @@ export default function ProductDetailSheet({ product, open, onOpenChange, onUpda
                 <Edit className="h-4 w-4 mr-1" />
                 Editar
               </Button>
-              {isMaster && (
+              {canDelete && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" size="sm">
