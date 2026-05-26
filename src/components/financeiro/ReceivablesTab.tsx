@@ -420,7 +420,7 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Vencidas (Período)</p>
+                <p className="text-xs text-muted-foreground">Em Atraso (Período)</p>
                 <p className="text-xl font-bold text-orange-600">{formatCurrency(kpis.vencido)}</p>
                 <p className="text-xs text-muted-foreground">{kpis.vencidoCount} lançamentos</p>
               </div>
