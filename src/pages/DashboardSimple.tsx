@@ -45,9 +45,9 @@ export default function DashboardSimple() {
         supabase
           .from("fin_ledger_entries")
           .select("amount, entry_type, type, status, chart_account:fin_chart_accounts(grupo_fluxo)")
-          .neq("status", "CANCELADO")
-          .gte("competence_date", start)
-          .lte("competence_date", end),
+          .in("status", ["PAGO_RECEBIDO", "CONCILIADO"])
+          .gte("cash_date", start)
+          .lte("cash_date", end),
         supabase.from("fin_bank_accounts").select("current_balance"),
         supabase
           .from("fin_receivables")
@@ -99,7 +99,7 @@ export default function DashboardSimple() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <Kpi icon={DollarSign} label="Receita do mês" value={fmtBRL(data?.revenue || 0)} tone="success" loading={isLoading} />
+          <Kpi icon={DollarSign} label="Receita realizada do mês" value={fmtBRL(data?.revenue || 0)} tone="success" loading={isLoading} />
           <Kpi icon={TrendingUp} label="Margem bruta" value={fmtPct(data?.margin || 0)} loading={isLoading} />
           <Kpi icon={Wallet} label="Saldo em caixa" value={fmtBRL(data?.cash || 0)} loading={isLoading} />
           <Kpi icon={AlertTriangle} label="Inadimplência" value={fmtPct(data?.inadimplencia || 0)} tone="danger" loading={isLoading} />

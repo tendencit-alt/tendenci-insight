@@ -63,15 +63,15 @@ export default function HomeHoje() {
       const tid = activeTenantId as string;
 
       const [revenueEntries, openOrders, banks, overdueReceivables] = await Promise.all([
-        // Receita do mês: mesma fonte do DRE Competência — escopada ao tenant ativo
+        // Receita REALIZADA do mês: entradas liquidadas/conciliadas com cash_date no mês
         supabase
           .from("fin_ledger_entries")
           .select("amount,status")
           .eq("tenant_id", tid)
           .eq("type", "RECEITA")
-          .gte("competence_date", start)
-          .lte("competence_date", end)
-          .neq("status", "CANCELADO"),
+          .in("status", ["PAGO_RECEBIDO", "CONCILIADO"])
+          .gte("cash_date", start)
+          .lte("cash_date", end),
         // Pedidos abertos: status real = 'ativo' (mesmo critério da tela /pedidos)
         supabase
           .from("orders")
@@ -182,7 +182,7 @@ export default function HomeHoje() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <Kpi icon={DollarSign} label="Receita do mês" value={fmtBRL(kpis?.revenue || 0)} tone="success" loading={isLoading} />
+          <Kpi icon={DollarSign} label="Receita realizada do mês" value={fmtBRL(kpis?.revenue || 0)} tone="success" loading={isLoading} />
           <Kpi icon={ShoppingCart} label="Pedidos abertos" value={String(kpis?.openOrders ?? 0)} loading={isLoading} />
           <Kpi icon={Wallet} label="Saldo em caixa" value={fmtBRL(kpis?.cash || 0)} loading={isLoading} />
           <Kpi
