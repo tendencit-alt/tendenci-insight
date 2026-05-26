@@ -23277,6 +23277,10 @@ export type Database = {
       run_capacity_sweep: { Args: never; Returns: Json }
       run_inactive_architects_check: { Args: never; Returns: Json }
       run_predictive_sweep: { Args: never; Returns: Json }
+      seed_chart_of_accounts_from_owner: {
+        Args: { _tenant_id: string }
+        Returns: number
+      }
       seed_default_cost_centers: {
         Args: { _tenant_id: string }
         Returns: number
