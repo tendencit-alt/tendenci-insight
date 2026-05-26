@@ -124,6 +124,25 @@ const CALCULATED_CHART_LINES = [
   },
 ] as const;
 
+const CALCULATED_LINE_TOOLTIPS: Record<string, string> = {
+  "__calc__receita-liquida":
+    "Receita Líquida = Receita Bruta − Deduções (impostos sobre vendas, devoluções e abatimentos). É o quanto efetivamente entrou da operação comercial.",
+  "__calc__margem-contribuicao":
+    "Margem de Contribuição = Receita Líquida − Custos e Despesas Variáveis. Mostra quanto sobra de cada venda para cobrir custos fixos e gerar lucro.",
+  "__calc__ebitda":
+    "EBITDA (Resultado Operacional) = Margem de Contribuição − Despesas Operacionais Fixas. Lucro da operação antes de juros, impostos, depreciação e amortização.",
+  "__calc__ebit":
+    "EBIT (Resultado Econômico) = EBITDA − Depreciação e Amortização. Lucro operacional considerando o desgaste dos ativos.",
+  "__calc__resultado-antes-capital":
+    "Resultado Antes do Capital = EBIT ± Resultado Financeiro (juros, rendimentos e despesas financeiras). Lucro antes de impostos sobre o lucro.",
+  "__calc__entradas-totais":
+    "Soma de todas as entradas de caixa do período (recebimentos, aportes, empréstimos recebidos). Usado no Fluxo de Caixa.",
+  "__calc__saidas-totais":
+    "Soma de todas as saídas de caixa do período (pagamentos, retiradas, amortizações). Usado no Fluxo de Caixa.",
+  "__calc__variacao-liquida-caixa":
+    "Variação Líquida de Caixa = Entradas Totais − Saídas Totais. Quanto o caixa cresceu (positivo) ou caiu (negativo) no período.",
+};
+
 // Draggable Row Component
 function DraggableAccountRow({
   account,
