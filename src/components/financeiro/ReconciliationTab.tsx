@@ -161,8 +161,28 @@ export function ReconciliationTab({ filters }: ReconciliationTabProps) {
   };
 
   const handleReconcile = async (transactionId: string) => {
-    // TODO: Implement reconciliation logic
-    toast.info("Funcionalidade de conciliação manual em desenvolvimento");
+    if (!confirm("Executar conciliação automática (smart-reconcile) para esta transação?")) return;
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: profile } = await (supabase as any)
+        .from("profiles")
+        .select("tenant_id")
+        .eq("user_id", userData.user?.id ?? "")
+        .maybeSingle();
+      if (!profile?.tenant_id) {
+        toast.error("Tenant não identificado");
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke("smart-reconcile", {
+        body: { transaction_ids: [transactionId], tenant_id: profile.tenant_id },
+      });
+      if (error) throw error;
+      toast.success("Conciliação processada com sucesso");
+      queryClient.invalidateQueries({ queryKey: ["fin-bank-transactions"] });
+      refetch();
+    } catch (err: any) {
+      toast.error("Erro na conciliação: " + (err?.message ?? "desconhecido"));
+    }
   };
 
   return (

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,7 @@ interface Props {
  * Loga 'shown' uma vez por sessão e 'clicked'/'dismissed' nas interações.
  */
 export function UpgradeNudge({ entitlementCode, signalType, surface = "unknown", className, variant = "card" }: Props) {
+  const navigate = useNavigate();
   const { data } = useUpgradeSignals();
   const track = useTrackUpgradeEvent();
   const [dismissed, setDismissed] = useState(false);
@@ -49,7 +51,7 @@ export function UpgradeNudge({ entitlementCode, signalType, surface = "unknown",
 
   const handleClick = () => {
     track.mutate({ signal_id: signal.id, signal_type: signal.signal_type, event_type: "clicked", surface });
-    // TODO: rota /billing/upgrade ou abrir modal — placeholder
+    navigate("/cobranca");
   };
   const handleDismiss = () => {
     track.mutate({ signal_id: signal.id, signal_type: signal.signal_type, event_type: "dismissed", surface });

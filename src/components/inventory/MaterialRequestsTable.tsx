@@ -183,17 +183,7 @@ export default function MaterialRequestsTable() {
                           </Button>
                         </div>
                       )}
-                      {request.status === "aprovada" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-1"
-                          onClick={() => toast.info("Funcionalidade em breve: converter para pedido de compra")}
-                        >
-                          <ShoppingCart className="h-3 w-3" />
-                          Criar Pedido
-                        </Button>
-                      )}
+                      {/* Conversão para pedido de compra: pendente (módulo Compras ainda não expõe endpoint). Botão oculto para não deixar controle morto. */}
                     </TableCell>
                   </TableRow>
                 );
