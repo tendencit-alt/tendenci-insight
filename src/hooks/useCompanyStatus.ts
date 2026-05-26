@@ -18,6 +18,7 @@ export interface CompanyStatus {
   monthlyResult: CompanyKPI;
   openOrders: CompanyKPI;
   overduePayables: CompanyKPI;
+  overdueReceivables: CompanyKPI;
   goalProgress: CompanyKPI;
   health: HealthStatus;
   healthScore: number;
