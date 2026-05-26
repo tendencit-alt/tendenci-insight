@@ -58,6 +58,7 @@ import ProducaoOperacoes from "./pages/ProducaoOperacoes";
 
 import CRM from "./pages/CRM";
 import Suprimentos from "./pages/Suprimentos";
+import EntregasMontagem from "./pages/EntregasMontagem";
 
 import Planning from "./pages/Planning";
 import ExecutiveCenter from "./pages/ExecutiveCenter";
@@ -175,6 +176,7 @@ const App = () => (
               <Route path="/projects" element={<Navigate to="/crm?view=gestor&tab=overview" replace />} />
 
               <Route path="/suprimentos" element={<ProtectedRoute><Suprimentos /></ProtectedRoute>} />
+              <Route path="/entregas-montagem" element={<ProtectedRoute><EntregasMontagem /></ProtectedRoute>} />
               <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
               <Route path="/atividades" element={<ProtectedRoute><ActivityCenter /></ProtectedRoute>} />
               <Route path="/data-flow" element={<ProtectedRoute><DataFlowMap /></ProtectedRoute>} />

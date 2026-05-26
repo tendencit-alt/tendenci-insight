@@ -147,6 +147,7 @@ const menuGroups: MenuGroup[] = [
       { title: "Automações", url: "/automacoes", icon: Zap, module: "operacional" },
       { title: "Suprimentos", url: "/suprimentos", icon: Package, module: "operacional" },
       { title: "Estoque", url: "/estoque", icon: Layers, module: "operacional" },
+      { title: "Entregas & Montagem", url: "/entregas-montagem", icon: Truck, module: "operacional" },
       { title: "Fornecedores", url: "/fornecedores", icon: Package, module: "operacional" },
       { title: "KPI's", url: "/relatorios", icon: FileText, comingSoon: true, module: "operacional" },
     ],
