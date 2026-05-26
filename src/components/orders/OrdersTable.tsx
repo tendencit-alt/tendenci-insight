@@ -54,7 +54,7 @@ const ITEMS_PER_PAGE = 20;
 
 export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onDeleteOrder, selectedIds = [], onSelectedIdsChange, onBulkEdit }: OrdersTableProps) {
   const { isMaster } = usePermissions();
-  const isEditable = (status: string) => ['rascunho', 'em_negociacao'].includes(status);
+  const isStatusEditable = (status: string) => ['rascunho', 'em_negociacao'].includes(status);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -194,7 +194,7 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
                 {paginatedOrders.map((order) => {
                   const sc = STATUS_CONFIG[order.status] || { label: order.status, className: 'border-border bg-muted text-muted-foreground' };
                   const dl = getDeadlineStatus(order.data_entrega_prevista, order.status);
-                  const canEdit = isEditable(order.status);
+                  const canEdit = isMaster || isStatusEditable(order.status);
 
                   return (
                     <TableRow
