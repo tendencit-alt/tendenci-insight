@@ -111,8 +111,16 @@ export function PermissionSimulationProvider({ children }: { children: ReactNode
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
+const DEFAULT_CTX: SimulationContextValue = {
+  state: { active: false },
+  effectivePermissions: null,
+  effectiveProfileName: null,
+  startSimulation: () => {},
+  stopSimulation: () => {},
+  isOwner: false,
+};
+
 export function usePermissionSimulation() {
   const ctx = useContext(Ctx);
-  if (!ctx) throw new Error("usePermissionSimulation must be used within PermissionSimulationProvider");
-  return ctx;
+  return ctx ?? DEFAULT_CTX;
 }
