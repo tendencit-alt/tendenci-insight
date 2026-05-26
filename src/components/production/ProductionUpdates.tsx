@@ -292,6 +292,7 @@ export function ProductionUpdates({ orderId }: ProductionUpdatesProps) {
                     variant="ghost"
                     className="h-4 w-4 p-0 ml-1"
                     onClick={() => removeSelectedFile(index)}
+                    aria-label="Remover arquivo selecionado"
                   >
                     <X className="h-3 w-3" />
                   </Button>
