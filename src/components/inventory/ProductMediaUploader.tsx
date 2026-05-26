@@ -233,6 +233,7 @@ export default function ProductMediaUploader({
                       className="h-6 w-6"
                       onClick={() => setAsMainImage(idx - 1)}
                       title="Definir como principal"
+                      aria-label="Definir imagem como principal"
                     >
                       ★
                     </Button>
@@ -243,6 +244,7 @@ export default function ProductMediaUploader({
                     size="icon"
                     className="h-6 w-6"
                     onClick={() => removeImage(idx === 0 ? -1 : idx - 1)}
+                    aria-label="Remover imagem"
                   >
                     <X className="h-3 w-3" />
                   </Button>
@@ -324,6 +326,7 @@ export default function ProductMediaUploader({
                   size="icon"
                   className="h-6 w-6"
                   onClick={() => removeVideo(idx)}
+                  aria-label="Remover vídeo"
                 >
                   <X className="h-3 w-3" />
                 </Button>

@@ -127,7 +127,7 @@ export function HREmployeesTab() {
                       <TableCell className="text-right font-mono text-sm">{fmt(emp.hourly_cost)}</TableCell>
                       <TableCell><Badge variant={st.variant}>{st.label}</Badge></TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" onClick={() => deleteMut.mutate(emp.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => deleteMut.mutate(emp.id)} aria-label="Excluir colaborador"><Trash2 className="h-4 w-4 text-destructive" /></Button>
                       </TableCell>
                     </TableRow>
                   );

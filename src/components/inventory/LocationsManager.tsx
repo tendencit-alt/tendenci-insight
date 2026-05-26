@@ -116,11 +116,11 @@ export default function LocationsManager() {
               </div>
               <div className="flex gap-1">
                 {!loc.is_default && (
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDefault(loc.id)} title="Definir como padrão">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDefault(loc.id)} title="Definir como padrão" aria-label="Definir local como padrão">
                     <Star className="h-4 w-4" />
                   </Button>
                 )}
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(loc.id)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(loc.id)} aria-label="Excluir local">
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>

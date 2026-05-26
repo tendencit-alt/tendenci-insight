@@ -229,6 +229,7 @@ export default function ProductBOMManager({ productId, productName }: ProductBOM
                         size="icon"
                         onClick={() => removeBOMItem.mutate(item.id)}
                         disabled={removeBOMItem.isPending}
+                        aria-label="Remover item da BOM"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>

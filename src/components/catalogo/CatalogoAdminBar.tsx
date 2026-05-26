@@ -125,6 +125,7 @@ export function CatalogoAdminBar({ onProductCreated }: Props) {
                     variant="ghost"
                     size="icon"
                     onClick={() => removeCategory(cat.id)}
+                    aria-label="Remover categoria"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

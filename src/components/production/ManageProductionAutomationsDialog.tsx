@@ -735,6 +735,7 @@ export function ManageProductionAutomationsDialog({
                               size="icon"
                               className="h-8 w-8"
                               onClick={() => handleEdit(automation)}
+                              aria-label="Editar automação"
                             >
                               <Edit2 className="h-4 w-4" />
                             </Button>
@@ -747,6 +748,7 @@ export function ManageProductionAutomationsDialog({
                                   deleteMutation.mutate(automation.id);
                                 }
                               }}
+                              aria-label="Excluir automação"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

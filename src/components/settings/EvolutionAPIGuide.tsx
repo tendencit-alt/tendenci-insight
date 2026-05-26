@@ -47,6 +47,7 @@ export function EvolutionAPIGuide() {
               variant="outline"
               size="icon"
               onClick={() => copyToClipboard(webhookUrl)}
+              aria-label="Copiar URL do webhook"
             >
               <Copy className="h-4 w-4" />
             </Button>

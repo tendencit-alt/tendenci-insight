@@ -269,6 +269,7 @@ export function TemplateFichaSheet({
                       variant="ghost"
                       size="icon"
                       onClick={() => setDeleteItemId(item.id)}
+                      aria-label="Remover item da ficha"
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
