@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Shield, User, Loader2, ArrowLeft, CheckCircle, UserPlus, Key, Edit2, Trash2, Users, Tags } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { describeError } from '@/lib/errorMessage';
+import { Can } from '@/components/auth/Can';
 
 interface ProfileType {
   id: string;
