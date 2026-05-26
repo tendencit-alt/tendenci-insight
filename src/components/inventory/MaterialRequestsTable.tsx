@@ -169,6 +169,7 @@ export default function MaterialRequestsTable() {
                             className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
                             onClick={() => handleApprove(request.id)}
                             title="Aprovar"
+                            aria-label="Aprovar requisição"
                           >
                             <Check className="h-4 w-4" />
                           </Button>
@@ -178,13 +179,35 @@ export default function MaterialRequestsTable() {
                             className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                             onClick={() => handleReject(request.id)}
                             title="Recusar"
+                            aria-label="Recusar requisição"
                           >
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
                       )}
-                      {/* Conversão para pedido de compra: pendente (módulo Compras ainda não expõe endpoint). Botão oculto para não deixar controle morto. */}
+                      {request.status === "aprovada" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={async () => {
+                            const { data, error } = await supabase.rpc(
+                              "convert_material_request_to_po" as any,
+                              { _request_id: request.id }
+                            );
+                            if (error) {
+                              toast.error(error.message || "Erro ao converter em pedido");
+                            } else {
+                              toast.success(`Pedido de compra criado (rascunho)`);
+                              refetch();
+                            }
+                          }}
+                        >
+                          <ShoppingCart className="h-4 w-4 mr-1" />
+                          Converter em Pedido
+                        </Button>
+                      )}
                     </TableCell>
+
                   </TableRow>
                 );
               })}
