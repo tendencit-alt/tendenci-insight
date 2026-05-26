@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { format, subDays, startOfMonth } from 'date-fns';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useActiveTenant } from '@/hooks/useActiveTenant';
+import { Can } from '@/components/auth/Can';
 
 
 export default function Production() {
@@ -192,10 +193,12 @@ export default function Production() {
         description="Ordens de produção, kanban e automações"
         icon={<Factory className="h-5 w-5" />}
         headerActions={
-          <Button size="sm" onClick={() => setCreateDialogOpen(true)} className="gap-1.5">
-            <Plus className="h-4 w-4" />
-            Nova OP
-          </Button>
+          <Can module="producao" action="create">
+            <Button size="sm" onClick={() => setCreateDialogOpen(true)} className="gap-1.5">
+              <Plus className="h-4 w-4" />
+              Nova OP
+            </Button>
+          </Can>
         }
         filters={
           <ProductionFilters

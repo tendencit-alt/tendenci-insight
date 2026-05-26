@@ -10,6 +10,7 @@ import { ConsultorView } from "@/components/crm/views/ConsultorView";
 import { GestorView } from "@/components/crm/views/GestorView";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
 import { cn } from "@/lib/utils";
+import { Can } from "@/components/auth/Can";
 
 const STORAGE_KEY = "crm_view_preference";
 
@@ -90,10 +91,12 @@ export default function CRM() {
             </div>
             <div className="flex items-center gap-2">
               <CRMViewSwitcher value={view} onChange={handleViewChange} />
-              <Button onClick={() => setCreateOpen(true)} size="sm" className="gap-1.5">
-                <Plus className="h-4 w-4" />
-                Novo
-              </Button>
+              <Can module="comercial" action="create">
+                <Button onClick={() => setCreateOpen(true)} size="sm" className="gap-1.5">
+                  <Plus className="h-4 w-4" />
+                  Novo
+                </Button>
+              </Can>
             </div>
           </div>
 

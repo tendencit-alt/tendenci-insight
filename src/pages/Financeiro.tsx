@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Plus } from "lucide-react";
+import { Can } from "@/components/auth/Can";
 
 import {
   ArrowDownCircle,
@@ -72,13 +73,14 @@ export default function Financeiro() {
         icon={<Wallet className="h-5 w-5" />}
         headerActions={
           <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Novo Lançamento
-                </Button>
-              </DropdownMenuTrigger>
+            <Can module="financeiro" action="create">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Novo Lançamento
+                  </Button>
+                </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuItem onClick={() => setActiveTab("receivables")}>
                   <ArrowUpCircle className="h-4 w-4 mr-2" />
@@ -93,7 +95,8 @@ export default function Financeiro() {
                   Movimento de Tesouraria
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
+              </DropdownMenu>
+            </Can>
           </div>
         }
         filters={<FinanceiroFilters filters={filters} onChange={setFilters} />}

@@ -16,6 +16,7 @@ import { DeleteOrderDialog } from '@/components/orders/DeleteOrderDialog';
 import { OrdersReports } from '@/components/orders/OrdersReports';
 import { Button } from '@/components/ui/button';
 import { Plus, ShoppingCart } from 'lucide-react';
+import { Can } from '@/components/auth/Can';
 import { startOfMonth } from 'date-fns';
 import { useOrdersRealtime } from '@/hooks/useOrdersRealtime';
 import { useActiveTenant } from '@/hooks/useActiveTenant';
@@ -127,10 +128,12 @@ export default function Orders() {
             description="Gerencie seus pedidos em um só lugar."
             icon={<ShoppingCart className="h-5 w-5" />}
             headerActions={
-              <Button onClick={() => setCreateOpen(true)} size="sm" className="h-9 px-4 shadow-sm">
-                <Plus className="h-4 w-4 mr-1.5" />
-                Novo Pedido
-              </Button>
+              <Can module="comercial" action="create">
+                <Button onClick={() => setCreateOpen(true)} size="sm" className="h-9 px-4 shadow-sm">
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Novo Pedido
+                </Button>
+              </Can>
             }
             filters={
               <OrdersFilters filters={filters} onFiltersChange={setFilters} />
