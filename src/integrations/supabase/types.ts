@@ -16426,6 +16426,7 @@ export type Database = {
           expected_date: string | null
           id: string
           issue_date: string | null
+          material_request_id: string | null
           notes: string | null
           ops_order_id: string | null
           order_number: number
@@ -16450,6 +16451,7 @@ export type Database = {
           expected_date?: string | null
           id?: string
           issue_date?: string | null
+          material_request_id?: string | null
           notes?: string | null
           ops_order_id?: string | null
           order_number?: number
@@ -16474,6 +16476,7 @@ export type Database = {
           expected_date?: string | null
           id?: string
           issue_date?: string | null
+          material_request_id?: string | null
           notes?: string | null
           ops_order_id?: string | null
           order_number?: number
@@ -16524,6 +16527,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_user_effective_role"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_material_request_id_fkey"
+            columns: ["material_request_id"]
+            isOneToOne: false
+            referencedRelation: "material_requests"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "purchase_orders_ops_order_id_fkey"
