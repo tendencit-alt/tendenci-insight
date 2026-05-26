@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCompanyStatus } from "@/hooks/useCompanyStatus";
 import { TrendingUp, TrendingDown, Minus, HeartPulse } from "lucide-react";
+import { ExecutiveKpiDrilldown, type KpiKey } from "./ExecutiveKpiDrilldown";
 
 export function ExecutiveStatusBar() {
   const { data: companyStatus, isLoading } = useCompanyStatus();
+  const [openKey, setOpenKey] = useState<KpiKey | null>(null);
 
   if (isLoading) {
     return (
@@ -17,12 +20,12 @@ export function ExecutiveStatusBar() {
 
   if (!companyStatus) return null;
 
-  const kpis = [
-    companyStatus.cashBalance,
-    companyStatus.monthlyResult,
-    companyStatus.openOrders,
-    companyStatus.overduePayables,
-    companyStatus.goalProgress,
+  const kpis: { key: KpiKey; kpi: typeof companyStatus.cashBalance }[] = [
+    { key: "cashBalance", kpi: companyStatus.cashBalance },
+    { key: "monthlyResult", kpi: companyStatus.monthlyResult },
+    { key: "openOrders", kpi: companyStatus.openOrders },
+    { key: "overduePayables", kpi: companyStatus.overduePayables },
+    { key: "goalProgress", kpi: companyStatus.goalProgress },
   ];
 
   return (
@@ -50,11 +53,19 @@ export function ExecutiveStatusBar() {
         </Badge>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-        {kpis.map((kpi) => {
+        {kpis.map(({ key, kpi }) => {
           const TrendIcon = kpi.trend === "up" ? TrendingUp : kpi.trend === "down" ? TrendingDown : Minus;
           const trendColor = kpi.trend === "up" ? "text-emerald-600 dark:text-emerald-400" : kpi.trend === "down" ? "text-red-500 dark:text-red-400" : "text-muted-foreground";
           return (
-            <Card key={kpi.label} className="border-border/60">
+            <Card
+              key={kpi.label}
+              role="button"
+              tabIndex={0}
+              onClick={() => setOpenKey(key)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpenKey(key); } }}
+              className="border-border/60 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all"
+              title="Clique para ver a composição"
+            >
               <CardContent className="p-3">
                 <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{kpi.label}</p>
                 <div className="flex items-center gap-1.5 mt-1">
@@ -69,6 +80,12 @@ export function ExecutiveStatusBar() {
           );
         })}
       </div>
+
+      <ExecutiveKpiDrilldown
+        kpiKey={openKey}
+        open={!!openKey}
+        onOpenChange={(o) => { if (!o) setOpenKey(null); }}
+      />
     </div>
   );
 }
