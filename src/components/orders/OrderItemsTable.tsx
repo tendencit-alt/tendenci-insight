@@ -15,7 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useCostCenters } from '@/hooks/useCostCenters';
 import { useProjects } from '@/hooks/useProjects';
-import { CurrencyInput, parseCurrencyToNumber, formatToCurrencyDisplay } from '@/components/ui/currency-input';
+import { CurrencyInput, MoneyInput, parseCurrencyToNumber, formatToCurrencyDisplay } from '@/components/ui/currency-input';
 
 export interface OrderItem {
   id: string;
@@ -472,9 +472,9 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Valor Unitário *</Label>
-                <CurrencyInput
-                  value={newItem.valor_unitario ? formatToCurrencyDisplay(newItem.valor_unitario) : ''}
-                  onChange={(v) => setNewItem({ ...newItem, valor_unitario: parseCurrencyToNumber(v) })}
+                <MoneyInput
+                  value={newItem.valor_unitario ?? 0}
+                  onChange={(n) => setNewItem({ ...newItem, valor_unitario: n })}
                   className={!newItem.valor_unitario ? 'border-destructive/50' : ''}
                 />
               </div>
@@ -666,7 +666,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                     )}
                     <div className="grid grid-cols-2 gap-3">
                       <Input type="number" value={item.quantidade} onChange={(e) => handleUpdateItem(item.id, { quantidade: Number(e.target.value) })} min={1} placeholder="Quantidade" />
-                      <CurrencyInput value={formatToCurrencyDisplay(item.valor_unitario)} onChange={(v) => handleUpdateItem(item.id, { valor_unitario: parseCurrencyToNumber(v) })} />
+                      <MoneyInput value={item.valor_unitario ?? 0} onChange={(n) => handleUpdateItem(item.id, { valor_unitario: n })} />
                     </div>
                     <Textarea value={item.especificacoes || ''} onChange={(e) => handleUpdateItem(item.id, { especificacoes: e.target.value })} placeholder="Especificações / observações" rows={2} />
                   </div>
@@ -869,7 +869,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                           <Input type="number" className="h-8 w-16" value={item.quantidade} onChange={(e) => handleUpdateItem(item.id, { quantidade: Number(e.target.value) })} min={1} />
                         </TableCell>
                         <TableCell>
-                          <CurrencyInput className="h-8" value={formatToCurrencyDisplay(item.valor_unitario)} onChange={(v) => handleUpdateItem(item.id, { valor_unitario: parseCurrencyToNumber(v) })} />
+                          <MoneyInput className="h-8" value={item.valor_unitario ?? 0} onChange={(n) => handleUpdateItem(item.id, { valor_unitario: n })} />
                         </TableCell>
                         <TableCell className="text-right font-medium">{formatCurrency(item.valor_total)}</TableCell>
                         <TableCell>
