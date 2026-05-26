@@ -773,10 +773,10 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
                   <span className="font-semibold">{receivablesSummary?.abertasCount || 0} lançamentos - {formatCurrency(receivablesSummary?.abertasValor || 0)}</span>
                 </button>
                 <button
-                  onClick={() => setDrillDown({ type: "receivables", statusFilter: "overdue", title: "Contas a Receber - Vencidas" })}
+                  onClick={() => setDrillDown({ type: "receivables", statusFilter: "overdue", title: "Recebimentos em Atraso" })}
                   className="flex items-center justify-between w-full rounded px-1 py-0.5 -mx-1 hover:bg-muted/80 cursor-pointer transition-colors text-red-600"
                 >
-                  <span className="text-sm">Vencidas</span>
+                  <span className="text-sm">Em Atraso</span>
                   <span className="font-semibold">{receivablesSummary?.vencidasCount || 0} lançamentos - {formatCurrency(receivablesSummary?.vencidasValor || 0)}</span>
                 </button>
                 <button
