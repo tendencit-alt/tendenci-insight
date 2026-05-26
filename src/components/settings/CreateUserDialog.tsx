@@ -66,17 +66,18 @@ export function CreateUserDialog({
         .from('profile_types')
         .select('*')
         .eq('is_active', true)
+        .neq('name', 'owner') // 'owner' é papel da plataforma, não atribuível por tenant
         .order('is_system', { ascending: false })
         .order('display_name');
 
       if (error) throw error;
       setProfileTypes(data || []);
-      
-      // Se não tem tipo selecionado, selecionar vendedor por padrão
+
+      // Default selection: comercial (substitui antigo 'vendedor')
       if (data && data.length > 0 && !formData.profile_type_id) {
-        const vendedor = data.find(pt => pt.name === 'vendedor');
-        if (vendedor) {
-          setFormData(prev => ({ ...prev, profile_type_id: vendedor.id, role: 'vendedor' }));
+        const def = data.find(pt => pt.name === 'comercial') ?? data.find(pt => pt.name === 'vendedor') ?? data[0];
+        if (def) {
+          setFormData(prev => ({ ...prev, profile_type_id: def.id, role: def.name === 'administrador' ? 'admin' : (def.name === 'comercial' ? 'vendedor' : prev.role) }));
         }
       }
     } catch (error) {
@@ -88,12 +89,21 @@ export function CreateUserDialog({
 
   const handleProfileTypeChange = (profileTypeId: string) => {
     const selectedType = profileTypes.find(pt => pt.id === profileTypeId);
-    // Map profile type name to valid user_role enum value
-    // Only 'admin', 'vendedor', 'parceiro profissional', 'projetista' exist in the enum
-    const validRoles = ['admin', 'vendedor', 'parceiro profissional', 'projetista'];
-    const mappedRole = selectedType?.name === 'master' ? 'admin' 
-      : validRoles.includes(selectedType?.name || '') ? selectedType!.name 
-      : 'vendedor';
+    // Map profile_type name → enum user_role (kept for legacy column compat;
+    // source of truth is now profile_type_id).
+    const nameToEnumRole: Record<string, string> = {
+      administrador: 'admin',
+      comercial: 'vendedor',
+      financeiro: 'vendedor',
+      operacional: 'vendedor',
+      auditoria: 'vendedor',
+      vendedor: 'vendedor',
+      admin: 'admin',
+      master: 'admin',
+      arquiteto: 'arquiteto',
+      projetista: 'projetista',
+    };
+    const mappedRole = nameToEnumRole[selectedType?.name ?? ''] ?? 'vendedor';
     setFormData({
       ...formData,
       profile_type_id: profileTypeId,

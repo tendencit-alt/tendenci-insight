@@ -70,7 +70,8 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
         .from('profile_types')
         .select('id, name, display_name, color')
         .eq('is_active', true)
-        .neq('name', 'admin') // Excluir master (name='admin') da lista de seleção
+        .neq('name', 'admin') // master (name='admin') não atribuível
+        .neq('name', 'owner') // 'owner' é papel de plataforma, não atribuível por tenant
         .order('is_system', { ascending: false })
         .order('display_name');
 
