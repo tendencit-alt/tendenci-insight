@@ -292,6 +292,7 @@ export function CreateProductionOrderDialog({ open, onOpenChange, productionType
                   variant="outline" 
                   size="icon"
                   onClick={() => setShowCreateDeal(true)}
+                  aria-label="Cadastrar novo negócio"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
