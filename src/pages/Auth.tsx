@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,38 +37,52 @@ const Auth = () => {
     profile
   } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const safeNavigate = (target: string) => {
+    // Evita loop: nunca navegar para a própria página de autenticação
+    if (!target || target === '/auth' || target === '/autenticacao') {
+      target = '/';
+    }
+    if (target === location.pathname) return;
+    navigate(target, { replace: true });
+  };
 
   // Redirecionar usuários já autenticados baseado em suas permissões
   useEffect(() => {
+    let cancelled = false;
     const redirectAuthenticatedUser = async () => {
-      if (user && profile) {
-        // Owner/Admin/Master => acesso global, redirecionar direto
-        const isMaster =
-          profile.is_owner === true ||
-          profile.role === 'admin' ||
-          profile.role === 'owner' ||
-          profile.role === 'tenant_owner' ||
-          profile.role === 'master';
+      if (!user || !profile) return;
 
-        if (isMaster) {
-          navigate('/');
-          return;
-        }
-        
-        // Buscar permissões do usuário
-        const { data: userPermissions } = await supabase
-          .from('user_permissions')
-          .select('module, can_view')
-          .eq('user_id', user.id)
-          .eq('can_view', true);
-        
-        const targetRoute = getFirstAllowedRoute(userPermissions, false);
-        navigate(targetRoute);
+      // Owner/Admin/Master => acesso global, redirecionar direto
+      const isMaster =
+        profile.is_owner === true ||
+        profile.role === 'admin' ||
+        profile.role === 'owner' ||
+        profile.role === 'tenant_owner' ||
+        profile.role === 'master';
+
+      if (isMaster) {
+        if (!cancelled) safeNavigate('/');
+        return;
       }
+
+      // Buscar permissões do usuário
+      const { data: userPermissions } = await supabase
+        .from('user_permissions')
+        .select('module, can_view')
+        .eq('user_id', user.id)
+        .eq('can_view', true);
+
+      if (cancelled) return;
+      const targetRoute = getFirstAllowedRoute(userPermissions, false);
+      safeNavigate(targetRoute);
     };
-    
+
     redirectAuthenticatedUser();
-  }, [user, profile, navigate]);
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, profile?.id]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,9 +91,9 @@ const Auth = () => {
       return;
     }
     setLoading(true);
-    
+
     const { error } = await signIn(loginData.email, loginData.password);
-    
+
     if (error) {
       console.error('Login error:', error);
       const message = error.message?.includes('Invalid login credentials')
@@ -90,41 +104,9 @@ const Auth = () => {
       window.requestAnimationFrame(() => toast.error(message));
       return;
     }
-    
-    toast.success('Login realizado com sucesso!');
 
-    // Buscar dados do usuário para determinar redirecionamento
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    
-    if (authUser) {
-      // Buscar profile
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', authUser.id)
-        .single();
-      
-      const isMaster = userProfile?.role === 'admin';
-      
-      if (isMaster) {
-        navigate('/');
-        setLoading(false);
-        return;
-      }
-      
-      // Buscar permissões do usuário
-      const { data: userPermissions } = await supabase
-        .from('user_permissions')
-        .select('module, can_view')
-        .eq('user_id', authUser.id)
-        .eq('can_view', true);
-      
-      const targetRoute = getFirstAllowedRoute(userPermissions, false);
-      navigate(targetRoute);
-    } else {
-      navigate('/');
-    }
-    
+    toast.success('Login realizado com sucesso!');
+    // Redirecionamento é tratado pelo useEffect quando profile carrega.
     setLoading(false);
   };
   const handleSignup = async (e: React.FormEvent) => {
