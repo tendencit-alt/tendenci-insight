@@ -52,7 +52,7 @@ export function ProductDetailModal({ product, open, onOpenChange, onBuyNow }: Pr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 bg-white">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 bg-background">
         <VisuallyHidden>
           <DialogTitle>{product.nome}</DialogTitle>
         </VisuallyHidden>
