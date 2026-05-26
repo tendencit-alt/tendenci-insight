@@ -260,6 +260,7 @@ export function CreateProductionOrderDialog({ open, onOpenChange, productionType
                   variant="outline" 
                   size="icon"
                   onClick={() => setShowCreateClient(true)}
+                  aria-label="Cadastrar novo cliente"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
