@@ -102,6 +102,7 @@ export function N8nIntegrationGuide() {
                 variant="outline"
                 size="icon"
                 onClick={() => copyToClipboard(apiUrl, "URL")}
+                aria-label="Copiar URL"
               >
                 <Copy className="w-4 h-4" />
               </Button>
