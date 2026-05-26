@@ -60,6 +60,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Label } from "@/components/ui/label";
 import { QuickCreateClientDialog } from "@/components/financeiro/QuickCreateClientDialog";
 import { useCostCenters } from "@/hooks/useCostCenters";
+import { Can } from "@/components/auth/Can";
 
 interface ClientRow {
   id: string;
