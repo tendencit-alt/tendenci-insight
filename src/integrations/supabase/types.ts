@@ -22977,8 +22977,10 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_admin_safe: { Args: never; Returns: boolean }
+      is_any_tenant_admin: { Args: never; Returns: boolean }
       is_master_owner: { Args: { _uid: string }; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
+      is_tenant_admin: { Args: { _tenant: string }; Returns: boolean }
       is_tenant_admin_or_above: { Args: never; Returns: boolean }
       is_tenant_owner: { Args: never; Returns: boolean }
       is_user_admin: { Args: { _user_id: string }; Returns: boolean }
