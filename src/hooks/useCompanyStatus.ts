@@ -88,7 +88,7 @@ export function useCompanyStatus() {
 
       const overdueRecRes = await supabase
         .from("fin_receivables")
-        .select("id", { count: "exact", head: true })
+        .select("id, amount", { count: "exact" })
         .in("status", ["ABERTO", "VENCIDO"])
         .lt("due_date", today);
 
