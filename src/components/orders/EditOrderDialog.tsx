@@ -381,7 +381,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     enabled: !!orderId && open,
   });
 
-  const { data: orderItems } = useQuery({
+  const { data: orderItems, isLoading: orderItemsLoading } = useQuery({
     queryKey: ['order-items-for-edit', orderId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -867,9 +867,21 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
       return;
     }
 
+    // Guard contra zeragem acidental: nunca prosseguir se itens ainda não carregaram
+    // ou se o estado de itens está vazio (race condition que apagava os itens originais).
+    if (orderItemsLoading || orderItems === undefined) {
+      toast.error('Itens do pedido ainda não foram carregados. Aguarde e tente novamente.');
+      return;
+    }
+    if (items.length === 0) {
+      toast.error('O pedido precisa ter ao menos um item. Adicione itens antes de salvar.');
+      return;
+    }
+
     setLoading(true);
     try {
       const shouldBeAtivo = order.status === 'rascunho' && isFormValid;
+
       const parcelasPrincipal = parcelas[0];
       const parcelasSecundaria = parcelas.length > 1 ? parcelas[1] : null;
       // Resolve projects with naming convention after order update
@@ -999,30 +1011,73 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
       if (orderError) throw orderError;
 
-      await supabase.from('order_items').delete().eq('order_id', orderId);
+      // Sincronização diff-based dos itens: UPDATE existentes, INSERT novos, DELETE removidos.
+      // Evita a janela em que o pedido fica sem itens (que zerava o valor_total via trigger).
+      const originalIds = new Set((orderItems || []).map((i: any) => i.id));
+      const currentIds = new Set(itemsWithResolvedProject.filter((i) => i.id).map((i) => i.id as string));
 
-      const itemsToInsert = itemsWithResolvedProject.map((item, index) => ({
-        order_id: orderId,
-        descricao: item.descricao,
-        quantidade: item.quantidade,
-        valor_unitario: item.valor_unitario,
-        valor_total: item.valor_total,
-        especificacoes: item.especificacoes,
-        codigo_produto: item.codigo_produto || null,
-        ncm: item.ncm || null,
-        cfop: item.cfop || null,
-        unidade: item.unidade || 'UN',
-        centro_custo: item.centro_custo || null,
-        project_id: item.project_id || null,
-        position: index,
-      }));
+      const idsToDelete = [...originalIds].filter((id) => !currentIds.has(id as string));
+      if (idsToDelete.length > 0) {
+        const { error: delErr } = await supabase
+          .from('order_items')
+          .delete()
+          .in('id', idsToDelete as string[]);
+        if (delErr) throw delErr;
+      }
 
-      const { data: insertedItems, error: itemsError } = await supabase
-        .from('order_items')
-        .insert(itemsToInsert)
-        .select('id, descricao, centro_custo, valor_total');
+      const itemsToInsert = itemsWithResolvedProject
+        .map((item, index) => ({ item, index }))
+        .filter(({ item }) => !item.id || !originalIds.has(item.id))
+        .map(({ item, index }) => ({
+          order_id: orderId,
+          descricao: item.descricao,
+          quantidade: item.quantidade,
+          valor_unitario: item.valor_unitario,
+          valor_total: item.valor_total,
+          especificacoes: item.especificacoes,
+          codigo_produto: item.codigo_produto || null,
+          ncm: item.ncm || null,
+          cfop: item.cfop || null,
+          unidade: item.unidade || 'UN',
+          centro_custo: item.centro_custo || null,
+          project_id: item.project_id || null,
+          position: index,
+        }));
 
-      if (itemsError) throw itemsError;
+      let insertedItems: Array<{ id: string; descricao: string; centro_custo: string | null; valor_total: number }> = [];
+      if (itemsToInsert.length > 0) {
+        const { data, error: itemsError } = await supabase
+          .from('order_items')
+          .insert(itemsToInsert)
+          .select('id, descricao, centro_custo, valor_total');
+        if (itemsError) throw itemsError;
+        insertedItems = (data || []) as any;
+      }
+
+      // UPDATE dos itens existentes (preserva a linha e evita zerar valor_total temporariamente)
+      for (let index = 0; index < itemsWithResolvedProject.length; index++) {
+        const item = itemsWithResolvedProject[index];
+        if (!item.id || !originalIds.has(item.id)) continue;
+        const { error: updErr } = await supabase
+          .from('order_items')
+          .update({
+            descricao: item.descricao,
+            quantidade: item.quantidade,
+            valor_unitario: item.valor_unitario,
+            valor_total: item.valor_total,
+            especificacoes: item.especificacoes,
+            codigo_produto: item.codigo_produto || null,
+            ncm: item.ncm || null,
+            cfop: item.cfop || null,
+            unidade: item.unidade || 'UN',
+            centro_custo: item.centro_custo || null,
+            project_id: item.project_id || null,
+            position: index,
+          })
+          .eq('id', item.id);
+        if (updErr) throw updErr;
+      }
+
 
       let opsCreated = 0;
       if (shouldBeAtivo && insertedItems) {
