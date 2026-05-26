@@ -164,7 +164,7 @@ export function ReconciliationTab({ filters }: ReconciliationTabProps) {
     if (!confirm("Executar conciliação automática (smart-reconcile) para esta transação?")) return;
     try {
       const { data: userData } = await supabase.auth.getUser();
-      const { data: profile } = await supabase
+      const { data: profile } = await (supabase as any)
         .from("profiles")
         .select("tenant_id")
         .eq("user_id", userData.user?.id ?? "")
