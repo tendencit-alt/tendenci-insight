@@ -216,18 +216,28 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     if (isMaster) return true;
     if (!permissions?.permissions?.length) return false;
 
-    const normalizedModule = module.toLowerCase().trim();
-    const modulePermission = permissions.permissions.find(p => 
+    // Alias UI module ids → matrix module ids (profile_type_permissions vocabulary)
+    const aliasMap: Record<string, string> = {
+      dashboard: 'dashboard_executivo',
+      gestao_usuarios: 'configuracoes',
+      producao: 'producao',
+      estoque: 'operacional',
+      pedidos: 'operacional',
+      fornecedores: 'operacional',
+      cadastros_financeiros: 'cadastros',
+    };
+    const raw = module.toLowerCase().trim();
+    const normalizedModule = aliasMap[raw] ?? raw;
+
+    const modulePermission = permissions.permissions.find(p =>
       p.module?.toLowerCase().trim() === normalizedModule
     );
-    
     if (!modulePermission) return false;
 
     const actionMap: Record<PermissionAction, string> = {
       view: 'can_view', create: 'can_create', edit: 'can_edit', delete: 'can_delete',
       approve: 'can_approve', conciliate: 'can_conciliate', export: 'can_export', admin: 'can_admin',
     };
-    
     return Boolean((modulePermission as any)[actionMap[action]]);
   }, [loading, permissions, isMaster]);
 
