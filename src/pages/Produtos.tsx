@@ -189,15 +189,32 @@ export default function Produtos() {
 
   const confirmDelete = async () => {
     if (!deletingProduct) return;
+    // Hard delete first; if blocked by FK, fall back to soft-delete (inactivate)
     const { error } = await supabase
       .from("products")
-      .update({ active: false, ativo_no_catalogo: false })
+      .delete()
       .eq("id", deletingProduct.id);
     if (error) {
-      toast.error("Erro ao excluir: " + error.message);
-      return;
+      const code = (error as any).code;
+      if (code === "23503") {
+        const { error: softErr } = await supabase
+          .from("products")
+          .update({ active: false, ativo_no_catalogo: false })
+          .eq("id", deletingProduct.id);
+        if (softErr) {
+          toast.error("Erro ao inativar: " + softErr.message);
+          return;
+        }
+        toast.warning(
+          "Produto possui movimentações vinculadas — foi inativado em vez de excluído."
+        );
+      } else {
+        toast.error("Erro ao excluir: " + error.message);
+        return;
+      }
+    } else {
+      toast.success("Produto excluído");
     }
-    toast.success("Produto excluído");
     setDeletingProduct(null);
     queryClient.invalidateQueries({ queryKey: ["produtos-list"] });
   };
