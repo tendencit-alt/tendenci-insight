@@ -5,13 +5,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { AlertTriangle, Eye, Pencil, ShoppingCart, MoreHorizontal, Package, FileSpreadsheet, Tag, X } from "lucide-react";
+import { AlertTriangle, Eye, Pencil, ShoppingCart, MoreHorizontal, Package, FileSpreadsheet, Tag, Trash2, X } from "lucide-react";
 import ProductDetailSheet from "./ProductDetailSheet";
 import EditProductDialog from "./EditProductDialog";
 import QuickMinStockDialog from "./QuickMinStockDialog";
 import CreateMaterialRequestDialog from "./CreateMaterialRequestDialog";
 import BulkCategoryDialog from "./BulkCategoryDialog";
 import { cn } from "@/lib/utils";
+import { useCan } from "@/hooks/useCan";
 
 interface ProductsTableProps {
   products: any[];
@@ -25,6 +26,7 @@ const formatCurrency = (value: number) => {
 };
 
 export default function ProductsTable({ products, isLoading, onSelect, onRefresh }: ProductsTableProps) {
+  const canDelete = useCan("estoque", "delete");
   const [viewProduct, setViewProduct] = useState<any>(null);
   const [viewProductTab, setViewProductTab] = useState<string>("movements");
   const [editProduct, setEditProduct] = useState<any>(null);
@@ -272,6 +274,18 @@ export default function ProductsTable({ products, isLoading, onSelect, onRefresh
                           <ShoppingCart className="h-4 w-4 mr-2" />
                           Requisição de Compra
                         </DropdownMenuItem>
+                        {canDelete && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => openProductWithTab(product, "movements")}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
