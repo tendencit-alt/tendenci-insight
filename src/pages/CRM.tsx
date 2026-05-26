@@ -10,6 +10,7 @@ import { ConsultorView } from "@/components/crm/views/ConsultorView";
 import { GestorView } from "@/components/crm/views/GestorView";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
 import { cn } from "@/lib/utils";
+import { Can } from "@/components/auth/Can";
 
 const STORAGE_KEY = "crm_view_preference";
 
