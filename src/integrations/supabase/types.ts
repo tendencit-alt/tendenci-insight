@@ -22439,6 +22439,7 @@ export type Database = {
         Args: { p_architect_id: string }
         Returns: Json
       }
+      delete_order_cascade: { Args: { _order_id: string }; Returns: undefined }
       detect_billing_dunning: { Args: never; Returns: number }
       detect_capacity_signals: { Args: never; Returns: number }
       detect_predictive_anomalies: { Args: never; Returns: number }
