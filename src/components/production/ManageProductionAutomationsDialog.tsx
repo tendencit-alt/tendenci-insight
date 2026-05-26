@@ -748,6 +748,7 @@ export function ManageProductionAutomationsDialog({
                                   deleteMutation.mutate(automation.id);
                                 }
                               }}
+                              aria-label="Excluir automação"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
