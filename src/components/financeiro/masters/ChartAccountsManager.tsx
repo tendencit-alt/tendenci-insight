@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, FileSpreadsheet, Loader2, Trash2, X, ChevronRight, ChevronDown, ChevronsUpDown, GripVertical, RefreshCw, ShieldCheck, Wand2 } from "lucide-react";
+import { Plus, Pencil, FileSpreadsheet, Loader2, Trash2, X, ChevronRight, ChevronDown, ChevronsUpDown, GripVertical, RefreshCw, ShieldCheck, Wand2, Info } from "lucide-react";
 import { ChartAccountsOnboardingWizard, shouldAutoOpenOnboarding } from "./ChartAccountsOnboardingWizard";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
@@ -123,6 +123,25 @@ const CALCULATED_CHART_LINES = [
     in_cashflow: true,
   },
 ] as const;
+
+const CALCULATED_LINE_TOOLTIPS: Record<string, string> = {
+  "__calc__receita-liquida":
+    "Receita Líquida = Receita Bruta − Deduções (impostos sobre vendas, devoluções e abatimentos). É o quanto efetivamente entrou da operação comercial.",
+  "__calc__margem-contribuicao":
+    "Margem de Contribuição = Receita Líquida − Custos e Despesas Variáveis. Mostra quanto sobra de cada venda para cobrir custos fixos e gerar lucro.",
+  "__calc__ebitda":
+    "EBITDA (Resultado Operacional) = Margem de Contribuição − Despesas Operacionais Fixas. Lucro da operação antes de juros, impostos, depreciação e amortização.",
+  "__calc__ebit":
+    "EBIT (Resultado Econômico) = EBITDA − Depreciação e Amortização. Lucro operacional considerando o desgaste dos ativos.",
+  "__calc__resultado-antes-capital":
+    "Resultado Antes do Capital = EBIT ± Resultado Financeiro (juros, rendimentos e despesas financeiras). Lucro antes de impostos sobre o lucro.",
+  "__calc__entradas-totais":
+    "Soma de todas as entradas de caixa do período (recebimentos, aportes, empréstimos recebidos). Usado no Fluxo de Caixa.",
+  "__calc__saidas-totais":
+    "Soma de todas as saídas de caixa do período (pagamentos, retiradas, amortizações). Usado no Fluxo de Caixa.",
+  "__calc__variacao-liquida-caixa":
+    "Variação Líquida de Caixa = Entradas Totais − Saídas Totais. Quanto o caixa cresceu (positivo) ou caiu (negativo) no período.",
+};
 
 // Draggable Row Component
 function DraggableAccountRow({
@@ -256,6 +275,18 @@ function DraggableAccountRow({
                 <ShieldCheck className="h-3.5 w-3.5 text-primary" />
               </TooltipTrigger>
               <TooltipContent>Estrutura core do sistema — protegida</TooltipContent>
+            </Tooltip>
+          )}
+          {isCalculated && CALCULATED_LINE_TOOLTIPS[account.id] && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button type="button" className="inline-flex" aria-label="O que é este resultado?">
+                  <Info className="h-3.5 w-3.5 text-primary/70 hover:text-primary" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-xs leading-relaxed">
+                {CALCULATED_LINE_TOOLTIPS[account.id]}
+              </TooltipContent>
             </Tooltip>
           )}
         </span>
