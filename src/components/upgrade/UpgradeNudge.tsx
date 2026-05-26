@@ -25,6 +25,7 @@ interface Props {
  * Loga 'shown' uma vez por sessão e 'clicked'/'dismissed' nas interações.
  */
 export function UpgradeNudge({ entitlementCode, signalType, surface = "unknown", className, variant = "card" }: Props) {
+  const navigate = useNavigate();
   const { data } = useUpgradeSignals();
   const track = useTrackUpgradeEvent();
   const [dismissed, setDismissed] = useState(false);
