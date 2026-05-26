@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, FileSpreadsheet, Loader2, Trash2, X, ChevronRight, ChevronDown, ChevronsUpDown, GripVertical, RefreshCw, ShieldCheck, Wand2 } from "lucide-react";
+import { Plus, Pencil, FileSpreadsheet, Loader2, Trash2, X, ChevronRight, ChevronDown, ChevronsUpDown, GripVertical, RefreshCw, ShieldCheck, Wand2, Info } from "lucide-react";
 import { ChartAccountsOnboardingWizard, shouldAutoOpenOnboarding } from "./ChartAccountsOnboardingWizard";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
