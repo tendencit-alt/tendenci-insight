@@ -184,6 +184,23 @@ function DrillRow({ kpiKey, row }: { kpiKey: KpiKey; row: any }) {
     );
   }
 
+  if (kpiKey === "overdueReceivables") {
+    return (
+      <div className="flex items-center justify-between gap-2 p-2.5 rounded-md border border-border/50 hover:bg-muted/40">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium truncate">{row.description ?? "Sem descrição"}</p>
+          <p className="text-[10px] text-muted-foreground">
+            {row.customer?.name ?? "—"} · venc. {row.due_date ? format(new Date(row.due_date), "dd/MM/yyyy") : "—"}
+          </p>
+        </div>
+        <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-700 dark:text-amber-400">{row.status}</Badge>
+        <span className="text-xs font-mono tabular-nums text-amber-600 dark:text-amber-400">
+          {fmt(Number(row.amount || 0))}
+        </span>
+      </div>
+    );
+  }
+
   // ledger entries (cashBalance / monthlyResult / goalProgress)
   const isCredit = row.entry_type === "credit" || row.type === "RECEITA";
   return (
