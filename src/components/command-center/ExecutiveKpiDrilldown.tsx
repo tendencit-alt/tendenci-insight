@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ArrowRight } from "lucide-react";
 
-export type KpiKey = "cashBalance" | "monthlyResult" | "openOrders" | "overduePayables" | "goalProgress";
+export type KpiKey = "cashBalance" | "monthlyResult" | "openOrders" | "overduePayables" | "overdueReceivables" | "goalProgress";
 
 interface Props {
   kpiKey: KpiKey | null;
@@ -24,7 +24,8 @@ const TITLE: Record<KpiKey, string> = {
   cashBalance: "Saldo de Caixa — Últimas movimentações",
   monthlyResult: "Resultado do Mês — Composição",
   openOrders: "Pedidos Abertos — Lista",
-  overduePayables: "Contas Vencidas — Detalhamento",
+  overduePayables: "Contas a Pagar Vencidas — Detalhamento",
+  overdueReceivables: "Recebimentos em Atraso — Detalhamento",
   goalProgress: "Meta vs Realizado — Receitas do mês",
 };
 
@@ -33,6 +34,7 @@ const ROUTE: Record<KpiKey, { label: string; to: string }> = {
   monthlyResult: { label: "Abrir DRE", to: "/bi-dashboard" },
   openOrders: { label: "Abrir Pedidos", to: "/pedidos" },
   overduePayables: { label: "Abrir Contas a Pagar", to: "/financeiro" },
+  overdueReceivables: { label: "Abrir Contas a Receber", to: "/financeiro" },
   goalProgress: { label: "Abrir Planejamento", to: "/planning" },
 };
 
