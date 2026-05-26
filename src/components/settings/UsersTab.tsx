@@ -164,10 +164,12 @@ export function UsersTab() {
               {users.length} usuário(s) cadastrado(s) — Gerencie dados, permissões e acessos
             </CardDescription>
           </div>
-          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
-            <UserPlus className="w-4 h-4" />
-            Criar Usuário
-          </Button>
+          <Can module="configuracoes" action="create">
+            <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+              <UserPlus className="w-4 h-4" />
+              Criar Usuário
+            </Button>
+          </Can>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
