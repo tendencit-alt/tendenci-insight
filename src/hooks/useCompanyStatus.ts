@@ -105,6 +105,7 @@ export function useCompanyStatus() {
       const overduePayCount = overduePayRes.count || 0;
       const overduePayAmount = overduePayRes.data?.reduce((s, r) => s + Number(r.amount || 0), 0) || 0;
       const overdueRecCount = overdueRecRes.count || 0;
+      const overdueRecAmount = overdueRecRes.data?.reduce((s, r) => s + Number(r.amount || 0), 0) || 0;
 
       const goalPct = prevRevenue > 0 ? (revenue / prevRevenue) * 100 : 0;
       const resultTrend: TrendDirection = monthlyResult > prevResult ? "up" : monthlyResult < prevResult ? "down" : "stable";
