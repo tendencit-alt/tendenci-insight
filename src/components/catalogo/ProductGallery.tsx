@@ -75,6 +75,7 @@ export function ProductGallery({ images, videos = [], productName }: ProductGall
               variant="ghost"
               size="icon"
               onClick={goToPrevious}
+              aria-label="Imagem anterior"
               className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm hover:bg-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <ChevronLeft className="h-5 w-5" />
