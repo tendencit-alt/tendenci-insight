@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Plus } from "lucide-react";
+import { Can } from "@/components/auth/Can";
 
 import {
   ArrowDownCircle,
