@@ -18,6 +18,7 @@ export interface CompanyStatus {
   monthlyResult: CompanyKPI;
   openOrders: CompanyKPI;
   overduePayables: CompanyKPI;
+  overdueReceivables: CompanyKPI;
   goalProgress: CompanyKPI;
   health: HealthStatus;
   healthScore: number;
@@ -87,7 +88,7 @@ export function useCompanyStatus() {
 
       const overdueRecRes = await supabase
         .from("fin_receivables")
-        .select("id", { count: "exact", head: true })
+        .select("id, amount", { count: "exact" })
         .in("status", ["ABERTO", "VENCIDO"])
         .lt("due_date", today);
 
@@ -104,6 +105,7 @@ export function useCompanyStatus() {
       const overduePayCount = overduePayRes.count || 0;
       const overduePayAmount = overduePayRes.data?.reduce((s, r) => s + Number(r.amount || 0), 0) || 0;
       const overdueRecCount = overdueRecRes.count || 0;
+      const overdueRecAmount = overdueRecRes.data?.reduce((s, r) => s + Number(r.amount || 0), 0) || 0;
 
       const goalPct = prevRevenue > 0 ? (revenue / prevRevenue) * 100 : 0;
       const resultTrend: TrendDirection = monthlyResult > prevResult ? "up" : monthlyResult < prevResult ? "down" : "stable";
@@ -124,7 +126,8 @@ export function useCompanyStatus() {
         cashBalance: { label: "Saldo Caixa", value: cashBalance, formatted: fmt(cashBalance), trend: cashBalance > 0 ? "up" as const : "down" as const },
         monthlyResult: { label: "Resultado Mês", value: monthlyResult, formatted: fmt(monthlyResult), trend: resultTrend, trendLabel: resultTrend === "up" ? "acima do anterior" : resultTrend === "down" ? "abaixo do anterior" : "estável" },
         openOrders: { label: "Pedidos Abertos", value: openOrders, formatted: String(openOrders), trend: "stable" as const },
-        overduePayables: { label: "Contas Vencidas", value: overduePayCount, formatted: overduePayCount > 0 ? `${overduePayCount} (${fmt(overduePayAmount)})` : "0", trend: overduePayCount > 0 ? "down" as const : "up" as const },
+        overduePayables: { label: "Contas a Pagar Vencidas", value: overduePayCount, formatted: overduePayCount > 0 ? `${overduePayCount} (${fmt(overduePayAmount)})` : "0", trend: overduePayCount > 0 ? "down" as const : "up" as const },
+        overdueReceivables: { label: "Recebimentos em Atraso", value: overdueRecCount, formatted: overdueRecCount > 0 ? `${overdueRecCount} (${fmt(overdueRecAmount)})` : "0", trend: overdueRecCount > 0 ? "down" as const : "up" as const },
         goalProgress: { label: "Meta vs Realizado", value: goalPct, formatted: `${goalPct.toFixed(0)}%`, trend: goalPct >= 80 ? "up" as const : goalPct >= 50 ? "stable" as const : "down" as const, trendLabel: goalPct >= 100 ? "acima do mês anterior" : `${(100 - goalPct).toFixed(0)}% abaixo` },
         health,
         healthScore,

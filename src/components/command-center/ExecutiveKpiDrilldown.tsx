@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ArrowRight } from "lucide-react";
 
-export type KpiKey = "cashBalance" | "monthlyResult" | "openOrders" | "overduePayables" | "goalProgress";
+export type KpiKey = "cashBalance" | "monthlyResult" | "openOrders" | "overduePayables" | "overdueReceivables" | "goalProgress";
 
 interface Props {
   kpiKey: KpiKey | null;
@@ -24,7 +24,8 @@ const TITLE: Record<KpiKey, string> = {
   cashBalance: "Saldo de Caixa — Últimas movimentações",
   monthlyResult: "Resultado do Mês — Composição",
   openOrders: "Pedidos Abertos — Lista",
-  overduePayables: "Contas Vencidas — Detalhamento",
+  overduePayables: "Contas a Pagar Vencidas — Detalhamento",
+  overdueReceivables: "Recebimentos em Atraso — Detalhamento",
   goalProgress: "Meta vs Realizado — Receitas do mês",
 };
 
@@ -33,6 +34,7 @@ const ROUTE: Record<KpiKey, { label: string; to: string }> = {
   monthlyResult: { label: "Abrir DRE", to: "/bi-dashboard" },
   openOrders: { label: "Abrir Pedidos", to: "/pedidos" },
   overduePayables: { label: "Abrir Contas a Pagar", to: "/financeiro" },
+  overdueReceivables: { label: "Abrir Contas a Receber", to: "/financeiro" },
   goalProgress: { label: "Abrir Planejamento", to: "/planning" },
 };
 
@@ -75,6 +77,16 @@ async function fetchData(key: KpiKey) {
     const { data } = await supabase
       .from("fin_payables")
       .select("id, description, amount, due_date, status, supplier:suppliers(name)")
+      .in("status", ["ABERTO", "VENCIDO"])
+      .lt("due_date", today)
+      .order("due_date", { ascending: true })
+      .limit(30);
+    return { rows: data || [] };
+  }
+  if (key === "overdueReceivables") {
+    const { data } = await supabase
+      .from("fin_receivables")
+      .select("id, description, amount, due_date, status, customer:clients(name)")
       .in("status", ["ABERTO", "VENCIDO"])
       .lt("due_date", today)
       .order("due_date", { ascending: true })
@@ -166,6 +178,23 @@ function DrillRow({ kpiKey, row }: { kpiKey: KpiKey; row: any }) {
         </div>
         <Badge variant="destructive" className="text-[10px]">{row.status}</Badge>
         <span className="text-xs font-mono tabular-nums text-red-600 dark:text-red-400">
+          {fmt(Number(row.amount || 0))}
+        </span>
+      </div>
+    );
+  }
+
+  if (kpiKey === "overdueReceivables") {
+    return (
+      <div className="flex items-center justify-between gap-2 p-2.5 rounded-md border border-border/50 hover:bg-muted/40">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium truncate">{row.description ?? "Sem descrição"}</p>
+          <p className="text-[10px] text-muted-foreground">
+            {row.customer?.name ?? "—"} · venc. {row.due_date ? format(new Date(row.due_date), "dd/MM/yyyy") : "—"}
+          </p>
+        </div>
+        <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-700 dark:text-amber-400">{row.status}</Badge>
+        <span className="text-xs font-mono tabular-nums text-amber-600 dark:text-amber-400">
           {fmt(Number(row.amount || 0))}
         </span>
       </div>

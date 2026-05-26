@@ -12,8 +12,8 @@ export function ExecutiveStatusBar() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-        {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-[72px] rounded-xl" />)}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+        {[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-[72px] rounded-xl" />)}
       </div>
     );
   }
@@ -25,6 +25,7 @@ export function ExecutiveStatusBar() {
     { key: "monthlyResult", kpi: companyStatus.monthlyResult },
     { key: "openOrders", kpi: companyStatus.openOrders },
     { key: "overduePayables", kpi: companyStatus.overduePayables },
+    { key: "overdueReceivables", kpi: companyStatus.overdueReceivables },
     { key: "goalProgress", kpi: companyStatus.goalProgress },
   ];
 
@@ -52,7 +53,7 @@ export function ExecutiveStatusBar() {
           {` · ${companyStatus.healthScore}pts`}
         </Badge>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
         {kpis.map(({ key, kpi }) => {
           const TrendIcon = kpi.trend === "up" ? TrendingUp : kpi.trend === "down" ? TrendingDown : Minus;
           const trendColor = kpi.trend === "up" ? "text-emerald-600 dark:text-emerald-400" : kpi.trend === "down" ? "text-red-500 dark:text-red-400" : "text-muted-foreground";
