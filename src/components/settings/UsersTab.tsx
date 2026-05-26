@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Shield, User, Loader2, CheckCircle, UserPlus, Key, Edit2, Trash2 } from 'lucide-react';
 import { describeError } from '@/lib/errorMessage';
+import { Can } from '@/components/auth/Can';
 
 interface ProfileType {
   id: string;
