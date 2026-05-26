@@ -1,57 +1,41 @@
-# Padronização: exibir centavos (R$ 0,00) em todo o sistema
-
 ## Diagnóstico
 
-O padrão `Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })` já formata com 2 casas (R$ 1.234,56). O problema é que ~15 arquivos sobrescrevem com `minimumFractionDigits: 0` / `maximumFractionDigits: 0`, truncando os centavos. A correção é remover esses overrides.
+Inspecionei o pedido afetado e a lógica do `EditOrderDialog`:
 
-## Arquivos a corrigir (remover `minimumFractionDigits:0` / `maximumFractionDigits:0`)
+- **DB hoje (Pedido #12)**: `valor_total = 0`, `subtotal = 0`, **0 linhas em `order_items`** — os itens originais foram apagados.
+- **Fluxo do `handleSubmit` em `EditOrderDialog.tsx`**:
+  1. `UPDATE orders SET valor_total = total (calculado no React) …`
+  2. `DELETE FROM order_items WHERE order_id = X` — **sempre, incondicional**
+  3. `INSERT INTO order_items …` a partir do `state items`
+- **Trigger `recalculate_order_totals`** (no `order_items`): a cada delete/insert ela faz `UPDATE orders SET subtotal = SUM(items.valor_total), valor_total = subtotal - desconto + frete`. Ou seja, sobrescreve o valor que o React acabou de mandar.
 
-KPIs e cards do Home/Dashboard:
-- `src/pages/HomeHoje.tsx` (linha 46) — fmtBRL dos 4 cards da Central
-- `src/pages/DashboardSimple.tsx` (linha 10)
-- `src/components/ui/ComparisonKPICard.tsx` (linhas 128-129)
+### Causa raiz
+O `handleSubmit` apaga todos os itens **antes** de validar que existem itens para reinserir. Quando o `state items` está vazio (caso de race condition: dialog aberto e Salvar clicado antes do query `order-items-for-edit` resolver, ou items recarregados de outra forma), o fluxo executa:
+- `DELETE` apaga tudo → trigger zera `valor_total`
+- `INSERT []` não recoloca nada → pedido fica com R$ 0,00
 
-CRM / Metas:
-- `src/components/crm/CRMBoard.tsx` (linhas 330-331)
-- `src/components/crm/MasterGoalsPanel.tsx` (linhas 322-323)
-- `src/components/goals/GoalsAnalytics.tsx` (linhas 266, 313)
+Não há nenhuma validação `if (items.length === 0) abortar` nem checagem de "houve mudança real nos itens". Foi exatamente isso que ocorreu ao trocar só o vendedor.
 
-Projetos:
-- `src/components/projects/PrjOverview.tsx` (linhas 258, 287)
-- `src/components/projects/ArchitectPerformance.tsx` (linha 114)
+## Plano de correção
 
-Pedidos / Produção:
-- `src/components/orders/OrdersKPIs.tsx` (linha 18)
-- `src/components/orders/OrdersReports.tsx` (linha 39)
-- `src/components/production/ProductionKPIs.tsx` (linha 87)
-- `src/components/production/ProductionCardSimple.tsx` (linha 408)
-- `src/components/production/OptimizedDroppableColumn.tsx` (linha 119)
-- `src/components/production/DroppableColumn.tsx` (linha 49)
+### 1. `src/components/orders/EditOrderDialog.tsx` — `handleSubmit`
+- **Bloquear o save** se `items.length === 0` OU se a query `orderItems` ainda não carregou (`isLoading`/`data === undefined`), com `toast.error("Itens do pedido ainda não foram carregados. Aguarde e tente novamente.")`.
+- **Trocar o "delete-all + insert"** por uma estratégia mais segura:
+  - Comparar `items` (estado) com `orderItems` (originais da query) por `id`.
+  - **UPDATE** dos itens com `id` existente e que mudaram.
+  - **INSERT** apenas dos itens novos (sem `id`).
+  - **DELETE** apenas dos `id` que sumiram do estado.
+  - Isso elimina a janela em que o pedido fica temporariamente sem itens (evita o trigger zerar `valor_total`) e impede perda de dados em races.
+- Manter o `update` da tabela `orders` como está; a trigger continuará reconciliando o `valor_total` ao final, agora a partir dos itens corretos.
 
-Exceção mantida:
-- `src/components/ui/currency-input.tsx` — é input de digitação (o componente controla decimais internamente; alterar quebraria a UX de entrada). Não tocar.
+### 2. Restaurar o Pedido #12 (data fix)
+Migração para recriar o item original do Pedido #12 com `valor_total = 40063.50` (valor conhecido pelo histórico do ledger), o que disparará a trigger e reporá `valor_total`/`subtotal` no pedido. Confirmar comigo o que deve ir como `descricao`/`centro_custo` antes de aplicar — ou eu uso `descricao = 'Item original'` + `centro_custo` do projeto vinculado se existir.
 
-## Detalhes técnicos
+### 3. (Opcional, segurança extra)
+Adicionar `WHEN (NEW.* IS DISTINCT FROM OLD.*)` ou um guard na trigger `recalculate_order_totals` para não rodar se a alteração não envolveu valores — apenas se quisermos blindar contra futuras regressões. Recomendo deixar para depois; o fix no front já resolve.
 
-A mudança em cada arquivo é remover a chave que zera as casas decimais. Exemplo:
+## Arquivos a alterar
+- `src/components/orders/EditOrderDialog.tsx` (handleSubmit: guarda + diff-based items sync)
+- 1 migração SQL para recompor os itens do Pedido #12
 
-Antes:
-```ts
-new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(n)
-```
-
-Depois:
-```ts
-new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n)
-```
-
-Para os casos com `R$ {n.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}` (PrjOverview, ArchitectPerformance), trocar por:
-```ts
-n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-```
-(remove o "R$ " manual e usa o formatador padrão, que já inclui o símbolo e 2 casas).
-
-## Escopo / fora do escopo
-
-- Somente apresentação (frontend). Sem mudanças de schema, queries ou lógica.
-- O helper `formatCurrency` em `src/lib/utils.ts` já usa o padrão de 2 casas — nenhum ajuste necessário lá.
+Confirma se posso aplicar (e se prefere que eu use `descricao = 'Item original'` para a linha restaurada)?
