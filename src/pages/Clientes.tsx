@@ -59,6 +59,7 @@ import { Button as BtnUI } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { QuickCreateClientDialog } from "@/components/financeiro/QuickCreateClientDialog";
+import { DeleteClientDialog } from "@/components/clients/DeleteClientDialog";
 import { useCostCenters } from "@/hooks/useCostCenters";
 import { Can } from "@/components/auth/Can";
 
