@@ -23187,6 +23187,10 @@ export type Database = {
         }[]
       }
       purchases_metrics: { Args: never; Returns: Json }
+      purge_order_generated_records: {
+        Args: { _order_id: string }
+        Returns: undefined
+      }
       reactivate_lost_deals_to_followup: { Args: never; Returns: Json }
       recalculate_all_goal_progress: { Args: never; Returns: undefined }
       recompute_execution_priorities: { Args: never; Returns: number }
