@@ -75,7 +75,13 @@ export function ProfileTypesManager() {
         .order('display_name');
 
       if (error) throw error;
-      setProfileTypes(data || []);
+      // Show only: active system types (excluding platform 'owner') + tenant custom types
+      const filtered = (data || []).filter((pt: ProfileType) => {
+        if (pt.name === 'owner') return false; // platform-only
+        if (pt.is_system && !pt.is_active) return false; // archived/deactivated system types
+        return true;
+      });
+      setProfileTypes(filtered);
     } catch (error) {
       console.error('Erro ao buscar tipos de perfil:', error);
       toast({
