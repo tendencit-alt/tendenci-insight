@@ -397,10 +397,12 @@ export default function Clientes() {
                   <Download className="h-4 w-4 mr-1.5" />
                   Exportar
                 </Button>
-                <Button size="sm" onClick={() => setCreateOpen(true)}>
-                  <Plus className="h-4 w-4 mr-1.5" />
-                  Novo Cliente
-                </Button>
+                <Can module="comercial" action="create">
+                  <Button size="sm" onClick={() => setCreateOpen(true)}>
+                    <Plus className="h-4 w-4 mr-1.5" />
+                    Novo Cliente
+                  </Button>
+                </Can>
               </div>
             }
             overview={overview}
