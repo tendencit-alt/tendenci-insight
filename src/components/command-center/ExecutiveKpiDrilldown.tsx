@@ -143,14 +143,14 @@ function DrillRow({ kpiKey, row }: { kpiKey: KpiKey; row: any }) {
       <div className="flex items-center justify-between gap-2 p-2.5 rounded-md border border-border/50 hover:bg-muted/40">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium truncate">
-            #{row.order_number ?? row.id?.slice(0, 8)} — {row.client_name ?? "Sem cliente"}
+            #{row.order_number ?? row.id?.slice(0, 8)} — {row.client?.name ?? "Sem cliente"}
           </p>
           <p className="text-[10px] text-muted-foreground">
             {row.created_at ? format(new Date(row.created_at), "dd/MM/yyyy") : "—"}
           </p>
         </div>
         <Badge variant="outline" className="text-[10px]">{row.status}</Badge>
-        <span className="text-xs font-mono tabular-nums">{fmt(Number(row.total_amount || 0))}</span>
+        <span className="text-xs font-mono tabular-nums">{fmt(Number(row.valor_total || 0))}</span>
       </div>
     );
   }
