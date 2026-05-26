@@ -40,7 +40,12 @@ const SECONDARY_KPIS: KPIConfig[] = [
 
 const VIEW_KEY = "crm_consultor_view_mode";
 
-export function PrjOverview() {
+interface PrjOverviewProps {
+  hideKpis?: boolean;
+  helpText?: string;
+}
+
+export function PrjOverview({ hideKpis = false, helpText }: PrjOverviewProps = {}) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [viewMode, setViewMode] = useState<"board" | "table">(() => {
@@ -239,60 +244,65 @@ export function PrjOverview() {
         </div>
       </div>
 
-      {/* KPI strip compacto — 1 linha responsiva */}
-      <Card className="p-2">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1">
-          {PRIMARY_KPIS.map((kpi) => (
-            <button
-              key={kpi.key}
-              onClick={() => handleKPIClick(kpi)}
-              className="text-left px-3 py-2 rounded-md hover:bg-muted/60 transition-colors group"
-            >
-              <div className="text-[11px] text-muted-foreground truncate">{kpi.label}</div>
-              <div className="flex items-baseline gap-1.5 mt-0.5">
-                <span className={cn("text-lg font-semibold leading-none", kpi.accent)}>
-                  {kpi.key === 'total_orcado' ? (metrics.total_orcado_count || 0) : getMetricCount(kpi.key)}
-                </span>
-                {kpi.showValue && (
-                  <span className="text-[11px] text-muted-foreground truncate">
-                    {((kpi.key === 'total_orcado' ? metrics.total_orcado_value : getMetricValue(kpi.key)) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </span>
-                )}
-              </div>
-            </button>
-          ))}
-        </div>
+      {helpText && (
+        <p className="text-xs text-muted-foreground">{helpText}</p>
+      )}
 
-        {/* Detalhes secundários em popover */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className="mt-1 w-full text-[11px] text-muted-foreground hover:text-foreground flex items-center justify-center gap-1 py-1 border-t">
-              Detalhes do funil <ChevronDown className="h-3 w-3" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[min(92vw,520px)] p-2" align="end">
-            <div className="grid grid-cols-3 gap-1">
-              {SECONDARY_KPIS.map((kpi) => (
-                <button
-                  key={kpi.key}
-                  onClick={() => handleKPIClick(kpi)}
-                  className="text-left px-3 py-2 rounded-md hover:bg-muted/60 transition-colors"
-                >
-                  <div className="text-[11px] text-muted-foreground truncate">{kpi.label}</div>
-                  <div className="flex items-baseline gap-1.5 mt-0.5">
-                    <span className={cn("text-base font-semibold", kpi.accent)}>
-                      {getMetricCount(kpi.key)}
-                    </span>
+      {/* KPI strip compacto — só na Visão Geral (oculto no Kanban/Pipeline) */}
+      {!hideKpis && (
+        <Card className="p-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1">
+            {PRIMARY_KPIS.map((kpi) => (
+              <button
+                key={kpi.key}
+                onClick={() => handleKPIClick(kpi)}
+                className="text-left px-3 py-2 rounded-md hover:bg-muted/60 transition-colors group"
+              >
+                <div className="text-[11px] text-muted-foreground truncate">{kpi.label}</div>
+                <div className="flex items-baseline gap-1.5 mt-0.5">
+                  <span className={cn("text-lg font-semibold leading-none", kpi.accent)}>
+                    {kpi.key === 'total_orcado' ? (metrics.total_orcado_count || 0) : getMetricCount(kpi.key)}
+                  </span>
+                  {kpi.showValue && (
                     <span className="text-[11px] text-muted-foreground truncate">
-                      {(getMetricValue(kpi.key) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      {((kpi.key === 'total_orcado' ? metrics.total_orcado_value : getMetricValue(kpi.key)) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
-      </Card>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="mt-1 w-full text-[11px] text-muted-foreground hover:text-foreground flex items-center justify-center gap-1 py-1 border-t">
+                Detalhes do funil <ChevronDown className="h-3 w-3" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[min(92vw,520px)] p-2" align="end">
+              <div className="grid grid-cols-3 gap-1">
+                {SECONDARY_KPIS.map((kpi) => (
+                  <button
+                    key={kpi.key}
+                    onClick={() => handleKPIClick(kpi)}
+                    className="text-left px-3 py-2 rounded-md hover:bg-muted/60 transition-colors"
+                  >
+                    <div className="text-[11px] text-muted-foreground truncate">{kpi.label}</div>
+                    <div className="flex items-baseline gap-1.5 mt-0.5">
+                      <span className={cn("text-base font-semibold", kpi.accent)}>
+                        {getMetricCount(kpi.key)}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground truncate">
+                        {(getMetricValue(kpi.key) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </Card>
+      )}
 
       {/* Conteúdo único: Kanban OU Tabela */}
       <div>
