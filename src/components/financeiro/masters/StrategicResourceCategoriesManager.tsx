@@ -26,16 +26,17 @@ export function StrategicResourceCategoriesManager() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [localPct, setLocalPct] = useState<Record<string, string>>({});
 
-  // First find the parent account by code
+  // First find the parent account by code (scoped to active tenant)
   const { data: parentAccount } = useQuery({
-    queryKey: ["fin-chart-parent-compromissos"],
+    queryKey: ["fin-chart-parent-compromissos", (typeof window !== "undefined" ? null : null)],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("fin_chart_accounts")
         .select("id")
         .eq("code", PARENT_ACCOUNT_CODE)
         .eq("active", true)
-        .not("tenant_id", "is", null)
+        .order("tenant_id", { ascending: false, nullsFirst: false })
+        .limit(1)
         .maybeSingle();
       if (error) throw error;
       return data;
