@@ -3839,6 +3839,7 @@ export type Database = {
           id: string
           mentioned_users: string[] | null
           message: string
+          source_history_id: string | null
           update_type: string
         }
         Insert: {
@@ -3849,6 +3850,7 @@ export type Database = {
           id?: string
           mentioned_users?: string[] | null
           message: string
+          source_history_id?: string | null
           update_type?: string
         }
         Update: {
@@ -3859,6 +3861,7 @@ export type Database = {
           id?: string
           mentioned_users?: string[] | null
           message?: string
+          source_history_id?: string | null
           update_type?: string
         }
         Relationships: [
@@ -10679,6 +10682,7 @@ export type Database = {
           purchase_order_id: string | null
           quantity: number
           reserved_by: string | null
+          source_order_item_id: string | null
           status: string | null
           tenant_id: string | null
           updated_at: string | null
@@ -10695,6 +10699,7 @@ export type Database = {
           purchase_order_id?: string | null
           quantity?: number
           reserved_by?: string | null
+          source_order_item_id?: string | null
           status?: string | null
           tenant_id?: string | null
           updated_at?: string | null
@@ -10711,6 +10716,7 @@ export type Database = {
           purchase_order_id?: string | null
           quantity?: number
           reserved_by?: string | null
+          source_order_item_id?: string | null
           status?: string | null
           tenant_id?: string | null
           updated_at?: string | null
