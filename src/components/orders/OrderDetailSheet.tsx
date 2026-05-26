@@ -335,7 +335,10 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
           <div className="px-4 pt-3 pb-2">
             <div className="flex items-center justify-between gap-2">
               <SheetHeader className="space-y-0">
-                <SheetTitle className="text-lg">Pedido #{order.order_number}</SheetTitle>
+                <SheetTitle className="text-lg flex items-center gap-2">
+                  Pedido #{order.order_number}
+                  <OrderFulfillmentBadges orderId={order.id} />
+                </SheetTitle>
                 <p className="text-xs text-muted-foreground">
                   {order.client?.name || 'Sem cliente'} • {order.vendedor?.full_name || 'Sem vendedor'}
                   {order.created_at && ` • ${format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ptBR })}`}

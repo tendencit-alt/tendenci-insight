@@ -11,7 +11,7 @@ import {
   Star, AlertTriangle, UserCheck,
   Brain, Telescope, GraduationCap,
   Network, GitBranch, LifeBuoy, Clock, ListChecks, ShieldCheck,
-  Bug, Sparkles, Tag, Rocket, LayoutGrid, Gauge, Database
+  Bug, Sparkles, Tag, Rocket, LayoutGrid, Gauge, Database, Truck
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
