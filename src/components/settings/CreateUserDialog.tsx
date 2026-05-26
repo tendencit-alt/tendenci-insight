@@ -89,12 +89,21 @@ export function CreateUserDialog({
 
   const handleProfileTypeChange = (profileTypeId: string) => {
     const selectedType = profileTypes.find(pt => pt.id === profileTypeId);
-    // Map profile type name to valid user_role enum value
-    // Only 'admin', 'vendedor', 'parceiro profissional', 'projetista' exist in the enum
-    const validRoles = ['admin', 'vendedor', 'parceiro profissional', 'projetista'];
-    const mappedRole = selectedType?.name === 'master' ? 'admin' 
-      : validRoles.includes(selectedType?.name || '') ? selectedType!.name 
-      : 'vendedor';
+    // Map profile_type name → enum user_role (kept for legacy column compat;
+    // source of truth is now profile_type_id).
+    const nameToEnumRole: Record<string, string> = {
+      administrador: 'admin',
+      comercial: 'vendedor',
+      financeiro: 'vendedor',
+      operacional: 'vendedor',
+      auditoria: 'vendedor',
+      vendedor: 'vendedor',
+      admin: 'admin',
+      master: 'admin',
+      arquiteto: 'arquiteto',
+      projetista: 'projetista',
+    };
+    const mappedRole = nameToEnumRole[selectedType?.name ?? ''] ?? 'vendedor';
     setFormData({
       ...formData,
       profile_type_id: profileTypeId,
