@@ -11,7 +11,7 @@ type Account = { code: string; name: string; nature?: string; in_dre?: boolean; 
 const COMMON_ROOTS: Account[] = [
   { code: "1", name: "Receitas", nature: "RECEITA", in_dre: true, in_cashflow: true },
   { code: "2", name: "Despesas sobre Vendas", nature: "DESPESA", in_dre: true, in_cashflow: true },
-  { code: "2.3", name: "Custos diretos da venda", nature: "DESPESA", in_dre: true, in_cashflow: true },
+  { code: "2.3", name: "Compromissos sobre vendas", nature: "DESPESA", in_dre: true, in_cashflow: true },
   { code: "2.3.1", name: "Comissão vendedor", nature: "DESPESA", in_dre: true, in_cashflow: true },
   { code: "2.3.2", name: "Premiação de terceiros", nature: "DESPESA", in_dre: true, in_cashflow: true },
   { code: "2.3.3", name: "Comissão de parceiros", nature: "DESPESA", in_dre: true, in_cashflow: true },
