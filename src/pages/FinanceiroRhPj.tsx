@@ -2,7 +2,7 @@
 // Gating: PermissionGuard (admin OU módulo financeiro com can_admin/edit).
 // Salário/CPF: backend protege via gatilho; UI mascara para quem não pode ver.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ModuleShell } from "@/components/layout/ModuleShell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
