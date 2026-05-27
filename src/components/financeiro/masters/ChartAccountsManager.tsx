@@ -1175,14 +1175,18 @@ export function ChartAccountsManager() {
           const newCode = getNextCode(parentId, freshAccounts.filter(a => a.id !== editing.id));
 
           // Update the account with new parent and code
-          const { error } = await supabase
+          const { data: updRow, error } = await supabase
             .from("fin_chart_accounts")
             .update({ ...data, code: newCode })
             .eq("id", editing.id)
             .not("tenant_id", "is", null)
             .select("id")
-            .single();
+            .maybeSingle();
           if (error) throw error;
+          if (!updRow) {
+            toast.error("Sem permissão para editar essa conta nesta empresa.");
+            return;
+          }
 
           // Update descendants
           const descendantUpdates = getDescendantCodeUpdates(editing.id, oldCode, newCode, freshAccounts);
@@ -1205,14 +1209,18 @@ export function ChartAccountsManager() {
           }
         } else {
           // Just update without code change
-          const { error } = await supabase
+          const { data: updRow, error } = await supabase
             .from("fin_chart_accounts")
             .update(data)
             .eq("id", editing.id)
             .not("tenant_id", "is", null)
             .select("id")
-            .single();
+            .maybeSingle();
           if (error) throw error;
+          if (!updRow) {
+            toast.error("Sem permissão para editar essa conta nesta empresa.");
+            return;
+          }
         }
 
         toast.success("Conta atualizada!");
