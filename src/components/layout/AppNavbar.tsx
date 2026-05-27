@@ -142,7 +142,7 @@ const ERP_MODULES: ModuleGroup[] = [
       { label: "Centros de Custo", route: "/cadastros-financeiros?tab=cost-centers", icon: "Building", module: "cadastros_financeiros", available: true },
       { label: "Projetos Financeiros", route: "/cadastros-financeiros?tab=projects", icon: "Briefcase", module: "cadastros_financeiros", available: true },
       { label: "Compromissos sobre Venda", route: "/cadastros-financeiros?tab=commitments", icon: "FolderCog", module: "cadastros_financeiros", available: true },
-      { label: "Responsáveis", route: "/cadastros-financeiros?tab=responsibles", icon: "BriefcaseBusiness", module: "cadastros_financeiros", available: true },
+      
       { label: "Taxas de Cartão", route: "/cadastros-financeiros?tab=card-rates", icon: "CreditCard", module: "cadastros_financeiros", available: true },
       { label: "Automação por Origem", route: "/cadastros-financeiros?section=settings&tab=origin-rules", icon: "Sparkles", module: "cadastros_financeiros", available: true },
       { label: "Automações por Evento", route: "/cadastros-financeiros?section=settings&tab=event-automations", icon: "Bot", module: "cadastros_financeiros", available: true },

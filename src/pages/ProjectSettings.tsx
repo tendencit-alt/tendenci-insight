@@ -5,7 +5,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
-  Landmark, FileSpreadsheet, FolderKanban, FolderCog, BriefcaseBusiness,
+  Landmark, FileSpreadsheet, FolderKanban, FolderCog,
   CreditCard, Database, Building2,
 } from "lucide-react";
 import { BankAccountsManager } from "@/components/financeiro/masters/BankAccountsManager";
@@ -13,12 +13,10 @@ import { ChartAccountsManager } from "@/components/financeiro/masters/ChartAccou
 import { CostCentersManager } from "@/components/financeiro/masters/CostCentersManager";
 import { FinProjectsManager } from "@/components/financeiro/masters/FinProjectsManager";
 import { StrategicResourceCategoriesManager } from "@/components/financeiro/masters/StrategicResourceCategoriesManager";
-import { OrderResponsiblesManager } from "@/components/financeiro/masters/OrderResponsiblesManager";
 import { CardRatesManager } from "@/components/financeiro/masters/CardRatesManager";
 
 const FIN_TABS = new Set([
-  "bank-accounts", "chart", "cost-centers", "projects", "commitments",
-  "responsibles", "card-rates",
+  "bank-accounts", "chart", "cost-centers", "projects", "commitments", "card-rates",
 ]);
 
 const ProjectSettings = () => {
@@ -26,7 +24,8 @@ const ProjectSettings = () => {
   const { isMaster } = usePermissions();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const urlSub = searchParams.get("sub");
+  const rawSub = searchParams.get("sub");
+  const urlSub = rawSub === "responsibles" ? "commitments" : rawSub;
   const finTab = urlSub && FIN_TABS.has(urlSub) ? urlSub : "chart";
 
   const setFinTab = (tab: string) => {
@@ -96,10 +95,6 @@ const ProjectSettings = () => {
               <FolderCog className="h-4 w-4" />
               Compromissos Sobre Venda
             </TabsTrigger>
-            <TabsTrigger value="responsibles" className="flex items-center gap-2 px-4 py-2">
-              <BriefcaseBusiness className="h-4 w-4" />
-              Responsáveis
-            </TabsTrigger>
             <TabsTrigger value="card-rates" className="flex items-center gap-2 px-4 py-2">
               <CreditCard className="h-4 w-4" />
               Taxas Financeiras
@@ -111,7 +106,6 @@ const ProjectSettings = () => {
           <TabsContent value="cost-centers" className="mt-6"><CostCentersManager /></TabsContent>
           <TabsContent value="projects" className="mt-6"><FinProjectsManager /></TabsContent>
           <TabsContent value="commitments" className="mt-6"><StrategicResourceCategoriesManager /></TabsContent>
-          <TabsContent value="responsibles" className="mt-6"><OrderResponsiblesManager /></TabsContent>
           <TabsContent value="card-rates" className="mt-6"><CardRatesManager /></TabsContent>
         </Tabs>
       </div>
