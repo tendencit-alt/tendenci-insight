@@ -362,20 +362,10 @@ function HrSettingsSection() {
   return (
     <div className="grid md:grid-cols-2 gap-4">
       <Card className="p-4 space-y-3">
-        <h3 className="font-semibold">Encargos sobre folha</h3>
-        <p className="text-xs text-muted-foreground">Alíquotas padrão do Regime Normal (Lucro Presumido/Real). Edite conforme CNAE/FAP.</p>
-        <div className="grid grid-cols-2 gap-3">
-          <div><Label>FGTS (%)</Label><Input type="number" step="0.001" value={f.fgts_pct} onChange={(e) => setF({ ...f, fgts_pct: Number(e.target.value) })} /></div>
-          <div><Label>INSS / CPP (%)</Label><Input type="number" step="0.001" value={f.inss_cpp_pct} onChange={(e) => setF({ ...f, inss_cpp_pct: Number(e.target.value) })} disabled={f.simples_optante} /></div>
-          <div><Label>RAT/SAT (%)</Label><Input type="number" step="0.001" value={f.rat_pct} onChange={(e) => setF({ ...f, rat_pct: Number(e.target.value) })} /></div>
-          <div><Label>Terceiros (%)</Label><Input type="number" step="0.001" value={f.terceiros_pct} onChange={(e) => setF({ ...f, terceiros_pct: Number(e.target.value) })} /></div>
-        </div>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={!!f.simples_optante} onChange={(e) => setF({ ...f, simples_optante: e.target.checked })} />
-          Optante pelo Simples Nacional (zera CPP — recolhido via DAS)
-        </label>
+        <h3 className="font-semibold">Geofence do ponto</h3>
+        <p className="text-xs text-muted-foreground">Como tratar batidas de ponto fora do raio dos locais cadastrados.</p>
         <div>
-          <Label>Modo de geofence do ponto</Label>
+          <Label>Modo de geofence</Label>
           <Select value={f.geofence_mode} onValueChange={(v) => setF({ ...f, geofence_mode: v })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -385,11 +375,11 @@ function HrSettingsSection() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={() => save.mutate(f)}>Salvar configurações</Button>
+        <Button onClick={() => save.mutate(f)}>Salvar</Button>
       </Card>
 
       <Card className="p-4 space-y-3">
-        <h3 className="font-semibold">Locais de trabalho (geofence)</h3>
+        <h3 className="font-semibold">Locais de trabalho</h3>
         <div className="grid grid-cols-5 gap-2 items-end">
           <div className="col-span-2"><Label>Nome</Label><Input value={loc.name} onChange={(e) => setLoc({ ...loc, name: e.target.value })} /></div>
           <div><Label>Lat</Label><Input value={loc.latitude} onChange={(e) => setLoc({ ...loc, latitude: e.target.value })} /></div>
