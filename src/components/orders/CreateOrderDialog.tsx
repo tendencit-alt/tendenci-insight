@@ -1886,39 +1886,39 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                       {totalPercentual.toFixed(1)}%
                     </span>
                   </div>
-                  {comissoes.rt.habilitado && comissoes.rt.valor > 0 && (
+                  {resourceDefaults.rt.visible && comissoes.rt.habilitado && comissoes.rt.valor > 0 && (
                     <div className="flex items-center justify-between text-foreground">
-                      <span className="text-sm">RT ({comissoes.rt.percentual.toFixed(2)}%):</span>
+                      <span className="text-sm">{resourceDefaults.rt.label} ({comissoes.rt.percentual.toFixed(2)}%):</span>
                       <span className="text-sm font-medium">- {formatCurrency(comissoes.rt.valor)}</span>
                     </div>
                   )}
-                  {comissoes.vendedor.habilitado && comissoes.vendedor.valor > 0 && (
+                  {resourceDefaults.vendedor.visible && comissoes.vendedor.habilitado && comissoes.vendedor.valor > 0 && (
                     <div className="flex items-center justify-between text-foreground">
-                      <span className="text-sm">Vendedor ({comissoes.vendedor.percentual.toFixed(2)}%):</span>
+                      <span className="text-sm">{resourceDefaults.vendedor.label} ({comissoes.vendedor.percentual.toFixed(2)}%):</span>
                       <span className="text-sm font-medium">- {formatCurrency(comissoes.vendedor.valor)}</span>
                     </div>
                   )}
-                  {comissoes.orcamentista.habilitado && comissoes.orcamentista.valor > 0 && (
+                  {resourceDefaults.orcamentista.visible && comissoes.orcamentista.habilitado && comissoes.orcamentista.valor > 0 && (
                     <div className="flex items-center justify-between text-foreground">
-                      <span className="text-sm">Orçamentista ({comissoes.orcamentista.percentual.toFixed(2)}%):</span>
+                      <span className="text-sm">{resourceDefaults.orcamentista.label} ({comissoes.orcamentista.percentual.toFixed(2)}%):</span>
                       <span className="text-sm font-medium">- {formatCurrency(comissoes.orcamentista.valor)}</span>
                     </div>
                   )}
-                  {comissoes.projetista.habilitado && comissoes.projetista.valor > 0 && (
+                  {resourceDefaults.projetista.visible && comissoes.projetista.habilitado && comissoes.projetista.valor > 0 && (
                     <div className="flex items-center justify-between text-foreground">
-                      <span className="text-sm">Projetista ({comissoes.projetista.percentual.toFixed(2)}%):</span>
+                      <span className="text-sm">{resourceDefaults.projetista.label} ({comissoes.projetista.percentual.toFixed(2)}%):</span>
                       <span className="text-sm font-medium">- {formatCurrency(comissoes.projetista.valor)}</span>
                     </div>
                   )}
-                  {comissoes.montador.habilitado && comissoes.montador.valor > 0 && (
+                  {resourceDefaults.montador.visible && comissoes.montador.habilitado && comissoes.montador.valor > 0 && (
                     <div className="flex items-center justify-between text-foreground">
-                      <span className="text-sm">Montador ({comissoes.montador.percentual.toFixed(2)}%):</span>
+                      <span className="text-sm">{resourceDefaults.montador.label} ({comissoes.montador.percentual.toFixed(2)}%):</span>
                       <span className="text-sm font-medium">- {formatCurrency(comissoes.montador.valor)}</span>
                     </div>
                   )}
-                  {comissoes.producao.habilitado && comissoes.producao.valor > 0 && (
+                  {resourceDefaults.producao.visible && comissoes.producao.habilitado && comissoes.producao.valor > 0 && (
                     <div className="flex items-center justify-between text-foreground">
-                      <span className="text-sm">Produção ({comissoes.producao.percentual.toFixed(2)}%):</span>
+                      <span className="text-sm">{resourceDefaults.producao.label} ({comissoes.producao.percentual.toFixed(2)}%):</span>
                       <span className="text-sm font-medium">- {formatCurrency(comissoes.producao.valor)}</span>
                     </div>
                   )}
