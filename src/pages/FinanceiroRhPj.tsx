@@ -33,6 +33,7 @@ import {
   useHrSettings, useSaveHrSettings,
   useWorkLocations, useSaveWorkLocation, useDeleteWorkLocation,
   useRhPayablesByMonth, usePjPayablesByMonth,
+  useHrPjKpis,
   getSignedUrl,
   type PayableStatus,
 } from "@/hooks/useRhPj";
