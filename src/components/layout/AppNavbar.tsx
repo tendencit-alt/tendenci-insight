@@ -166,7 +166,6 @@ const ERP_MODULES: ModuleGroup[] = [
     icon: Database,
     requiredModules: ["fornecedores", "estoque"],
     items: [
-      { label: "Fornecedores", route: "/fornecedores", icon: "Truck", module: "fornecedores", available: true },
       { label: "Clientes", route: "/cadastros-clientes", icon: "UserCircle", available: false },
       { label: "Produtos", route: "/estoque", icon: "Package", module: "estoque", available: true },
       { label: "Contas Bancárias", route: "/financeiro?tab=treasury", icon: "Landmark", module: "financeiro", available: true },
