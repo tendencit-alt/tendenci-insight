@@ -272,30 +272,36 @@ export async function getSignedUrl(bucket: string, path: string) {
 }
 
 // ── Plano de contas (despesas) para apontamento de folha ──
+// Espelha exatamente o plano configurado em Cadastros → Plano de Contas:
+// - apenas contas com tenant_id (ignora templates do Owner sem tenant)
+// - prioriza a linha do tenant ativo quando há colisão de code (dedup por code)
+// - filtra natureza DESPESA e contas ativas
 export function useExpenseChartAccounts() {
   return useQuery({
     queryKey: ["fin-chart-accounts-expense-rhpj"],
     queryFn: async () => {
       const { data: tenantId } = await supabase.rpc("get_user_tenant_id");
-      let q = supabase
+      const { data, error } = await supabase
         .from("fin_chart_accounts")
         .select("id, code, name, nature, active, tenant_id")
         .eq("active", true)
+        .eq("nature", "DESPESA")
+        .not("tenant_id", "is", null)
         .order("code");
-      if (tenantId) q = q.eq("tenant_id", tenantId as string);
-      const { data, error } = await q;
       if (error) throw error;
-      const filtered = (data ?? []).filter((c: any) =>
-        !c.nature || /desp|custo|expense/i.test(c.nature)
+
+      const rows = (data ?? []) as Array<{ id: string; code: string; name: string; nature: string; active: boolean; tenant_id: string | null }>;
+      const preferred = new Map<string, typeof rows[number]>();
+      for (const r of rows) {
+        const cur = preferred.get(r.code);
+        if (!cur) { preferred.set(r.code, r); continue; }
+        const curScore = cur.tenant_id === tenantId ? 2 : (cur.tenant_id ? 1 : 0);
+        const newScore = r.tenant_id === tenantId ? 2 : (r.tenant_id ? 1 : 0);
+        if (newScore > curScore) preferred.set(r.code, r);
+      }
+      return Array.from(preferred.values()).sort((a, b) =>
+        a.code.localeCompare(b.code, undefined, { numeric: true })
       );
-      // Dedup defensivo por (code, name) — evita repetição caso o usuário (ex.: Owner) enxergue múltiplos tenants.
-      const seen = new Set<string>();
-      return filtered.filter((c: any) => {
-        const k = `${c.code}|${c.name}`;
-        if (seen.has(k)) return false;
-        seen.add(k);
-        return true;
-      });
     },
     staleTime: 5 * 60_000,
   });
