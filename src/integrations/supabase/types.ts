@@ -9456,6 +9456,7 @@ export type Database = {
         Row: {
           active: boolean
           chart_account_id: string | null
+          cost_center_id: string | null
           created_at: string
           default_percentage: number | null
           description: string | null
@@ -9470,6 +9471,7 @@ export type Database = {
         Insert: {
           active?: boolean
           chart_account_id?: string | null
+          cost_center_id?: string | null
           created_at?: string
           default_percentage?: number | null
           description?: string | null
@@ -9484,6 +9486,7 @@ export type Database = {
         Update: {
           active?: boolean
           chart_account_id?: string | null
+          cost_center_id?: string | null
           created_at?: string
           default_percentage?: number | null
           description?: string | null
@@ -9501,6 +9504,13 @@ export type Database = {
             columns: ["chart_account_id"]
             isOneToOne: false
             referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_strategic_resource_account_configs_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
             referencedColumns: ["id"]
           },
           {
@@ -22375,6 +22385,17 @@ export type Database = {
         Args: { _policy: string; _table: string }
         Returns: boolean
       }
+      _upsert_strategic_config: {
+        Args: {
+          _active: boolean
+          _cc_id: string
+          _chart_account_id: string
+          _display_name: string
+          _pct: number
+          _tenant_id: string
+        }
+        Returns: undefined
+      }
       acquire_message_lock: {
         Args: { p_instance: string; p_phone: string }
         Returns: {
@@ -23281,6 +23302,10 @@ export type Database = {
       match_runbook_for_incident: {
         Args: { p_incident_id: string }
         Returns: string
+      }
+      mirror_owner_strategic_configs_to_tenant: {
+        Args: { _tenant_id: string }
+        Returns: number
       }
       orders_metrics:
         | {
