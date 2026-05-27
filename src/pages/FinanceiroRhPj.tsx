@@ -83,6 +83,8 @@ function EmployeesSection() {
   const [selected, setSelected] = useState<string | null>(null);
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [provDlg, setProvDlg] = useState<{ kind: "vacation" | "thirteenth"; emp: any } | null>(null);
+  const employeeIds = useMemo(() => employees.map((e: any) => e.id), [employees]);
+  const { data: payablesByEmp } = useRhPayablesByMonth(month, employeeIds);
   const emptyForm = {
     name: "", cpf: "", contract_type: "CLT", admission_date: "", termination_date: "",
     base_salary: 0, dependents_count: 0, status: "active", notes: "",
@@ -197,7 +199,9 @@ function EmployeesSection() {
               <TableHead>Próx. férias vencem</TableHead>
               <TableHead>13º (saldo)</TableHead>
               <TableHead>13º vencimentos</TableHead>
-              <TableHead>Status</TableHead><TableHead></TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Pagamento ({month})</TableHead>
+              <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -244,6 +248,7 @@ function EmployeesSection() {
                   ) : "—"}
                 </TableCell>
                 <TableCell><Badge variant="secondary">{e.status}</Badge></TableCell>
+                <TableCell><PayableStatusBadge p={payablesByEmp?.get(e.id)} /></TableCell>
                 <TableCell>
                   <div className="flex gap-1">
                     <Button size="sm" variant="ghost" onClick={() => setSelected(e.id)} title="Detalhe"><Eye className="h-4 w-4" /></Button>
@@ -254,7 +259,7 @@ function EmployeesSection() {
               </TableRow>
               );
             })}
-            {!employees.length && <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-6">Nenhum colaborador.</TableCell></TableRow>}
+            {!employees.length && <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-6">Nenhum colaborador.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>
@@ -570,6 +575,9 @@ function ProvidersSection() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<any>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
+  const providerIds = useMemo(() => providers.map((p: any) => p.id), [providers]);
+  const { data: payablesByProv } = usePjPayablesByMonth(month, providerIds);
   const emptyForm = {
     legal_name: "", cnpj: "", service_type: "", contract_value: 0,
     start_date: "", end_date: "", status: "active", notes: "",
@@ -588,10 +596,12 @@ function ProvidersSection() {
   };
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <h3 className="text-lg font-semibold">Prestadores (PJ)</h3>
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditingId(null); }}>
-          <Button size="sm" onClick={openNew}><Plus className="h-4 w-4 mr-1" />Novo prestador</Button>
+        <div className="flex items-center gap-2">
+          <Input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="w-40" />
+          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditingId(null); }}>
+            <Button size="sm" onClick={openNew}><Plus className="h-4 w-4 mr-1" />Novo prestador</Button>
           <DialogContent className="max-w-2xl">
             <DialogHeader><DialogTitle>{editingId ? "Editar prestador" : "Novo prestador"}</DialogTitle></DialogHeader>
             <div className="grid grid-cols-2 gap-3">
@@ -622,14 +632,15 @@ function ProvidersSection() {
                 setOpen(false);
                 setEditingId(null);
               }}>Salvar</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Card className="p-0">
         <Table>
-          <TableHeader><TableRow><TableHead>Razão Social</TableHead><TableHead>CNPJ</TableHead><TableHead>Serviço</TableHead><TableHead>Valor</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Razão Social</TableHead><TableHead>CNPJ</TableHead><TableHead>Serviço</TableHead><TableHead>Valor</TableHead><TableHead>Status</TableHead><TableHead>Pagamento ({month})</TableHead><TableHead></TableHead></TableRow></TableHeader>
           <TableBody>
             {providers.map((p: any) => (
               <TableRow key={p.id}>
@@ -638,6 +649,7 @@ function ProvidersSection() {
                 <TableCell>{p.service_type ?? "—"}</TableCell>
                 <TableCell>{Number(p.contract_value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell>
                 <TableCell><Badge variant="secondary">{p.status}</Badge></TableCell>
+                <TableCell><PayableStatusBadge p={payablesByProv?.get(p.id)} /></TableCell>
                 <TableCell>
                   <div className="flex gap-1">
                     <Button size="sm" variant="ghost" onClick={() => setSelected(p.id)} title="Documentos"><FileText className="h-4 w-4" /></Button>
@@ -647,7 +659,7 @@ function ProvidersSection() {
                 </TableCell>
               </TableRow>
             ))}
-            {!providers.length && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">Nenhum prestador.</TableCell></TableRow>}
+            {!providers.length && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">Nenhum prestador.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>
