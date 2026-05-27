@@ -59,6 +59,18 @@ export function useSaveEmployee() {
   });
 }
 
+export function useDeleteEmployee() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("hr_employees").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["rh-employees"] }); toast.success("Colaborador removido"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
+
 // ── Time records (ponto) ──
 export function useTimeRecords(employeeId?: string, month?: string) {
   return useQuery({
@@ -201,6 +213,18 @@ export function useSaveServiceProvider() {
       }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["service-providers"] }); toast.success("Prestador salvo"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
+
+export function useDeleteServiceProvider() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("service_providers").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["service-providers"] }); toast.success("Prestador removido"); },
     onError: (e: any) => toast.error(e.message),
   });
 }

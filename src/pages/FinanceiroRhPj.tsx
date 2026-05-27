@@ -15,15 +15,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, Users, Plus, FileText, Clock, AlertTriangle, Stethoscope, Eye, LogIn, LogOut, Calculator, MapPin } from "lucide-react";
+import { Briefcase, Users, Plus, FileText, Clock, AlertTriangle, Stethoscope, Eye, LogIn, LogOut, Calculator, MapPin, Pencil, Trash2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   useCanViewHrPii,
-  useRhEmployees, useSaveEmployee,
+  useRhEmployees, useSaveEmployee, useDeleteEmployee,
   useTimeRecords, useCreateTimeRecord,
   useAbsences, useCreateAbsence,
   useMedicalCertificates, useCreateMedicalCertificate,
   useEmployeeMonthSummary,
-  useServiceProviders, useSaveServiceProvider,
+  useServiceProviders, useSaveServiceProvider, useDeleteServiceProvider,
   useServiceProviderDocs, useUploadProviderDoc,
   useExpenseChartAccounts,
   useHrSettings, useSaveHrSettings,
@@ -49,6 +53,7 @@ function EmployeesSection() {
   const { data: employees = [] } = useRhEmployees();
   const { data: canPii } = useCanViewHrPii();
   const save = useSaveEmployee();
+  const del = useDeleteEmployee();
   // (encargos removidos — apenas previsão base de férias e 13º)
 
   const { activeTenantId } = useActiveTenant();
@@ -60,14 +65,30 @@ function EmployeesSection() {
   }, [activeTenantId]);
   const { data: chartAccounts = [] } = useExpenseChartAccounts();
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [toDelete, setToDelete] = useState<any>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [provDlg, setProvDlg] = useState<{ kind: "vacation" | "thirteenth"; emp: any } | null>(null);
-  const [form, setForm] = useState<any>({
+  const emptyForm = {
     name: "", cpf: "", contract_type: "CLT", admission_date: "", termination_date: "",
     base_salary: 0, dependents_count: 0, status: "active", notes: "",
     cost_center_id: "", chart_account_id: "",
-  });
+  };
+  const [form, setForm] = useState<any>(emptyForm);
+
+  const openNew = () => { setEditingId(null); setForm(emptyForm); setOpen(true); };
+  const openEdit = (e: any) => {
+    setEditingId(e.id);
+    setForm({
+      name: e.name ?? "", cpf: e.cpf ?? "", contract_type: e.contract_type ?? "CLT",
+      admission_date: e.admission_date ?? "", termination_date: e.termination_date ?? "",
+      base_salary: Number(e.base_salary ?? 0), dependents_count: Number(e.dependents_count ?? 0),
+      status: e.status ?? "active", notes: e.notes ?? "",
+      cost_center_id: e.cost_center_id ?? "", chart_account_id: e.chart_account_id ?? "",
+    });
+    setOpen(true);
+  };
 
   const summary = useEmployeeMonthSummary(selected ?? undefined, month);
   const times = useTimeRecords(selected ?? undefined, month);
@@ -78,10 +99,10 @@ function EmployeesSection() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Colaboradores (CLT)</h3>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />Novo colaborador</Button></DialogTrigger>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditingId(null); }}>
+          <Button size="sm" onClick={openNew}><Plus className="h-4 w-4 mr-1" />Novo colaborador</Button>
           <DialogContent className="max-w-2xl">
-            <DialogHeader><DialogTitle>Novo colaborador</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editingId ? "Editar colaborador" : "Novo colaborador"}</DialogTitle></DialogHeader>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2"><Label>Nome</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
               {canPii && (
@@ -139,12 +160,14 @@ function EmployeesSection() {
               <div className="col-span-2"><Label>Observações</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+              <Button variant="outline" onClick={() => { setOpen(false); setEditingId(null); }}>Cancelar</Button>
               <Button onClick={async () => {
                 const payload: any = { ...form };
                 Object.keys(payload).forEach(k => payload[k] === "" && (payload[k] = null));
+                if (editingId) payload.id = editingId;
                 await save.mutateAsync(payload);
                 setOpen(false);
+                setEditingId(null);
               }}>Salvar</Button>
             </div>
           </DialogContent>
@@ -208,7 +231,13 @@ function EmployeesSection() {
                   ) : "—"}
                 </TableCell>
                 <TableCell><Badge variant="secondary">{e.status}</Badge></TableCell>
-                <TableCell><Button size="sm" variant="ghost" onClick={() => setSelected(e.id)}><Eye className="h-4 w-4" /></Button></TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => setSelected(e.id)} title="Detalhe"><Eye className="h-4 w-4" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => openEdit(e)} title="Editar"><Pencil className="h-4 w-4" /></Button>
+                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => setToDelete(e)} title="Excluir"><Trash2 className="h-4 w-4" /></Button>
+                  </div>
+                </TableCell>
               </TableRow>
               );
             })}
@@ -257,6 +286,21 @@ function EmployeesSection() {
           admissionDate={provDlg.emp.admission_date}
         />
       )}
+
+      <AlertDialog open={!!toDelete} onOpenChange={(v) => !v && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir colaborador?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação remove permanentemente <strong>{toDelete?.name}</strong> e seu histórico (ponto, faltas, atestados).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={async () => { if (toDelete) await del.mutateAsync(toDelete.id); setToDelete(null); }}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -508,20 +552,35 @@ function CertificatesPanel({ employeeId, records }: any) {
 function ProvidersSection() {
   const { data: providers = [] } = useServiceProviders();
   const save = useSaveServiceProvider();
+  const del = useDeleteServiceProvider();
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [toDelete, setToDelete] = useState<any>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [form, setForm] = useState<any>({
+  const emptyForm = {
     legal_name: "", cnpj: "", service_type: "", contract_value: 0,
     start_date: "", end_date: "", status: "active", notes: "",
-  });
+  };
+  const [form, setForm] = useState<any>(emptyForm);
+  const openNew = () => { setEditingId(null); setForm(emptyForm); setOpen(true); };
+  const openEdit = (p: any) => {
+    setEditingId(p.id);
+    setForm({
+      legal_name: p.legal_name ?? "", cnpj: p.cnpj ?? "", service_type: p.service_type ?? "",
+      contract_value: Number(p.contract_value ?? 0),
+      start_date: p.start_date ?? "", end_date: p.end_date ?? "",
+      status: p.status ?? "active", notes: p.notes ?? "",
+    });
+    setOpen(true);
+  };
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Prestadores (PJ)</h3>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />Novo prestador</Button></DialogTrigger>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditingId(null); }}>
+          <Button size="sm" onClick={openNew}><Plus className="h-4 w-4 mr-1" />Novo prestador</Button>
           <DialogContent className="max-w-2xl">
-            <DialogHeader><DialogTitle>Novo prestador</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editingId ? "Editar prestador" : "Novo prestador"}</DialogTitle></DialogHeader>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2"><Label>Razão social / Nome</Label><Input value={form.legal_name} onChange={(e) => setForm({ ...form, legal_name: e.target.value })} /></div>
               <div><Label>CNPJ</Label><Input value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: e.target.value })} /></div>
@@ -541,11 +600,14 @@ function ProvidersSection() {
               <div className="col-span-2"><Label>Observações</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+              <Button variant="outline" onClick={() => { setOpen(false); setEditingId(null); }}>Cancelar</Button>
               <Button onClick={async () => {
                 const payload: any = { ...form };
                 Object.keys(payload).forEach(k => payload[k] === "" && (payload[k] = null));
-                await save.mutateAsync(payload); setOpen(false);
+                if (editingId) payload.id = editingId;
+                await save.mutateAsync(payload);
+                setOpen(false);
+                setEditingId(null);
               }}>Salvar</Button>
             </div>
           </DialogContent>
@@ -563,7 +625,13 @@ function ProvidersSection() {
                 <TableCell>{p.service_type ?? "—"}</TableCell>
                 <TableCell>{Number(p.contract_value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell>
                 <TableCell><Badge variant="secondary">{p.status}</Badge></TableCell>
-                <TableCell><Button size="sm" variant="ghost" onClick={() => setSelected(p.id)}><FileText className="h-4 w-4" /></Button></TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => setSelected(p.id)} title="Documentos"><FileText className="h-4 w-4" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => openEdit(p)} title="Editar"><Pencil className="h-4 w-4" /></Button>
+                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => setToDelete(p)} title="Excluir"><Trash2 className="h-4 w-4" /></Button>
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
             {!providers.length && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">Nenhum prestador.</TableCell></TableRow>}
@@ -572,6 +640,21 @@ function ProvidersSection() {
       </Card>
 
       {selected && <ProviderDocs providerId={selected} onClose={() => setSelected(null)} name={providers.find((p: any) => p.id === selected)?.legal_name} />}
+
+      <AlertDialog open={!!toDelete} onOpenChange={(v) => !v && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir prestador?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação remove permanentemente <strong>{toDelete?.legal_name}</strong> e seus documentos vinculados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={async () => { if (toDelete) await del.mutateAsync(toDelete.id); setToDelete(null); }}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
