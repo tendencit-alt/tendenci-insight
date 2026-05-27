@@ -222,6 +222,17 @@ function EmployeesSection() {
           </Tabs>
         </Card>
       )}
+
+      {provDlg && (
+        <CltProvisionDialog
+          open={!!provDlg}
+          onOpenChange={(v) => !v && setProvDlg(null)}
+          kind={provDlg.kind}
+          employeeName={provDlg.emp.name}
+          baseSalary={Number(provDlg.emp.base_salary || 0)}
+          admissionDate={provDlg.emp.admission_date}
+        />
+      )}
     </div>
   );
 }
