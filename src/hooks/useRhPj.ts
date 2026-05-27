@@ -274,18 +274,28 @@ export async function getSignedUrl(bucket: string, path: string) {
 // ── Plano de contas (despesas) para apontamento de folha ──
 export function useExpenseChartAccounts() {
   return useQuery({
-    queryKey: ["fin-chart-accounts-expense"],
+    queryKey: ["fin-chart-accounts-expense-rhpj"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: tenantId } = await supabase.rpc("get_user_tenant_id");
+      let q = supabase
         .from("fin_chart_accounts")
-        .select("id, code, name, nature, active")
+        .select("id, code, name, nature, active, tenant_id")
         .eq("active", true)
         .order("code");
+      if (tenantId) q = q.eq("tenant_id", tenantId as string);
+      const { data, error } = await q;
       if (error) throw error;
-      // Filtra natureza despesa quando informada; senão devolve todas ativas
-      return (data ?? []).filter((c: any) =>
+      const filtered = (data ?? []).filter((c: any) =>
         !c.nature || /desp|custo|expense/i.test(c.nature)
       );
+      // Dedup defensivo por (code, name) — evita repetição caso o usuário (ex.: Owner) enxergue múltiplos tenants.
+      const seen = new Set<string>();
+      return filtered.filter((c: any) => {
+        const k = `${c.code}|${c.name}`;
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
     },
     staleTime: 5 * 60_000,
   });
