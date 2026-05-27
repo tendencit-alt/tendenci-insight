@@ -2196,6 +2196,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                   )}
 
                   {/* Comissão Montador */}
+                  {resourceDefaults.montador.visible && (
                   <div className="flex items-center gap-3">
                     <Switch
                       checked={comissoes.montador.habilitado}
@@ -2252,6 +2253,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       </>
                     )}
                   </div>
+                  )}
 
                   {/* Comissão Produção */}
                   <div className="flex items-center gap-3">
