@@ -15,10 +15,11 @@ import { FinProjectsManager } from "@/components/financeiro/masters/FinProjectsM
 import { StrategicResourceCategoriesManager } from "@/components/financeiro/masters/StrategicResourceCategoriesManager";
 import { OrderResponsiblesManager } from "@/components/financeiro/masters/OrderResponsiblesManager";
 import { CardRatesManager } from "@/components/financeiro/masters/CardRatesManager";
+import { RhPjPanel } from "@/pages/FinanceiroRhPj";
 
 const FIN_TABS = new Set([
   "bank-accounts", "chart", "cost-centers", "projects", "commitments",
-  "responsibles", "card-rates",
+  "responsibles", "card-rates", "rh-pj",
 ]);
 
 const ProjectSettings = () => {
@@ -104,6 +105,10 @@ const ProjectSettings = () => {
               <CreditCard className="h-4 w-4" />
               Taxas Financeiras
             </TabsTrigger>
+            <TabsTrigger value="rh-pj" className="flex items-center gap-2 px-4 py-2">
+              <BriefcaseBusiness className="h-4 w-4" />
+              RH / PJ
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="chart" className="mt-6"><ChartAccountsManager /></TabsContent>
@@ -113,6 +118,7 @@ const ProjectSettings = () => {
           <TabsContent value="commitments" className="mt-6"><StrategicResourceCategoriesManager /></TabsContent>
           <TabsContent value="responsibles" className="mt-6"><OrderResponsiblesManager /></TabsContent>
           <TabsContent value="card-rates" className="mt-6"><CardRatesManager /></TabsContent>
+          <TabsContent value="rh-pj" className="mt-6"><RhPjPanel /></TabsContent>
         </Tabs>
       </div>
     </DashboardLayout>
