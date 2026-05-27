@@ -1956,6 +1956,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                 
                 <div className="space-y-3">
                   {/* RT - Repasse Técnico */}
+                  {resourceDefaults.rt.visible && (
                   <div className="flex items-center gap-3">
                     <Switch
                       checked={comissoes.rt.habilitado}
@@ -2012,8 +2013,10 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       </>
                     )}
                   </div>
+                  )}
 
                   {/* Comissão Vendedor */}
+                  {resourceDefaults.vendedor.visible && (
                   <div className="flex items-center gap-3">
                     <Switch
                       checked={comissoes.vendedor.habilitado}
@@ -2070,8 +2073,10 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       </>
                     )}
                   </div>
+                  )}
 
                   {/* Comissão Orçamentista */}
+                  {resourceDefaults.orcamentista.visible && (
                   <div className="flex items-center gap-3">
                     <Switch
                       checked={comissoes.orcamentista.habilitado}
@@ -2128,8 +2133,10 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       </>
                     )}
                   </div>
+                  )}
 
                   {/* Comissão Projetista */}
+                  {resourceDefaults.projetista.visible && (
                   <div className="flex items-center gap-3">
                     <Switch
                       checked={comissoes.projetista.habilitado}
@@ -2186,8 +2193,10 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       </>
                     )}
                   </div>
+                  )}
 
                   {/* Comissão Montador */}
+                  {resourceDefaults.montador.visible && (
                   <div className="flex items-center gap-3">
                     <Switch
                       checked={comissoes.montador.habilitado}
@@ -2244,8 +2253,10 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       </>
                     )}
                   </div>
+                  )}
 
                   {/* Comissão Produção */}
+                  {resourceDefaults.producao.visible && (
                   <div className="flex items-center gap-3">
                     <Switch
                       checked={comissoes.producao.habilitado}
@@ -2302,6 +2313,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       </>
                     )}
                   </div>
+                  )}
                 </div>
               </Card>
 
@@ -2313,39 +2325,39 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                     {totalPercentual.toFixed(1)}%
                   </span>
                 </div>
-                {comissoes.rt.habilitado && comissoes.rt.valor > 0 && (
+                {resourceDefaults.rt.visible && comissoes.rt.habilitado && comissoes.rt.valor > 0 && (
                   <div className="flex items-center justify-between text-foreground">
-                    <span className="text-sm">RT ({comissoes.rt.percentual.toFixed(2)}%):</span>
+                    <span className="text-sm">{resourceDefaults.rt.label} ({comissoes.rt.percentual.toFixed(2)}%):</span>
                     <span className="text-sm font-medium">- {formatCurrency(comissoes.rt.valor)}</span>
                   </div>
                 )}
-                {comissoes.vendedor.habilitado && comissoes.vendedor.valor > 0 && (
+                {resourceDefaults.vendedor.visible && comissoes.vendedor.habilitado && comissoes.vendedor.valor > 0 && (
                   <div className="flex items-center justify-between text-foreground">
-                    <span className="text-sm">Vendedor ({comissoes.vendedor.percentual.toFixed(2)}%):</span>
+                    <span className="text-sm">{resourceDefaults.vendedor.label} ({comissoes.vendedor.percentual.toFixed(2)}%):</span>
                     <span className="text-sm font-medium">- {formatCurrency(comissoes.vendedor.valor)}</span>
                   </div>
                 )}
-                {comissoes.orcamentista.habilitado && comissoes.orcamentista.valor > 0 && (
+                {resourceDefaults.orcamentista.visible && comissoes.orcamentista.habilitado && comissoes.orcamentista.valor > 0 && (
                   <div className="flex items-center justify-between text-foreground">
-                    <span className="text-sm">Orçamentista ({comissoes.orcamentista.percentual.toFixed(2)}%):</span>
+                    <span className="text-sm">{resourceDefaults.orcamentista.label} ({comissoes.orcamentista.percentual.toFixed(2)}%):</span>
                     <span className="text-sm font-medium">- {formatCurrency(comissoes.orcamentista.valor)}</span>
                   </div>
                 )}
-                {comissoes.projetista.habilitado && comissoes.projetista.valor > 0 && (
+                {resourceDefaults.projetista.visible && comissoes.projetista.habilitado && comissoes.projetista.valor > 0 && (
                   <div className="flex items-center justify-between text-foreground">
-                    <span className="text-sm">Projetista ({comissoes.projetista.percentual.toFixed(2)}%):</span>
+                    <span className="text-sm">{resourceDefaults.projetista.label} ({comissoes.projetista.percentual.toFixed(2)}%):</span>
                     <span className="text-sm font-medium">- {formatCurrency(comissoes.projetista.valor)}</span>
                   </div>
                 )}
-                {comissoes.montador.habilitado && comissoes.montador.valor > 0 && (
+                {resourceDefaults.montador.visible && comissoes.montador.habilitado && comissoes.montador.valor > 0 && (
                   <div className="flex items-center justify-between text-foreground">
-                    <span className="text-sm">Montador ({comissoes.montador.percentual.toFixed(2)}%):</span>
+                    <span className="text-sm">{resourceDefaults.montador.label} ({comissoes.montador.percentual.toFixed(2)}%):</span>
                     <span className="text-sm font-medium">- {formatCurrency(comissoes.montador.valor)}</span>
                   </div>
                 )}
-                {comissoes.producao.habilitado && comissoes.producao.valor > 0 && (
+                {resourceDefaults.producao.visible && comissoes.producao.habilitado && comissoes.producao.valor > 0 && (
                   <div className="flex items-center justify-between text-foreground">
-                    <span className="text-sm">Produção ({comissoes.producao.percentual.toFixed(2)}%):</span>
+                    <span className="text-sm">{resourceDefaults.producao.label} ({comissoes.producao.percentual.toFixed(2)}%):</span>
                     <span className="text-sm font-medium">- {formatCurrency(comissoes.producao.valor)}</span>
                   </div>
                 )}
