@@ -5,7 +5,7 @@ import { BankAccountsManager } from "@/components/financeiro/masters/BankAccount
 import { ChartAccountsManager } from "@/components/financeiro/masters/ChartAccountsManager";
 import { CostCentersManager } from "@/components/financeiro/masters/CostCentersManager";
 import { FinProjectsManager } from "@/components/financeiro/masters/FinProjectsManager";
-import { OrderResponsiblesManager } from "@/components/financeiro/masters/OrderResponsiblesManager";
+
 import { StrategicResourceCategoriesManager } from "@/components/financeiro/masters/StrategicResourceCategoriesManager";
 import { CardRatesManager } from "@/components/financeiro/masters/CardRatesManager";
 import { OriginRulesMatrix } from "@/components/financeiro/masters/OriginRulesMatrix";
