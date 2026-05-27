@@ -72,6 +72,14 @@ export default function CreateSupplierDialog({ open, onOpenChange, onSuccess }: 
     city: "",
     state: "",
     payment_terms: "",
+    bank_name: "",
+    bank_agency: "",
+    bank_account: "",
+    bank_account_type: "",
+    bank_holder_name: "",
+    bank_holder_document: "",
+    pix_key_type: "",
+    pix_key: "",
     notes: ""
   });
 
