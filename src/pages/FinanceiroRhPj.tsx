@@ -46,12 +46,16 @@ function EmployeesSection() {
   const { data: employees = [] } = useRhEmployees();
   const { data: canPii } = useCanViewHrPii();
   const save = useSaveEmployee();
+  const { costCenters } = useCostCenters();
+  const { data: chartAccounts = [] } = useExpenseChartAccounts();
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [provDlg, setProvDlg] = useState<{ kind: "vacation" | "thirteenth"; emp: any } | null>(null);
   const [form, setForm] = useState<any>({
     name: "", cpf: "", contract_type: "CLT", admission_date: "", termination_date: "",
     base_salary: 0, dependents_count: 0, status: "active", notes: "",
+    cost_center_id: "", chart_account_id: "",
   });
 
   const summary = useEmployeeMonthSummary(selected ?? undefined, month);
