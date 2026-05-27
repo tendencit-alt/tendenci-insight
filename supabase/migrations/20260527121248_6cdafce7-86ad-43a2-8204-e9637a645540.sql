@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.storage_tenant_for(text, text) TO authenticated;
