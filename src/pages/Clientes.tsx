@@ -385,9 +385,10 @@ export default function Clientes() {
     <ProtectedRoute>
       <DashboardLayout>
         <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6">
+          <ClientesFornecedoresTabs />
           <ModuleShell
             moduleKey="clientes"
-            title="Clientes"
+            title="Clientes / Fornecedores"
             description="Gerencie sua base de clientes em um só lugar."
             icon={<Users className="h-5 w-5" />}
             headerActions={
