@@ -88,6 +88,15 @@ function normalizeMenuModule(module: ModuleConfig): ModuleConfig {
     };
   }
 
+  if (module.module_key === "clientes") {
+    return {
+      ...module,
+      label: "Clientes / Fornecedores",
+      category: "comercial",
+      sort_order: COMMERCIAL_ORDER.clientes,
+    };
+  }
+
   if (module.module_key === "relatorios") {
     return {
       ...module,
