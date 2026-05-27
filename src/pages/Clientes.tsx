@@ -419,11 +419,16 @@ export default function Clientes() {
             }
           />
 
-          <EditClientDialog
-            client={editingClient}
-            onClose={() => setEditingClient(null)}
-            onSaved={() => queryClient.invalidateQueries({ queryKey: ["clients-list"] })}
+          <FullEditClientDialog
+            open={!!editingClient}
+            onOpenChange={(v) => !v && setEditingClient(null)}
+            clientId={editingClient?.id ?? ""}
+            onSuccess={() => {
+              setEditingClient(null);
+              queryClient.invalidateQueries({ queryKey: ["clients-list"] });
+            }}
           />
+
 
           <DeleteClientDialog
             client={deletingClient}
