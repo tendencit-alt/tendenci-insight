@@ -5,7 +5,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
-  Landmark, FileSpreadsheet, FolderKanban, FolderCog, BriefcaseBusiness,
+  Landmark, FileSpreadsheet, FolderKanban, FolderCog,
   CreditCard, Database, Building2,
 } from "lucide-react";
 import { BankAccountsManager } from "@/components/financeiro/masters/BankAccountsManager";
@@ -13,12 +13,10 @@ import { ChartAccountsManager } from "@/components/financeiro/masters/ChartAccou
 import { CostCentersManager } from "@/components/financeiro/masters/CostCentersManager";
 import { FinProjectsManager } from "@/components/financeiro/masters/FinProjectsManager";
 import { StrategicResourceCategoriesManager } from "@/components/financeiro/masters/StrategicResourceCategoriesManager";
-import { OrderResponsiblesManager } from "@/components/financeiro/masters/OrderResponsiblesManager";
 import { CardRatesManager } from "@/components/financeiro/masters/CardRatesManager";
 
 const FIN_TABS = new Set([
-  "bank-accounts", "chart", "cost-centers", "projects", "commitments",
-  "responsibles", "card-rates",
+  "bank-accounts", "chart", "cost-centers", "projects", "commitments", "card-rates",
 ]);
 
 const ProjectSettings = () => {
