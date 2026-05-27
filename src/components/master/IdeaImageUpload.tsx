@@ -36,11 +36,11 @@ export const IdeaImageUpload = ({ onImageUploaded, disabled }: IdeaImageUploadPr
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
+      const { data: signed } = await supabase.storage
         .from('master-ideas-files')
-        .getPublicUrl(filePath);
+        .createSignedUrl(filePath, 60 * 60 * 24 * 7);
 
-      onImageUploaded(publicUrl, file.name, filePath);
+      onImageUploaded(signed?.signedUrl ?? '', file.name, filePath);
       toast.success('Imagem enviada!');
     } catch (error) {
       console.error('Erro ao enviar imagem:', error);
