@@ -48,6 +48,7 @@ export default function Financeiro() {
   const initialTab = searchParams.get("tab") || "receivables";
 
   useFinanceiroRealtime();
+  const { data: canRhPj } = useCanViewHrPii();
   const [activeTab, setActiveTab] = useState(initialTab);
   const [filters, setFilters] = useState<FinanceiroFiltersState>({
     dateFrom: null,
