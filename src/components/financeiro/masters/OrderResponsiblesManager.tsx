@@ -389,6 +389,12 @@ export function OrderResponsiblesManager() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CreateSupplierDialog
+        open={newSupplierOpen}
+        onOpenChange={setNewSupplierOpen}
+        onSuccess={handleSupplierCreated}
+      />
     </Card>
   );
 }
