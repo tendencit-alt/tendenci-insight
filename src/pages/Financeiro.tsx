@@ -15,8 +15,7 @@ import { CapitalFinancingTab } from "@/components/financeiro/CapitalFinancingTab
 import { RecurringContractsTab } from "@/components/financeiro/RecurringContractsTab";
 import { GovernanceTab } from "@/components/financeiro/GovernanceTab";
 import { RhPjPanel } from "@/pages/FinanceiroRhPj";
-import { useCanViewHrPii } from "@/hooks/useRhPj";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -26,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Plus } from "lucide-react";
 import { Can } from "@/components/auth/Can";
+import { usePermissions } from "@/hooks/usePermissions";
 
 import {
   ArrowDownCircle,
@@ -44,11 +44,11 @@ import {
 
 export default function Financeiro() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const initialTab = searchParams.get("tab") || "receivables";
 
   useFinanceiroRealtime();
-  const { data: canRhPj } = useCanViewHrPii();
+  const { isMaster, hasModuleAccess } = usePermissions();
+  const canRhPj = isMaster || hasModuleAccess("financeiro", "admin") || hasModuleAccess("financeiro", "edit");
   const [activeTab, setActiveTab] = useState(initialTab);
   const [filters, setFilters] = useState<FinanceiroFiltersState>({
     dateFrom: null,
@@ -132,6 +132,12 @@ export default function Financeiro() {
                   <CalendarClock className="h-3.5 w-3.5 flex-shrink-0" />
                   <span className="whitespace-nowrap">Recorrentes</span>
                 </TabsTrigger>
+                {canRhPj && (
+                  <TabsTrigger value="rh-pj" className={tabClass}>
+                    <Users className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="whitespace-nowrap">RH / PJ</span>
+                  </TabsTrigger>
+                )}
               </TabsList>
             </div>
 
@@ -160,6 +166,12 @@ export default function Financeiro() {
             <TabsContent value="recurring" forceMount className={activeTab === "recurring" ? "space-y-4" : "hidden"}>
               <RecurringContractsTab filters={filters} />
             </TabsContent>
+
+            {canRhPj && (
+              <TabsContent value="rh-pj" forceMount className={activeTab === "rh-pj" ? "space-y-4" : "hidden"}>
+                <RhPjPanel />
+              </TabsContent>
+            )}
 
           </Tabs>
         }
