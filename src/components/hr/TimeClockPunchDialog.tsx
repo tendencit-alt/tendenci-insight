@@ -28,6 +28,24 @@ export function TimeClockPunchDialog({ open, onOpenChange, employeeId, employeeN
   const [coords, setCoords] = useState<{ lat: number; lng: number; acc: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
+  const { data: settings } = useHrSettings();
+  const { data: locations = [] } = useWorkLocations();
+
+  // Avalia geofence: retorna {within, location, distance}
+  const fence = (() => {
+    const active = (locations as any[]).filter(l => l.active);
+    if (!coords || !active.length) return { within: null as boolean | null, location: null as any, distance: null as number | null };
+    let best: any = null; let bestDist = Infinity;
+    for (const l of active) {
+      const d = distanceMeters(coords.lat, coords.lng, Number(l.latitude), Number(l.longitude));
+      if (d < bestDist) { bestDist = d; best = l; }
+    }
+    const within = best ? bestDist <= Number(best.radius_m) : false;
+    return { within, location: best, distance: bestDist };
+  })();
+  const mode = (settings as any)?.geofence_mode ?? "warn";
+  const blocking = mode === "block" && fence.within === false;
+
 
   // start camera
   useEffect(() => {
