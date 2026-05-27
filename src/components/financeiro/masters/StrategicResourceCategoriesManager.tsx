@@ -63,12 +63,29 @@ export function StrategicResourceCategoriesManager() {
     },
     enabled: !!parentAccount?.id,
   });
+  const { data: costCenters } = useQuery({
+    queryKey: ["fin-cost-centers-strategic", activeTenantId],
+    enabled: !!activeTenantId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("fin_cost_centers")
+        .select("id, code, name")
+        .eq("tenant_id", activeTenantId!)
+        .eq("active", true)
+        .order("code");
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const { data: configs, isLoading: loadingConfigs } = useQuery({
-    queryKey: ["fin-strategic-resource-account-configs"],
+    queryKey: ["fin-strategic-resource-account-configs", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from(TABLE_NAME as any)
-        .select("id, chart_account_id, active, default_percentage");
+        .select("id, chart_account_id, active, default_percentage, cost_center_id")
+        .eq("tenant_id", activeTenantId!);
       if (error) throw error;
       return (data ?? []) as unknown as ConfigRow[];
     },
