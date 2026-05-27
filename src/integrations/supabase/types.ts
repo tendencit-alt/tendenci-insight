@@ -10983,6 +10983,7 @@ export type Database = {
           file_type: string
           id: string
           lead_id: string
+          tenant_id: string | null
           uploaded_at: string | null
           uploaded_by: string | null
         }
@@ -10993,6 +10994,7 @@ export type Database = {
           file_type: string
           id?: string
           lead_id: string
+          tenant_id?: string | null
           uploaded_at?: string | null
           uploaded_by?: string | null
         }
@@ -11003,6 +11005,7 @@ export type Database = {
           file_type?: string
           id?: string
           lead_id?: string
+          tenant_id?: string | null
           uploaded_at?: string | null
           uploaded_by?: string | null
         }
@@ -12709,6 +12712,7 @@ export type Database = {
           is_active: boolean
           name: string
           supplier_id: string | null
+          tenant_id: string
           type: Database["public"]["Enums"]["order_responsible_type"]
           updated_at: string
         }
@@ -12718,6 +12722,7 @@ export type Database = {
           is_active?: boolean
           name: string
           supplier_id?: string | null
+          tenant_id?: string
           type: Database["public"]["Enums"]["order_responsible_type"]
           updated_at?: string
         }
@@ -12727,6 +12732,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           supplier_id?: string | null
+          tenant_id?: string
           type?: Database["public"]["Enums"]["order_responsible_type"]
           updated_at?: string
         }
@@ -14509,6 +14515,7 @@ export type Database = {
           notes: string | null
           product_id: string
           quantity: number
+          tenant_id: string | null
           unit: string | null
           updated_at: string | null
         }
@@ -14519,6 +14526,7 @@ export type Database = {
           notes?: string | null
           product_id: string
           quantity?: number
+          tenant_id?: string | null
           unit?: string | null
           updated_at?: string | null
         }
@@ -14529,6 +14537,7 @@ export type Database = {
           notes?: string | null
           product_id?: string
           quantity?: number
+          tenant_id?: string | null
           unit?: string | null
           updated_at?: string | null
         }
@@ -14635,6 +14644,7 @@ export type Database = {
           purchase_order_id: string | null
           quantity: number
           supplier_id: string | null
+          tenant_id: string | null
           total_value: number
         }
         Insert: {
@@ -14645,6 +14655,7 @@ export type Database = {
           purchase_order_id?: string | null
           quantity: number
           supplier_id?: string | null
+          tenant_id?: string | null
           total_value: number
         }
         Update: {
@@ -14655,6 +14666,7 @@ export type Database = {
           purchase_order_id?: string | null
           quantity?: number
           supplier_id?: string | null
+          tenant_id?: string | null
           total_value?: number
         }
         Relationships: [
@@ -14976,6 +14988,7 @@ export type Database = {
           metadata: Json | null
           production_order_id: string
           production_phase_id: string | null
+          tenant_id: string | null
           to_phase_id: string | null
           to_status: string | null
         }
@@ -14990,6 +15003,7 @@ export type Database = {
           metadata?: Json | null
           production_order_id: string
           production_phase_id?: string | null
+          tenant_id?: string | null
           to_phase_id?: string | null
           to_status?: string | null
         }
@@ -15004,6 +15018,7 @@ export type Database = {
           metadata?: Json | null
           production_order_id?: string
           production_phase_id?: string | null
+          tenant_id?: string | null
           to_phase_id?: string | null
           to_status?: string | null
         }
