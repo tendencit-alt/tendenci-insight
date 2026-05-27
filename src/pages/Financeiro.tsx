@@ -161,11 +161,6 @@ export default function Financeiro() {
               <RecurringContractsTab filters={filters} />
             </TabsContent>
 
-            {canRhPj && (
-              <TabsContent value="rh-pj" forceMount className={activeTab === "rh-pj" ? "space-y-4" : "hidden"}>
-                <RhPjPanel />
-              </TabsContent>
-            )}
           </Tabs>
         }
         settings={<GovernanceTab filters={filters} />}
