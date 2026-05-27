@@ -14,6 +14,8 @@ import { FinancialResultTab } from "@/components/financeiro/FinancialResultTab";
 import { CapitalFinancingTab } from "@/components/financeiro/CapitalFinancingTab";
 import { RecurringContractsTab } from "@/components/financeiro/RecurringContractsTab";
 import { GovernanceTab } from "@/components/financeiro/GovernanceTab";
+import { RhPjPanel } from "@/pages/FinanceiroRhPj";
+import { useCanViewHrPii } from "@/hooks/useRhPj";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +39,7 @@ import {
   CalendarClock,
   ShieldCheck,
   Wallet,
+  Users,
 } from "lucide-react";
 
 export default function Financeiro() {
