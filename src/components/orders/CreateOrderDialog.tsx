@@ -1820,6 +1820,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     )}
 
                     {/* Comissão Produção */}
+                    {resourceDefaults.producao.visible && (
                     <div className="flex items-center gap-3">
                       <Switch
                         checked={comissoes.producao.habilitado}
@@ -1873,6 +1874,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                         </>
                       )}
                     </div>
+                    )}
                   </div>
                 </Card>
 
