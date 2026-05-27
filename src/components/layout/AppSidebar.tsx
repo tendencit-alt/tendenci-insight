@@ -111,6 +111,7 @@ const menuGroups: MenuGroup[] = [
     separator: true,
     items: [
       { title: "Tesouraria", url: "/financeiro", icon: Wallet, module: "financeiro" },
+      { title: "RH / PJ", url: "/financeiro/rh-pj", icon: UserCheck, module: "financeiro" },
       { title: "Contas a Receber", url: "/contas-receber", icon: TrendingUp, comingSoon: true, module: "financeiro" },
       { title: "Contas a Pagar", url: "/contas-pagar", icon: CreditCard, comingSoon: true, module: "financeiro" },
       { title: "Conciliação Bancária", url: "/conciliacao", icon: ArrowLeftRight, comingSoon: true, module: "financeiro" },
