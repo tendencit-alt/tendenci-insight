@@ -26,7 +26,7 @@ export function OrderCompromissosCard({
   isLoading = false,
   disabled = false,
 }: OrderCompromissosCardProps) {
-  const { responsibles } = useOrderResponsibles(true);
+  const { responsibles, byChartAccount } = useOrderResponsibles(true);
   const activeResponsibles = responsibles.filter((r) => r.is_active);
 
   const getCategoryName = (chartAccountId: string) => {
@@ -130,9 +130,19 @@ export function OrderCompromissosCard({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="_none">-</SelectItem>
-                    {activeResponsibles.map((r) => (
-                      <SelectItem key={r.id} value={r.id}>{r.full_name}</SelectItem>
-                    ))}
+                    {(() => {
+                      const matching = byChartAccount(comp.chart_account_id);
+                      if (matching.length === 0) {
+                        return (
+                          <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                            Nenhum responsável cadastrado para este compromisso.
+                          </div>
+                        );
+                      }
+                      return matching.map((r) => (
+                        <SelectItem key={r.id} value={r.id}>{r.full_name}</SelectItem>
+                      ));
+                    })()}
                   </SelectContent>
                 </Select>
               </>

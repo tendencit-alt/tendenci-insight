@@ -13030,36 +13030,46 @@ export type Database = {
       }
       order_responsibles: {
         Row: {
+          chart_account_id: string | null
           created_at: string
           id: string
           is_active: boolean
           name: string
           supplier_id: string | null
           tenant_id: string
-          type: Database["public"]["Enums"]["order_responsible_type"]
+          type: Database["public"]["Enums"]["order_responsible_type"] | null
           updated_at: string
         }
         Insert: {
+          chart_account_id?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
           name: string
           supplier_id?: string | null
           tenant_id?: string
-          type: Database["public"]["Enums"]["order_responsible_type"]
+          type?: Database["public"]["Enums"]["order_responsible_type"] | null
           updated_at?: string
         }
         Update: {
+          chart_account_id?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
           name?: string
           supplier_id?: string | null
           tenant_id?: string
-          type?: Database["public"]["Enums"]["order_responsible_type"]
+          type?: Database["public"]["Enums"]["order_responsible_type"] | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "order_responsibles_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "order_responsibles_supplier_id_fkey"
             columns: ["supplier_id"]
