@@ -46,7 +46,13 @@ function EmployeesSection() {
   const { data: employees = [] } = useRhEmployees();
   const { data: canPii } = useCanViewHrPii();
   const save = useSaveEmployee();
-  const { costCenters } = useCostCenters();
+  const { activeTenantId } = useActiveTenant();
+  const [costCenters, setCostCenters] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    if (!activeTenantId) return;
+    supabase.from("fin_cost_centers").select("id, name").eq("tenant_id", activeTenantId).eq("active", true).order("name")
+      .then(({ data }) => setCostCenters(data ?? []));
+  }, [activeTenantId]);
   const { data: chartAccounts = [] } = useExpenseChartAccounts();
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
