@@ -151,24 +151,44 @@ function EmployeesSection() {
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead><TableHead>CPF</TableHead><TableHead>Cargo</TableHead>
-              <TableHead>Departamento</TableHead><TableHead>Admissão</TableHead><TableHead>Salário</TableHead>
+              <TableHead>Admissão</TableHead><TableHead>Salário</TableHead>
+              <TableHead>Férias (saldo)</TableHead><TableHead>13º (saldo)</TableHead>
               <TableHead>Status</TableHead><TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {employees.map((e: any) => (
+            {employees.map((e: any) => {
+              const vac = computeVacationProvision({ baseSalary: Number(e.base_salary || 0), admissionDate: e.admission_date });
+              const th = computeThirteenthProvision({ baseSalary: Number(e.base_salary || 0), admissionDate: e.admission_date });
+              return (
               <TableRow key={e.id}>
                 <TableCell className="font-medium">{e.name}</TableCell>
                 <TableCell className="font-mono text-xs">{mask(e.cpf, !!canPii)}</TableCell>
                 <TableCell>{e.hr_positions?.title ?? "—"}</TableCell>
-                <TableCell>{e.hr_departments?.name ?? "—"}</TableCell>
                 <TableCell>{e.admission_date ?? "—"}</TableCell>
-                <TableCell>{canPii ? Number(e.base_salary).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "•••"}</TableCell>
+                <TableCell>{canPii ? brl(Number(e.base_salary)) : "•••"}</TableCell>
+                <TableCell>
+                  {canPii ? (
+                    <button className="underline-offset-2 hover:underline text-left" onClick={() => setProvDlg({ kind: "vacation", emp: e })}>
+                      <span className="tabular-nums">{brl(vac.accruedBalance)}</span>
+                      <Calculator className="inline h-3 w-3 ml-1 opacity-60" />
+                    </button>
+                  ) : "•••"}
+                </TableCell>
+                <TableCell>
+                  {canPii ? (
+                    <button className="underline-offset-2 hover:underline text-left" onClick={() => setProvDlg({ kind: "thirteenth", emp: e })}>
+                      <span className="tabular-nums">{brl(th.accruedBalance)}</span>
+                      <Calculator className="inline h-3 w-3 ml-1 opacity-60" />
+                    </button>
+                  ) : "•••"}
+                </TableCell>
                 <TableCell><Badge variant="secondary">{e.status}</Badge></TableCell>
                 <TableCell><Button size="sm" variant="ghost" onClick={() => setSelected(e.id)}><Eye className="h-4 w-4" /></Button></TableCell>
               </TableRow>
-            ))}
-            {!employees.length && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">Nenhum colaborador.</TableCell></TableRow>}
+              );
+            })}
+            {!employees.length && <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">Nenhum colaborador.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>
