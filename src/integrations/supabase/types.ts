@@ -23522,6 +23522,20 @@ export type Database = {
         Args: { p_phase_id: string }
         Returns: number
       }
+      get_hr_pj_kpis: {
+        Args: { _month?: string }
+        Returns: {
+          absences_month: number
+          employees_active: number
+          payroll_cost_month: number
+          pending_certificates: number
+          pj_cost_month: number
+          providers_active: number
+          punches_outside_today: number
+          punches_today: number
+          vacation_provision_total: number
+        }[]
+      }
       get_hr_settings: {
         Args: { _tenant: string }
         Returns: {
