@@ -248,6 +248,7 @@ function EmployeesSection() {
                   ) : "—"}
                 </TableCell>
                 <TableCell><Badge variant="secondary">{e.status}</Badge></TableCell>
+                <TableCell><PayableStatusBadge p={payablesByEmp?.get(e.id)} /></TableCell>
                 <TableCell>
                   <div className="flex gap-1">
                     <Button size="sm" variant="ghost" onClick={() => setSelected(e.id)} title="Detalhe"><Eye className="h-4 w-4" /></Button>
@@ -258,7 +259,7 @@ function EmployeesSection() {
               </TableRow>
               );
             })}
-            {!employees.length && <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-6">Nenhum colaborador.</TableCell></TableRow>}
+            {!employees.length && <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-6">Nenhum colaborador.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>
