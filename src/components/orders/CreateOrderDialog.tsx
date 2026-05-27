@@ -1763,6 +1763,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     )}
 
                     {/* Comissão Montador */}
+                    {resourceDefaults.montador.visible && (
                     <div className="flex items-center gap-3">
                       <Switch
                         checked={comissoes.montador.habilitado}
@@ -1816,6 +1817,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                         </>
                       )}
                     </div>
+                    )}
 
                     {/* Comissão Produção */}
                     <div className="flex items-center gap-3">
