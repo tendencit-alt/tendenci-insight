@@ -169,17 +169,26 @@ export function TimeClockPunchDialog({ open, onOpenChange, employeeId, employeeN
               : <span className="text-muted-foreground">{geoError ?? "Obtendo localização..."}</span>}
           </div>
 
+          {fence.within != null && (
+            <div className={`text-xs rounded-md px-2 py-1.5 ${fence.within ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-amber-500/10 text-amber-700 dark:text-amber-300"}`}>
+              {fence.within
+                ? <>Dentro do raio de <b>{fence.location.name}</b> ({Math.round(fence.distance!)}m / {fence.location.radius_m}m)</>
+                : <>FORA do raio (mais próximo: <b>{fence.location?.name}</b> — {Math.round(fence.distance!)}m, raio {fence.location?.radius_m}m){mode === "block" && " — bloqueado"}</>}
+            </div>
+          )}
+
           <div className="flex gap-2">
             {!photoUrl
               ? <Button onClick={capture} className="flex-1"><Camera className="h-4 w-4 mr-1" />Capturar foto</Button>
               : <>
                   <Button variant="outline" onClick={() => { setPhotoBlob(null); setPhotoUrl(null); }} className="flex-1">Refazer</Button>
-                  <Button onClick={punch} disabled={busy || !coords} className="flex-1">
+                  <Button onClick={punch} disabled={busy || !coords || blocking} className="flex-1">
                     {busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
                     Confirmar
                   </Button>
                 </>}
           </div>
+
         </div>
       </DialogContent>
     </Dialog>
