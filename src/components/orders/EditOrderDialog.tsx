@@ -2256,6 +2256,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                   )}
 
                   {/* Comissão Produção */}
+                  {resourceDefaults.producao.visible && (
                   <div className="flex items-center gap-3">
                     <Switch
                       checked={comissoes.producao.habilitado}
@@ -2312,6 +2313,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       </>
                     )}
                   </div>
+                  )}
                 </div>
               </Card>
 
