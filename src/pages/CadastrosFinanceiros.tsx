@@ -5,13 +5,13 @@ import { BankAccountsManager } from "@/components/financeiro/masters/BankAccount
 import { ChartAccountsManager } from "@/components/financeiro/masters/ChartAccountsManager";
 import { CostCentersManager } from "@/components/financeiro/masters/CostCentersManager";
 import { FinProjectsManager } from "@/components/financeiro/masters/FinProjectsManager";
-import { OrderResponsiblesManager } from "@/components/financeiro/masters/OrderResponsiblesManager";
+
 import { StrategicResourceCategoriesManager } from "@/components/financeiro/masters/StrategicResourceCategoriesManager";
 import { CardRatesManager } from "@/components/financeiro/masters/CardRatesManager";
 import { OriginRulesMatrix } from "@/components/financeiro/masters/OriginRulesMatrix";
 import { FinancePermissionsMatrix } from "@/components/financeiro/masters/FinancePermissionsMatrix";
 import { EventAutomationRulesPanel } from "@/components/financeiro/masters/EventAutomationRulesPanel";
-import { Building2, FileSpreadsheet, Landmark, FolderKanban, Database, BriefcaseBusiness, FolderCog, CreditCard, Zap, Shield, Bot } from "lucide-react";
+import { Building2, FileSpreadsheet, Landmark, FolderKanban, Database, FolderCog, CreditCard, Zap, Shield, Bot } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
 // Standardized URL slugs (?tab=...) → internal tab values
@@ -21,7 +21,6 @@ const RECORDS_TABS = new Set([
   "cost-centers",
   "projects",
   "commitments",
-  "responsibles",
   "card-rates",
 ]);
 const SETTINGS_TABS = new Set(["origin-rules", "event-automations", "permissions"]);
@@ -30,8 +29,11 @@ export default function CadastrosFinanceiros() {
   const [searchParams, setSearchParams] = useSearchParams();
   const urlTab = searchParams.get("tab");
 
-  const recordsTab = urlTab && RECORDS_TABS.has(urlTab) ? urlTab : "bank-accounts";
-  const settingsTab = urlTab && SETTINGS_TABS.has(urlTab) ? urlTab : "origin-rules";
+  // Legacy redirect: "responsibles" foi mesclada em "commitments"
+  const normalizedTab = urlTab === "responsibles" ? "commitments" : urlTab;
+
+  const recordsTab = normalizedTab && RECORDS_TABS.has(normalizedTab) ? normalizedTab : "bank-accounts";
+  const settingsTab = normalizedTab && SETTINGS_TABS.has(normalizedTab) ? normalizedTab : "origin-rules";
 
   const updateTab = (tab: string) => {
     const next = new URLSearchParams(searchParams);
@@ -44,7 +46,7 @@ export default function CadastrosFinanceiros() {
       <ModuleShell
         moduleKey="cadastros-financeiros"
         title="Cadastros Financeiros"
-        description="Gerencie contas bancárias, plano de contas, centros de custo, projetos, responsáveis avulsos e categorias dos compromissos sobre venda."
+        description="Gerencie contas bancárias, plano de contas, centros de custo, projetos e os compromissos sobre venda (com seus responsáveis)."
         icon={<Database className="h-5 w-5" />}
         records={
           <Tabs value={recordsTab} onValueChange={updateTab}>
@@ -69,10 +71,6 @@ export default function CadastrosFinanceiros() {
                 <FolderCog className="h-4 w-4" />
                 Compromissos Sobre Venda
               </TabsTrigger>
-              <TabsTrigger value="responsibles" className="flex items-center gap-2 px-4 py-2">
-                <BriefcaseBusiness className="h-4 w-4" />
-                Responsáveis
-              </TabsTrigger>
               <TabsTrigger value="card-rates" className="flex items-center gap-2 px-4 py-2">
                 <CreditCard className="h-4 w-4" />
                 Taxas Cartão
@@ -84,7 +82,6 @@ export default function CadastrosFinanceiros() {
             <TabsContent value="cost-centers" className="mt-6"><CostCentersManager /></TabsContent>
             <TabsContent value="projects" className="mt-6"><FinProjectsManager /></TabsContent>
             <TabsContent value="commitments" className="mt-6"><StrategicResourceCategoriesManager /></TabsContent>
-            <TabsContent value="responsibles" className="mt-6"><OrderResponsiblesManager /></TabsContent>
             <TabsContent value="card-rates" className="mt-6"><CardRatesManager /></TabsContent>
           </Tabs>
         }

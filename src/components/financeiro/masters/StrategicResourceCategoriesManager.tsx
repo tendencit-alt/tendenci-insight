@@ -11,6 +11,8 @@ import { FolderCog, Info, Loader2, Save, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { Separator } from "@/components/ui/separator";
+import { OrderResponsiblesManager } from "@/components/financeiro/masters/OrderResponsiblesManager";
 
 const PARENT_ACCOUNT_CODE = "2.2";
 const TABLE_NAME = "fin_strategic_resource_account_configs";
@@ -240,6 +242,18 @@ export function StrategicResourceCategoriesManager() {
           })
         )}
       </CardContent>
+
+      <Separator className="my-2" />
+
+      <div className="px-2 pb-2">
+        <div className="px-4 pt-2 pb-3">
+          <h3 className="text-base font-medium">Responsáveis para uso nos Pedidos</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Cadastre aqui os responsáveis (vendedor, orçamentista, projetista, montador, produção) que ficarão disponíveis no seletor de cada compromisso ao criar ou editar um Pedido.
+          </p>
+        </div>
+        <OrderResponsiblesManager />
+      </div>
     </Card>
   );
 }
