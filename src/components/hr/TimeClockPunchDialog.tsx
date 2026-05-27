@@ -95,6 +95,7 @@ export function TimeClockPunchDialog({ open, onOpenChange, employeeId, employeeN
   const punch = async () => {
     if (!photoBlob) { toast.error("Capture a foto antes"); return; }
     if (!coords) { toast.error("Aguardando localização..."); return; }
+    if (blocking) { toast.error("Fora do raio do local de trabalho — bloqueado por política"); return; }
     setBusy(true);
     try {
       const { data: tenantId } = await supabase.rpc("get_user_tenant_id");
@@ -109,16 +110,21 @@ export function TimeClockPunchDialog({ open, onOpenChange, employeeId, employeeN
 
       const nowIso = new Date().toISOString();
       const nowTime = nowIso.slice(11, 19);
-      // procura registro do dia para upsert (in primeiro, out depois)
       const { data: existing } = await supabase
         .from("hr_time_records").select("id, time_in, time_out")
         .eq("employee_id", employeeId).eq("work_date", today).maybeSingle();
 
+      const fenceFields = fence.within == null
+        ? {} // sem local cadastrado: não preenche
+        : kind === "in"
+          ? { time_in_within_fence: fence.within, time_in_location_id: fence.location?.id ?? null }
+          : { time_out_within_fence: fence.within, time_out_location_id: fence.location?.id ?? null };
+
       const patch: any = kind === "in"
         ? { time_in: nowTime, time_in_at: nowIso, time_in_photo_path: up.data.path,
-            time_in_lat: coords.lat, time_in_lng: coords.lng, time_in_accuracy: coords.acc }
+            time_in_lat: coords.lat, time_in_lng: coords.lng, time_in_accuracy: coords.acc, ...fenceFields }
         : { time_out: nowTime, time_out_at: nowIso, time_out_photo_path: up.data.path,
-            time_out_lat: coords.lat, time_out_lng: coords.lng, time_out_accuracy: coords.acc };
+            time_out_lat: coords.lat, time_out_lng: coords.lng, time_out_accuracy: coords.acc, ...fenceFields };
 
       if (existing) {
         const { error } = await supabase.from("hr_time_records").update(patch).eq("id", existing.id);
@@ -129,13 +135,16 @@ export function TimeClockPunchDialog({ open, onOpenChange, employeeId, employeeN
         });
         if (error) throw error;
       }
-      toast.success(kind === "in" ? "Entrada registrada" : "Saída registrada");
+      const msg = kind === "in" ? "Entrada registrada" : "Saída registrada";
+      if (fence.within === false) toast.warning(`${msg} — FORA do local (${Math.round(fence.distance!)}m)`);
+      else toast.success(msg);
       onPunched?.();
       onOpenChange(false);
     } catch (e: any) {
       toast.error(e.message ?? "Falha ao bater ponto");
     } finally { setBusy(false); }
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
