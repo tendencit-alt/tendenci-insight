@@ -19545,6 +19545,12 @@ export type Database = {
         Row: {
           active: boolean | null
           bairro: string | null
+          bank_account: string | null
+          bank_account_type: string | null
+          bank_agency: string | null
+          bank_holder_document: string | null
+          bank_holder_name: string | null
+          bank_name: string | null
           cep: string | null
           city: string | null
           complemento: string | null
@@ -19559,6 +19565,8 @@ export type Database = {
           numero: string | null
           payment_terms: string | null
           phone: string | null
+          pix_key: string | null
+          pix_key_type: string | null
           state: string | null
           tenant_id: string | null
           trade_name: string | null
@@ -19568,6 +19576,12 @@ export type Database = {
         Insert: {
           active?: boolean | null
           bairro?: string | null
+          bank_account?: string | null
+          bank_account_type?: string | null
+          bank_agency?: string | null
+          bank_holder_document?: string | null
+          bank_holder_name?: string | null
+          bank_name?: string | null
           cep?: string | null
           city?: string | null
           complemento?: string | null
@@ -19582,6 +19596,8 @@ export type Database = {
           numero?: string | null
           payment_terms?: string | null
           phone?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
           state?: string | null
           tenant_id?: string | null
           trade_name?: string | null
@@ -19591,6 +19607,12 @@ export type Database = {
         Update: {
           active?: boolean | null
           bairro?: string | null
+          bank_account?: string | null
+          bank_account_type?: string | null
+          bank_agency?: string | null
+          bank_holder_document?: string | null
+          bank_holder_name?: string | null
+          bank_name?: string | null
           cep?: string | null
           city?: string | null
           complemento?: string | null
@@ -19605,6 +19627,8 @@ export type Database = {
           numero?: string | null
           payment_terms?: string | null
           phone?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
           state?: string | null
           tenant_id?: string | null
           trade_name?: string | null

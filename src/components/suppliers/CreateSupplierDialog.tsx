@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Search } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface CreateSupplierDialogProps {
   open: boolean;
@@ -71,6 +72,14 @@ export default function CreateSupplierDialog({ open, onOpenChange, onSuccess }: 
     city: "",
     state: "",
     payment_terms: "",
+    bank_name: "",
+    bank_agency: "",
+    bank_account: "",
+    bank_account_type: "",
+    bank_holder_name: "",
+    bank_holder_document: "",
+    pix_key_type: "",
+    pix_key: "",
     notes: ""
   });
 
@@ -125,7 +134,9 @@ export default function CreateSupplierDialog({ open, onOpenChange, onSuccess }: 
         name: "", trade_name: "", cpf_cnpj: "", inscricao_estadual: "",
         phone: "", email: "", website: "", cep: "", logradouro: "",
         numero: "", complemento: "", bairro: "", city: "", state: "",
-        payment_terms: "", notes: ""
+        payment_terms: "", bank_name: "", bank_agency: "", bank_account: "",
+        bank_account_type: "", bank_holder_name: "", bank_holder_document: "",
+        pix_key_type: "", pix_key: "", notes: ""
       });
     } catch (error: any) {
       toast({ title: "Erro ao criar fornecedor", description: error.message, variant: "destructive" });
@@ -298,6 +309,110 @@ export default function CreateSupplierDialog({ open, onOpenChange, onSuccess }: 
               />
             </div>
           </div>
+
+          <div className="pt-4 border-t">
+            <h3 className="text-sm font-semibold mb-3">Dados Bancários</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="bank_name">Banco</Label>
+                <Input
+                  id="bank_name"
+                  placeholder="Ex: 001 - Banco do Brasil"
+                  value={form.bank_name}
+                  onChange={(e) => setForm({ ...form, bank_name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bank_account_type">Tipo de Conta</Label>
+                <Select
+                  value={form.bank_account_type}
+                  onValueChange={(v) => setForm({ ...form, bank_account_type: v })}
+                >
+                  <SelectTrigger id="bank_account_type">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="corrente">Conta Corrente</SelectItem>
+                    <SelectItem value="poupanca">Poupança</SelectItem>
+                    <SelectItem value="pagamento">Conta Pagamento</SelectItem>
+                    <SelectItem value="salario">Conta Salário</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <div className="space-y-2">
+                <Label htmlFor="bank_agency">Agência</Label>
+                <Input
+                  id="bank_agency"
+                  placeholder="0000"
+                  value={form.bank_agency}
+                  onChange={(e) => setForm({ ...form, bank_agency: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bank_account">Conta</Label>
+                <Input
+                  id="bank_account"
+                  placeholder="00000-0"
+                  value={form.bank_account}
+                  onChange={(e) => setForm({ ...form, bank_account: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <div className="space-y-2">
+                <Label htmlFor="bank_holder_name">Titular</Label>
+                <Input
+                  id="bank_holder_name"
+                  value={form.bank_holder_name}
+                  onChange={(e) => setForm({ ...form, bank_holder_name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bank_holder_document">CPF/CNPJ do Titular</Label>
+                <Input
+                  id="bank_holder_document"
+                  value={form.bank_holder_document}
+                  onChange={(e) => setForm({ ...form, bank_holder_document: formatCPFCNPJ(e.target.value) })}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t">
+            <h3 className="text-sm font-semibold mb-3">PIX</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="pix_key_type">Tipo de Chave</Label>
+                <Select
+                  value={form.pix_key_type}
+                  onValueChange={(v) => setForm({ ...form, pix_key_type: v })}
+                >
+                  <SelectTrigger id="pix_key_type">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cpf">CPF</SelectItem>
+                    <SelectItem value="cnpj">CNPJ</SelectItem>
+                    <SelectItem value="email">E-mail</SelectItem>
+                    <SelectItem value="telefone">Telefone</SelectItem>
+                    <SelectItem value="aleatoria">Chave Aleatória</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2 space-y-2">
+                <Label htmlFor="pix_key">Chave PIX</Label>
+                <Input
+                  id="pix_key"
+                  value={form.pix_key}
+                  onChange={(e) => setForm({ ...form, pix_key: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+
+
 
           <div className="space-y-2">
             <Label htmlFor="notes">Observações</Label>
