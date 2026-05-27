@@ -22598,6 +22598,10 @@ export type Database = {
         Returns: Json
       }
       cleanup_old_pending_messages: { Args: never; Returns: undefined }
+      clone_production_types_from_owner: {
+        Args: { _tenant_id: string }
+        Returns: number
+      }
       complete_runbook_step: {
         Args: {
           p_execution_id: string
@@ -23571,7 +23575,19 @@ export type Database = {
         Args: { _tenant_id: string }
         Returns: number
       }
+      seed_default_bank_account: {
+        Args: { _tenant_id: string }
+        Returns: number
+      }
       seed_default_cost_centers: {
+        Args: { _tenant_id: string }
+        Returns: number
+      }
+      seed_default_product_category: {
+        Args: { _tenant_id: string }
+        Returns: number
+      }
+      seed_default_stock_location: {
         Args: { _tenant_id: string }
         Returns: number
       }
