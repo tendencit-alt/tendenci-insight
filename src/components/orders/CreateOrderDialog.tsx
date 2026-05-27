@@ -1535,6 +1535,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   <div className="space-y-3">
 
                     {/* RT - Repasse Técnico */}
+                    {resourceDefaults.rt.visible && (
                     <div className="flex items-center gap-3">
                       <Switch
                         checked={comissoes.rt.habilitado}
@@ -1588,6 +1589,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                         </>
                       )}
                     </div>
+                    )}
 
                     {/* Comissão Vendedor */}
                     <div className="flex items-center gap-3">
