@@ -9162,6 +9162,7 @@ export type Database = {
           party_type: string | null
           pattern_regex: string | null
           priority: number | null
+          tenant_id: string
         }
         Insert: {
           active?: boolean | null
@@ -9176,6 +9177,7 @@ export type Database = {
           party_type?: string | null
           pattern_regex?: string | null
           priority?: number | null
+          tenant_id?: string
         }
         Update: {
           active?: boolean | null
@@ -9190,6 +9192,7 @@ export type Database = {
           party_type?: string | null
           pattern_regex?: string | null
           priority?: number | null
+          tenant_id?: string
         }
         Relationships: [
           {
