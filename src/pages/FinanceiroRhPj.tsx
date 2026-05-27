@@ -49,7 +49,7 @@ function EmployeesSection() {
   const { data: employees = [] } = useRhEmployees();
   const { data: canPii } = useCanViewHrPii();
   const save = useSaveEmployee();
-  const { data: settings } = useHrSettings();
+  // (encargos removidos — apenas previsão base de férias e 13º)
 
   const { activeTenantId } = useActiveTenant();
   const [costCenters, setCostCenters] = useState<{ id: string; name: string }[]>([]);
