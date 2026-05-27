@@ -83,6 +83,8 @@ function EmployeesSection() {
   const [selected, setSelected] = useState<string | null>(null);
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [provDlg, setProvDlg] = useState<{ kind: "vacation" | "thirteenth"; emp: any } | null>(null);
+  const employeeIds = useMemo(() => employees.map((e: any) => e.id), [employees]);
+  const { data: payablesByEmp } = useRhPayablesByMonth(month, employeeIds);
   const emptyForm = {
     name: "", cpf: "", contract_type: "CLT", admission_date: "", termination_date: "",
     base_salary: 0, dependents_count: 0, status: "active", notes: "",
