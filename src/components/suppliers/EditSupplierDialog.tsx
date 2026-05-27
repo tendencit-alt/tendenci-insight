@@ -104,6 +104,14 @@ export default function EditSupplierDialog({ supplier, open, onOpenChange, onSuc
         city: supplier.city || "",
         state: supplier.state || "",
         payment_terms: supplier.payment_terms || "",
+        bank_name: supplier.bank_name || "",
+        bank_agency: supplier.bank_agency || "",
+        bank_account: supplier.bank_account || "",
+        bank_account_type: supplier.bank_account_type || "",
+        bank_holder_name: supplier.bank_holder_name || "",
+        bank_holder_document: supplier.bank_holder_document || "",
+        pix_key_type: supplier.pix_key_type || "",
+        pix_key: supplier.pix_key || "",
         notes: supplier.notes || "",
         active: supplier.active ?? true
       });
