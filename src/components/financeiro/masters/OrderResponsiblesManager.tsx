@@ -87,30 +87,20 @@ export function OrderResponsiblesManager() {
     },
   });
 
-  const handleCreateSupplier = async () => {
-    if (!newSupplierName.trim()) {
-      toast.error("Nome do fornecedor é obrigatório");
-      return;
+  const handleSupplierCreated = async () => {
+    const { data: latest } = await supabase
+      .from("suppliers")
+      .select("id")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    await refetchSuppliers();
+    if (latest?.id) {
+      setForm((prev) => ({ ...prev, supplier_id: latest.id }));
     }
-    setCreatingSup(true);
-    try {
-      const { data, error } = await supabase
-        .from("suppliers")
-        .insert({ name: newSupplierName.trim(), active: true })
-        .select("id")
-        .single();
-      if (error) throw error;
-      await refetchSuppliers();
-      setForm((prev) => ({ ...prev, supplier_id: data.id }));
-      setNewSupplierName("");
-      setNewSupplierOpen(false);
-      toast.success("Fornecedor criado e selecionado!");
-    } catch (err: any) {
-      toast.error("Erro ao criar fornecedor: " + err.message);
-    } finally {
-      setCreatingSup(false);
-    }
+    setNewSupplierOpen(false);
   };
+
 
   const filteredResponsibles = useMemo(() => {
     if (!responsibles) return [];
