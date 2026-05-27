@@ -555,6 +555,7 @@ export function RhPjPanel() {
         <TabsList>
           <TabsTrigger value="rh" className="gap-1.5"><Users className="h-4 w-4" />RH (CLT)</TabsTrigger>
           <TabsTrigger value="pj" className="gap-1.5"><Briefcase className="h-4 w-4" />PJ (Prestadores)</TabsTrigger>
+          <TabsTrigger value="config" className="gap-1.5"><Calculator className="h-4 w-4" />Encargos & Locais</TabsTrigger>
         </TabsList>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={generatePayroll}>Gerar folha do mês</Button>
@@ -563,7 +564,9 @@ export function RhPjPanel() {
       </div>
       <TabsContent value="rh"><EmployeesSection /></TabsContent>
       <TabsContent value="pj"><ProvidersSection /></TabsContent>
+      <TabsContent value="config"><HrSettingsSection /></TabsContent>
     </Tabs>
+
   );
 }
 
