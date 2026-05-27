@@ -25,6 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BriefcaseBusiness, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useCompromissosVendaCategories } from "@/hooks/useCompromissosVendaCategories";
+import CreateSupplierDialog from "@/components/suppliers/CreateSupplierDialog";
 
 type OrderResponsible = Database["public"]["Tables"]["order_responsibles"]["Row"] & {
   chart_account_id: string | null;
