@@ -28,7 +28,7 @@ import {
   useExpenseChartAccounts,
   getSignedUrl,
 } from "@/hooks/useRhPj";
-import { useCostCenters } from "@/hooks/useCostCenters";
+
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { CltProvisionDialog } from "@/components/hr/CltProvisionDialog";
 import { TimeClockPunchDialog } from "@/components/hr/TimeClockPunchDialog";
