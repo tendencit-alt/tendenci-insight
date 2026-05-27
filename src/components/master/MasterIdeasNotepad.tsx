@@ -210,14 +210,21 @@ export function MasterIdeasNotepad() {
             .select('*')
             .eq('idea_id', idea.id);
 
-          const attachments: Attachment[] = (attachmentsData || []).map(att => ({
-            id: att.id,
-            url: supabase.storage.from('master-ideas-files').getPublicUrl(att.file_path).data.publicUrl,
-            fileName: att.file_name,
-            filePath: att.file_path,
-            fileType: att.file_type as 'image' | 'audio',
-            transcription: att.transcription || undefined,
-          }));
+          const attachments: Attachment[] = await Promise.all(
+            (attachmentsData || []).map(async (att) => {
+              const { data: signed } = await supabase.storage
+                .from('master-ideas-files')
+                .createSignedUrl(att.file_path, 60 * 60);
+              return {
+                id: att.id,
+                url: signed?.signedUrl ?? '',
+                fileName: att.file_name,
+                filePath: att.file_path,
+                fileType: att.file_type as 'image' | 'audio',
+                transcription: att.transcription || undefined,
+              };
+            })
+          );
 
           // Fetch ratings
           const { data: ratingsData } = await supabase

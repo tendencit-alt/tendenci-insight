@@ -152,11 +152,11 @@ export const IdeaAudioRecorder = ({ onAudioSaved, disabled }: IdeaAudioRecorderP
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
+      const { data: signed } = await supabase.storage
         .from('master-ideas-files')
-        .getPublicUrl(filePath);
+        .createSignedUrl(filePath, 60 * 60 * 24 * 7);
 
-      onAudioSaved(publicUrl, fileName, filePath, transcription || undefined);
+      onAudioSaved(signed?.signedUrl ?? '', fileName, filePath, transcription || undefined);
       toast.success('Áudio salvo!');
       resetRecording();
       setIsOpen(false);
