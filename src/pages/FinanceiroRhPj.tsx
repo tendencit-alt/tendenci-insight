@@ -286,6 +286,21 @@ function EmployeesSection() {
           admissionDate={provDlg.emp.admission_date}
         />
       )}
+
+      <AlertDialog open={!!toDelete} onOpenChange={(v) => !v && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir colaborador?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação remove permanentemente <strong>{toDelete?.name}</strong> e seu histórico (ponto, faltas, atestados).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={async () => { if (toDelete) await del.mutateAsync(toDelete.id); setToDelete(null); }}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
