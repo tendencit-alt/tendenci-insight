@@ -353,12 +353,33 @@ export function AppNavbar() {
       key: g.category,
       label: g.label.toUpperCase(),
       icon: LayoutGrid as any,
-      items: g.items.map((m) => ({
-        label: m.label,
-        route: MODULE_ROUTE_MAP[m.module_key] ?? "/",
-        icon: (m.icon as any) ?? "Circle",
-        available: true,
-      })),
+      items: (() => {
+        const items = g.items.map((m) => ({
+          label: m.label,
+          route: MODULE_ROUTE_MAP[m.module_key] ?? "/",
+          icon: (m.icon as any) ?? "Circle",
+          module: m.category === "financeiro" ? "financeiro" : undefined,
+          available: true,
+        }));
+
+        if (g.category === "financeiro") {
+          const financeiroIndex = items.findIndex((item) => item.route === "/financeiro");
+          const rhPjItem = {
+            label: "RH / PJ",
+            route: "/financeiro/rh-pj",
+            icon: "UserCheck" as keyof typeof LucideIcons,
+            module: "financeiro",
+            available: true,
+          };
+
+          if (!items.some((item) => item.route === rhPjItem.route)) {
+            if (financeiroIndex >= 0) items.splice(financeiroIndex + 1, 0, rhPjItem);
+            else items.unshift(rhPjItem);
+          }
+        }
+
+        return items;
+      })(),
     })) as ModuleGroup[];
   }, [dynamicGroups]);
 
