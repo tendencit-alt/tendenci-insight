@@ -7,8 +7,9 @@ import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { FolderCog, Info, Loader2, Save } from "lucide-react";
+import { FolderCog, Info, Loader2, Save, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 const PARENT_ACCOUNT_CODE = "2.2";
@@ -20,6 +21,7 @@ type ConfigRow = {
   chart_account_id: string | null;
   active: boolean;
   default_percentage: number;
+  cost_center_id: string | null;
 };
 
 export function StrategicResourceCategoriesManager() {
@@ -61,12 +63,29 @@ export function StrategicResourceCategoriesManager() {
     },
     enabled: !!parentAccount?.id,
   });
+  const { data: costCenters } = useQuery({
+    queryKey: ["fin-cost-centers-strategic", activeTenantId],
+    enabled: !!activeTenantId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("fin_cost_centers")
+        .select("id, code, name")
+        .eq("tenant_id", activeTenantId!)
+        .eq("active", true)
+        .order("code");
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const { data: configs, isLoading: loadingConfigs } = useQuery({
-    queryKey: ["fin-strategic-resource-account-configs"],
+    queryKey: ["fin-strategic-resource-account-configs", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from(TABLE_NAME as any)
-        .select("id, chart_account_id, active, default_percentage");
+        .select("id, chart_account_id, active, default_percentage, cost_center_id")
+        .eq("tenant_id", activeTenantId!);
       if (error) throw error;
       return (data ?? []) as unknown as ConfigRow[];
     },
@@ -93,14 +112,22 @@ export function StrategicResourceCategoriesManager() {
 
   const isActive = (accountId: string) => configByAccount.get(accountId)?.active ?? false;
 
-  const save = async (accountId: string, payload: { active?: boolean; default_percentage?: number }) => {
+  const save = async (
+    accountId: string,
+    payload: { active?: boolean; default_percentage?: number; cost_center_id?: string | null }
+  ) => {
     const existing = configByAccount.get(accountId);
     setSavingId(accountId);
     try {
-      const nextData = {
+      const nextData: any = {
         chart_account_id: accountId,
+        tenant_id: activeTenantId,
         active: payload.active ?? existing?.active ?? false,
         default_percentage: payload.default_percentage ?? existing?.default_percentage ?? 0,
+        cost_center_id:
+          payload.cost_center_id !== undefined
+            ? payload.cost_center_id
+            : existing?.cost_center_id ?? null,
       };
       if (existing) {
         const { error } = await supabase.from(TABLE_NAME as any).update(nextData).eq("id", existing.id);
@@ -170,6 +197,26 @@ export function StrategicResourceCategoriesManager() {
                     className="h-7 w-[72px] text-sm text-right"
                   />
                   <span className="text-xs text-muted-foreground">%</span>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Building2 className="h-3 w-3 text-muted-foreground" />
+                  <Select
+                    value={configByAccount.get(child.id)?.cost_center_id ?? "_none"}
+                    onValueChange={(v) => save(child.id, { cost_center_id: v === "_none" ? null : v })}
+                    disabled={isSaving}
+                  >
+                    <SelectTrigger className="h-7 w-[160px] text-xs">
+                      <SelectValue placeholder="Centro de custo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none" className="text-xs">— Sem CC —</SelectItem>
+                      {(costCenters ?? []).map((cc) => (
+                        <SelectItem key={cc.id} value={cc.id} className="text-xs">
+                          <span className="font-mono text-muted-foreground mr-1">{cc.code}</span>{cc.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 {hasPctEdit && (
                   <Button
