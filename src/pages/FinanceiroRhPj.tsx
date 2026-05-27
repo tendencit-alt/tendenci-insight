@@ -105,6 +105,26 @@ function EmployeesSection() {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <Label>Centro de Custo</Label>
+                <Select value={form.cost_center_id || "none"} onValueChange={(v) => setForm({ ...form, cost_center_id: v === "none" ? "" : v })}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— Sem CC —</SelectItem>
+                    {costCenters.map((cc: any) => <SelectItem key={cc.value} value={cc.value}>{cc.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Categoria contábil (despesa de folha)</Label>
+                <Select value={form.chart_account_id || "none"} onValueChange={(v) => setForm({ ...form, chart_account_id: v === "none" ? "" : v })}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— Sem categoria —</SelectItem>
+                    {chartAccounts.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.code} — {c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="col-span-2"><Label>Observações</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
