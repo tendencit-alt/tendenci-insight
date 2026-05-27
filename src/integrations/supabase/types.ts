@@ -23148,9 +23148,25 @@ export type Database = {
         Args: { _order_id: string }
         Returns: undefined
       }
+      generate_hr_payroll_payables: {
+        Args: { _month?: string }
+        Returns: {
+          created: number
+          skipped: number
+          updated: number
+        }[]
+      }
       generate_permission_recommendations: {
         Args: { _since_days?: number }
         Returns: number
+      }
+      generate_pj_contract_payables: {
+        Args: { _month?: string }
+        Returns: {
+          created: number
+          skipped: number
+          updated: number
+        }[]
       }
       generate_upgrade_signals_batch: { Args: never; Returns: Json }
       generate_username_from_email: {
