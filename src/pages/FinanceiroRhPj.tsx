@@ -231,7 +231,13 @@ function EmployeesSection() {
                   ) : "—"}
                 </TableCell>
                 <TableCell><Badge variant="secondary">{e.status}</Badge></TableCell>
-                <TableCell><Button size="sm" variant="ghost" onClick={() => setSelected(e.id)}><Eye className="h-4 w-4" /></Button></TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => setSelected(e.id)} title="Detalhe"><Eye className="h-4 w-4" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => openEdit(e)} title="Editar"><Pencil className="h-4 w-4" /></Button>
+                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => setToDelete(e)} title="Excluir"><Trash2 className="h-4 w-4" /></Button>
+                  </div>
+                </TableCell>
               </TableRow>
               );
             })}
