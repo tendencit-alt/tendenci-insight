@@ -85,6 +85,7 @@ export default function Suppliers() {
         onOpenChange={(open) => !open && setSelectedSupplier(null)}
         onUpdate={refetch}
       />
+      </div>
     </DashboardLayout>
   );
 }
