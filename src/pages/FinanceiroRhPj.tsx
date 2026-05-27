@@ -633,13 +633,13 @@ function ProvidersSection() {
                 setEditingId(null);
               }}>Salvar</Button>
             </div>
-          </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       <Card className="p-0">
         <Table>
-          <TableHeader><TableRow><TableHead>Razão Social</TableHead><TableHead>CNPJ</TableHead><TableHead>Serviço</TableHead><TableHead>Valor</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Razão Social</TableHead><TableHead>CNPJ</TableHead><TableHead>Serviço</TableHead><TableHead>Valor</TableHead><TableHead>Status</TableHead><TableHead>Pagamento ({month})</TableHead><TableHead></TableHead></TableRow></TableHeader>
           <TableBody>
             {providers.map((p: any) => (
               <TableRow key={p.id}>
@@ -648,6 +648,7 @@ function ProvidersSection() {
                 <TableCell>{p.service_type ?? "—"}</TableCell>
                 <TableCell>{Number(p.contract_value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell>
                 <TableCell><Badge variant="secondary">{p.status}</Badge></TableCell>
+                <TableCell><PayableStatusBadge p={payablesByProv?.get(p.id)} /></TableCell>
                 <TableCell>
                   <div className="flex gap-1">
                     <Button size="sm" variant="ghost" onClick={() => setSelected(p.id)} title="Documentos"><FileText className="h-4 w-4" /></Button>
@@ -657,7 +658,7 @@ function ProvidersSection() {
                 </TableCell>
               </TableRow>
             ))}
-            {!providers.length && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">Nenhum prestador.</TableCell></TableRow>}
+            {!providers.length && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">Nenhum prestador.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>
