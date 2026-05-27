@@ -15,8 +15,7 @@ import { CapitalFinancingTab } from "@/components/financeiro/CapitalFinancingTab
 import { RecurringContractsTab } from "@/components/financeiro/RecurringContractsTab";
 import { GovernanceTab } from "@/components/financeiro/GovernanceTab";
 import { RhPjPanel } from "@/pages/FinanceiroRhPj";
-import { useCanViewHrPii } from "@/hooks/useRhPj";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -26,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Plus } from "lucide-react";
 import { Can } from "@/components/auth/Can";
+import { usePermissions } from "@/hooks/usePermissions";
 
 import {
   ArrowDownCircle,
@@ -44,11 +44,11 @@ import {
 
 export default function Financeiro() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const initialTab = searchParams.get("tab") || "receivables";
 
   useFinanceiroRealtime();
-  const { data: canRhPj } = useCanViewHrPii();
+  const { isMaster, hasModuleAccess } = usePermissions();
+  const canRhPj = isMaster || hasModuleAccess("financeiro", "admin") || hasModuleAccess("financeiro", "edit");
   const [activeTab, setActiveTab] = useState(initialTab);
   const [filters, setFilters] = useState<FinanceiroFiltersState>({
     dateFrom: null,
