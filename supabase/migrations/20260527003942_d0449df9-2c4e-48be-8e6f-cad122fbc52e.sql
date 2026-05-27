@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS public._diag_orphans_audit (k text, v text);
+TRUNCATE public._diag_orphans_audit;
+INSERT INTO public._diag_orphans_audit SELECT 'recv_count', count(*)::text FROM public.fin_receivables WHERE id='b9f91f26-e948-4106-8dbc-f67c153ccfb4';
+INSERT INTO public._diag_orphans_audit SELECT 'recv', concat('tenant=',tenant_id,' order=',order_id,' customer=',customer_id,' amount=',amount,' doc=',document_number) FROM public.fin_receivables WHERE id='b9f91f26-e948-4106-8dbc-f67c153ccfb4';
+INSERT INTO public._diag_orphans_audit SELECT 'ledger_count', count(*)::text FROM public.fin_ledger_entries WHERE id='0527de26-2d56-4f9d-a9b3-041031754a08';
+INSERT INTO public._diag_orphans_audit SELECT 'ledger', concat('tenant=',tenant_id,' order=',order_id,' amount=',amount,' doc=',document_number) FROM public.fin_ledger_entries WHERE id='0527de26-2d56-4f9d-a9b3-041031754a08';
+INSERT INTO public._diag_orphans_audit SELECT 'recv_orphans_tot', count(*)::text FROM public.fin_receivables WHERE tenant_id IS NULL;
+INSERT INTO public._diag_orphans_audit SELECT 'ledger_orphans_tot', count(*)::text FROM public.fin_ledger_entries WHERE tenant_id IS NULL;
+INSERT INTO public._diag_orphans_audit SELECT 'caixa', concat(tenant_id,' nick=',nickname) FROM public.fin_bank_accounts WHERE nickname='Caixa Geral';
+ALTER TABLE public._diag_orphans_audit DISABLE ROW LEVEL SECURITY;
+GRANT SELECT ON public._diag_orphans_audit TO anon, authenticated;
+NOTIFY pgrst, 'reload schema';
