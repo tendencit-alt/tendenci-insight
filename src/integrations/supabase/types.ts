@@ -14,6 +14,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      _diag_orphans_audit: {
+        Row: {
+          k: string | null
+          v: string | null
+        }
+        Insert: {
+          k?: string | null
+          v?: string | null
+        }
+        Update: {
+          k?: string | null
+          v?: string | null
+        }
+        Relationships: []
+      }
       activities: {
         Row: {
           deal_id: string | null
