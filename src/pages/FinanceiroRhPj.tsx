@@ -28,6 +28,7 @@ import {
   getSignedUrl,
 } from "@/hooks/useRhPj";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 function mask(v: any, can: boolean, placeholder = "•••") {
   if (can) return v ?? "—";
