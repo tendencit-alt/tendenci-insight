@@ -251,7 +251,7 @@ function EmployeesSection() {
               </TableRow>
               );
             })}
-            {!employees.length && <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-6">Nenhum colaborador.</TableCell></TableRow>}
+            {!employees.length && <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-6">Nenhum colaborador.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>
