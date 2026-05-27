@@ -94,3 +94,47 @@ function round2(n: number) { return Math.round(n * 100) / 100; }
 
 export const brl = (n: number) =>
   Number(n || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+// ────────────────────────────────────────────────────────────
+// Encargos legais (configuráveis por tenant). Aplicados sobre a base
+// (provisão acumulada de férias ou 13º). Quando Simples Optante, o
+// INSS/CPP 20% é zerado (recolhido via DAS).
+// ────────────────────────────────────────────────────────────
+export interface PayrollCharges {
+  fgts_pct: number;
+  inss_cpp_pct: number;
+  rat_pct: number;
+  terceiros_pct: number;
+  simples_optante: boolean;
+}
+
+export interface ChargeBreakdown { label: string; pct: number; amount: number; }
+export interface ChargedTotal {
+  base: number;
+  charges: ChargeBreakdown[];
+  totalCharges: number;
+  total: number;
+}
+
+export function applyCharges(base: number, c?: PayrollCharges | null): ChargedTotal {
+  const b = Number(base) || 0;
+  const cppPct = c?.simples_optante ? 0 : Number(c?.inss_cpp_pct ?? 20);
+  const items: ChargeBreakdown[] = [
+    { label: "FGTS",          pct: Number(c?.fgts_pct ?? 8),          amount: 0 },
+    { label: "INSS / CPP",    pct: cppPct,                            amount: 0 },
+    { label: "RAT/SAT",       pct: Number(c?.rat_pct ?? 2),           amount: 0 },
+    { label: "Terceiros (S)", pct: Number(c?.terceiros_pct ?? 5.8),   amount: 0 },
+  ].map(x => ({ ...x, amount: round2(b * x.pct / 100) }));
+  const totalCharges = round2(items.reduce((s, x) => s + x.amount, 0));
+  return { base: round2(b), charges: items, totalCharges, total: round2(b + totalCharges) };
+}
+
+// Haversine (metros)
+export function distanceMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
