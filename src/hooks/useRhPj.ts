@@ -246,3 +246,23 @@ export async function getSignedUrl(bucket: string, path: string) {
   if (error) throw error;
   return data.signedUrl;
 }
+
+// ── Plano de contas (despesas) para apontamento de folha ──
+export function useExpenseChartAccounts() {
+  return useQuery({
+    queryKey: ["fin-chart-accounts-expense"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("fin_chart_accounts")
+        .select("id, code, name, nature, active")
+        .eq("active", true)
+        .order("code");
+      if (error) throw error;
+      // Filtra natureza despesa quando informada; senão devolve todas ativas
+      return (data ?? []).filter((c: any) =>
+        !c.nature || /desp|custo|expense/i.test(c.nature)
+      );
+    },
+    staleTime: 5 * 60_000,
+  });
+}

@@ -2,7 +2,7 @@
 // Gating: PermissionGuard (admin OU módulo financeiro com can_admin/edit).
 // Salário/CPF: backend protege via gatilho; UI mascara para quem não pode ver.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ModuleShell } from "@/components/layout/ModuleShell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, Users, Plus, FileText, Clock, AlertTriangle, Stethoscope, Eye } from "lucide-react";
+import { Briefcase, Users, Plus, FileText, Clock, AlertTriangle, Stethoscope, Eye, LogIn, LogOut, Calculator, MapPin } from "lucide-react";
 import {
   useCanViewHrPii,
   useRhEmployees, useSaveEmployee,
@@ -25,8 +25,14 @@ import {
   useEmployeeMonthSummary,
   useServiceProviders, useSaveServiceProvider,
   useServiceProviderDocs, useUploadProviderDoc,
+  useExpenseChartAccounts,
   getSignedUrl,
 } from "@/hooks/useRhPj";
+
+import { useActiveTenant } from "@/hooks/useActiveTenant";
+import { CltProvisionDialog } from "@/components/hr/CltProvisionDialog";
+import { TimeClockPunchDialog } from "@/components/hr/TimeClockPunchDialog";
+import { computeVacationProvision, computeThirteenthProvision, brl } from "@/lib/clt-provisions";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -40,12 +46,22 @@ function EmployeesSection() {
   const { data: employees = [] } = useRhEmployees();
   const { data: canPii } = useCanViewHrPii();
   const save = useSaveEmployee();
+  const { activeTenantId } = useActiveTenant();
+  const [costCenters, setCostCenters] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    if (!activeTenantId) return;
+    supabase.from("fin_cost_centers").select("id, name").eq("tenant_id", activeTenantId).eq("active", true).order("name")
+      .then(({ data }) => setCostCenters(data ?? []));
+  }, [activeTenantId]);
+  const { data: chartAccounts = [] } = useExpenseChartAccounts();
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [provDlg, setProvDlg] = useState<{ kind: "vacation" | "thirteenth"; emp: any } | null>(null);
   const [form, setForm] = useState<any>({
     name: "", cpf: "", contract_type: "CLT", admission_date: "", termination_date: "",
     base_salary: 0, dependents_count: 0, status: "active", notes: "",
+    cost_center_id: "", chart_account_id: "",
   });
 
   const summary = useEmployeeMonthSummary(selected ?? undefined, month);
@@ -95,6 +111,26 @@ function EmployeesSection() {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <Label>Centro de Custo</Label>
+                <Select value={form.cost_center_id || "none"} onValueChange={(v) => setForm({ ...form, cost_center_id: v === "none" ? "" : v })}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— Sem CC —</SelectItem>
+                    {costCenters.map((cc: any) => <SelectItem key={cc.id} value={cc.id}>{cc.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Categoria contábil (despesa de folha)</Label>
+                <Select value={form.chart_account_id || "none"} onValueChange={(v) => setForm({ ...form, chart_account_id: v === "none" ? "" : v })}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— Sem categoria —</SelectItem>
+                    {chartAccounts.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.code} — {c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="col-span-2"><Label>Observações</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
@@ -115,24 +151,44 @@ function EmployeesSection() {
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead><TableHead>CPF</TableHead><TableHead>Cargo</TableHead>
-              <TableHead>Departamento</TableHead><TableHead>Admissão</TableHead><TableHead>Salário</TableHead>
+              <TableHead>Admissão</TableHead><TableHead>Salário</TableHead>
+              <TableHead>Férias (saldo)</TableHead><TableHead>13º (saldo)</TableHead>
               <TableHead>Status</TableHead><TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {employees.map((e: any) => (
+            {employees.map((e: any) => {
+              const vac = computeVacationProvision({ baseSalary: Number(e.base_salary || 0), admissionDate: e.admission_date });
+              const th = computeThirteenthProvision({ baseSalary: Number(e.base_salary || 0), admissionDate: e.admission_date });
+              return (
               <TableRow key={e.id}>
                 <TableCell className="font-medium">{e.name}</TableCell>
                 <TableCell className="font-mono text-xs">{mask(e.cpf, !!canPii)}</TableCell>
                 <TableCell>{e.hr_positions?.title ?? "—"}</TableCell>
-                <TableCell>{e.hr_departments?.name ?? "—"}</TableCell>
                 <TableCell>{e.admission_date ?? "—"}</TableCell>
-                <TableCell>{canPii ? Number(e.base_salary).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "•••"}</TableCell>
+                <TableCell>{canPii ? brl(Number(e.base_salary)) : "•••"}</TableCell>
+                <TableCell>
+                  {canPii ? (
+                    <button className="underline-offset-2 hover:underline text-left" onClick={() => setProvDlg({ kind: "vacation", emp: e })}>
+                      <span className="tabular-nums">{brl(vac.accruedBalance)}</span>
+                      <Calculator className="inline h-3 w-3 ml-1 opacity-60" />
+                    </button>
+                  ) : "•••"}
+                </TableCell>
+                <TableCell>
+                  {canPii ? (
+                    <button className="underline-offset-2 hover:underline text-left" onClick={() => setProvDlg({ kind: "thirteenth", emp: e })}>
+                      <span className="tabular-nums">{brl(th.accruedBalance)}</span>
+                      <Calculator className="inline h-3 w-3 ml-1 opacity-60" />
+                    </button>
+                  ) : "•••"}
+                </TableCell>
                 <TableCell><Badge variant="secondary">{e.status}</Badge></TableCell>
                 <TableCell><Button size="sm" variant="ghost" onClick={() => setSelected(e.id)}><Eye className="h-4 w-4" /></Button></TableCell>
               </TableRow>
-            ))}
-            {!employees.length && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">Nenhum colaborador.</TableCell></TableRow>}
+              );
+            })}
+            {!employees.length && <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">Nenhum colaborador.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>
@@ -166,6 +222,17 @@ function EmployeesSection() {
           </Tabs>
         </Card>
       )}
+
+      {provDlg && (
+        <CltProvisionDialog
+          open={!!provDlg}
+          onOpenChange={(v) => !v && setProvDlg(null)}
+          kind={provDlg.kind}
+          employeeName={provDlg.emp.name}
+          baseSalary={Number(provDlg.emp.base_salary || 0)}
+          admissionDate={provDlg.emp.admission_date}
+        />
+      )}
     </div>
   );
 }
@@ -182,32 +249,79 @@ function SummaryBox({ icon: Icon, label, value }: any) {
 function TimeRecordsPanel({ employeeId, records }: any) {
   const create = useCreateTimeRecord();
   const [form, setForm] = useState({ work_date: "", time_in: "", time_out: "", notes: "" });
+  const [punch, setPunch] = useState<"in" | "out" | null>(null);
   return (
     <div className="space-y-3">
+      <div className="flex gap-2">
+        <Button size="sm" variant="default" onClick={() => setPunch("in")}><LogIn className="h-4 w-4 mr-1" />Bater entrada</Button>
+        <Button size="sm" variant="secondary" onClick={() => setPunch("out")}><LogOut className="h-4 w-4 mr-1" />Bater saída</Button>
+      </div>
       <div className="grid grid-cols-5 gap-2 items-end">
         <Input type="date" value={form.work_date} onChange={(e) => setForm({ ...form, work_date: e.target.value })} />
         <Input type="time" value={form.time_in} onChange={(e) => setForm({ ...form, time_in: e.target.value })} />
         <Input type="time" value={form.time_out} onChange={(e) => setForm({ ...form, time_out: e.target.value })} />
         <Input placeholder="Obs." value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-        <Button onClick={async () => {
+        <Button variant="outline" onClick={async () => {
           if (!form.work_date) return toast.error("Data obrigatória");
           await create.mutateAsync({ employee_id: employeeId, ...form, notes: form.notes || null });
           setForm({ work_date: "", time_in: "", time_out: "", notes: "" });
-        }}>Adicionar</Button>
+        }}>Lançamento manual</Button>
       </div>
       <Table>
-        <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Entrada</TableHead><TableHead>Saída</TableHead><TableHead>Horas</TableHead><TableHead>Obs.</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Entrada</TableHead><TableHead>Saída</TableHead><TableHead>Horas</TableHead><TableHead>Local / Foto</TableHead></TableRow></TableHeader>
         <TableBody>
           {records.map((r: any) => (
             <TableRow key={r.id}>
-              <TableCell>{r.work_date}</TableCell><TableCell>{r.time_in ?? "—"}</TableCell><TableCell>{r.time_out ?? "—"}</TableCell>
-              <TableCell>{Number(r.worked_hours).toFixed(2)}</TableCell><TableCell className="text-xs text-muted-foreground">{r.notes ?? "—"}</TableCell>
+              <TableCell>{r.work_date}</TableCell>
+              <TableCell>{r.time_in ?? "—"}</TableCell>
+              <TableCell>{r.time_out ?? "—"}</TableCell>
+              <TableCell>{Number(r.worked_hours).toFixed(2)}</TableCell>
+              <TableCell className="text-xs">
+                <PunchEvidence r={r} />
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+      {punch && (
+        <TimeClockPunchDialog
+          open={!!punch}
+          onOpenChange={(v) => !v && setPunch(null)}
+          employeeId={employeeId}
+          employeeName=""
+          kind={punch}
+        />
+      )}
     </div>
   );
+}
+
+function PunchEvidence({ r }: { r: any }) {
+  const items: JSX.Element[] = [];
+  const render = (label: string, lat?: number, lng?: number, acc?: number, path?: string) => {
+    if (!lat && !path) return null;
+    return (
+      <div className="flex items-center gap-1">
+        <span className="font-medium">{label}:</span>
+        {lat != null && lng != null && (
+          <a href={`https://www.google.com/maps?q=${lat},${lng}`} target="_blank" rel="noreferrer" className="underline">
+            <MapPin className="inline h-3 w-3" /> {lat.toFixed(4)},{lng.toFixed(4)}
+            {acc != null && <span className="text-muted-foreground"> ±{Math.round(acc)}m</span>}
+          </a>
+        )}
+        {path && (
+          <button className="underline" onClick={async () => window.open(await getSignedUrl("hr-time-photos", path), "_blank")}>
+            foto
+          </button>
+        )}
+      </div>
+    );
+  };
+  const a = render("E", r.time_in_lat, r.time_in_lng, r.time_in_accuracy, r.time_in_photo_path);
+  const b = render("S", r.time_out_lat, r.time_out_lng, r.time_out_accuracy, r.time_out_photo_path);
+  if (a) items.push(<div key="a">{a}</div>);
+  if (b) items.push(<div key="b">{b}</div>);
+  return items.length ? <div className="space-y-0.5">{items}</div> : <span className="text-muted-foreground">—</span>;
 }
 
 function AbsencesPanel({ employeeId, records, certs }: any) {
