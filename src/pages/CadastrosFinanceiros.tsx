@@ -21,7 +21,6 @@ const RECORDS_TABS = new Set([
   "cost-centers",
   "projects",
   "commitments",
-  "responsibles",
   "card-rates",
 ]);
 const SETTINGS_TABS = new Set(["origin-rules", "event-automations", "permissions"]);
@@ -30,8 +29,11 @@ export default function CadastrosFinanceiros() {
   const [searchParams, setSearchParams] = useSearchParams();
   const urlTab = searchParams.get("tab");
 
-  const recordsTab = urlTab && RECORDS_TABS.has(urlTab) ? urlTab : "bank-accounts";
-  const settingsTab = urlTab && SETTINGS_TABS.has(urlTab) ? urlTab : "origin-rules";
+  // Legacy redirect: "responsibles" foi mesclada em "commitments"
+  const normalizedTab = urlTab === "responsibles" ? "commitments" : urlTab;
+
+  const recordsTab = normalizedTab && RECORDS_TABS.has(normalizedTab) ? normalizedTab : "bank-accounts";
+  const settingsTab = normalizedTab && SETTINGS_TABS.has(normalizedTab) ? normalizedTab : "origin-rules";
 
   const updateTab = (tab: string) => {
     const next = new URLSearchParams(searchParams);
