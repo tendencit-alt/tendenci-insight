@@ -1,8 +1,11 @@
-// Diálogo de composição de provisões CLT (férias OU 13º).
-// Mostra TODOS os números que entraram no cálculo — transparência total.
+// Diálogo de composição de provisões CLT (férias OU 13º) com encargos.
+// Mostra base, cada encargo (FGTS, INSS/CPP, RAT, Terceiros) e o TOTAL.
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { brl, computeVacationProvision, computeThirteenthProvision } from "@/lib/clt-provisions";
+import {
+  brl, computeVacationProvision, computeThirteenthProvision,
+  applyCharges, type PayrollCharges,
+} from "@/lib/clt-provisions";
 
 interface Props {
   open: boolean;
@@ -11,16 +14,18 @@ interface Props {
   employeeName: string;
   baseSalary: number;
   admissionDate?: string | null;
+  charges?: PayrollCharges | null;
 }
 
-export function CltProvisionDialog({ open, onOpenChange, kind, employeeName, baseSalary, admissionDate }: Props) {
+export function CltProvisionDialog({ open, onOpenChange, kind, employeeName, baseSalary, admissionDate, charges }: Props) {
   const isVac = kind === "vacation";
-  const v = isVac
-    ? computeVacationProvision({ baseSalary, admissionDate })
-    : null;
-  const t = !isVac
-    ? computeThirteenthProvision({ baseSalary, admissionDate })
-    : null;
+  const v = isVac ? computeVacationProvision({ baseSalary, admissionDate }) : null;
+  const t = !isVac ? computeThirteenthProvision({ baseSalary, admissionDate }) : null;
+
+  const accrued = isVac ? v!.accruedBalance : t!.accruedBalance;
+  const full = isVac ? v!.fullVacation : t!.fullThirteenth;
+  const accruedCharged = applyCharges(accrued, charges);
+  const fullCharged = applyCharges(full, charges);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -40,26 +45,39 @@ export function CltProvisionDialog({ open, onOpenChange, kind, employeeName, bas
               <Row label="Meses no período aquisitivo atual" value={`${v.monthsInPeriod} / 12`} />
               <Sep />
               <Row label="Provisão mensal" value={brl(v.monthlyProvision)} hint="(salário ÷ 12) × (1 + 1/3)" />
-              <Row label="Saldo acumulado" value={brl(v.accruedBalance)} hint="provisão × meses" strong />
-              <Sep />
-              <Row label="Adicional de 1/3 (constitucional)" value={brl(v.oneThirdAdditional)} />
-              <Row label="Férias integrais previstas" value={brl(v.fullVacation)} hint="salário × (1 + 1/3)" strong />
+              <Row label="Saldo acumulado (base)" value={brl(v.accruedBalance)} hint="provisão × meses" />
             </>
           )}
-
           {!isVac && t && (
             <>
               <Row label="Meses trabalhados no ano" value={`${t.monthsInYear} / 12`} />
               <Sep />
               <Row label="Provisão mensal" value={brl(t.monthlyProvision)} hint="salário ÷ 12" />
-              <Row label="Saldo acumulado" value={brl(t.accruedBalance)} hint="provisão × meses" strong />
-              <Sep />
-              <Row label="13º integral" value={brl(t.fullThirteenth)} hint="1 salário" strong />
+              <Row label="Saldo acumulado (base)" value={brl(t.accruedBalance)} />
             </>
           )}
 
+          <Sep />
+          <div className="text-xs uppercase text-muted-foreground tracking-wide pt-1">
+            Encargos sobre o acumulado
+            {charges?.simples_optante && <span className="ml-2 normal-case text-[10px] opacity-70">(Simples: CPP zerado)</span>}
+          </div>
+          {accruedCharged.charges.map(c => (
+            <Row key={c.label} label={`${c.label} (${c.pct.toFixed(2)}%)`} value={brl(c.amount)} />
+          ))}
+          <Row label="Total de encargos" value={brl(accruedCharged.totalCharges)} />
+          <Row label="TOTAL provisionado (custo empregador)" value={brl(accruedCharged.total)} strong />
+
+          <Sep />
+          <div className="text-xs uppercase text-muted-foreground tracking-wide pt-1">
+            {isVac ? "Férias integrais previstas" : "13º integral"}
+          </div>
+          <Row label="Base" value={brl(full)} />
+          <Row label="+ Encargos" value={brl(fullCharged.totalCharges)} />
+          <Row label="Total com encargos" value={brl(fullCharged.total)} strong />
+
           <p className="text-xs text-muted-foreground pt-2 border-t mt-3">
-            {isVac ? v?.notes : t?.notes}
+            {isVac ? v?.notes : t?.notes} Alíquotas configuráveis em Configurações &gt; RH.
           </p>
         </div>
       </DialogContent>
