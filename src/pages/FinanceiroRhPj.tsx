@@ -53,6 +53,7 @@ function EmployeesSection() {
   const { data: employees = [] } = useRhEmployees();
   const { data: canPii } = useCanViewHrPii();
   const save = useSaveEmployee();
+  const del = useDeleteEmployee();
   // (encargos removidos — apenas previsão base de férias e 13º)
 
   const { activeTenantId } = useActiveTenant();
@@ -64,14 +65,30 @@ function EmployeesSection() {
   }, [activeTenantId]);
   const { data: chartAccounts = [] } = useExpenseChartAccounts();
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [toDelete, setToDelete] = useState<any>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [provDlg, setProvDlg] = useState<{ kind: "vacation" | "thirteenth"; emp: any } | null>(null);
-  const [form, setForm] = useState<any>({
+  const emptyForm = {
     name: "", cpf: "", contract_type: "CLT", admission_date: "", termination_date: "",
     base_salary: 0, dependents_count: 0, status: "active", notes: "",
     cost_center_id: "", chart_account_id: "",
-  });
+  };
+  const [form, setForm] = useState<any>(emptyForm);
+
+  const openNew = () => { setEditingId(null); setForm(emptyForm); setOpen(true); };
+  const openEdit = (e: any) => {
+    setEditingId(e.id);
+    setForm({
+      name: e.name ?? "", cpf: e.cpf ?? "", contract_type: e.contract_type ?? "CLT",
+      admission_date: e.admission_date ?? "", termination_date: e.termination_date ?? "",
+      base_salary: Number(e.base_salary ?? 0), dependents_count: Number(e.dependents_count ?? 0),
+      status: e.status ?? "active", notes: e.notes ?? "",
+      cost_center_id: e.cost_center_id ?? "", chart_account_id: e.chart_account_id ?? "",
+    });
+    setOpen(true);
+  };
 
   const summary = useEmployeeMonthSummary(selected ?? undefined, month);
   const times = useTimeRecords(selected ?? undefined, month);
