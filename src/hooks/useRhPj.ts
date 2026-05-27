@@ -382,3 +382,71 @@ export function useDeleteWorkLocation() {
   });
 }
 
+// ────────────────────────────────────────────────────────────
+// Status do pagamento no AP (espelha conciliação do Financeiro)
+// Lê fin_payables provisionados automaticamente pelos gatilhos
+// hr_employees_auto_provision / service_providers_auto_provision.
+// ────────────────────────────────────────────────────────────
+export type PayableStatus = {
+  id: string;
+  amount: number;
+  due_date: string;
+  status: string;
+  payment_date: string | null;
+  reconciled: boolean | null;
+  conciliado_em: string | null;
+};
+
+function buildDocPrefixes(month: string, ids: string[], origem: "RH_FOLHA" | "PJ_CONTRATO") {
+  const prefix = origem === "RH_FOLHA" ? "RH-FOLHA-" : "PJ-CONTRATO-";
+  return ids.map((id) => `${prefix}${id}-${month}`);
+}
+
+export function useRhPayablesByMonth(month: string, employeeIds: string[]) {
+  return useQuery({
+    queryKey: ["rh-payables-status", month, employeeIds.sort().join(",")],
+    enabled: employeeIds.length > 0 && !!month,
+    queryFn: async () => {
+      const docs = buildDocPrefixes(month, employeeIds, "RH_FOLHA");
+      const { data, error } = await supabase
+        .from("fin_payables")
+        .select("id, amount, due_date, status, payment_date, reconciled, conciliado_em, document_number")
+        .eq("origem", "RH_FOLHA")
+        .in("document_number", docs);
+      if (error) throw error;
+      const map = new Map<string, PayableStatus>();
+      (data ?? []).forEach((p: any) => {
+        // document_number = RH-FOLHA-<uuid>-YYYY-MM
+        const m = /^RH-FOLHA-([0-9a-f-]+)-\d{4}-\d{2}$/.exec(p.document_number || "");
+        if (m) map.set(m[1], p as PayableStatus);
+      });
+      return map;
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function usePjPayablesByMonth(month: string, providerIds: string[]) {
+  return useQuery({
+    queryKey: ["pj-payables-status", month, providerIds.sort().join(",")],
+    enabled: providerIds.length > 0 && !!month,
+    queryFn: async () => {
+      const docs = buildDocPrefixes(month, providerIds, "PJ_CONTRATO");
+      const { data, error } = await supabase
+        .from("fin_payables")
+        .select("id, amount, due_date, status, payment_date, reconciled, conciliado_em, document_number")
+        .eq("origem", "PJ_CONTRATO")
+        .in("document_number", docs);
+      if (error) throw error;
+      const map = new Map<string, PayableStatus>();
+      (data ?? []).forEach((p: any) => {
+        const m = /^PJ-CONTRATO-([0-9a-f-]+)-\d{4}-\d{2}$/.exec(p.document_number || "");
+        if (m) map.set(m[1], p as PayableStatus);
+      });
+      return map;
+    },
+    staleTime: 30_000,
+  });
+}
+
+
