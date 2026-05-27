@@ -157,7 +157,10 @@ function EmployeesSection() {
             <TableRow>
               <TableHead>Nome</TableHead><TableHead>CPF</TableHead><TableHead>Cargo</TableHead>
               <TableHead>Admissão</TableHead><TableHead>Salário</TableHead>
-              <TableHead>Férias (saldo)</TableHead><TableHead>13º (saldo)</TableHead>
+              <TableHead>Férias (saldo)</TableHead>
+              <TableHead>Próx. férias vencem</TableHead>
+              <TableHead>13º (saldo)</TableHead>
+              <TableHead>13º vencimentos</TableHead>
               <TableHead>Status</TableHead><TableHead></TableHead>
             </TableRow>
           </TableHeader>
@@ -170,7 +173,7 @@ function EmployeesSection() {
                 <TableCell className="font-medium">{e.name}</TableCell>
                 <TableCell className="font-mono text-xs">{mask(e.cpf, !!canPii)}</TableCell>
                 <TableCell>{e.hr_positions?.title ?? "—"}</TableCell>
-                <TableCell>{e.admission_date ?? "—"}</TableCell>
+                <TableCell>{e.admission_date ? fmtDate(e.admission_date) : "—"}</TableCell>
                 <TableCell>{canPii ? brl(Number(e.base_salary)) : "•••"}</TableCell>
                 <TableCell>
                   {canPii ? (
@@ -180,6 +183,14 @@ function EmployeesSection() {
                     </button>
                   ) : "•••"}
                 </TableCell>
+                <TableCell className="text-xs">
+                  {e.admission_date ? (
+                    <div className="space-y-0.5">
+                      <div className="tabular-nums">{fmtDate(vac.due.currentCycleEnd)}</div>
+                      <div className="text-muted-foreground">conceder até {fmtDate(vac.due.grantDeadline)}</div>
+                    </div>
+                  ) : "—"}
+                </TableCell>
                 <TableCell>
                   {canPii ? (
                     <button className="underline-offset-2 hover:underline text-left" onClick={() => setProvDlg({ kind: "thirteenth", emp: e })}>
@@ -188,12 +199,20 @@ function EmployeesSection() {
                     </button>
                   ) : "•••"}
                 </TableCell>
+                <TableCell className="text-xs">
+                  {canPii && e.admission_date ? (
+                    <div className="space-y-0.5">
+                      <div className="tabular-nums">1ª {fmtDate(th.due.firstInstallmentDue)} · {brl(th.due.firstAmount)}</div>
+                      <div className="tabular-nums">2ª {fmtDate(th.due.secondInstallmentDue)} · {brl(th.due.secondAmount)}</div>
+                    </div>
+                  ) : "—"}
+                </TableCell>
                 <TableCell><Badge variant="secondary">{e.status}</Badge></TableCell>
                 <TableCell><Button size="sm" variant="ghost" onClick={() => setSelected(e.id)}><Eye className="h-4 w-4" /></Button></TableCell>
               </TableRow>
               );
             })}
-            {!employees.length && <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">Nenhum colaborador.</TableCell></TableRow>}
+            {!employees.length && <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-6">Nenhum colaborador.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>
