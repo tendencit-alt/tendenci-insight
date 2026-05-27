@@ -410,8 +410,7 @@ function HrSettingsSection() {
   );
 }
 
-  return items.length ? <div className="space-y-0.5">{items}</div> : <span className="text-muted-foreground">—</span>;
-}
+
 
 function AbsencesPanel({ employeeId, records, certs }: any) {
   const create = useCreateAbsence();
