@@ -1962,7 +1962,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   <Alert variant="destructive" className="mt-2">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
-                      O total dos percentuais deve ser exatamente 100%.
+                      O total dos percentuais deve ser exatamente 100%. {totalPercentual < 100
+                        ? `Faltam ${(100 - totalPercentual).toFixed(2)}% (${formatCurrency(total * (100 - totalPercentual) / 100)}).`
+                        : `Excedeu em ${(totalPercentual - 100).toFixed(2)}% (${formatCurrency(total * (totalPercentual - 100) / 100)}).`}
                     </AlertDescription>
                   </Alert>
                 )}
