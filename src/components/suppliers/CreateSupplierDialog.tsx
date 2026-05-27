@@ -134,7 +134,9 @@ export default function CreateSupplierDialog({ open, onOpenChange, onSuccess }: 
         name: "", trade_name: "", cpf_cnpj: "", inscricao_estadual: "",
         phone: "", email: "", website: "", cep: "", logradouro: "",
         numero: "", complemento: "", bairro: "", city: "", state: "",
-        payment_terms: "", notes: ""
+        payment_terms: "", bank_name: "", bank_agency: "", bank_account: "",
+        bank_account_type: "", bank_holder_name: "", bank_holder_document: "",
+        pix_key_type: "", pix_key: "", notes: ""
       });
     } catch (error: any) {
       toast({ title: "Erro ao criar fornecedor", description: error.message, variant: "destructive" });
