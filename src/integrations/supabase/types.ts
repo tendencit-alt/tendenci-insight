@@ -10150,6 +10150,42 @@ export type Database = {
           },
         ]
       }
+      hr_settings: {
+        Row: {
+          created_at: string
+          fgts_pct: number
+          geofence_mode: string
+          inss_cpp_pct: number
+          rat_pct: number
+          simples_optante: boolean
+          tenant_id: string
+          terceiros_pct: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fgts_pct?: number
+          geofence_mode?: string
+          inss_cpp_pct?: number
+          rat_pct?: number
+          simples_optante?: boolean
+          tenant_id: string
+          terceiros_pct?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fgts_pct?: number
+          geofence_mode?: string
+          inss_cpp_pct?: number
+          rat_pct?: number
+          simples_optante?: boolean
+          tenant_id?: string
+          terceiros_pct?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hr_teams: {
         Row: {
           active: boolean | null
@@ -10210,13 +10246,17 @@ export type Database = {
           time_in_at: string | null
           time_in_lat: number | null
           time_in_lng: number | null
+          time_in_location_id: string | null
           time_in_photo_path: string | null
+          time_in_within_fence: boolean | null
           time_out: string | null
           time_out_accuracy: number | null
           time_out_at: string | null
           time_out_lat: number | null
           time_out_lng: number | null
+          time_out_location_id: string | null
           time_out_photo_path: string | null
+          time_out_within_fence: boolean | null
           updated_at: string
           work_date: string
           worked_hours: number | null
@@ -10232,13 +10272,17 @@ export type Database = {
           time_in_at?: string | null
           time_in_lat?: number | null
           time_in_lng?: number | null
+          time_in_location_id?: string | null
           time_in_photo_path?: string | null
+          time_in_within_fence?: boolean | null
           time_out?: string | null
           time_out_accuracy?: number | null
           time_out_at?: string | null
           time_out_lat?: number | null
           time_out_lng?: number | null
+          time_out_location_id?: string | null
           time_out_photo_path?: string | null
+          time_out_within_fence?: boolean | null
           updated_at?: string
           work_date: string
           worked_hours?: number | null
@@ -10254,13 +10298,17 @@ export type Database = {
           time_in_at?: string | null
           time_in_lat?: number | null
           time_in_lng?: number | null
+          time_in_location_id?: string | null
           time_in_photo_path?: string | null
+          time_in_within_fence?: boolean | null
           time_out?: string | null
           time_out_accuracy?: number | null
           time_out_at?: string | null
           time_out_lat?: number | null
           time_out_lng?: number | null
+          time_out_location_id?: string | null
           time_out_photo_path?: string | null
+          time_out_within_fence?: boolean | null
           updated_at?: string
           work_date?: string
           worked_hours?: number | null
@@ -10278,6 +10326,20 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_time_records_time_in_location_id_fkey"
+            columns: ["time_in_location_id"]
+            isOneToOne: false
+            referencedRelation: "hr_work_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_time_records_time_out_location_id_fkey"
+            columns: ["time_out_location_id"]
+            isOneToOne: false
+            referencedRelation: "hr_work_locations"
             referencedColumns: ["id"]
           },
         ]
@@ -10350,6 +10412,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      hr_work_locations: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          latitude: number
+          longitude: number
+          name: string
+          radius_m: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          latitude: number
+          longitude: number
+          name: string
+          radius_m?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          name?: string
+          radius_m?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       ia_client_memory: {
         Row: {
@@ -23404,6 +23502,26 @@ export type Database = {
       get_effective_sla_dias_uteis: {
         Args: { p_phase_id: string }
         Returns: number
+      }
+      get_hr_settings: {
+        Args: { _tenant: string }
+        Returns: {
+          created_at: string
+          fgts_pct: number
+          geofence_mode: string
+          inss_cpp_pct: number
+          rat_pct: number
+          simples_optante: boolean
+          tenant_id: string
+          terceiros_pct: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "hr_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       get_ia_config:
         | { Args: never; Returns: Json }
