@@ -198,7 +198,6 @@ function EmployeesSection() {
               <TableHead>Admissão</TableHead><TableHead>Salário</TableHead>
               <TableHead>Férias (saldo)</TableHead>
               <TableHead>Próx. férias vencem</TableHead>
-              <TableHead>13º (saldo)</TableHead>
               <TableHead>13º vencimentos</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Pagamento ({month})</TableHead>
