@@ -132,6 +132,12 @@ export default function Financeiro() {
                   <CalendarClock className="h-3.5 w-3.5 flex-shrink-0" />
                   <span className="whitespace-nowrap">Recorrentes</span>
                 </TabsTrigger>
+                {canRhPj && (
+                  <TabsTrigger value="rh-pj" className={tabClass}>
+                    <Users className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="whitespace-nowrap">RH / PJ</span>
+                  </TabsTrigger>
+                )}
               </TabsList>
             </div>
 
@@ -160,6 +166,12 @@ export default function Financeiro() {
             <TabsContent value="recurring" forceMount className={activeTab === "recurring" ? "space-y-4" : "hidden"}>
               <RecurringContractsTab filters={filters} />
             </TabsContent>
+
+            {canRhPj && (
+              <TabsContent value="rh-pj" forceMount className={activeTab === "rh-pj" ? "space-y-4" : "hidden"}>
+                <RhPjPanel />
+              </TabsContent>
+            )}
 
           </Tabs>
         }
