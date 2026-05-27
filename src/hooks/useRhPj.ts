@@ -266,3 +266,79 @@ export function useExpenseChartAccounts() {
     staleTime: 5 * 60_000,
   });
 }
+
+// ── HR Settings (encargos + geofence) ──
+export function useHrSettings() {
+  return useQuery({
+    queryKey: ["hr-settings"],
+    queryFn: async () => {
+      const { data: tenantId } = await supabase.rpc("get_user_tenant_id");
+      if (!tenantId) return null;
+      const { data, error } = await supabase.rpc("get_hr_settings", { _tenant: tenantId });
+      if (error) throw error;
+      return Array.isArray(data) ? data[0] : data;
+    },
+    staleTime: 60_000,
+  });
+}
+
+export function useSaveHrSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (values: any) => {
+      const { data: tenantId } = await supabase.rpc("get_user_tenant_id");
+      if (!tenantId) throw new Error("Tenant não identificado");
+      const payload = { ...values, tenant_id: tenantId };
+      const { error } = await supabase
+        .from("hr_settings")
+        .upsert(payload, { onConflict: "tenant_id" });
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["hr-settings"] }); toast.success("Configurações salvas"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
+
+// ── Locais de trabalho (geofence) ──
+export function useWorkLocations() {
+  return useQuery({
+    queryKey: ["hr-work-locations"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("hr_work_locations").select("*").order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function useSaveWorkLocation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...values }: any) => {
+      if (id) {
+        const { error } = await supabase.from("hr_work_locations").update(values).eq("id", id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("hr_work_locations").insert(values);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["hr-work-locations"] }); toast.success("Local salvo"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
+
+export function useDeleteWorkLocation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("hr_work_locations").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["hr-work-locations"] }); toast.success("Local removido"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
+
