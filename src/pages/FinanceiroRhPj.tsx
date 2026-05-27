@@ -575,6 +575,9 @@ function ProvidersSection() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<any>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
+  const providerIds = useMemo(() => providers.map((p: any) => p.id), [providers]);
+  const { data: payablesByProv } = usePjPayablesByMonth(month, providerIds);
   const emptyForm = {
     legal_name: "", cnpj: "", service_type: "", contract_value: 0,
     start_date: "", end_date: "", status: "active", notes: "",
