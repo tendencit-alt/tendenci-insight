@@ -2016,6 +2016,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                   )}
 
                   {/* Comissão Vendedor */}
+                  {resourceDefaults.vendedor.visible && (
                   <div className="flex items-center gap-3">
                     <Switch
                       checked={comissoes.vendedor.habilitado}
@@ -2072,6 +2073,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       </>
                     )}
                   </div>
+                  )}
 
                   {/* Comissão Orçamentista */}
                   <div className="flex items-center gap-3">
