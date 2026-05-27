@@ -71,10 +71,6 @@ export default function CadastrosFinanceiros() {
                 <FolderCog className="h-4 w-4" />
                 Compromissos Sobre Venda
               </TabsTrigger>
-              <TabsTrigger value="responsibles" className="flex items-center gap-2 px-4 py-2">
-                <BriefcaseBusiness className="h-4 w-4" />
-                Responsáveis
-              </TabsTrigger>
               <TabsTrigger value="card-rates" className="flex items-center gap-2 px-4 py-2">
                 <CreditCard className="h-4 w-4" />
                 Taxas Cartão
@@ -86,7 +82,6 @@ export default function CadastrosFinanceiros() {
             <TabsContent value="cost-centers" className="mt-6"><CostCentersManager /></TabsContent>
             <TabsContent value="projects" className="mt-6"><FinProjectsManager /></TabsContent>
             <TabsContent value="commitments" className="mt-6"><StrategicResourceCategoriesManager /></TabsContent>
-            <TabsContent value="responsibles" className="mt-6"><OrderResponsiblesManager /></TabsContent>
             <TabsContent value="card-rates" className="mt-6"><CardRatesManager /></TabsContent>
           </Tabs>
         }
