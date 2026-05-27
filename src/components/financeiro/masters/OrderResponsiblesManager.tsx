@@ -25,6 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BriefcaseBusiness, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useCompromissosVendaCategories } from "@/hooks/useCompromissosVendaCategories";
+import CreateSupplierDialog from "@/components/suppliers/CreateSupplierDialog";
 
 type OrderResponsible = Database["public"]["Tables"]["order_responsibles"]["Row"] & {
   chart_account_id: string | null;
@@ -37,8 +38,7 @@ export function OrderResponsiblesManager() {
   const [loading, setLoading] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string>("todos");
   const [newSupplierOpen, setNewSupplierOpen] = useState(false);
-  const [newSupplierName, setNewSupplierName] = useState("");
-  const [creatingSup, setCreatingSup] = useState(false);
+
   const [form, setForm] = useState<{ name: string; chart_account_id: string; is_active: boolean; supplier_id: string }>({
     name: "",
     chart_account_id: "",
@@ -86,30 +86,20 @@ export function OrderResponsiblesManager() {
     },
   });
 
-  const handleCreateSupplier = async () => {
-    if (!newSupplierName.trim()) {
-      toast.error("Nome do fornecedor é obrigatório");
-      return;
+  const handleSupplierCreated = async () => {
+    const { data: latest } = await supabase
+      .from("suppliers")
+      .select("id")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    await refetchSuppliers();
+    if (latest?.id) {
+      setForm((prev) => ({ ...prev, supplier_id: latest.id }));
     }
-    setCreatingSup(true);
-    try {
-      const { data, error } = await supabase
-        .from("suppliers")
-        .insert({ name: newSupplierName.trim(), active: true })
-        .select("id")
-        .single();
-      if (error) throw error;
-      await refetchSuppliers();
-      setForm((prev) => ({ ...prev, supplier_id: data.id }));
-      setNewSupplierName("");
-      setNewSupplierOpen(false);
-      toast.success("Fornecedor criado e selecionado!");
-    } catch (err: any) {
-      toast.error("Erro ao criar fornecedor: " + err.message);
-    } finally {
-      setCreatingSup(false);
-    }
+    setNewSupplierOpen(false);
   };
+
 
   const filteredResponsibles = useMemo(() => {
     if (!responsibles) return [];
@@ -353,29 +343,11 @@ export function OrderResponsiblesManager() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button type="button" variant="outline" size="icon" onClick={() => { setNewSupplierName(form.name); setNewSupplierOpen(true); }}>
+                <Button type="button" variant="outline" size="icon" onClick={() => setNewSupplierOpen(true)}>
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
-              {newSupplierOpen && (
-                <div className="flex gap-2 items-end p-3 rounded-lg border bg-muted/50">
-                  <div className="flex-1 space-y-1">
-                    <Label className="text-xs">Nome do novo fornecedor</Label>
-                    <Input
-                      value={newSupplierName}
-                      onChange={(e) => setNewSupplierName(e.target.value)}
-                      placeholder="Nome do fornecedor"
-                      onKeyDown={(e) => e.key === "Enter" && handleCreateSupplier()}
-                    />
-                  </div>
-                  <Button size="sm" onClick={handleCreateSupplier} disabled={creatingSup}>
-                    {creatingSup ? <Loader2 className="h-4 w-4 animate-spin" /> : "Criar"}
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setNewSupplierOpen(false)}>
-                    Cancelar
-                  </Button>
-                </div>
-              )}
+
             </div>
 
             <div className="flex items-center gap-2">
@@ -416,6 +388,12 @@ export function OrderResponsiblesManager() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CreateSupplierDialog
+        open={newSupplierOpen}
+        onOpenChange={setNewSupplierOpen}
+        onSuccess={handleSupplierCreated}
+      />
     </Card>
   );
 }
