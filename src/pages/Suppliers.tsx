@@ -10,6 +10,7 @@ import SuppliersFilters from "@/components/suppliers/SuppliersFilters";
 import SuppliersTable from "@/components/suppliers/SuppliersTable";
 import CreateSupplierDialog from "@/components/suppliers/CreateSupplierDialog";
 import SupplierDetailSheet from "@/components/suppliers/SupplierDetailSheet";
+import { ClientesFornecedoresTabs } from "@/components/layout/ClientesFornecedoresTabs";
 
 export default function Suppliers() {
   const [createOpen, setCreateOpen] = useState(false);
