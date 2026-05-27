@@ -348,7 +348,7 @@ function PunchEvidence({ r }: { r: any }) {
   return items.length ? <div className="space-y-0.5">{items}</div> : <span className="text-muted-foreground">—</span>;
 }
 
-// ───────────────────────── Encargos & Locais ─────────────────────────
+// ───────────────────────── Locais de Trabalho (geofence) ─────────────────────────
 function HrSettingsSection() {
   const { data: s } = useHrSettings();
   const save = useSaveHrSettings();
