@@ -10153,35 +10153,20 @@ export type Database = {
       hr_settings: {
         Row: {
           created_at: string
-          fgts_pct: number
           geofence_mode: string
-          inss_cpp_pct: number
-          rat_pct: number
-          simples_optante: boolean
           tenant_id: string
-          terceiros_pct: number
           updated_at: string
         }
         Insert: {
           created_at?: string
-          fgts_pct?: number
           geofence_mode?: string
-          inss_cpp_pct?: number
-          rat_pct?: number
-          simples_optante?: boolean
           tenant_id: string
-          terceiros_pct?: number
           updated_at?: string
         }
         Update: {
           created_at?: string
-          fgts_pct?: number
           geofence_mode?: string
-          inss_cpp_pct?: number
-          rat_pct?: number
-          simples_optante?: boolean
           tenant_id?: string
-          terceiros_pct?: number
           updated_at?: string
         }
         Relationships: []
@@ -23507,13 +23492,8 @@ export type Database = {
         Args: { _tenant: string }
         Returns: {
           created_at: string
-          fgts_pct: number
           geofence_mode: string
-          inss_cpp_pct: number
-          rat_pct: number
-          simples_optante: boolean
           tenant_id: string
-          terceiros_pct: number
           updated_at: string
         }
         SetofOptions: {
