@@ -17,17 +17,17 @@ const POSITION_TO_KEY: ResourceType[] = [
   "producao",     // 2.2.6
 ];
 
-type ResourceInfo = { active: boolean; percentage: number; label: string; chartAccountId?: string };
+type ResourceInfo = { active: boolean; percentage: number; label: string; visible: boolean; chartAccountId?: string };
 
 export type StrategicResourceDefaults = Record<ResourceType, ResourceInfo>;
 
 const FALLBACK: StrategicResourceDefaults = {
-  rt: { active: false, percentage: 0, label: "Comissão vendedor" },
-  vendedor: { active: false, percentage: 0, label: "Premiação comercial" },
-  orcamentista: { active: false, percentage: 0, label: "Comissão de parceiros" },
-  projetista: { active: false, percentage: 0, label: "Bônus produção" },
-  montador: { active: false, percentage: 0, label: "Comissão de representantes" },
-  producao: { active: false, percentage: 0, label: "Afiliados e indicações" },
+  rt: { active: false, percentage: 0, label: "Comissão vendedor", visible: false },
+  vendedor: { active: false, percentage: 0, label: "Premiação comercial", visible: false },
+  orcamentista: { active: false, percentage: 0, label: "Comissão de parceiros", visible: false },
+  projetista: { active: false, percentage: 0, label: "Bônus produção", visible: false },
+  montador: { active: false, percentage: 0, label: "Comissão de representantes", visible: false },
+  producao: { active: false, percentage: 0, label: "Afiliados e indicações", visible: false },
 };
 
 export function useStrategicResourceDefaults() {
@@ -67,7 +67,9 @@ export function useStrategicResourceDefaults() {
         if (c.chart_account_id) configMap.set(c.chart_account_id, c);
       });
 
-      // 4. Map children by position to old keys
+      // 4. Map children by position to old keys. Positions without a matching
+      //    active chart account stay invisible — removed CoA categories must not
+      //    appear in the UI.
       const result: StrategicResourceDefaults = { ...FALLBACK };
       children.forEach((child, index) => {
         const key = POSITION_TO_KEY[index];
@@ -77,6 +79,7 @@ export function useStrategicResourceDefaults() {
           active: cfg?.active ?? false,
           percentage: Number(cfg?.default_percentage) || 0,
           label: child.name,
+          visible: true,
           chartAccountId: child.id,
         };
       });
