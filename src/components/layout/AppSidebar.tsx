@@ -120,6 +120,7 @@ const menuGroups: MenuGroup[] = [
       { title: "Metas Financeiras", url: "/planning", icon: Target, module: "financeiro" },
       { title: "Plano de Contas", url: "/cadastros-financeiros?tab=chart", icon: BookOpen, module: "cadastros_financeiros" },
       { title: "Cadastros Financeiros", url: "/cadastros-financeiros?tab=bank-accounts", icon: Database, module: "cadastros_financeiros" },
+      { title: "RH / PJ", url: "/financeiro/rh-pj", icon: UserCheck, module: "financeiro" },
       { title: "BI", url: "/dashboard", icon: PieChart, module: "dashboard" },
     ],
   },

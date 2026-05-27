@@ -1,15 +1,16 @@
 import { ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
-import type { AppModule } from "@/contexts/PermissionsContext";
+import type { AppModule, PermissionAction } from "@/contexts/PermissionsContext";
 import { NoAccess } from "@/components/auth/NoAccess";
 
 interface PermissionGuardProps {
   children: ReactNode;
   module: AppModule;
+  action?: PermissionAction;
 }
 
-export function PermissionGuard({ children, module }: PermissionGuardProps) {
+export function PermissionGuard({ children, module, action = "view" }: PermissionGuardProps) {
   const { hasModuleAccess, loading, isMaster } = usePermissions();
 
   if (loading) {
@@ -26,9 +27,10 @@ export function PermissionGuard({ children, module }: PermissionGuardProps) {
   // Owner real (sem simulação) tem acesso total
   if (isMaster) return <>{children}</>;
 
-  if (!hasModuleAccess(module, "view")) {
+  if (!hasModuleAccess(module, action)) {
     return <NoAccess module={module} />;
   }
 
   return <>{children}</>;
 }
+

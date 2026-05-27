@@ -9745,6 +9745,67 @@ export type Database = {
           },
         ]
       }
+      hr_absences: {
+        Row: {
+          absence_date: string
+          absence_type: string
+          certificate_id: string | null
+          created_at: string
+          employee_id: string
+          id: string
+          justified: boolean
+          notes: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          absence_date: string
+          absence_type?: string
+          certificate_id?: string | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          justified?: boolean
+          notes?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Update: {
+          absence_date?: string
+          absence_type?: string
+          certificate_id?: string | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          justified?: boolean
+          notes?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_absences_certificate_id_fkey"
+            columns: ["certificate_id"]
+            isOneToOne: false
+            referencedRelation: "hr_medical_certificates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_absences_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_absences_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hr_departments: {
         Row: {
           active: boolean | null
@@ -9798,15 +9859,18 @@ export type Database = {
           admission_date: string | null
           base_salary: number
           benefits_percent: number
+          contract_type: string | null
           cpf: string | null
           created_at: string | null
           department_id: string | null
+          dependents_count: number
           hourly_cost: number | null
           id: string
           manager_id: string | null
           monthly_cost: number | null
           monthly_hours: number
           name: string
+          notes: string | null
           position_id: string | null
           registration_number: string | null
           status: string
@@ -9819,15 +9883,18 @@ export type Database = {
           admission_date?: string | null
           base_salary?: number
           benefits_percent?: number
+          contract_type?: string | null
           cpf?: string | null
           created_at?: string | null
           department_id?: string | null
+          dependents_count?: number
           hourly_cost?: number | null
           id?: string
           manager_id?: string | null
           monthly_cost?: number | null
           monthly_hours?: number
           name: string
+          notes?: string | null
           position_id?: string | null
           registration_number?: string | null
           status?: string
@@ -9840,15 +9907,18 @@ export type Database = {
           admission_date?: string | null
           base_salary?: number
           benefits_percent?: number
+          contract_type?: string | null
           cpf?: string | null
           created_at?: string | null
           department_id?: string | null
+          dependents_count?: number
           hourly_cost?: number | null
           id?: string
           manager_id?: string | null
           monthly_cost?: number | null
           monthly_hours?: number
           name?: string
+          notes?: string | null
           position_id?: string | null
           registration_number?: string | null
           status?: string
@@ -9956,6 +10026,63 @@ export type Database = {
           },
         ]
       }
+      hr_medical_certificates: {
+        Row: {
+          cid: string | null
+          created_at: string
+          days_count: number | null
+          employee_id: string
+          end_date: string
+          file_path: string | null
+          id: string
+          notes: string | null
+          start_date: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          cid?: string | null
+          created_at?: string
+          days_count?: number | null
+          employee_id: string
+          end_date: string
+          file_path?: string | null
+          id?: string
+          notes?: string | null
+          start_date: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Update: {
+          cid?: string | null
+          created_at?: string
+          days_count?: number | null
+          employee_id?: string
+          end_date?: string
+          file_path?: string | null
+          id?: string
+          notes?: string | null
+          start_date?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_medical_certificates_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_medical_certificates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hr_positions: {
         Row: {
           active: boolean | null
@@ -10038,6 +10165,60 @@ export type Database = {
           },
           {
             foreignKeyName: "hr_teams_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_time_records: {
+        Row: {
+          created_at: string
+          employee_id: string
+          id: string
+          notes: string | null
+          tenant_id: string
+          time_in: string | null
+          time_out: string | null
+          updated_at: string
+          work_date: string
+          worked_hours: number | null
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          tenant_id?: string
+          time_in?: string | null
+          time_out?: string | null
+          updated_at?: string
+          work_date: string
+          worked_hours?: number | null
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          tenant_id?: string
+          time_in?: string | null
+          time_out?: string | null
+          updated_at?: string
+          work_date?: string
+          worked_hours?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_time_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_time_records_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -18213,6 +18394,121 @@ export type Database = {
           },
         ]
       }
+      service_provider_documents: {
+        Row: {
+          created_at: string
+          description: string | null
+          doc_type: string
+          file_path: string
+          id: string
+          provider_id: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          doc_type?: string
+          file_path: string
+          id?: string
+          provider_id: string
+          tenant_id?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          doc_type?: string
+          file_path?: string
+          id?: string
+          provider_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_provider_documents_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_provider_documents_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_providers: {
+        Row: {
+          cnpj: string | null
+          contract_value: number
+          created_at: string
+          end_date: string | null
+          id: string
+          legal_name: string
+          notes: string | null
+          responsible_id: string | null
+          service_type: string | null
+          start_date: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          cnpj?: string | null
+          contract_value?: number
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          legal_name: string
+          notes?: string | null
+          responsible_id?: string | null
+          service_type?: string | null
+          start_date?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Update: {
+          cnpj?: string | null
+          contract_value?: number
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          legal_name?: string
+          notes?: string | null
+          responsible_id?: string | null
+          service_type?: string | null
+          start_date?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_providers_responsible_id_fkey"
+            columns: ["responsible_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_providers_responsible_id_fkey"
+            columns: ["responsible_id"]
+            isOneToOne: false
+            referencedRelation: "v_user_effective_role"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "service_providers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stability_gate_evaluations: {
         Row: {
           blocking_count: number
@@ -22585,6 +22881,7 @@ export type Database = {
       can_delete_master_idea:
         | { Args: never; Returns: boolean }
         | { Args: { p_master_idea_id: string }; Returns: boolean }
+      can_view_hr_pii: { Args: { _tenant: string }; Returns: boolean }
       capacity_layer_summary: { Args: never; Returns: Json }
       capacity_top_risks: {
         Args: { p_limit?: number }
