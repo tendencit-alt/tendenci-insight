@@ -132,7 +132,7 @@ const menuGroups: MenuGroup[] = [
     items: [
       { title: "CRM", url: "/crm", icon: Target, module: "comercial" },
       { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, module: "pedidos" },
-      { title: "Clientes", url: "/clientes", icon: Users, module: "comercial" },
+      { title: "Clientes / Fornecedores", url: "/clientes", icon: Users, module: "comercial" },
       { title: "Catálogo de Produtos", url: "/catalogo", icon: BookOpen, module: "comercial" },
       { title: "Comissões", url: "/comissoes", icon: DollarSign, comingSoon: true, module: "comercial" },
     ],
@@ -149,7 +149,7 @@ const menuGroups: MenuGroup[] = [
       { title: "Suprimentos", url: "/suprimentos", icon: Package, module: "operacional" },
       { title: "Estoque", url: "/estoque", icon: Layers, module: "operacional" },
       { title: "Entregas & Montagem", url: "/entregas-montagem", icon: Truck, module: "operacional" },
-      { title: "Fornecedores", url: "/fornecedores", icon: Package, module: "operacional" },
+      
       { title: "KPI's", url: "/relatorios", icon: FileText, comingSoon: true, module: "operacional" },
     ],
   },

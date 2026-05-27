@@ -10,6 +10,7 @@ import SuppliersFilters from "@/components/suppliers/SuppliersFilters";
 import SuppliersTable from "@/components/suppliers/SuppliersTable";
 import CreateSupplierDialog from "@/components/suppliers/CreateSupplierDialog";
 import SupplierDetailSheet from "@/components/suppliers/SupplierDetailSheet";
+import { ClientesFornecedoresTabs } from "@/components/layout/ClientesFornecedoresTabs";
 
 export default function Suppliers() {
   const [createOpen, setCreateOpen] = useState(false);
@@ -48,9 +49,11 @@ export default function Suppliers() {
 
   return (
     <DashboardLayout>
-      <ModuleShell
-        moduleKey="fornecedores"
-        title="Fornecedores"
+      <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6">
+        <ClientesFornecedoresTabs />
+        <ModuleShell
+          moduleKey="fornecedores"
+          title="Clientes / Fornecedores"
         description="Gerencie seus fornecedores e parceiros comerciais"
         icon={<Building2 className="h-5 w-5" />}
         headerActions={
@@ -82,6 +85,7 @@ export default function Suppliers() {
         onOpenChange={(open) => !open && setSelectedSupplier(null)}
         onUpdate={refetch}
       />
+      </div>
     </DashboardLayout>
   );
 }
