@@ -63,6 +63,7 @@ import { EditClientDialog as FullEditClientDialog } from "@/components/crm/EditC
 import { DeleteClientDialog } from "@/components/clients/DeleteClientDialog";
 import { useCostCenters } from "@/hooks/useCostCenters";
 import { Can } from "@/components/auth/Can";
+import { ClientesFornecedoresTabs } from "@/components/layout/ClientesFornecedoresTabs";
 
 interface ClientRow {
   id: string;
