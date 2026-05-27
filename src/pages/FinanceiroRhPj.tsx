@@ -35,7 +35,7 @@ import {
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { CltProvisionDialog } from "@/components/hr/CltProvisionDialog";
 import { TimeClockPunchDialog } from "@/components/hr/TimeClockPunchDialog";
-import { computeVacationProvision, computeThirteenthProvision, brl } from "@/lib/clt-provisions";
+import { computeVacationProvision, computeThirteenthProvision, brl, fmtDate } from "@/lib/clt-provisions";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
