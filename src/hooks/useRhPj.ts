@@ -382,6 +382,21 @@ export function useDeleteWorkLocation() {
   });
 }
 
+// ── KPIs RH/PJ (gated por can_view_hr_pii) ──
+export function useHrPjKpis(month?: string) {
+  return useQuery({
+    queryKey: ["hr-pj-kpis", month],
+    queryFn: async () => {
+      const m = (month ? `${month}-01` : new Date().toISOString().slice(0,7) + "-01");
+      const { data, error } = await supabase.rpc("get_hr_pj_kpis", { _month: m });
+      if (error) throw error;
+      const r: any = Array.isArray(data) ? data[0] : data;
+      return r ?? null;
+    },
+    staleTime: 30_000,
+  });
+}
+
 // ────────────────────────────────────────────────────────────
 // Status do pagamento no AP (espelha conciliação do Financeiro)
 // Lê fin_payables provisionados automaticamente pelos gatilhos
