@@ -1706,6 +1706,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     )}
 
                     {/* Comissão Projetista */}
+                    {resourceDefaults.projetista.visible && (
                     <div className="flex items-center gap-3">
                       <Switch
                         checked={comissoes.projetista.habilitado}
@@ -1759,6 +1760,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                         </>
                       )}
                     </div>
+                    )}
 
                     {/* Comissão Montador */}
                     <div className="flex items-center gap-3">
