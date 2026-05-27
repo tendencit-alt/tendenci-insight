@@ -198,6 +198,26 @@ export function StrategicResourceCategoriesManager() {
                   />
                   <span className="text-xs text-muted-foreground">%</span>
                 </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Building2 className="h-3 w-3 text-muted-foreground" />
+                  <Select
+                    value={configByAccount.get(child.id)?.cost_center_id ?? "_none"}
+                    onValueChange={(v) => save(child.id, { cost_center_id: v === "_none" ? null : v })}
+                    disabled={isSaving}
+                  >
+                    <SelectTrigger className="h-7 w-[160px] text-xs">
+                      <SelectValue placeholder="Centro de custo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none" className="text-xs">— Sem CC —</SelectItem>
+                      {(costCenters ?? []).map((cc) => (
+                        <SelectItem key={cc.id} value={cc.id} className="text-xs">
+                          <span className="font-mono text-muted-foreground mr-1">{cc.code}</span>{cc.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 {hasPctEdit && (
                   <Button
                     size="sm"
