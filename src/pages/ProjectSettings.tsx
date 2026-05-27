@@ -24,7 +24,8 @@ const ProjectSettings = () => {
   const { isMaster } = usePermissions();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const urlSub = searchParams.get("sub");
+  const rawSub = searchParams.get("sub");
+  const urlSub = rawSub === "responsibles" ? "commitments" : rawSub;
   const finTab = urlSub && FIN_TABS.has(urlSub) ? urlSub : "chart";
 
   const setFinTab = (tab: string) => {
