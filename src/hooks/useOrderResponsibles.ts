@@ -5,6 +5,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 export type OrderResponsible = Database["public"]["Tables"]["order_responsibles"]["Row"] & {
   full_name: string;
+  chart_account_id: string | null;
 };
 export type OrderResponsibleType = Database["public"]["Enums"]["order_responsible_type"];
 
@@ -15,15 +16,15 @@ export function useOrderResponsibles(enabled = true) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("order_responsibles")
-        .select("id, name, type, is_active, created_at, updated_at")
+        .select("id, name, type, chart_account_id, is_active, supplier_id, tenant_id, created_at, updated_at")
         .order("name");
 
       if (error) throw error;
-      return (data ?? []).map((item) => ({ ...item, full_name: item.name }));
+      return (data ?? []).map((item: any) => ({ ...item, full_name: item.name })) as OrderResponsible[];
     },
   });
 
-  const responsibles = query.data ?? [];
+  const responsibles: OrderResponsible[] = query.data ?? [];
 
   const grouped = useMemo(
     () => ({
@@ -36,9 +37,14 @@ export function useOrderResponsibles(enabled = true) {
     [responsibles],
   );
 
+  /** Returns active responsibles linked to a given compromisso (chart account) */
+  const byChartAccount = (chartAccountId: string) =>
+    responsibles.filter((r) => r.is_active && r.chart_account_id === chartAccountId);
+
   return {
     ...query,
     responsibles,
+    byChartAccount,
     ...grouped,
   };
 }

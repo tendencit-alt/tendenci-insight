@@ -24,24 +24,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { BriefcaseBusiness, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useCompromissosVendaCategories } from "@/hooks/useCompromissosVendaCategories";
 
-type OrderResponsibleType = Database["public"]["Enums"]["order_responsible_type"];
-type OrderResponsible = Database["public"]["Tables"]["order_responsibles"]["Row"];
-
-const TYPE_OPTIONS: Array<{ value: OrderResponsibleType; label: string }> = [
-  { value: "vendedor", label: "Vendedor" },
-  { value: "orcamentista", label: "Orçamentista" },
-  { value: "projetista", label: "Projetista" },
-  { value: "montador", label: "Montador" },
-  { value: "producao", label: "Produção" },
-];
-
-const TYPE_LABELS: Record<OrderResponsibleType, string> = {
-  vendedor: "Vendedor",
-  orcamentista: "Orçamentista",
-  projetista: "Projetista",
-  montador: "Montador",
-  producao: "Produção",
+type OrderResponsible = Database["public"]["Tables"]["order_responsibles"]["Row"] & {
+  chart_account_id: string | null;
 };
 
 export function OrderResponsiblesManager() {
@@ -49,16 +35,30 @@ export function OrderResponsiblesManager() {
   const [editing, setEditing] = useState<OrderResponsible | null>(null);
   const [deleting, setDeleting] = useState<OrderResponsible | null>(null);
   const [loading, setLoading] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<"todos" | OrderResponsibleType>("todos");
+  const [typeFilter, setTypeFilter] = useState<string>("todos");
   const [newSupplierOpen, setNewSupplierOpen] = useState(false);
   const [newSupplierName, setNewSupplierName] = useState("");
   const [creatingSup, setCreatingSup] = useState(false);
-  const [form, setForm] = useState<{ name: string; type: OrderResponsibleType; is_active: boolean; supplier_id: string }>({
+  const [form, setForm] = useState<{ name: string; chart_account_id: string; is_active: boolean; supplier_id: string }>({
     name: "",
-    type: "vendedor",
+    chart_account_id: "",
     is_active: true,
     supplier_id: "",
   });
+
+  const { data: categories = [], isLoading: catsLoading } = useCompromissosVendaCategories(true);
+
+  const categoryById = useMemo(() => {
+    const map = new Map<string, { code: string; name: string }>();
+    categories.forEach((c) => map.set(c.id, { code: c.code, name: c.name }));
+    return map;
+  }, [categories]);
+
+  const labelFor = (chartAccountId: string | null | undefined) => {
+    if (!chartAccountId) return "—";
+    const c = categoryById.get(chartAccountId);
+    return c ? `${c.code} ${c.name}` : "—";
+  };
 
   const { data: responsibles, isLoading, refetch } = useQuery({
     queryKey: ["order-responsibles-manager"],
@@ -66,11 +66,10 @@ export function OrderResponsiblesManager() {
       const { data, error } = await supabase
         .from("order_responsibles")
         .select("*, suppliers(id, name)")
-        .order("type")
         .order("name");
 
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as unknown as Array<OrderResponsible & { suppliers?: { id: string; name: string } | null }>;
     },
   });
 
@@ -114,14 +113,16 @@ export function OrderResponsiblesManager() {
 
   const filteredResponsibles = useMemo(() => {
     if (!responsibles) return [];
-    return responsibles.filter((item) => typeFilter === "todos" || item.type === typeFilter);
+    return responsibles.filter(
+      (item) => typeFilter === "todos" || item.chart_account_id === typeFilter,
+    );
   }, [responsibles, typeFilter]);
 
   const handleNew = () => {
     setEditing(null);
     setForm({
       name: "",
-      type: "vendedor",
+      chart_account_id: categories[0]?.id ?? "",
       is_active: true,
       supplier_id: "",
     });
@@ -132,7 +133,7 @@ export function OrderResponsiblesManager() {
     setEditing(responsible);
     setForm({
       name: responsible.name,
-      type: responsible.type,
+      chart_account_id: responsible.chart_account_id ?? "",
       is_active: responsible.is_active,
       supplier_id: responsible.supplier_id || "",
     });
@@ -144,12 +145,16 @@ export function OrderResponsiblesManager() {
       toast.error("Nome é obrigatório");
       return;
     }
+    if (!form.chart_account_id) {
+      toast.error("Selecione o tipo (compromisso sobre venda)");
+      return;
+    }
 
     setLoading(true);
     try {
-      const payload = {
+      const payload: any = {
         name: form.name.trim(),
-        type: form.type,
+        chart_account_id: form.chart_account_id,
         is_active: form.is_active,
         supplier_id: form.supplier_id || null,
       };
@@ -210,26 +215,31 @@ export function OrderResponsiblesManager() {
             <BriefcaseBusiness className="h-5 w-5" />
             Responsáveis Avulsos
           </CardTitle>
-          <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as "todos" | OrderResponsibleType)}>
-            <SelectTrigger className="h-8 w-[180px]">
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="h-8 w-[240px]">
               <SelectValue placeholder="Filtrar por tipo" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos os tipos</SelectItem>
-              {TYPE_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
+              {categories.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.code} {c.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={handleNew} size="sm" className="gap-2">
+        <Button onClick={handleNew} size="sm" className="gap-2" disabled={catsLoading || categories.length === 0}>
           <Plus className="h-4 w-4" />
           Novo Responsável
         </Button>
       </CardHeader>
       <CardContent>
+        {categories.length === 0 && !catsLoading && (
+          <p className="text-sm text-muted-foreground py-2">
+            Nenhuma categoria de Compromissos Sobre Venda ativa. Configure em Cadastros Financeiros → Compromissos Sobre Venda.
+          </p>
+        )}
         {isLoading ? (
           <div className="space-y-2">
             {[...Array(4)].map((_, index) => (
@@ -241,7 +251,7 @@ export function OrderResponsiblesManager() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
-                <TableHead>Tipo</TableHead>
+                <TableHead>Tipo (Compromisso)</TableHead>
                 <TableHead>Fornecedor</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-[120px]">Ações</TableHead>
@@ -252,7 +262,7 @@ export function OrderResponsiblesManager() {
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.name}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{TYPE_LABELS[item.type]}</Badge>
+                    <Badge variant="outline">{labelFor(item.chart_account_id)}</Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {(item as any).suppliers?.name || "—"}
@@ -303,19 +313,25 @@ export function OrderResponsiblesManager() {
             </div>
 
             <div className="space-y-2">
-              <Label>Tipo *</Label>
-              <Select value={form.type} onValueChange={(value) => setForm((prev) => ({ ...prev, type: value as OrderResponsibleType }))}>
+              <Label>Tipo (Compromisso Sobre Venda) *</Label>
+              <Select
+                value={form.chart_account_id}
+                onValueChange={(value) => setForm((prev) => ({ ...prev, chart_account_id: value }))}
+              >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione o compromisso..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {TYPE_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.code} {c.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                O tipo segue o padrão cadastrado em Compromissos Sobre Venda. No pedido, o responsável aparecerá no compromisso correspondente.
+              </p>
             </div>
 
             <div className="space-y-2">
