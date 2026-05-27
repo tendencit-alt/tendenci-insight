@@ -344,29 +344,11 @@ export function OrderResponsiblesManager() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button type="button" variant="outline" size="icon" onClick={() => { setNewSupplierName(form.name); setNewSupplierOpen(true); }}>
+                <Button type="button" variant="outline" size="icon" onClick={() => setNewSupplierOpen(true)}>
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
-              {newSupplierOpen && (
-                <div className="flex gap-2 items-end p-3 rounded-lg border bg-muted/50">
-                  <div className="flex-1 space-y-1">
-                    <Label className="text-xs">Nome do novo fornecedor</Label>
-                    <Input
-                      value={newSupplierName}
-                      onChange={(e) => setNewSupplierName(e.target.value)}
-                      placeholder="Nome do fornecedor"
-                      onKeyDown={(e) => e.key === "Enter" && handleCreateSupplier()}
-                    />
-                  </div>
-                  <Button size="sm" onClick={handleCreateSupplier} disabled={creatingSup}>
-                    {creatingSup ? <Loader2 className="h-4 w-4 animate-spin" /> : "Criar"}
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setNewSupplierOpen(false)}>
-                    Cancelar
-                  </Button>
-                </div>
-              )}
+
             </div>
 
             <div className="flex items-center gap-2">
