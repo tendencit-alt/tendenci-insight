@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, Users, Plus, FileText, Clock, AlertTriangle, Stethoscope, Eye } from "lucide-react";
+import { Briefcase, Users, Plus, FileText, Clock, AlertTriangle, Stethoscope, Eye, LogIn, LogOut, Calculator, MapPin } from "lucide-react";
 import {
   useCanViewHrPii,
   useRhEmployees, useSaveEmployee,
@@ -25,8 +25,14 @@ import {
   useEmployeeMonthSummary,
   useServiceProviders, useSaveServiceProvider,
   useServiceProviderDocs, useUploadProviderDoc,
+  useExpenseChartAccounts,
   getSignedUrl,
 } from "@/hooks/useRhPj";
+import { useCostCenters } from "@/hooks/useCostCenters";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
+import { CltProvisionDialog } from "@/components/hr/CltProvisionDialog";
+import { TimeClockPunchDialog } from "@/components/hr/TimeClockPunchDialog";
+import { computeVacationProvision, computeThirteenthProvision, brl } from "@/lib/clt-provisions";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
