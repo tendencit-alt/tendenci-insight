@@ -46,7 +46,7 @@ export default function CadastrosFinanceiros() {
       <ModuleShell
         moduleKey="cadastros-financeiros"
         title="Cadastros Financeiros"
-        description="Gerencie contas bancárias, plano de contas, centros de custo, projetos, responsáveis avulsos e categorias dos compromissos sobre venda."
+        description="Gerencie contas bancárias, plano de contas, centros de custo, projetos e os compromissos sobre venda (com seus responsáveis)."
         icon={<Database className="h-5 w-5" />}
         records={
           <Tabs value={recordsTab} onValueChange={updateTab}>
