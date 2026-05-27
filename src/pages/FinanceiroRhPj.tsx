@@ -231,14 +231,6 @@ function EmployeesSection() {
                     </div>
                   ) : "—"}
                 </TableCell>
-                <TableCell>
-                  {canPii ? (
-                    <button className="underline-offset-2 hover:underline text-left" onClick={() => setProvDlg({ kind: "thirteenth", emp: e })}>
-                      <span className="tabular-nums">{brl(th.accruedBalance)}</span>
-                      <Calculator className="inline h-3 w-3 ml-1 opacity-60" />
-                    </button>
-                  ) : "•••"}
-                </TableCell>
                 <TableCell className="text-xs">
                   {canPii && e.admission_date ? (
                     <div className="space-y-0.5">
