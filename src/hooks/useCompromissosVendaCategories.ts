@@ -79,7 +79,7 @@ export function buildInitialCompromissos(
 ): CompromissoState[] {
   return categories.map((cat) => ({
     chart_account_id: cat.id,
-    habilitado: cat.active,
+    habilitado: true,
     percentual: cat.defaultPercentage,
     valor: total * (cat.defaultPercentage / 100),
     responsavel_id: "",
