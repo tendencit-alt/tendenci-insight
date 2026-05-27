@@ -11,7 +11,7 @@ import { CardRatesManager } from "@/components/financeiro/masters/CardRatesManag
 import { OriginRulesMatrix } from "@/components/financeiro/masters/OriginRulesMatrix";
 import { FinancePermissionsMatrix } from "@/components/financeiro/masters/FinancePermissionsMatrix";
 import { EventAutomationRulesPanel } from "@/components/financeiro/masters/EventAutomationRulesPanel";
-import { Building2, FileSpreadsheet, Landmark, FolderKanban, Database, BriefcaseBusiness, FolderCog, CreditCard, Zap, Shield, Bot } from "lucide-react";
+import { Building2, FileSpreadsheet, Landmark, FolderKanban, Database, FolderCog, CreditCard, Zap, Shield, Bot } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
 // Standardized URL slugs (?tab=...) → internal tab values
