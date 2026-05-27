@@ -764,6 +764,7 @@ export function RhPjPanel() {
 
   return (
     <Tabs defaultValue="rh" className="space-y-4">
+      <HrPjKpiStrip />
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <TabsList>
           <TabsTrigger value="rh" className="gap-1.5"><Users className="h-4 w-4" />RH (CLT)</TabsTrigger>
@@ -779,7 +780,35 @@ export function RhPjPanel() {
       <TabsContent value="pj"><ProvidersSection /></TabsContent>
       <TabsContent value="config"><HrSettingsSection /></TabsContent>
     </Tabs>
+  );
+}
 
+function HrPjKpiStrip() {
+  const { data: canPii } = useCanViewHrPii();
+  const { data: k } = useHrPjKpis();
+  if (!canPii) return null; // oculto sem permissão
+  const cards = [
+    { label: "Colaboradores ativos", value: String(k?.employees_active ?? 0), icon: Users },
+    { label: "Prestadores PJ ativos", value: String(k?.providers_active ?? 0), icon: Briefcase },
+    { label: "Folha do mês", value: brl(Number(k?.payroll_cost_month ?? 0)), icon: Calculator },
+    { label: "PJ do mês", value: brl(Number(k?.pj_cost_month ?? 0)), icon: FileText },
+    { label: "Provisão férias", value: brl(Number(k?.vacation_provision_total ?? 0)), icon: Calculator },
+    { label: "Faltas no mês", value: String(k?.absences_month ?? 0), icon: AlertTriangle },
+    { label: "Atestados vigentes", value: String(k?.pending_certificates ?? 0), icon: Stethoscope },
+    { label: "Batidas hoje", value: `${k?.punches_today ?? 0}${(k?.punches_outside_today ?? 0) > 0 ? ` (${k.punches_outside_today} fora)` : ""}`, icon: Clock },
+  ];
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-2">
+      {cards.map((c) => (
+        <Card key={c.label} className="p-3 flex items-center gap-2">
+          <c.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div className="min-w-0">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground truncate">{c.label}</div>
+            <div className="text-sm font-semibold tabular-nums truncate">{c.value}</div>
+          </div>
+        </Card>
+      ))}
+    </div>
   );
 }
 
