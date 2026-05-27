@@ -15,15 +15,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, Users, Plus, FileText, Clock, AlertTriangle, Stethoscope, Eye, LogIn, LogOut, Calculator, MapPin } from "lucide-react";
+import { Briefcase, Users, Plus, FileText, Clock, AlertTriangle, Stethoscope, Eye, LogIn, LogOut, Calculator, MapPin, Pencil, Trash2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   useCanViewHrPii,
-  useRhEmployees, useSaveEmployee,
+  useRhEmployees, useSaveEmployee, useDeleteEmployee,
   useTimeRecords, useCreateTimeRecord,
   useAbsences, useCreateAbsence,
   useMedicalCertificates, useCreateMedicalCertificate,
   useEmployeeMonthSummary,
-  useServiceProviders, useSaveServiceProvider,
+  useServiceProviders, useSaveServiceProvider, useDeleteServiceProvider,
   useServiceProviderDocs, useUploadProviderDoc,
   useExpenseChartAccounts,
   useHrSettings, useSaveHrSettings,
