@@ -1956,6 +1956,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                 
                 <div className="space-y-3">
                   {/* RT - Repasse Técnico */}
+                  {resourceDefaults.rt.visible && (
                   <div className="flex items-center gap-3">
                     <Switch
                       checked={comissoes.rt.habilitado}
@@ -2012,6 +2013,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       </>
                     )}
                   </div>
+                  )}
 
                   {/* Comissão Vendedor */}
                   <div className="flex items-center gap-3">
