@@ -132,7 +132,7 @@ const menuGroups: MenuGroup[] = [
     items: [
       { title: "CRM", url: "/crm", icon: Target, module: "comercial" },
       { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, module: "pedidos" },
-      { title: "Clientes / Fornecedores", url: "/clientes", icon: Users, module: "comercial" },
+      { title: "Clientes & Fornec.", url: "/clientes", icon: Users, module: "comercial" },
       { title: "Catálogo de Produtos", url: "/catalogo", icon: BookOpen, module: "comercial" },
       { title: "Comissões", url: "/comissoes", icon: DollarSign, comingSoon: true, module: "comercial" },
     ],
