@@ -50,6 +50,17 @@ function mask(v: any, can: boolean, placeholder = "•••") {
   return placeholder;
 }
 
+function PayableStatusBadge({ p }: { p?: PayableStatus }) {
+  if (!p) return <Badge variant="outline" className="text-muted-foreground">Não provisionado</Badge>;
+  const isPaid = p.status === "PAGO" || !!p.payment_date;
+  const isReconciled = !!p.reconciled || !!p.conciliado_em;
+  if (isReconciled) return <Badge className="bg-emerald-600 hover:bg-emerald-600">Conciliado</Badge>;
+  if (isPaid) return <Badge className="bg-green-600 hover:bg-green-600">Pago</Badge>;
+  if (p.status === "VENCIDO") return <Badge variant="destructive">Vencido</Badge>;
+  if (p.status === "PARCIAL") return <Badge className="bg-amber-500 hover:bg-amber-500">Parcial</Badge>;
+  return <Badge variant="secondary">Em aberto</Badge>;
+}
+
 // ───────────────────────── RH ─────────────────────────
 function EmployeesSection() {
   const { data: employees = [] } = useRhEmployees();
