@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Camera, MapPin, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { distanceMeters } from "@/lib/clt-provisions";
+import { useHrSettings, useWorkLocations } from "@/hooks/useRhPj";
+
 
 interface Props {
   open: boolean;
@@ -25,6 +28,24 @@ export function TimeClockPunchDialog({ open, onOpenChange, employeeId, employeeN
   const [coords, setCoords] = useState<{ lat: number; lng: number; acc: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
+  const { data: settings } = useHrSettings();
+  const { data: locations = [] } = useWorkLocations();
+
+  // Avalia geofence: retorna {within, location, distance}
+  const fence = (() => {
+    const active = (locations as any[]).filter(l => l.active);
+    if (!coords || !active.length) return { within: null as boolean | null, location: null as any, distance: null as number | null };
+    let best: any = null; let bestDist = Infinity;
+    for (const l of active) {
+      const d = distanceMeters(coords.lat, coords.lng, Number(l.latitude), Number(l.longitude));
+      if (d < bestDist) { bestDist = d; best = l; }
+    }
+    const within = best ? bestDist <= Number(best.radius_m) : false;
+    return { within, location: best, distance: bestDist };
+  })();
+  const mode = (settings as any)?.geofence_mode ?? "warn";
+  const blocking = mode === "block" && fence.within === false;
+
 
   // start camera
   useEffect(() => {
@@ -74,6 +95,7 @@ export function TimeClockPunchDialog({ open, onOpenChange, employeeId, employeeN
   const punch = async () => {
     if (!photoBlob) { toast.error("Capture a foto antes"); return; }
     if (!coords) { toast.error("Aguardando localização..."); return; }
+    if (blocking) { toast.error("Fora do raio do local de trabalho — bloqueado por política"); return; }
     setBusy(true);
     try {
       const { data: tenantId } = await supabase.rpc("get_user_tenant_id");
@@ -88,16 +110,21 @@ export function TimeClockPunchDialog({ open, onOpenChange, employeeId, employeeN
 
       const nowIso = new Date().toISOString();
       const nowTime = nowIso.slice(11, 19);
-      // procura registro do dia para upsert (in primeiro, out depois)
       const { data: existing } = await supabase
         .from("hr_time_records").select("id, time_in, time_out")
         .eq("employee_id", employeeId).eq("work_date", today).maybeSingle();
 
+      const fenceFields = fence.within == null
+        ? {} // sem local cadastrado: não preenche
+        : kind === "in"
+          ? { time_in_within_fence: fence.within, time_in_location_id: fence.location?.id ?? null }
+          : { time_out_within_fence: fence.within, time_out_location_id: fence.location?.id ?? null };
+
       const patch: any = kind === "in"
         ? { time_in: nowTime, time_in_at: nowIso, time_in_photo_path: up.data.path,
-            time_in_lat: coords.lat, time_in_lng: coords.lng, time_in_accuracy: coords.acc }
+            time_in_lat: coords.lat, time_in_lng: coords.lng, time_in_accuracy: coords.acc, ...fenceFields }
         : { time_out: nowTime, time_out_at: nowIso, time_out_photo_path: up.data.path,
-            time_out_lat: coords.lat, time_out_lng: coords.lng, time_out_accuracy: coords.acc };
+            time_out_lat: coords.lat, time_out_lng: coords.lng, time_out_accuracy: coords.acc, ...fenceFields };
 
       if (existing) {
         const { error } = await supabase.from("hr_time_records").update(patch).eq("id", existing.id);
@@ -108,13 +135,16 @@ export function TimeClockPunchDialog({ open, onOpenChange, employeeId, employeeN
         });
         if (error) throw error;
       }
-      toast.success(kind === "in" ? "Entrada registrada" : "Saída registrada");
+      const msg = kind === "in" ? "Entrada registrada" : "Saída registrada";
+      if (fence.within === false) toast.warning(`${msg} — FORA do local (${Math.round(fence.distance!)}m)`);
+      else toast.success(msg);
       onPunched?.();
       onOpenChange(false);
     } catch (e: any) {
       toast.error(e.message ?? "Falha ao bater ponto");
     } finally { setBusy(false); }
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -139,17 +169,26 @@ export function TimeClockPunchDialog({ open, onOpenChange, employeeId, employeeN
               : <span className="text-muted-foreground">{geoError ?? "Obtendo localização..."}</span>}
           </div>
 
+          {fence.within != null && (
+            <div className={`text-xs rounded-md px-2 py-1.5 ${fence.within ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-amber-500/10 text-amber-700 dark:text-amber-300"}`}>
+              {fence.within
+                ? <>Dentro do raio de <b>{fence.location.name}</b> ({Math.round(fence.distance!)}m / {fence.location.radius_m}m)</>
+                : <>FORA do raio (mais próximo: <b>{fence.location?.name}</b> — {Math.round(fence.distance!)}m, raio {fence.location?.radius_m}m){mode === "block" && " — bloqueado"}</>}
+            </div>
+          )}
+
           <div className="flex gap-2">
             {!photoUrl
               ? <Button onClick={capture} className="flex-1"><Camera className="h-4 w-4 mr-1" />Capturar foto</Button>
               : <>
                   <Button variant="outline" onClick={() => { setPhotoBlob(null); setPhotoUrl(null); }} className="flex-1">Refazer</Button>
-                  <Button onClick={punch} disabled={busy || !coords} className="flex-1">
+                  <Button onClick={punch} disabled={busy || !coords || blocking} className="flex-1">
                     {busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
                     Confirmar
                   </Button>
                 </>}
           </div>
+
         </div>
       </DialogContent>
     </Dialog>

@@ -26,8 +26,11 @@ import {
   useServiceProviders, useSaveServiceProvider,
   useServiceProviderDocs, useUploadProviderDoc,
   useExpenseChartAccounts,
+  useHrSettings, useSaveHrSettings,
+  useWorkLocations, useSaveWorkLocation, useDeleteWorkLocation,
   getSignedUrl,
 } from "@/hooks/useRhPj";
+
 
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { CltProvisionDialog } from "@/components/hr/CltProvisionDialog";
@@ -46,6 +49,8 @@ function EmployeesSection() {
   const { data: employees = [] } = useRhEmployees();
   const { data: canPii } = useCanViewHrPii();
   const save = useSaveEmployee();
+  const { data: settings } = useHrSettings();
+
   const { activeTenantId } = useActiveTenant();
   const [costCenters, setCostCenters] = useState<{ id: string; name: string }[]>([]);
   useEffect(() => {
@@ -231,6 +236,8 @@ function EmployeesSection() {
           employeeName={provDlg.emp.name}
           baseSalary={Number(provDlg.emp.base_salary || 0)}
           admissionDate={provDlg.emp.admission_date}
+          charges={settings as any}
+
         />
       )}
     </div>
@@ -319,10 +326,91 @@ function PunchEvidence({ r }: { r: any }) {
   };
   const a = render("E", r.time_in_lat, r.time_in_lng, r.time_in_accuracy, r.time_in_photo_path);
   const b = render("S", r.time_out_lat, r.time_out_lng, r.time_out_accuracy, r.time_out_photo_path);
-  if (a) items.push(<div key="a">{a}</div>);
-  if (b) items.push(<div key="b">{b}</div>);
+  if (a) items.push(<div key="a" className="flex items-center gap-1">{a}{r.time_in_within_fence != null && <Badge variant={r.time_in_within_fence ? "secondary" : "destructive"} className="text-[10px] h-4">{r.time_in_within_fence ? "dentro" : "fora"}</Badge>}</div>);
+  if (b) items.push(<div key="b" className="flex items-center gap-1">{b}{r.time_out_within_fence != null && <Badge variant={r.time_out_within_fence ? "secondary" : "destructive"} className="text-[10px] h-4">{r.time_out_within_fence ? "dentro" : "fora"}</Badge>}</div>);
   return items.length ? <div className="space-y-0.5">{items}</div> : <span className="text-muted-foreground">—</span>;
 }
+
+// ───────────────────────── Encargos & Locais ─────────────────────────
+function HrSettingsSection() {
+  const { data: s } = useHrSettings();
+  const save = useSaveHrSettings();
+  const { data: locations = [] } = useWorkLocations();
+  const saveLoc = useSaveWorkLocation();
+  const delLoc = useDeleteWorkLocation();
+  const [f, setF] = useState<any>(null);
+  useEffect(() => { if (s) setF({ ...s }); }, [s]);
+  const [loc, setLoc] = useState<any>({ name: "", latitude: "", longitude: "", radius_m: 150, active: true });
+  if (!f) return <div className="text-sm text-muted-foreground">Carregando...</div>;
+  return (
+    <div className="grid md:grid-cols-2 gap-4">
+      <Card className="p-4 space-y-3">
+        <h3 className="font-semibold">Encargos sobre folha</h3>
+        <p className="text-xs text-muted-foreground">Alíquotas padrão do Regime Normal (Lucro Presumido/Real). Edite conforme CNAE/FAP.</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>FGTS (%)</Label><Input type="number" step="0.001" value={f.fgts_pct} onChange={(e) => setF({ ...f, fgts_pct: Number(e.target.value) })} /></div>
+          <div><Label>INSS / CPP (%)</Label><Input type="number" step="0.001" value={f.inss_cpp_pct} onChange={(e) => setF({ ...f, inss_cpp_pct: Number(e.target.value) })} disabled={f.simples_optante} /></div>
+          <div><Label>RAT/SAT (%)</Label><Input type="number" step="0.001" value={f.rat_pct} onChange={(e) => setF({ ...f, rat_pct: Number(e.target.value) })} /></div>
+          <div><Label>Terceiros (%)</Label><Input type="number" step="0.001" value={f.terceiros_pct} onChange={(e) => setF({ ...f, terceiros_pct: Number(e.target.value) })} /></div>
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={!!f.simples_optante} onChange={(e) => setF({ ...f, simples_optante: e.target.checked })} />
+          Optante pelo Simples Nacional (zera CPP — recolhido via DAS)
+        </label>
+        <div>
+          <Label>Modo de geofence do ponto</Label>
+          <Select value={f.geofence_mode} onValueChange={(v) => setF({ ...f, geofence_mode: v })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="off">Desligado</SelectItem>
+              <SelectItem value="warn">Avisar (registra marcando "fora")</SelectItem>
+              <SelectItem value="block">Bloquear ponto fora do raio</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Button onClick={() => save.mutate(f)}>Salvar configurações</Button>
+      </Card>
+
+      <Card className="p-4 space-y-3">
+        <h3 className="font-semibold">Locais de trabalho (geofence)</h3>
+        <div className="grid grid-cols-5 gap-2 items-end">
+          <div className="col-span-2"><Label>Nome</Label><Input value={loc.name} onChange={(e) => setLoc({ ...loc, name: e.target.value })} /></div>
+          <div><Label>Lat</Label><Input value={loc.latitude} onChange={(e) => setLoc({ ...loc, latitude: e.target.value })} /></div>
+          <div><Label>Lng</Label><Input value={loc.longitude} onChange={(e) => setLoc({ ...loc, longitude: e.target.value })} /></div>
+          <div><Label>Raio (m)</Label><Input type="number" value={loc.radius_m} onChange={(e) => setLoc({ ...loc, radius_m: Number(e.target.value) })} /></div>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => {
+            if (!navigator.geolocation) return toast.error("Geolocalização indisponível");
+            navigator.geolocation.getCurrentPosition(p => setLoc((l: any) => ({ ...l, latitude: p.coords.latitude.toFixed(6), longitude: p.coords.longitude.toFixed(6) })));
+          }}><MapPin className="h-4 w-4 mr-1" />Usar minha localização</Button>
+          <Button size="sm" onClick={async () => {
+            if (!loc.name || !loc.latitude || !loc.longitude) return toast.error("Preencha nome, lat e lng");
+            await saveLoc.mutateAsync({ ...loc, latitude: Number(loc.latitude), longitude: Number(loc.longitude) });
+            setLoc({ name: "", latitude: "", longitude: "", radius_m: 150, active: true });
+          }}>Adicionar</Button>
+        </div>
+        <Table>
+          <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>Lat/Lng</TableHead><TableHead>Raio</TableHead><TableHead>Ativo</TableHead><TableHead></TableHead></TableRow></TableHeader>
+          <TableBody>
+            {(locations as any[]).map(l => (
+              <TableRow key={l.id}>
+                <TableCell>{l.name}</TableCell>
+                <TableCell className="font-mono text-xs">{Number(l.latitude).toFixed(5)}, {Number(l.longitude).toFixed(5)}</TableCell>
+                <TableCell>{l.radius_m}m</TableCell>
+                <TableCell>{l.active ? "sim" : "não"}</TableCell>
+                <TableCell><Button size="sm" variant="ghost" onClick={() => delLoc.mutate(l.id)}>Excluir</Button></TableCell>
+              </TableRow>
+            ))}
+            {!(locations as any[]).length && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-4">Nenhum local. Sem local cadastrado, o ponto não trava.</TableCell></TableRow>}
+          </TableBody>
+        </Table>
+      </Card>
+    </div>
+  );
+}
+
+
 
 function AbsencesPanel({ employeeId, records, certs }: any) {
   const create = useCreateAbsence();
@@ -548,6 +636,7 @@ export function RhPjPanel() {
         <TabsList>
           <TabsTrigger value="rh" className="gap-1.5"><Users className="h-4 w-4" />RH (CLT)</TabsTrigger>
           <TabsTrigger value="pj" className="gap-1.5"><Briefcase className="h-4 w-4" />PJ (Prestadores)</TabsTrigger>
+          <TabsTrigger value="config" className="gap-1.5"><Calculator className="h-4 w-4" />Encargos & Locais</TabsTrigger>
         </TabsList>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={generatePayroll}>Gerar folha do mês</Button>
@@ -556,7 +645,9 @@ export function RhPjPanel() {
       </div>
       <TabsContent value="rh"><EmployeesSection /></TabsContent>
       <TabsContent value="pj"><ProvidersSection /></TabsContent>
+      <TabsContent value="config"><HrSettingsSection /></TabsContent>
     </Tabs>
+
   );
 }
 
