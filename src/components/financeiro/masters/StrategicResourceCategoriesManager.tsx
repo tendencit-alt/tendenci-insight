@@ -7,8 +7,9 @@ import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { FolderCog, Info, Loader2, Save } from "lucide-react";
+import { FolderCog, Info, Loader2, Save, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 const PARENT_ACCOUNT_CODE = "2.2";
@@ -20,6 +21,7 @@ type ConfigRow = {
   chart_account_id: string | null;
   active: boolean;
   default_percentage: number;
+  cost_center_id: string | null;
 };
 
 export function StrategicResourceCategoriesManager() {
