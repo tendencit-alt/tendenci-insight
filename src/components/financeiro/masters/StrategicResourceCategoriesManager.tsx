@@ -11,6 +11,8 @@ import { FolderCog, Info, Loader2, Save, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { Separator } from "@/components/ui/separator";
+import { OrderResponsiblesManager } from "@/components/financeiro/masters/OrderResponsiblesManager";
 
 const PARENT_ACCOUNT_CODE = "2.2";
 const TABLE_NAME = "fin_strategic_resource_account_configs";
