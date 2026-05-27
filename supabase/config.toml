@@ -113,3 +113,4 @@ verify_jwt = false
 
 [functions.detect-automation-patterns]
 verify_jwt = false
+

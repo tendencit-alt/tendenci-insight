@@ -198,7 +198,6 @@ function EmployeesSection() {
               <TableHead>Admissão</TableHead><TableHead>Salário</TableHead>
               <TableHead>Férias (saldo)</TableHead>
               <TableHead>Próx. férias vencem</TableHead>
-              <TableHead>13º (saldo)</TableHead>
               <TableHead>13º vencimentos</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Pagamento ({month})</TableHead>
@@ -232,14 +231,6 @@ function EmployeesSection() {
                     </div>
                   ) : "—"}
                 </TableCell>
-                <TableCell>
-                  {canPii ? (
-                    <button className="underline-offset-2 hover:underline text-left" onClick={() => setProvDlg({ kind: "thirteenth", emp: e })}>
-                      <span className="tabular-nums">{brl(th.accruedBalance)}</span>
-                      <Calculator className="inline h-3 w-3 ml-1 opacity-60" />
-                    </button>
-                  ) : "•••"}
-                </TableCell>
                 <TableCell className="text-xs">
                   {canPii && e.admission_date ? (
                     <div className="space-y-0.5">
@@ -260,7 +251,7 @@ function EmployeesSection() {
               </TableRow>
               );
             })}
-            {!employees.length && <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-6">Nenhum colaborador.</TableCell></TableRow>}
+            {!employees.length && <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-6">Nenhum colaborador.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>
@@ -448,6 +439,11 @@ function HrSettingsSection() {
           <div><Label>Lat</Label><Input value={loc.latitude} onChange={(e) => setLoc({ ...loc, latitude: e.target.value })} /></div>
           <div><Label>Lng</Label><Input value={loc.longitude} onChange={(e) => setLoc({ ...loc, longitude: e.target.value })} /></div>
           <div><Label>Raio (m)</Label><Input type="number" value={loc.radius_m} onChange={(e) => setLoc({ ...loc, radius_m: Number(e.target.value) })} /></div>
+          <div className="col-span-5 flex items-center gap-2 text-xs">
+            <input id="loc-active" type="checkbox" checked={!!loc.active} onChange={(e) => setLoc({ ...loc, active: e.target.checked })} />
+            <Label htmlFor="loc-active" className="cursor-pointer">Ativo</Label>
+            {loc.id && <span className="ml-2 text-muted-foreground">Editando: <b>{loc.name}</b></span>}
+          </div>
         </div>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={() => {
@@ -455,10 +451,22 @@ function HrSettingsSection() {
             navigator.geolocation.getCurrentPosition(p => setLoc((l: any) => ({ ...l, latitude: p.coords.latitude.toFixed(6), longitude: p.coords.longitude.toFixed(6) })));
           }}><MapPin className="h-4 w-4 mr-1" />Usar minha localização</Button>
           <Button size="sm" onClick={async () => {
-            if (!loc.name || !loc.latitude || !loc.longitude) return toast.error("Preencha nome, lat e lng");
-            await saveLoc.mutateAsync({ ...loc, latitude: Number(loc.latitude), longitude: Number(loc.longitude) });
+            if (!loc.name || loc.latitude === "" || loc.longitude === "") return toast.error("Preencha nome, lat e lng");
+            await saveLoc.mutateAsync({
+              ...(loc.id ? { id: loc.id } : {}),
+              name: loc.name,
+              latitude: Number(loc.latitude),
+              longitude: Number(loc.longitude),
+              radius_m: Number(loc.radius_m) || 150,
+              active: !!loc.active,
+            });
             setLoc({ name: "", latitude: "", longitude: "", radius_m: 150, active: true });
-          }}>Adicionar</Button>
+          }}>{loc.id ? "Salvar alterações" : "Adicionar"}</Button>
+          {loc.id && (
+            <Button size="sm" variant="ghost" onClick={() => setLoc({ name: "", latitude: "", longitude: "", radius_m: 150, active: true })}>
+              Cancelar
+            </Button>
+          )}
         </div>
         <Table>
           <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>Lat/Lng</TableHead><TableHead>Raio</TableHead><TableHead>Ativo</TableHead><TableHead></TableHead></TableRow></TableHeader>
@@ -469,7 +477,15 @@ function HrSettingsSection() {
                 <TableCell className="font-mono text-xs">{Number(l.latitude).toFixed(5)}, {Number(l.longitude).toFixed(5)}</TableCell>
                 <TableCell>{l.radius_m}m</TableCell>
                 <TableCell>{l.active ? "sim" : "não"}</TableCell>
-                <TableCell><Button size="sm" variant="ghost" onClick={() => delLoc.mutate(l.id)}>Excluir</Button></TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => setLoc({
+                      id: l.id, name: l.name, latitude: String(l.latitude), longitude: String(l.longitude),
+                      radius_m: Number(l.radius_m), active: !!l.active,
+                    })} title="Editar"><Pencil className="h-4 w-4" /></Button>
+                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => delLoc.mutate(l.id)} title="Excluir"><Trash2 className="h-4 w-4" /></Button>
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
             {!(locations as any[]).length && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-4">Nenhum local. Sem local cadastrado, o ponto não trava.</TableCell></TableRow>}
@@ -748,6 +764,7 @@ export function RhPjPanel() {
 
   return (
     <Tabs defaultValue="rh" className="space-y-4">
+      <HrPjKpiStrip />
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <TabsList>
           <TabsTrigger value="rh" className="gap-1.5"><Users className="h-4 w-4" />RH (CLT)</TabsTrigger>
@@ -763,7 +780,35 @@ export function RhPjPanel() {
       <TabsContent value="pj"><ProvidersSection /></TabsContent>
       <TabsContent value="config"><HrSettingsSection /></TabsContent>
     </Tabs>
+  );
+}
 
+function HrPjKpiStrip() {
+  const { data: canPii } = useCanViewHrPii();
+  const { data: k } = useHrPjKpis();
+  if (!canPii) return null; // oculto sem permissão
+  const cards = [
+    { label: "Colaboradores ativos", value: String(k?.employees_active ?? 0), icon: Users },
+    { label: "Prestadores PJ ativos", value: String(k?.providers_active ?? 0), icon: Briefcase },
+    { label: "Folha do mês", value: brl(Number(k?.payroll_cost_month ?? 0)), icon: Calculator },
+    { label: "PJ do mês", value: brl(Number(k?.pj_cost_month ?? 0)), icon: FileText },
+    { label: "Provisão férias", value: brl(Number(k?.vacation_provision_total ?? 0)), icon: Calculator },
+    { label: "Faltas no mês", value: String(k?.absences_month ?? 0), icon: AlertTriangle },
+    { label: "Atestados vigentes", value: String(k?.pending_certificates ?? 0), icon: Stethoscope },
+    { label: "Batidas hoje", value: `${k?.punches_today ?? 0}${(k?.punches_outside_today ?? 0) > 0 ? ` (${k.punches_outside_today} fora)` : ""}`, icon: Clock },
+  ];
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-2">
+      {cards.map((c) => (
+        <Card key={c.label} className="p-3 flex items-center gap-2">
+          <c.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div className="min-w-0">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground truncate">{c.label}</div>
+            <div className="text-sm font-semibold tabular-nums truncate">{c.value}</div>
+          </div>
+        </Card>
+      ))}
+    </div>
   );
 }
 
