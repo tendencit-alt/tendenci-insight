@@ -439,6 +439,11 @@ function HrSettingsSection() {
           <div><Label>Lat</Label><Input value={loc.latitude} onChange={(e) => setLoc({ ...loc, latitude: e.target.value })} /></div>
           <div><Label>Lng</Label><Input value={loc.longitude} onChange={(e) => setLoc({ ...loc, longitude: e.target.value })} /></div>
           <div><Label>Raio (m)</Label><Input type="number" value={loc.radius_m} onChange={(e) => setLoc({ ...loc, radius_m: Number(e.target.value) })} /></div>
+          <div className="col-span-5 flex items-center gap-2 text-xs">
+            <input id="loc-active" type="checkbox" checked={!!loc.active} onChange={(e) => setLoc({ ...loc, active: e.target.checked })} />
+            <Label htmlFor="loc-active" className="cursor-pointer">Ativo</Label>
+            {loc.id && <span className="ml-2 text-muted-foreground">Editando: <b>{loc.name}</b></span>}
+          </div>
         </div>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={() => {
@@ -446,10 +451,22 @@ function HrSettingsSection() {
             navigator.geolocation.getCurrentPosition(p => setLoc((l: any) => ({ ...l, latitude: p.coords.latitude.toFixed(6), longitude: p.coords.longitude.toFixed(6) })));
           }}><MapPin className="h-4 w-4 mr-1" />Usar minha localização</Button>
           <Button size="sm" onClick={async () => {
-            if (!loc.name || !loc.latitude || !loc.longitude) return toast.error("Preencha nome, lat e lng");
-            await saveLoc.mutateAsync({ ...loc, latitude: Number(loc.latitude), longitude: Number(loc.longitude) });
+            if (!loc.name || loc.latitude === "" || loc.longitude === "") return toast.error("Preencha nome, lat e lng");
+            await saveLoc.mutateAsync({
+              ...(loc.id ? { id: loc.id } : {}),
+              name: loc.name,
+              latitude: Number(loc.latitude),
+              longitude: Number(loc.longitude),
+              radius_m: Number(loc.radius_m) || 150,
+              active: !!loc.active,
+            });
             setLoc({ name: "", latitude: "", longitude: "", radius_m: 150, active: true });
-          }}>Adicionar</Button>
+          }}>{loc.id ? "Salvar alterações" : "Adicionar"}</Button>
+          {loc.id && (
+            <Button size="sm" variant="ghost" onClick={() => setLoc({ name: "", latitude: "", longitude: "", radius_m: 150, active: true })}>
+              Cancelar
+            </Button>
+          )}
         </div>
         <Table>
           <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead>Lat/Lng</TableHead><TableHead>Raio</TableHead><TableHead>Ativo</TableHead><TableHead></TableHead></TableRow></TableHeader>
@@ -460,7 +477,15 @@ function HrSettingsSection() {
                 <TableCell className="font-mono text-xs">{Number(l.latitude).toFixed(5)}, {Number(l.longitude).toFixed(5)}</TableCell>
                 <TableCell>{l.radius_m}m</TableCell>
                 <TableCell>{l.active ? "sim" : "não"}</TableCell>
-                <TableCell><Button size="sm" variant="ghost" onClick={() => delLoc.mutate(l.id)}>Excluir</Button></TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => setLoc({
+                      id: l.id, name: l.name, latitude: String(l.latitude), longitude: String(l.longitude),
+                      radius_m: Number(l.radius_m), active: !!l.active,
+                    })} title="Editar"><Pencil className="h-4 w-4" /></Button>
+                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => delLoc.mutate(l.id)} title="Excluir"><Trash2 className="h-4 w-4" /></Button>
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
             {!(locations as any[]).length && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-4">Nenhum local. Sem local cadastrado, o ponto não trava.</TableCell></TableRow>}
