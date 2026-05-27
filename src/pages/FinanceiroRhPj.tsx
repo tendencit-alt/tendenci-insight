@@ -49,6 +49,8 @@ function EmployeesSection() {
   const { data: employees = [] } = useRhEmployees();
   const { data: canPii } = useCanViewHrPii();
   const save = useSaveEmployee();
+  const { data: settings } = useHrSettings();
+
   const { activeTenantId } = useActiveTenant();
   const [costCenters, setCostCenters] = useState<{ id: string; name: string }[]>([]);
   useEffect(() => {
