@@ -38,8 +38,7 @@ export function OrderResponsiblesManager() {
   const [loading, setLoading] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string>("todos");
   const [newSupplierOpen, setNewSupplierOpen] = useState(false);
-  const [newSupplierName, setNewSupplierName] = useState("");
-  const [creatingSup, setCreatingSup] = useState(false);
+
   const [form, setForm] = useState<{ name: string; chart_account_id: string; is_active: boolean; supplier_id: string }>({
     name: "",
     chart_account_id: "",
