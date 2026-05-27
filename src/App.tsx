@@ -36,6 +36,7 @@ import ActivityCenter from "./pages/ActivityCenter";
 import Catalogo from "./pages/Catalogo";
 import Financeiro from "./pages/Financeiro";
 import CadastrosFinanceiros from "./pages/CadastrosFinanceiros";
+import FinanceiroRhPj from "./pages/FinanceiroRhPj";
 
 import ResetPassword from "./pages/ResetPassword";
 import SuperAdmin from "./pages/SuperAdmin";
