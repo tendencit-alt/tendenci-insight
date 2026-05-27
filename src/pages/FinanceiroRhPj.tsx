@@ -99,10 +99,10 @@ function EmployeesSection() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Colaboradores (CLT)</h3>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-1" />Novo colaborador</Button></DialogTrigger>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditingId(null); }}>
+          <Button size="sm" onClick={openNew}><Plus className="h-4 w-4 mr-1" />Novo colaborador</Button>
           <DialogContent className="max-w-2xl">
-            <DialogHeader><DialogTitle>Novo colaborador</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editingId ? "Editar colaborador" : "Novo colaborador"}</DialogTitle></DialogHeader>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2"><Label>Nome</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
               {canPii && (
@@ -160,12 +160,14 @@ function EmployeesSection() {
               <div className="col-span-2"><Label>Observações</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+              <Button variant="outline" onClick={() => { setOpen(false); setEditingId(null); }}>Cancelar</Button>
               <Button onClick={async () => {
                 const payload: any = { ...form };
                 Object.keys(payload).forEach(k => payload[k] === "" && (payload[k] = null));
+                if (editingId) payload.id = editingId;
                 await save.mutateAsync(payload);
                 setOpen(false);
+                setEditingId(null);
               }}>Salvar</Button>
             </div>
           </DialogContent>
