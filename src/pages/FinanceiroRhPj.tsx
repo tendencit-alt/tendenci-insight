@@ -117,7 +117,7 @@ function EmployeesSection() {
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">— Sem CC —</SelectItem>
-                    {costCenters.map((cc: any) => <SelectItem key={cc.value} value={cc.value}>{cc.label}</SelectItem>)}
+                    {costCenters.map((cc: any) => <SelectItem key={cc.id} value={cc.id}>{cc.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
