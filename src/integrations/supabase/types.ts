@@ -2412,6 +2412,7 @@ export type Database = {
           id: string
           pos: number
           template: string | null
+          tenant_id: string | null
           wait_hours: number | null
         }
         Insert: {
@@ -2420,6 +2421,7 @@ export type Database = {
           id?: string
           pos: number
           template?: string | null
+          tenant_id?: string | null
           wait_hours?: number | null
         }
         Update: {
@@ -2428,6 +2430,7 @@ export type Database = {
           id?: string
           pos?: number
           template?: string | null
+          tenant_id?: string | null
           wait_hours?: number | null
         }
         Relationships: [
@@ -2444,14 +2447,17 @@ export type Database = {
         Row: {
           id: string
           name: string
+          tenant_id: string | null
         }
         Insert: {
           id?: string
           name: string
+          tenant_id?: string | null
         }
         Update: {
           id?: string
           name?: string
+          tenant_id?: string | null
         }
         Relationships: []
       }
@@ -10471,6 +10477,7 @@ export type Database = {
           model_used: string | null
           phone_number: string | null
           prompt_size: number | null
+          tenant_id: string | null
           user_message: string | null
         }
         Insert: {
@@ -10483,6 +10490,7 @@ export type Database = {
           model_used?: string | null
           phone_number?: string | null
           prompt_size?: number | null
+          tenant_id?: string | null
           user_message?: string | null
         }
         Update: {
@@ -10495,6 +10503,7 @@ export type Database = {
           model_used?: string | null
           phone_number?: string | null
           prompt_size?: number | null
+          tenant_id?: string | null
           user_message?: string | null
         }
         Relationships: []
