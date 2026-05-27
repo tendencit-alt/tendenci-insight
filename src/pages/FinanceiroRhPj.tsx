@@ -249,32 +249,79 @@ function SummaryBox({ icon: Icon, label, value }: any) {
 function TimeRecordsPanel({ employeeId, records }: any) {
   const create = useCreateTimeRecord();
   const [form, setForm] = useState({ work_date: "", time_in: "", time_out: "", notes: "" });
+  const [punch, setPunch] = useState<"in" | "out" | null>(null);
   return (
     <div className="space-y-3">
+      <div className="flex gap-2">
+        <Button size="sm" variant="default" onClick={() => setPunch("in")}><LogIn className="h-4 w-4 mr-1" />Bater entrada</Button>
+        <Button size="sm" variant="secondary" onClick={() => setPunch("out")}><LogOut className="h-4 w-4 mr-1" />Bater saída</Button>
+      </div>
       <div className="grid grid-cols-5 gap-2 items-end">
         <Input type="date" value={form.work_date} onChange={(e) => setForm({ ...form, work_date: e.target.value })} />
         <Input type="time" value={form.time_in} onChange={(e) => setForm({ ...form, time_in: e.target.value })} />
         <Input type="time" value={form.time_out} onChange={(e) => setForm({ ...form, time_out: e.target.value })} />
         <Input placeholder="Obs." value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-        <Button onClick={async () => {
+        <Button variant="outline" onClick={async () => {
           if (!form.work_date) return toast.error("Data obrigatória");
           await create.mutateAsync({ employee_id: employeeId, ...form, notes: form.notes || null });
           setForm({ work_date: "", time_in: "", time_out: "", notes: "" });
-        }}>Adicionar</Button>
+        }}>Lançamento manual</Button>
       </div>
       <Table>
-        <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Entrada</TableHead><TableHead>Saída</TableHead><TableHead>Horas</TableHead><TableHead>Obs.</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Entrada</TableHead><TableHead>Saída</TableHead><TableHead>Horas</TableHead><TableHead>Local / Foto</TableHead></TableRow></TableHeader>
         <TableBody>
           {records.map((r: any) => (
             <TableRow key={r.id}>
-              <TableCell>{r.work_date}</TableCell><TableCell>{r.time_in ?? "—"}</TableCell><TableCell>{r.time_out ?? "—"}</TableCell>
-              <TableCell>{Number(r.worked_hours).toFixed(2)}</TableCell><TableCell className="text-xs text-muted-foreground">{r.notes ?? "—"}</TableCell>
+              <TableCell>{r.work_date}</TableCell>
+              <TableCell>{r.time_in ?? "—"}</TableCell>
+              <TableCell>{r.time_out ?? "—"}</TableCell>
+              <TableCell>{Number(r.worked_hours).toFixed(2)}</TableCell>
+              <TableCell className="text-xs">
+                <PunchEvidence r={r} />
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+      {punch && (
+        <TimeClockPunchDialog
+          open={!!punch}
+          onOpenChange={(v) => !v && setPunch(null)}
+          employeeId={employeeId}
+          employeeName=""
+          kind={punch}
+        />
+      )}
     </div>
   );
+}
+
+function PunchEvidence({ r }: { r: any }) {
+  const items: JSX.Element[] = [];
+  const render = (label: string, lat?: number, lng?: number, acc?: number, path?: string) => {
+    if (!lat && !path) return null;
+    return (
+      <div className="flex items-center gap-1">
+        <span className="font-medium">{label}:</span>
+        {lat != null && lng != null && (
+          <a href={`https://www.google.com/maps?q=${lat},${lng}`} target="_blank" rel="noreferrer" className="underline">
+            <MapPin className="inline h-3 w-3" /> {lat.toFixed(4)},{lng.toFixed(4)}
+            {acc != null && <span className="text-muted-foreground"> ±{Math.round(acc)}m</span>}
+          </a>
+        )}
+        {path && (
+          <button className="underline" onClick={async () => window.open(await getSignedUrl("hr-time-photos", path), "_blank")}>
+            foto
+          </button>
+        )}
+      </div>
+    );
+  };
+  const a = render("E", r.time_in_lat, r.time_in_lng, r.time_in_accuracy, r.time_in_photo_path);
+  const b = render("S", r.time_out_lat, r.time_out_lng, r.time_out_accuracy, r.time_out_photo_path);
+  if (a) items.push(<div key="a">{a}</div>);
+  if (b) items.push(<div key="b">{b}</div>);
+  return items.length ? <div className="space-y-0.5">{items}</div> : <span className="text-muted-foreground">—</span>;
 }
 
 function AbsencesPanel({ employeeId, records, certs }: any) {
