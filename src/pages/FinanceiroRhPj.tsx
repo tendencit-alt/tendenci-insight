@@ -236,6 +236,8 @@ function EmployeesSection() {
           employeeName={provDlg.emp.name}
           baseSalary={Number(provDlg.emp.base_salary || 0)}
           admissionDate={provDlg.emp.admission_date}
+          charges={settings as any}
+
         />
       )}
     </div>
