@@ -35,7 +35,7 @@ import {
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { CltProvisionDialog } from "@/components/hr/CltProvisionDialog";
 import { TimeClockPunchDialog } from "@/components/hr/TimeClockPunchDialog";
-import { computeVacationProvision, computeThirteenthProvision, brl } from "@/lib/clt-provisions";
+import { computeVacationProvision, computeThirteenthProvision, brl, fmtDate } from "@/lib/clt-provisions";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -49,7 +49,7 @@ function EmployeesSection() {
   const { data: employees = [] } = useRhEmployees();
   const { data: canPii } = useCanViewHrPii();
   const save = useSaveEmployee();
-  const { data: settings } = useHrSettings();
+  // (encargos removidos — apenas previsão base de férias e 13º)
 
   const { activeTenantId } = useActiveTenant();
   const [costCenters, setCostCenters] = useState<{ id: string; name: string }[]>([]);
@@ -157,7 +157,10 @@ function EmployeesSection() {
             <TableRow>
               <TableHead>Nome</TableHead><TableHead>CPF</TableHead><TableHead>Cargo</TableHead>
               <TableHead>Admissão</TableHead><TableHead>Salário</TableHead>
-              <TableHead>Férias (saldo)</TableHead><TableHead>13º (saldo)</TableHead>
+              <TableHead>Férias (saldo)</TableHead>
+              <TableHead>Próx. férias vencem</TableHead>
+              <TableHead>13º (saldo)</TableHead>
+              <TableHead>13º vencimentos</TableHead>
               <TableHead>Status</TableHead><TableHead></TableHead>
             </TableRow>
           </TableHeader>
@@ -170,7 +173,7 @@ function EmployeesSection() {
                 <TableCell className="font-medium">{e.name}</TableCell>
                 <TableCell className="font-mono text-xs">{mask(e.cpf, !!canPii)}</TableCell>
                 <TableCell>{e.hr_positions?.title ?? "—"}</TableCell>
-                <TableCell>{e.admission_date ?? "—"}</TableCell>
+                <TableCell>{e.admission_date ? fmtDate(e.admission_date) : "—"}</TableCell>
                 <TableCell>{canPii ? brl(Number(e.base_salary)) : "•••"}</TableCell>
                 <TableCell>
                   {canPii ? (
@@ -180,6 +183,14 @@ function EmployeesSection() {
                     </button>
                   ) : "•••"}
                 </TableCell>
+                <TableCell className="text-xs">
+                  {e.admission_date ? (
+                    <div className="space-y-0.5">
+                      <div className="tabular-nums">{fmtDate(vac.due.currentCycleEnd)}</div>
+                      <div className="text-muted-foreground">conceder até {fmtDate(vac.due.grantDeadline)}</div>
+                    </div>
+                  ) : "—"}
+                </TableCell>
                 <TableCell>
                   {canPii ? (
                     <button className="underline-offset-2 hover:underline text-left" onClick={() => setProvDlg({ kind: "thirteenth", emp: e })}>
@@ -188,12 +199,20 @@ function EmployeesSection() {
                     </button>
                   ) : "•••"}
                 </TableCell>
+                <TableCell className="text-xs">
+                  {canPii && e.admission_date ? (
+                    <div className="space-y-0.5">
+                      <div className="tabular-nums">1ª {fmtDate(th.due.firstInstallmentDue)} · {brl(th.due.firstAmount)}</div>
+                      <div className="tabular-nums">2ª {fmtDate(th.due.secondInstallmentDue)} · {brl(th.due.secondAmount)}</div>
+                    </div>
+                  ) : "—"}
+                </TableCell>
                 <TableCell><Badge variant="secondary">{e.status}</Badge></TableCell>
                 <TableCell><Button size="sm" variant="ghost" onClick={() => setSelected(e.id)}><Eye className="h-4 w-4" /></Button></TableCell>
               </TableRow>
               );
             })}
-            {!employees.length && <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">Nenhum colaborador.</TableCell></TableRow>}
+            {!employees.length && <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-6">Nenhum colaborador.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>
@@ -236,8 +255,6 @@ function EmployeesSection() {
           employeeName={provDlg.emp.name}
           baseSalary={Number(provDlg.emp.base_salary || 0)}
           admissionDate={provDlg.emp.admission_date}
-          charges={settings as any}
-
         />
       )}
     </div>
@@ -331,7 +348,7 @@ function PunchEvidence({ r }: { r: any }) {
   return items.length ? <div className="space-y-0.5">{items}</div> : <span className="text-muted-foreground">—</span>;
 }
 
-// ───────────────────────── Encargos & Locais ─────────────────────────
+// ───────────────────────── Locais de Trabalho (geofence) ─────────────────────────
 function HrSettingsSection() {
   const { data: s } = useHrSettings();
   const save = useSaveHrSettings();
@@ -345,20 +362,10 @@ function HrSettingsSection() {
   return (
     <div className="grid md:grid-cols-2 gap-4">
       <Card className="p-4 space-y-3">
-        <h3 className="font-semibold">Encargos sobre folha</h3>
-        <p className="text-xs text-muted-foreground">Alíquotas padrão do Regime Normal (Lucro Presumido/Real). Edite conforme CNAE/FAP.</p>
-        <div className="grid grid-cols-2 gap-3">
-          <div><Label>FGTS (%)</Label><Input type="number" step="0.001" value={f.fgts_pct} onChange={(e) => setF({ ...f, fgts_pct: Number(e.target.value) })} /></div>
-          <div><Label>INSS / CPP (%)</Label><Input type="number" step="0.001" value={f.inss_cpp_pct} onChange={(e) => setF({ ...f, inss_cpp_pct: Number(e.target.value) })} disabled={f.simples_optante} /></div>
-          <div><Label>RAT/SAT (%)</Label><Input type="number" step="0.001" value={f.rat_pct} onChange={(e) => setF({ ...f, rat_pct: Number(e.target.value) })} /></div>
-          <div><Label>Terceiros (%)</Label><Input type="number" step="0.001" value={f.terceiros_pct} onChange={(e) => setF({ ...f, terceiros_pct: Number(e.target.value) })} /></div>
-        </div>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={!!f.simples_optante} onChange={(e) => setF({ ...f, simples_optante: e.target.checked })} />
-          Optante pelo Simples Nacional (zera CPP — recolhido via DAS)
-        </label>
+        <h3 className="font-semibold">Geofence do ponto</h3>
+        <p className="text-xs text-muted-foreground">Como tratar batidas de ponto fora do raio dos locais cadastrados.</p>
         <div>
-          <Label>Modo de geofence do ponto</Label>
+          <Label>Modo de geofence</Label>
           <Select value={f.geofence_mode} onValueChange={(v) => setF({ ...f, geofence_mode: v })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -368,11 +375,11 @@ function HrSettingsSection() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={() => save.mutate(f)}>Salvar configurações</Button>
+        <Button onClick={() => save.mutate(f)}>Salvar</Button>
       </Card>
 
       <Card className="p-4 space-y-3">
-        <h3 className="font-semibold">Locais de trabalho (geofence)</h3>
+        <h3 className="font-semibold">Locais de trabalho</h3>
         <div className="grid grid-cols-5 gap-2 items-end">
           <div className="col-span-2"><Label>Nome</Label><Input value={loc.name} onChange={(e) => setLoc({ ...loc, name: e.target.value })} /></div>
           <div><Label>Lat</Label><Input value={loc.latitude} onChange={(e) => setLoc({ ...loc, latitude: e.target.value })} /></div>
@@ -636,7 +643,7 @@ export function RhPjPanel() {
         <TabsList>
           <TabsTrigger value="rh" className="gap-1.5"><Users className="h-4 w-4" />RH (CLT)</TabsTrigger>
           <TabsTrigger value="pj" className="gap-1.5"><Briefcase className="h-4 w-4" />PJ (Prestadores)</TabsTrigger>
-          <TabsTrigger value="config" className="gap-1.5"><Calculator className="h-4 w-4" />Encargos & Locais</TabsTrigger>
+          <TabsTrigger value="config" className="gap-1.5"><MapPin className="h-4 w-4" />Locais de Trabalho</TabsTrigger>
         </TabsList>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={generatePayroll}>Gerar folha do mês</Button>
