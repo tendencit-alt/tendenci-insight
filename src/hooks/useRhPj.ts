@@ -217,6 +217,18 @@ export function useSaveServiceProvider() {
   });
 }
 
+export function useDeleteServiceProvider() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("service_providers").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["service-providers"] }); toast.success("Prestador removido"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
+
 export function useServiceProviderDocs(providerId?: string) {
   return useQuery({
     queryKey: ["service-provider-docs", providerId],
