@@ -112,14 +112,22 @@ export function StrategicResourceCategoriesManager() {
 
   const isActive = (accountId: string) => configByAccount.get(accountId)?.active ?? false;
 
-  const save = async (accountId: string, payload: { active?: boolean; default_percentage?: number }) => {
+  const save = async (
+    accountId: string,
+    payload: { active?: boolean; default_percentage?: number; cost_center_id?: string | null }
+  ) => {
     const existing = configByAccount.get(accountId);
     setSavingId(accountId);
     try {
-      const nextData = {
+      const nextData: any = {
         chart_account_id: accountId,
+        tenant_id: activeTenantId,
         active: payload.active ?? existing?.active ?? false,
         default_percentage: payload.default_percentage ?? existing?.default_percentage ?? 0,
+        cost_center_id:
+          payload.cost_center_id !== undefined
+            ? payload.cost_center_id
+            : existing?.cost_center_id ?? null,
       };
       if (existing) {
         const { error } = await supabase.from(TABLE_NAME as any).update(nextData).eq("id", existing.id);
