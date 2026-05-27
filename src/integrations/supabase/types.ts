@@ -9865,7 +9865,9 @@ export type Database = {
           admission_date: string | null
           base_salary: number
           benefits_percent: number
+          chart_account_id: string | null
           contract_type: string | null
+          cost_center_id: string | null
           cpf: string | null
           created_at: string | null
           department_id: string | null
@@ -9889,7 +9891,9 @@ export type Database = {
           admission_date?: string | null
           base_salary?: number
           benefits_percent?: number
+          chart_account_id?: string | null
           contract_type?: string | null
+          cost_center_id?: string | null
           cpf?: string | null
           created_at?: string | null
           department_id?: string | null
@@ -9913,7 +9917,9 @@ export type Database = {
           admission_date?: string | null
           base_salary?: number
           benefits_percent?: number
+          chart_account_id?: string | null
           contract_type?: string | null
+          cost_center_id?: string | null
           cpf?: string | null
           created_at?: string | null
           department_id?: string | null
@@ -9934,6 +9940,20 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "hr_employees_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_employees_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "hr_employees_department_id_fkey"
             columns: ["department_id"]
@@ -10186,7 +10206,17 @@ export type Database = {
           notes: string | null
           tenant_id: string
           time_in: string | null
+          time_in_accuracy: number | null
+          time_in_at: string | null
+          time_in_lat: number | null
+          time_in_lng: number | null
+          time_in_photo_path: string | null
           time_out: string | null
+          time_out_accuracy: number | null
+          time_out_at: string | null
+          time_out_lat: number | null
+          time_out_lng: number | null
+          time_out_photo_path: string | null
           updated_at: string
           work_date: string
           worked_hours: number | null
@@ -10198,7 +10228,17 @@ export type Database = {
           notes?: string | null
           tenant_id?: string
           time_in?: string | null
+          time_in_accuracy?: number | null
+          time_in_at?: string | null
+          time_in_lat?: number | null
+          time_in_lng?: number | null
+          time_in_photo_path?: string | null
           time_out?: string | null
+          time_out_accuracy?: number | null
+          time_out_at?: string | null
+          time_out_lat?: number | null
+          time_out_lng?: number | null
+          time_out_photo_path?: string | null
           updated_at?: string
           work_date: string
           worked_hours?: number | null
@@ -10210,7 +10250,17 @@ export type Database = {
           notes?: string | null
           tenant_id?: string
           time_in?: string | null
+          time_in_accuracy?: number | null
+          time_in_at?: string | null
+          time_in_lat?: number | null
+          time_in_lng?: number | null
+          time_in_photo_path?: string | null
           time_out?: string | null
+          time_out_accuracy?: number | null
+          time_out_at?: string | null
+          time_out_lat?: number | null
+          time_out_lng?: number | null
+          time_out_photo_path?: string | null
           updated_at?: string
           work_date?: string
           worked_hours?: number | null
