@@ -632,7 +632,8 @@ function ProvidersSection() {
                 setOpen(false);
                 setEditingId(null);
               }}>Salvar</Button>
-            </div>
+              </div>
+            </DialogContent>
           </Dialog>
         </div>
       </div>
