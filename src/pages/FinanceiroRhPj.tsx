@@ -28,6 +28,7 @@ import {
   getSignedUrl,
 } from "@/hooks/useRhPj";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 function mask(v: any, can: boolean, placeholder = "•••") {
   if (can) return v ?? "—";
@@ -409,7 +410,43 @@ function ProviderDocs({ providerId, onClose, name }: any) {
   );
 }
 
-// ───────────────────────── Página ─────────────────────────
+// ───────────────────────── Painel reutilizável ─────────────────────────
+// Usado tanto pela rota /financeiro/rh-pj quanto como aba na página Financeiro.
+export function RhPjPanel() {
+  const generatePayroll = async () => {
+    const month = new Date().toISOString().slice(0, 7) + "-01";
+    const { data, error } = await supabase.rpc("generate_hr_payroll_payables", { _month: month });
+    if (error) return toast.error(error.message);
+    const r = (data as any)?.[0] ?? data;
+    toast.success(`Folha gerada: ${r?.created ?? 0} criados, ${r?.updated ?? 0} atualizados`);
+  };
+  const generatePj = async () => {
+    const month = new Date().toISOString().slice(0, 7) + "-01";
+    const { data, error } = await supabase.rpc("generate_pj_contract_payables", { _month: month });
+    if (error) return toast.error(error.message);
+    const r = (data as any)?.[0] ?? data;
+    toast.success(`PJ gerado: ${r?.created ?? 0} criados, ${r?.updated ?? 0} atualizados`);
+  };
+
+  return (
+    <Tabs defaultValue="rh" className="space-y-4">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <TabsList>
+          <TabsTrigger value="rh" className="gap-1.5"><Users className="h-4 w-4" />RH (CLT)</TabsTrigger>
+          <TabsTrigger value="pj" className="gap-1.5"><Briefcase className="h-4 w-4" />PJ (Prestadores)</TabsTrigger>
+        </TabsList>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={generatePayroll}>Gerar folha do mês</Button>
+          <Button size="sm" variant="outline" onClick={generatePj}>Gerar PJ do mês</Button>
+        </div>
+      </div>
+      <TabsContent value="rh"><EmployeesSection /></TabsContent>
+      <TabsContent value="pj"><ProvidersSection /></TabsContent>
+    </Tabs>
+  );
+}
+
+// ───────────────────────── Página standalone ─────────────────────────
 export default function FinanceiroRhPj() {
   return (
     <DashboardLayout>
@@ -418,16 +455,7 @@ export default function FinanceiroRhPj() {
         title="RH / PJ"
         description="Gestão de colaboradores CLT e prestadores PJ — acesso restrito a Administradores e Financeiro/RH/PJ."
         icon={<Briefcase className="h-5 w-5" />}
-        records={
-          <Tabs defaultValue="rh" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="rh" className="gap-1.5"><Users className="h-4 w-4" />RH (CLT)</TabsTrigger>
-              <TabsTrigger value="pj" className="gap-1.5"><Briefcase className="h-4 w-4" />PJ (Prestadores)</TabsTrigger>
-            </TabsList>
-            <TabsContent value="rh"><EmployeesSection /></TabsContent>
-            <TabsContent value="pj"><ProvidersSection /></TabsContent>
-          </Tabs>
-        }
+        records={<RhPjPanel />}
       />
     </DashboardLayout>
   );
