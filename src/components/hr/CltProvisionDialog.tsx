@@ -1,10 +1,9 @@
-// Diálogo de composição de provisões CLT (férias OU 13º) com encargos.
-// Mostra base, cada encargo (FGTS, INSS/CPP, RAT, Terceiros) e o TOTAL.
+// Diálogo de composição de provisões CLT (férias OU 13º) — APENAS BASE.
+// Mostra base, saldo acumulado, integral e os VENCIMENTOS legais com base na admissão.
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  brl, computeVacationProvision, computeThirteenthProvision,
-  applyCharges, type PayrollCharges,
+  brl, fmtDate, computeVacationProvision, computeThirteenthProvision,
 } from "@/lib/clt-provisions";
 
 interface Props {
@@ -14,18 +13,12 @@ interface Props {
   employeeName: string;
   baseSalary: number;
   admissionDate?: string | null;
-  charges?: PayrollCharges | null;
 }
 
-export function CltProvisionDialog({ open, onOpenChange, kind, employeeName, baseSalary, admissionDate, charges }: Props) {
+export function CltProvisionDialog({ open, onOpenChange, kind, employeeName, baseSalary, admissionDate }: Props) {
   const isVac = kind === "vacation";
   const v = isVac ? computeVacationProvision({ baseSalary, admissionDate }) : null;
   const t = !isVac ? computeThirteenthProvision({ baseSalary, admissionDate }) : null;
-
-  const accrued = isVac ? v!.accruedBalance : t!.accruedBalance;
-  const full = isVac ? v!.fullVacation : t!.fullThirteenth;
-  const accruedCharged = applyCharges(accrued, charges);
-  const fullCharged = applyCharges(full, charges);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -38,14 +31,22 @@ export function CltProvisionDialog({ open, onOpenChange, kind, employeeName, bas
 
         <div className="space-y-1 text-sm">
           <Row label="Salário base" value={brl(baseSalary)} />
-          <Row label="Data de admissão" value={admissionDate ?? "—"} />
+          <Row label="Data de admissão" value={admissionDate ? fmtDate(admissionDate) : "—"} />
 
           {isVac && v && (
             <>
               <Row label="Meses no período aquisitivo atual" value={`${v.monthsInPeriod} / 12`} />
               <Sep />
               <Row label="Provisão mensal" value={brl(v.monthlyProvision)} hint="(salário ÷ 12) × (1 + 1/3)" />
-              <Row label="Saldo acumulado (base)" value={brl(v.accruedBalance)} hint="provisão × meses" />
+              <Row label="Saldo acumulado" value={brl(v.accruedBalance)} hint="provisão × meses" strong />
+              <Sep />
+              <div className="text-xs uppercase text-muted-foreground tracking-wide pt-1">Férias integrais previstas</div>
+              <Row label="Salário + 1/3" value={brl(v.fullVacation)} strong />
+              <Sep />
+              <div className="text-xs uppercase text-muted-foreground tracking-wide pt-1">Vencimentos</div>
+              <Row label="Início do período aquisitivo atual" value={fmtDate(v.due.currentCycleStart)} />
+              <Row label="Próximas férias vencem em" value={fmtDate(v.due.currentCycleEnd)} strong />
+              <Row label="Limite de concessão" value={fmtDate(v.due.grantDeadline)} hint="vencimento + 12 meses (CLT art. 134)" />
             </>
           )}
           {!isVac && t && (
@@ -53,31 +54,22 @@ export function CltProvisionDialog({ open, onOpenChange, kind, employeeName, bas
               <Row label="Meses trabalhados no ano" value={`${t.monthsInYear} / 12`} />
               <Sep />
               <Row label="Provisão mensal" value={brl(t.monthlyProvision)} hint="salário ÷ 12" />
-              <Row label="Saldo acumulado (base)" value={brl(t.accruedBalance)} />
+              <Row label="Saldo acumulado" value={brl(t.accruedBalance)} strong />
+              <Sep />
+              <div className="text-xs uppercase text-muted-foreground tracking-wide pt-1">13º integral</div>
+              <Row label="1 salário" value={brl(t.fullThirteenth)} strong />
+              <Sep />
+              <div className="text-xs uppercase text-muted-foreground tracking-wide pt-1">
+                Vencimentos do ano · proporcional a {t.due.proportionalMonths}/12 meses
+              </div>
+              <Row label="13º proporcional do ano" value={brl(t.due.proportionalAmount)} />
+              <Row label="1ª parcela (até 30/11)" value={`${fmtDate(t.due.firstInstallmentDue)} · ${brl(t.due.firstAmount)}`} strong />
+              <Row label="2ª parcela (até 20/12)" value={`${fmtDate(t.due.secondInstallmentDue)} · ${brl(t.due.secondAmount)}`} strong />
             </>
           )}
 
-          <Sep />
-          <div className="text-xs uppercase text-muted-foreground tracking-wide pt-1">
-            Encargos sobre o acumulado
-            {charges?.simples_optante && <span className="ml-2 normal-case text-[10px] opacity-70">(Simples: CPP zerado)</span>}
-          </div>
-          {accruedCharged.charges.map(c => (
-            <Row key={c.label} label={`${c.label} (${c.pct.toFixed(2)}%)`} value={brl(c.amount)} />
-          ))}
-          <Row label="Total de encargos" value={brl(accruedCharged.totalCharges)} />
-          <Row label="TOTAL provisionado (custo empregador)" value={brl(accruedCharged.total)} strong />
-
-          <Sep />
-          <div className="text-xs uppercase text-muted-foreground tracking-wide pt-1">
-            {isVac ? "Férias integrais previstas" : "13º integral"}
-          </div>
-          <Row label="Base" value={brl(full)} />
-          <Row label="+ Encargos" value={brl(fullCharged.totalCharges)} />
-          <Row label="Total com encargos" value={brl(fullCharged.total)} strong />
-
           <p className="text-xs text-muted-foreground pt-2 border-t mt-3">
-            {isVac ? v?.notes : t?.notes} Alíquotas configuráveis em Configurações &gt; RH.
+            {isVac ? v?.notes : t?.notes}
           </p>
         </div>
       </DialogContent>
