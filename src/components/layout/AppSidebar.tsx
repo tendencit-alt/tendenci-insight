@@ -360,7 +360,7 @@ const LEVEL_GROUP_BORDER: Record<AttentionLevel, string> = {
 export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
-  const { userLevel, hasModuleAccess, loading: permsLoading } = usePermissions();
+  const { userLevel, hasModuleAccess, hasAccess, loading: permsLoading } = usePermissions();
   const { user } = useAuth();
   const { data: companySettings } = useCompanySettings();
   const companyLogo = companySettings?.logo_url;
@@ -455,11 +455,11 @@ export function AppSidebar() {
         // Esconde o grupo inteiro se nenhum item gated estiver permitido.
         if (permsLoading) return true;
         const anyVisible = g.items.some(
-          (it) => !it.module || hasModuleAccess(it.module as any)
+          (it) => !it.module || hasAccess(it.module as any, it.url, 'view')
         );
         return anyVisible;
       });
-  }, [currentProfile, permsLoading, hasModuleAccess]);
+  }, [currentProfile, permsLoading, hasAccess]);
 
   // Favorites items
   const favoriteItems = useMemo(() => {
@@ -623,7 +623,7 @@ export function AppSidebar() {
                       <SidebarGroupContent>
                         <SidebarMenu>
                           {group.items
-                            .filter((item) => !item.module || permsLoading || hasModuleAccess(item.module as any))
+                            .filter((item) => !item.module || permsLoading || hasAccess(item.module as any, item.url, 'view'))
                             .map((item) => {
                             const isHighlighted = highlightSet.has(item.url);
                             const itemBadge = getItemBadge(item.url);
