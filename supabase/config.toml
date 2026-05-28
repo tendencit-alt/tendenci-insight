@@ -120,3 +120,18 @@ verify_jwt = false
 [functions.send-email]
 verify_jwt = false
 
+
+[functions.asaas-webhook]
+verify_jwt = false
+
+[functions.trial-watcher]
+verify_jwt = false
+
+[functions.asaas-create-customer]
+verify_jwt = true
+
+[functions.asaas-create-subscription]
+verify_jwt = true
+
+[functions.asaas-cancel-subscription]
+verify_jwt = true
