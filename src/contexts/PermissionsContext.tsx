@@ -179,6 +179,24 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
         };
       });
 
+      // 5) Feature overrides (granularidade por rota/aba)
+      if (profile?.profile_type_id && !isAdmin) {
+        const { data: ovRows } = await supabase
+          .from('profile_type_feature_overrides' as any)
+          .select('feature_key, can_view, can_create, can_edit, can_delete')
+          .eq('profile_type_id', profile.profile_type_id);
+        const ovMap: Record<string, any> = {};
+        ((ovRows as any[]) || []).forEach((r: any) => {
+          ovMap[r.feature_key] = {
+            can_view: r.can_view, can_create: r.can_create,
+            can_edit: r.can_edit, can_delete: r.can_delete,
+          };
+        });
+        setOverridesMap(ovMap);
+      } else {
+        setOverridesMap({});
+      }
+
       console.log('[Permissions] Matrix loaded modules:', Object.keys(matrix).length);
 
       setPermissions({
