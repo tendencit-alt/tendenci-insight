@@ -126,7 +126,7 @@ const App = () => (
 
               {/* Catálogo público externo (sem autenticação) */}
               <Route path="/c/:tenant_slug" element={<CatalogoPublico />} />
-              <Route path="/c/:tenant_slug/p/:product_id" element={<CatalogoPublico />} />
+              <Route path="/c/:tenant_slug/p/:product_id" element={<CatalogoPublicoProduto />} />
 
 
               <Route path="/catalogo" element={<ProtectedRoute><PermissionGuard module="comercial"><Catalogo /></PermissionGuard></ProtectedRoute>} />
