@@ -35,6 +35,7 @@ import Produtos from "./pages/Produtos";
 
 import ActivityCenter from "./pages/ActivityCenter";
 import Catalogo from "./pages/Catalogo";
+import CatalogoPublico from "./pages/CatalogoPublico";
 import Financeiro from "./pages/Financeiro";
 import CadastrosFinanceiros from "./pages/CadastrosFinanceiros";
 import FinanceiroRhPj from "./pages/FinanceiroRhPj";
