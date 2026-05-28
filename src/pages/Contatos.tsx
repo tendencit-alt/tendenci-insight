@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { ModuleShell } from "@/components/layout/ModuleShell";
+
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,8 +63,8 @@ export default function Contatos() {
     queryKey: ["contatos-unified", activeTenantId],
     enabled: !!activeTenantId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("v_contatos_unified" as any)
+      const { data, error } = await (supabase as any)
+        .from("v_contatos_unified")
         .select("*")
         .order("nome", { ascending: true })
         .limit(2000);
@@ -166,29 +166,31 @@ export default function Contatos() {
   return (
     <ProtectedRoute>
       <DashboardLayout>
-        <ModuleShell
-          title="Contatos"
-          description="Hub unificado de clientes e fornecedores. Os cadastros continuam separados — esta visão apenas reúne ambos para busca rápida."
-          actions={
-            <div className="flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" /> Novo
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setOpenClient(true)}>
-                    <Users className="h-4 w-4 mr-2" /> Novo Cliente
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setOpenSupplier(true)}>
-                    <Truck className="h-4 w-4 mr-2" /> Novo Fornecedor
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+        <div className="p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight">Contatos</h1>
+              <p className="text-sm text-muted-foreground max-w-2xl">
+                Hub unificado de clientes e fornecedores. Os cadastros continuam separados — esta visão apenas reúne ambos para busca rápida.
+              </p>
             </div>
-          }
-        >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" /> Novo
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setOpenClient(true)}>
+                  <Users className="h-4 w-4 mr-2" /> Novo Cliente
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setOpenSupplier(true)}>
+                  <Truck className="h-4 w-4 mr-2" /> Novo Fornecedor
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           <Card className="p-4 space-y-4">
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
               <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
@@ -231,7 +233,7 @@ export default function Contatos() {
               </Table>
             </div>
           </Card>
-        </ModuleShell>
+        </div>
 
         <CreateClientDialog
           open={openClient}
