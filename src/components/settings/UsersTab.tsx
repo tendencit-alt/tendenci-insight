@@ -38,6 +38,7 @@ interface UserProfile {
 
 export function UsersTab() {
   const { toast } = useToast();
+  const { activeTenantId } = useActiveTenant();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
@@ -49,9 +50,14 @@ export function UsersTab() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [activeTenantId]);
 
   const fetchUsers = async () => {
+    if (!activeTenantId) {
+      setUsers([]);
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const { data: profiles, error } = await supabase
@@ -60,6 +66,8 @@ export function UsersTab() {
           *,
           profile_type:profile_types(id, name, display_name, color, icon, is_system)
         `)
+        .eq('tenant_id', activeTenantId)
+        .or('is_owner.is.null,is_owner.eq.false')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -75,6 +83,7 @@ export function UsersTab() {
       setLoading(false);
     }
   };
+
 
   const getRoleBadge = (user: UserProfile) => {
     if (user.profile_type) {
