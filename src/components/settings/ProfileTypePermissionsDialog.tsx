@@ -342,14 +342,26 @@ export function ProfileTypePermissionsDialog({
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [modRes, critRes, segRes, scopeRes, valRes, statusRes] = await Promise.all([
+      const [modRes, critRes, segRes, scopeRes, valRes, statusRes, ovRes] = await Promise.all([
         supabase.from('profile_type_permissions').select('*').eq('profile_type_id', profileType.id),
         supabase.from('rbac_critical_permissions').select('*').eq('profile_type_id', profileType.id),
         supabase.from('rbac_segregation_rules').select('*').eq('profile_type_id', profileType.id),
         supabase.from('rbac_scope_restrictions' as any).select('*').eq('profile_type_id', profileType.id),
         supabase.from('rbac_value_limits' as any).select('*').eq('profile_type_id', profileType.id),
         supabase.from('rbac_status_rules' as any).select('*').eq('profile_type_id', profileType.id),
+        supabase.from('profile_type_feature_overrides' as any).select('*').eq('profile_type_id', profileType.id),
       ]);
+
+      // Feature overrides (granularidade por rota/aba)
+      const ovMap: Record<string, { can_view: boolean | null; can_create: boolean | null; can_edit: boolean | null; can_delete: boolean | null }> = {};
+      ((ovRes.data as any[]) || []).forEach((row: any) => {
+        ovMap[row.feature_key] = {
+          can_view: row.can_view, can_create: row.can_create,
+          can_edit: row.can_edit, can_delete: row.can_delete,
+        };
+      });
+      setOverrides(ovMap);
+      setInitialOverrides(JSON.parse(JSON.stringify(ovMap)));
 
       // Module permissions
       const permMap: Record<string, ModulePermission> = {};
