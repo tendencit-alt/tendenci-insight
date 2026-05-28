@@ -1,11 +1,12 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Users, Building2, DollarSign, Package } from 'lucide-react';
+import { Loader2, Users, Building2, DollarSign, Package, ShoppingCart, Factory, Truck, UserCog, Wallet, ArrowDownCircle, ArrowUpCircle, Info } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOwnerConsolidated } from '@/hooks/useOwnerConsolidated';
 
 const fmtMoney = (v: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -82,6 +83,7 @@ function useOwnerMetrics() {
 export default function OwnerControlTower() {
   const { isOwner } = usePermissions();
   const { data, isLoading, error } = useOwnerMetrics();
+  const cons = useOwnerConsolidated();
 
   if (!isOwner) return <Navigate to="/" replace />;
 
@@ -95,7 +97,16 @@ export default function OwnerControlTower() {
           <p className="text-muted-foreground text-lg">
             Visão consolidada da base de tenants — dados em tempo real
           </p>
+          <div className="flex items-start gap-2 rounded-md border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
+            <Info className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+            <div>
+              <strong className="text-foreground">Owner = apenas estrutura (templates).</strong> Plano de contas, centros de custo, taxas, categorias, módulos e automações servem como base para novos inquilinos.
+              Nenhum dado operacional (pedidos, financeiro, ponto, clientes) pertence ao Owner.
+              Os painéis abaixo são <strong className="text-foreground">Visão Consolidada (read-only)</strong> agregando TODOS os inquilinos.
+            </div>
+          </div>
         </div>
+
 
         {isLoading && (
           <div className="flex justify-center py-12">
@@ -165,6 +176,37 @@ export default function OwnerControlTower() {
                     </tbody>
                   </table>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-primary/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Badge variant="outline" className="border-primary/40 text-primary">Visão Consolidada</Badge>
+                  <span>Operação agregada de TODOS os inquilinos (read-only)</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {cons.isLoading ? (
+                  <div className="flex justify-center py-6"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+                ) : cons.error ? (
+                  <p className="text-sm text-destructive">Erro: {(cons.error as Error).message}</p>
+                ) : cons.data && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <KPICard icon={ShoppingCart} label="Pedidos" value={cons.data.ordersCount} sub={fmtMoney(cons.data.ordersAmt)} />
+                      <KPICard icon={ArrowDownCircle} label="Contas a pagar (abertas)" value={cons.data.payablesOpenCount} sub={fmtMoney(cons.data.payablesOpenAmt)} />
+                      <KPICard icon={ArrowUpCircle} label="Contas a receber (abertas)" value={cons.data.recvOpenCount} sub={fmtMoney(cons.data.recvOpenAmt)} />
+                      <KPICard icon={Wallet} label="Saldo a receber - a pagar" value={fmtMoney(cons.data.recvOpenAmt - cons.data.payablesOpenAmt)} />
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <KPICard icon={Factory} label="OPs de produção" value={cons.data.prodCount} />
+                      <KPICard icon={Truck} label="Entregas" value={cons.data.delCount} sub={`${cons.data.instCount} instalações`} />
+                      <KPICard icon={UserCog} label="Colaboradores CLT" value={cons.data.empCount} sub={`${cons.data.pjCount} PJs`} />
+                      <KPICard icon={Users} label="Clientes / Fornecedores" value={`${cons.data.clientsCount} / ${cons.data.suppliersCount}`} />
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </>
