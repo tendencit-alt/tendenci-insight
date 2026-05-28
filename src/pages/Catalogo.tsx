@@ -227,16 +227,6 @@ export default function Catalogo() {
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {user && (
-          <div className="flex justify-start mb-4">
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Voltar ao sistema
-              </Link>
-            </Button>
-          </div>
-        )}
         {user && <CatalogoAdminBar onProductCreated={loadProducts} />}
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
