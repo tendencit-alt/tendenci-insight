@@ -651,7 +651,7 @@ export function ProfileTypePermissionsDialog({
                 setPermissions(next.permissions as Record<string, ModulePermission>);
                 setOverrides(next.overrides);
               }}
-              showOwnerSections={isOwner}
+              showOwnerSections={false}
             />
           </div>
         )}
