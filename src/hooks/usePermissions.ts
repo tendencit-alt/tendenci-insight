@@ -68,7 +68,7 @@ export function usePermissions() {
       return;
     }
     const id = sim.state.targetProfileTypeId!;
-    if (lastSimId.current === id && simMatrix) return;
+    if (lastSimId.current === id) return;
     lastSimId.current = id;
     setSimLoading(true);
     supabase
@@ -97,7 +97,7 @@ export function usePermissions() {
         setSimMatrix(m);
         setSimLoading(false);
       });
-  }, [simActive, sim.state.targetProfileTypeId, simMatrix]);
+  }, [simActive, sim.state.targetProfileTypeId]);
 
   const hasModuleAccess = useCallback(
     (module: AppModule | string, action: PermissionAction = "view"): boolean => {
