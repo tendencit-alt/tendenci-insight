@@ -212,6 +212,7 @@ export function CreateProfileTypeDialog({
   });
 
   const isEditing = !!profileType;
+  const isReservedProfileTypeName = (value: string) => ['owner', 'master', 'admin'].includes(value.trim().toLowerCase());
 
   useEffect(() => {
     if (profileType) {
@@ -275,6 +276,15 @@ export function CreateProfileTypeDialog({
       toast({
         title: 'Campos obrigatórios',
         description: 'Nome interno e nome de exibição são obrigatórios.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!isEditing && isReservedProfileTypeName(formData.name)) {
+      toast({
+        title: 'Nome reservado',
+        description: 'Master é um perfil único do sistema. Crie outro tipo de perfil com um nome diferente.',
         variant: 'destructive',
       });
       return;
