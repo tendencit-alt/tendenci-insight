@@ -17,6 +17,7 @@ import { Shield, User, Loader2, ArrowLeft, CheckCircle, UserPlus, Key, Edit2, Tr
 import { useNavigate } from 'react-router-dom';
 import { describeError } from '@/lib/errorMessage';
 import { Can } from '@/components/auth/Can';
+import { useActiveTenant } from '@/hooks/useActiveTenant';
 
 interface ProfileType {
   id: string;
@@ -42,6 +43,7 @@ interface UserProfile {
 const UserManagement = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { activeTenantId, isOwner, isImpersonating } = useActiveTenant();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [profileTypes, setProfileTypes] = useState<ProfileType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,11 +55,12 @@ const UserManagement = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   
   const [activeTab, setActiveTab] = useState('users');
+  const ownerInMasterMode = isOwner && !isImpersonating;
 
   useEffect(() => {
     fetchUsers();
     fetchProfileTypes();
-  }, []);
+  }, [activeTenantId, ownerInMasterMode]);
 
   const fetchProfileTypes = async () => {
     try {
@@ -75,6 +78,12 @@ const UserManagement = () => {
   };
 
   const fetchUsers = async () => {
+    if (!activeTenantId || ownerInMasterMode) {
+      setUsers([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -84,6 +93,8 @@ const UserManagement = () => {
           *,
           profile_type:profile_types(id, name, display_name, color, icon, is_system)
         `)
+        .eq('tenant_id', activeTenantId)
+        .or('is_owner.is.null,is_owner.eq.false')
         .order('created_at', { ascending: false });
 
       if (profilesError) throw profilesError;
