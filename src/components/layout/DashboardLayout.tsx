@@ -19,6 +19,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="flex min-h-screen w-full flex-col">
+      <OwnerImpersonationBanner />
       <AppNavbar />
 
       <main className="flex-1 p-4 lg:p-6 bg-background min-h-screen max-w-[1800px] mx-auto w-full">
