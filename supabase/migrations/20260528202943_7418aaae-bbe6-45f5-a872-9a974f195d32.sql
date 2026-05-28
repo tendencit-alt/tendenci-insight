@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ALTER COLUMN profile_type_id DROP NOT NULL;

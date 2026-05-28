@@ -16411,7 +16411,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_owner: boolean | null
-          profile_type_id: string
+          profile_type_id: string | null
           role: Database["public"]["Enums"]["user_role"]
           tenant_id: string | null
           updated_at: string | null
@@ -16426,7 +16426,7 @@ export type Database = {
           full_name?: string | null
           id: string
           is_owner?: boolean | null
-          profile_type_id: string
+          profile_type_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           tenant_id?: string | null
           updated_at?: string | null
@@ -16441,7 +16441,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_owner?: boolean | null
-          profile_type_id?: string
+          profile_type_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           tenant_id?: string | null
           updated_at?: string | null
