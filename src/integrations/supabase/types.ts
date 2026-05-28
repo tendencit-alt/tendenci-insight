@@ -22824,6 +22824,22 @@ export type Database = {
       }
     }
     Views: {
+      v_contatos_unified: {
+        Row: {
+          city: string | null
+          cpf_cnpj: string | null
+          created_at: string | null
+          email: string | null
+          id: string | null
+          nome: string | null
+          nome_fantasia: string | null
+          phone: string | null
+          state: string | null
+          tenant_id: string | null
+          tipo: string | null
+        }
+        Relationships: []
+      }
       v_data_lineage: {
         Row: {
           event_created_at: string | null
