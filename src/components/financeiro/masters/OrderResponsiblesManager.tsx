@@ -33,6 +33,7 @@ type OrderResponsible = Database["public"]["Tables"]["order_responsibles"]["Row"
 };
 
 export function OrderResponsiblesManager() {
+  const { activeTenantId } = useActiveTenant();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<OrderResponsible | null>(null);
   const [deleting, setDeleting] = useState<OrderResponsible | null>(null);
