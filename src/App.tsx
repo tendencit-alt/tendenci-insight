@@ -124,6 +124,11 @@ const App = () => (
               <Route path="/redefinir-senha" element={<ResetPassword />} />
               <Route path="/reset-password" element={<Navigate to="/redefinir-senha" replace />} />
 
+              {/* Catálogo público externo (sem autenticação) */}
+              <Route path="/c/:tenant_slug" element={<CatalogoPublico />} />
+              <Route path="/c/:tenant_slug/p/:product_id" element={<CatalogoPublico />} />
+
+
               <Route path="/catalogo" element={<ProtectedRoute><PermissionGuard module="comercial"><Catalogo /></PermissionGuard></ProtectedRoute>} />
               {/* Simplificação MVP: "/" mostra a tela "Hoje". HomeLauncher antigo continua em /central-navegacao-completo. */}
               <Route path="/" element={<ProtectedRoute><HomeHoje /></ProtectedRoute>} />
