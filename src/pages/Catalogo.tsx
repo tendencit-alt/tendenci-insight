@@ -367,12 +367,16 @@ export default function Catalogo() {
         </div>
       </footer>
 
-      <ProductDetailModal
-        product={selectedProduct}
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        onBuyNow={handleBuyNow}
-      />
-    </div>
+          <ProductDetailModal
+            product={selectedProduct}
+            open={modalOpen}
+            onOpenChange={setModalOpen}
+            onBuyNow={handleBuyNow}
+          />
+          </div>
+        </div>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }
+
