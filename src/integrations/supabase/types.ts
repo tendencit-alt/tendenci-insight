@@ -11555,6 +11555,66 @@ export type Database = {
         }
         Relationships: []
       }
+      lgpd_deletion_requests: {
+        Row: {
+          email: string
+          id: string
+          notes: string | null
+          processed_at: string | null
+          requested_at: string
+          scheduled_hard_delete_at: string
+          status: string
+          tenant_id: string | null
+          user_id: string
+        }
+        Insert: {
+          email: string
+          id?: string
+          notes?: string | null
+          processed_at?: string | null
+          requested_at?: string
+          scheduled_hard_delete_at: string
+          status?: string
+          tenant_id?: string | null
+          user_id: string
+        }
+        Update: {
+          email?: string
+          id?: string
+          notes?: string | null
+          processed_at?: string | null
+          requested_at?: string
+          scheduled_hard_delete_at?: string
+          status?: string
+          tenant_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      lgpd_export_log: {
+        Row: {
+          exported_at: string
+          id: string
+          ip: string | null
+          tenant_id: string | null
+          user_id: string
+        }
+        Insert: {
+          exported_at?: string
+          id?: string
+          ip?: string | null
+          tenant_id?: string | null
+          user_id: string
+        }
+        Update: {
+          exported_at?: string
+          id?: string
+          ip?: string | null
+          tenant_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       master_idea_attachments: {
         Row: {
           created_at: string | null
@@ -16406,6 +16466,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string | null
           current_tenant_id: string | null
+          deleted_at: string | null
           email: string
           especializacao: string | null
           full_name: string | null
@@ -16413,6 +16474,7 @@ export type Database = {
           is_owner: boolean | null
           profile_type_id: string | null
           role: Database["public"]["Enums"]["user_role"]
+          scheduled_hard_delete_at: string | null
           tenant_id: string | null
           updated_at: string | null
           username: string
@@ -16421,6 +16483,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string | null
           current_tenant_id?: string | null
+          deleted_at?: string | null
           email: string
           especializacao?: string | null
           full_name?: string | null
@@ -16428,6 +16491,7 @@ export type Database = {
           is_owner?: boolean | null
           profile_type_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          scheduled_hard_delete_at?: string | null
           tenant_id?: string | null
           updated_at?: string | null
           username: string
@@ -16436,6 +16500,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string | null
           current_tenant_id?: string | null
+          deleted_at?: string | null
           email?: string
           especializacao?: string | null
           full_name?: string | null
@@ -16443,6 +16508,7 @@ export type Database = {
           is_owner?: boolean | null
           profile_type_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          scheduled_hard_delete_at?: string | null
           tenant_id?: string | null
           updated_at?: string | null
           username?: string
