@@ -213,8 +213,12 @@ export default function Catalogo() {
   };
 
   return (
-    <div className="min-h-screen bg-background" style={{ ["--catalog-primary" as any]: primaryColor }}>
-      <CatalogoHeader
+    <ProtectedRoute>
+      <DashboardLayout>
+        <div className="min-h-screen bg-background" style={{ ["--catalog-primary" as any]: primaryColor }}>
+          <SharePublicCatalogPanel />
+          <div className="mt-6">
+          <CatalogoHeader
         categories={categories}
         selectedCategory={selectedCategory}
         onSelectCategory={setSelectedCategory}
