@@ -210,6 +210,7 @@ export default function OwnerControlTower() {
               </CardContent>
             </Card>
           </>
+        )}
       </div>
     </DashboardLayout>
   );
