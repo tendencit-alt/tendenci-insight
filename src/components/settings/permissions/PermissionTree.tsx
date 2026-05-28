@@ -179,7 +179,7 @@ export function PermissionTree({
         ))}
       </div>
 
-      <ScrollArea className="max-h-[55vh] pr-3">
+      <div className="pr-3">
         <div className="space-y-1">
           {visibleRoots.map(root => {
             const isOpen = expanded[root.key] ?? true;
@@ -282,7 +282,7 @@ export function PermissionTree({
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
 
       <p className={cn(
         'text-[11px] text-muted-foreground/80 leading-relaxed',
