@@ -38,7 +38,7 @@ interface UserProfile {
 
 export function UsersTab() {
   const { toast } = useToast();
-  const { activeTenantId } = useActiveTenant();
+  const { activeTenantId, isOwner, isImpersonating } = useActiveTenant();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
@@ -48,16 +48,20 @@ export function UsersTab() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
+  // Owner em modo Master (não impersonando tenant) não vê nenhum usuário.
+  const ownerInMasterMode = isOwner && !isImpersonating;
+
   useEffect(() => {
     fetchUsers();
-  }, [activeTenantId]);
+  }, [activeTenantId, ownerInMasterMode]);
 
   const fetchUsers = async () => {
-    if (!activeTenantId) {
+    if (!activeTenantId || ownerInMasterMode) {
       setUsers([]);
       setLoading(false);
       return;
     }
+
     try {
       setLoading(true);
       const { data: profiles, error } = await supabase
