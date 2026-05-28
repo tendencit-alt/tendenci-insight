@@ -1520,62 +1520,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   
                   <div className="space-y-3">
 
-                    {/* RT - Repasse Técnico */}
-                    {resourceDefaults.rt.visible && (
-                    <div className="flex items-center gap-3">
-                      <Switch
-                        checked={comissoes.rt.habilitado}
-                        onCheckedChange={(checked) => setComissoes(prev => ({
-                          ...prev,
-                          rt: { ...prev.rt, habilitado: checked }
-                        }))}
-                      />
-                      <span className="text-sm font-medium w-28">{resourceDefaults.rt.label}</span>
-                      {comissoes.rt.habilitado && (
-                        <>
-                          <div className="flex items-center gap-1">
-                            <Input
-                              type="number"
-                              className="h-8 w-20"
-                              value={comissoes.rt.percentual}
-                              onChange={(e) => atualizarComissaoPercentual('rt', Number(e.target.value))}
-                              min={0}
-                              max={100}
-                              step={0.1}
-                            />
-                            <Label className="text-xs text-muted-foreground">%</Label>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Label className="text-xs text-muted-foreground">R$</Label>
-                            <Input
-                              type="number"
-                              className="h-8 w-24 bg-muted"
-                              value={comissoes.rt.valor.toFixed(2)}
-                              readOnly
-                              disabled
-                            />
-                          </div>
-                          <Select
-                            value={comissoes.rt.responsavel_id || "_none"}
-                            onValueChange={(v) => setComissoes(prev => ({
-                              ...prev,
-                              rt: { ...prev.rt, responsavel_id: v === "_none" ? "" : v }
-                            }))}
-                          >
-                            <SelectTrigger className="h-8 w-52">
-                              <SelectValue placeholder="Responsável" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="_none">-</SelectItem>
-                              {rts?.map((responsavel) => (
-                                <SelectItem key={responsavel.id} value={responsavel.id}>{responsavel.full_name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </>
-                      )}
-                    </div>
-                    )}
+                    {/* RT - movido para o final para respeitar a ordem do cadastro (código 2.2.6) */}
+
 
                     {/* Comissão Vendedor */}
                     {resourceDefaults.vendedor.visible && (
