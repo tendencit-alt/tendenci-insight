@@ -728,8 +728,9 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
         )}
       </div>
 
-      <div className="hidden overflow-x-auto rounded-lg border xl:block">
-        <Table className="min-w-[900px]">
+      <div className="hidden overflow-x-auto rounded-lg border 2xl:block">
+        <Table className="min-w-[1000px]">
+
           <TableHeader>
             <TableRow>
               {showFiscalFields && <TableHead className="w-[90px]">Código</TableHead>}
