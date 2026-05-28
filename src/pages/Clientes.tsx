@@ -82,7 +82,9 @@ interface ClientRow {
 
 export default function Clientes() {
   const queryClient = useQueryClient();
-  const { activeTenantId } = useActiveTenant();
+  const { activeTenantId, isOwner, homeTenantId } = useActiveTenant();
+  const onMasterOwner =
+    isOwner && (activeTenantId === MASTER_OWNER_TENANT_ID || activeTenantId === homeTenantId);
   const { costCenters } = useCostCenters();
   const [createOpen, setCreateOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientRow | null>(null);
