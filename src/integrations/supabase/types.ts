@@ -23132,6 +23132,7 @@ export type Database = {
         Returns: Json
       }
       cleanup_old_pending_messages: { Args: never; Returns: undefined }
+      clear_active_tenant: { Args: never; Returns: undefined }
       clone_production_types_from_owner: {
         Args: { _tenant_id: string }
         Returns: number

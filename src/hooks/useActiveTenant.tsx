@@ -20,7 +20,12 @@ export function useActiveTenant() {
   const [switching, setSwitching] = useState(false);
 
   const homeTenantId = profile?.tenant_id ?? null;
-  const activeTenantId = profile?.current_tenant_id ?? homeTenantId;
+  const currentTenantId = profile?.current_tenant_id ?? null;
+  const activeTenantId = currentTenantId ?? homeTenantId;
+  const isOwner = profile?.is_owner === true;
+  // Owner is in "acting-as-tenant" mode when current_tenant_id points to a tenant
+  // other than their home tenant.
+  const isImpersonating = isOwner && !!currentTenantId && currentTenantId !== homeTenantId;
 
   const load = useCallback(async () => {
     if (!user) {
@@ -29,31 +34,67 @@ export function useActiveTenant() {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase
-      .from("user_tenants")
-      .select("tenant_id, role, tenants:tenant_id(id, name)")
-      .eq("user_id", user.id);
 
-    if (error) {
-      console.error("Failed loading memberships", error);
-      setMemberships([]);
+    let rows: TenantMembership[] = [];
+
+    if (isOwner) {
+      // Owner sees ALL tenants and can enter any of them.
+      const { data, error } = await supabase
+        .from("tenants")
+        .select("id, name")
+        .eq("active", true)
+        .order("name");
+      if (error) {
+        console.error("Failed loading tenants for owner", error);
+      } else {
+        rows = (data ?? []).map((t: any) => ({
+          tenant_id: t.id,
+          role: "owner",
+          name: t.name ?? "(sem nome)",
+          is_active: t.id === activeTenantId,
+          is_home: t.id === homeTenantId,
+        }));
+      }
     } else {
-      setMemberships(
-        (data ?? []).map((row: any) => ({
+      const { data, error } = await supabase
+        .from("user_tenants")
+        .select("tenant_id, role, tenants:tenant_id(id, name)")
+        .eq("user_id", user.id);
+
+      if (error) {
+        console.error("Failed loading memberships", error);
+      } else {
+        rows = (data ?? []).map((row: any) => ({
           tenant_id: row.tenant_id,
           role: row.role,
           name: row.tenants?.name ?? "(sem nome)",
           is_active: row.tenant_id === activeTenantId,
           is_home: row.tenant_id === homeTenantId,
-        }))
-      );
+        }));
+      }
     }
+
+    setMemberships(rows);
     setLoading(false);
-  }, [user, activeTenantId, homeTenantId]);
+  }, [user, activeTenantId, homeTenantId, isOwner]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const broadcastChange = useCallback((tenantId: string | null) => {
+    try {
+      const payload = { tenantId, ts: Date.now() };
+      if (typeof BroadcastChannel !== "undefined") {
+        const bc = new BroadcastChannel("active-tenant");
+        bc.postMessage(payload);
+        bc.close();
+      }
+      localStorage.setItem("active-tenant-switch", JSON.stringify(payload));
+    } catch {
+      /* noop */
+    }
+  }, []);
 
   const switchTenant = useCallback(async (targetTenantId: string): Promise<boolean> => {
     setSwitching(true);
@@ -80,37 +121,38 @@ export function useActiveTenant() {
         setSwitching(false);
         return false;
       }
-      // Notify other tabs that the active tenant changed.
-      try {
-        const payload = { tenantId: targetTenantId, ts: Date.now() };
-        if (typeof BroadcastChannel !== "undefined") {
-          const bc = new BroadcastChannel("active-tenant");
-          bc.postMessage(payload);
-          bc.close();
-        }
-        // Storage event fallback (fires in OTHER tabs only).
-        localStorage.setItem("active-tenant-switch", JSON.stringify(payload));
-      } catch {
-        /* noop */
-      }
-      // Soft refresh: refetch profile (carries new current_tenant_id) and
-      // invalidate every cached query so RLS-scoped data is re-pulled.
+      broadcastChange(targetTenantId);
       await refreshProfile();
       await queryClient.invalidateQueries();
       toast.success("Empresa ativa atualizada");
       return true;
     } catch (err: any) {
-      toast.error("Não foi possível trocar de empresa.", {
-        description: err?.message,
-      });
+      toast.error("Não foi possível trocar de empresa.", { description: err?.message });
       return false;
     } finally {
       setSwitching(false);
     }
-  }, [refreshProfile, queryClient]);
+  }, [refreshProfile, queryClient, broadcastChange]);
 
-  // Listen for tenant switches triggered in other tabs and soft-refresh
-  // (refetch profile + invalidate all queries) so RLS reflects immediately.
+  // Owner-only: leave impersonation and return to Owner mode (current_tenant_id = NULL).
+  const exitToOwnerMode = useCallback(async (): Promise<boolean> => {
+    setSwitching(true);
+    try {
+      const { error } = await supabase.rpc("clear_active_tenant" as any);
+      if (error) {
+        toast.error("Não foi possível voltar ao modo Owner.", { description: error.message });
+        return false;
+      }
+      broadcastChange(null);
+      await refreshProfile();
+      await queryClient.invalidateQueries();
+      toast.success("Modo Owner restaurado");
+      return true;
+    } finally {
+      setSwitching(false);
+    }
+  }, [refreshProfile, queryClient, broadcastChange]);
+
   useEffect(() => {
     if (!user) return;
     let bc: BroadcastChannel | null = null;
@@ -122,8 +164,8 @@ export function useActiveTenant() {
     if (typeof BroadcastChannel !== "undefined") {
       bc = new BroadcastChannel("active-tenant");
       bc.onmessage = (ev) => {
-        const next = ev.data?.tenantId;
-        if (next && next !== activeTenantId) softRefresh();
+        const next = ev.data?.tenantId ?? null;
+        if (next !== activeTenantId) softRefresh();
       };
     }
 
@@ -131,7 +173,7 @@ export function useActiveTenant() {
       if (e.key !== "active-tenant-switch" || !e.newValue) return;
       try {
         const { tenantId } = JSON.parse(e.newValue);
-        if (tenantId && tenantId !== activeTenantId) softRefresh();
+        if (tenantId !== activeTenantId) softRefresh();
       } catch {
         /* noop */
       }
@@ -144,13 +186,21 @@ export function useActiveTenant() {
     };
   }, [user, activeTenantId, refreshProfile, queryClient]);
 
+  const activeTenantName =
+    memberships.find((m) => m.tenant_id === activeTenantId)?.name ?? null;
+
   return {
     memberships,
     activeTenantId,
     homeTenantId,
+    currentTenantId,
+    activeTenantName,
+    isOwner,
+    isImpersonating,
     loading,
     switching,
     switchTenant,
+    exitToOwnerMode,
     reload: load,
   };
 }
