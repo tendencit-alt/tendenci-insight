@@ -64,6 +64,7 @@ import { DeleteClientDialog } from "@/components/clients/DeleteClientDialog";
 import { useCostCenters } from "@/hooks/useCostCenters";
 import { Can } from "@/components/auth/Can";
 import { ClientesFornecedoresTabs } from "@/components/layout/ClientesFornecedoresTabs";
+import { OwnerTenantEmptyState, MASTER_OWNER_TENANT_ID } from "@/components/tenant/OwnerTenantEmptyState";
 
 interface ClientRow {
   id: string;
