@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import * as Sentry from '@sentry/react';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertTriangle, RefreshCw, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -57,6 +58,13 @@ class ErrorBoundary extends Component<Props, State> {
 
     const id = this.state.correlationId ?? newCorrelationId();
     console.error(`[${id}] Frontend crash`, { error, errorInfo });
+
+    // Sentry: reporta com correlation_id para correlacionar com logs do backend
+    Sentry.withScope((scope) => {
+      scope.setTag('correlation_id', id);
+      scope.setContext('react', { componentStack: errorInfo.componentStack });
+      Sentry.captureException(error);
+    });
 
     // Log error to system_errors table
     this.logErrorToBackend(error, errorInfo, id);

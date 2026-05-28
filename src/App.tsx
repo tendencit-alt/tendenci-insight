@@ -21,6 +21,9 @@ import ProjectSettings from "./pages/ProjectSettings";
 import UserManagement from "./pages/UserManagement";
 import ConfiguracoesCatalogo from "./pages/ConfiguracoesCatalogo";
 import ConfiguracoesModulos from "./pages/ConfiguracoesModulos";
+import Perfil from "./pages/Perfil";
+import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
+import TermosUso from "./pages/TermosUso";
 import Auth from "./pages/Auth";
 import Production from "./pages/Production";
 import Orders from "./pages/Orders";
@@ -128,6 +131,14 @@ const App = () => (
               {/* Catálogo público externo (sem autenticação) */}
               <Route path="/c/:tenant_slug" element={<CatalogoPublico />} />
               <Route path="/c/:tenant_slug/p/:product_id" element={<CatalogoPublicoProduto />} />
+
+              {/* LGPD: páginas legais públicas */}
+              <Route path="/privacidade" element={<PoliticaPrivacidade />} />
+              <Route path="/termos" element={<TermosUso />} />
+
+              {/* Perfil do usuário (autenticado) */}
+              <Route path="/configuracoes/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
+
 
 
               <Route path="/catalogo" element={<ProtectedRoute><PermissionGuard module="comercial"><Catalogo /></PermissionGuard></ProtectedRoute>} />
