@@ -2257,7 +2257,68 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                     )}
                   </div>
                   )}
+
+                  {/* RT - Repasse Técnico (último por seguir o código 2.2.6 do cadastro) */}
+                  {resourceDefaults.rt.visible && (
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={comissoes.rt.habilitado}
+                      onCheckedChange={(checked) => setComissoes(prev => ({
+                        ...prev,
+                        rt: { ...prev.rt, habilitado: checked }
+                      }))}
+                      disabled={!isEditable}
+                    />
+                    <span className="text-sm font-medium w-28">{resourceDefaults.rt.label}</span>
+                    {comissoes.rt.habilitado && (
+                      <>
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            className="h-8 w-20"
+                            value={comissoes.rt.percentual}
+                            onChange={(e) => atualizarComissaoPercentual('rt', Number(e.target.value))}
+                            min={0}
+                            max={100}
+                            step={0.1}
+                            disabled={!isEditable}
+                          />
+                          <Label className="text-xs text-muted-foreground">%</Label>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Label className="text-xs text-muted-foreground">R$</Label>
+                          <Input
+                            type="number"
+                            className="h-8 w-24 bg-muted"
+                            value={comissoes.rt.valor.toFixed(2)}
+                            readOnly
+                            disabled
+                          />
+                        </div>
+                        <Select
+                          value={comissoes.rt.responsavel_id || "_none"}
+                          onValueChange={(v) => setComissoes(prev => ({
+                            ...prev,
+                            rt: { ...prev.rt, responsavel_id: v === "_none" ? "" : v }
+                          }))}
+                          disabled={!isEditable}
+                        >
+                          <SelectTrigger className="h-8 w-40">
+                            <SelectValue placeholder="Responsável" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="_none">-</SelectItem>
+                            {architects?.map((a) => (
+                              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </>
+                    )}
+                  </div>
+                  )}
                 </div>
+
               </Card>
 
               {/* Resumo de valores */}
