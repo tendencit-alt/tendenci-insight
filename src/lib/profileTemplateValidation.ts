@@ -2,27 +2,37 @@
 // Mirrors the backend function `public.validate_profile_template_completeness`.
 
 export const REQUIRED_TEMPLATE_MODULES = [
+  'dashboard',
   'dashboard_executivo',
   'comercial',
   'operacional',
+  'producao',
   'financeiro',
   'controladoria',
   'planejamento',
   'cadastros',
   'relatorios_bi',
   'configuracoes',
+  'estoque',
+  'pedidos',
+  'cadastros_financeiros',
 ] as const;
 
 export const TEMPLATE_MODULE_LABELS: Record<string, string> = {
+  dashboard: 'Hoje',
   dashboard_executivo: 'Dashboard Executivo',
   comercial: 'Comercial',
   operacional: 'Operacional',
+  producao: 'Produção (legado)',
   financeiro: 'Financeiro',
   controladoria: 'Controladoria',
   planejamento: 'Planejamento',
   cadastros: 'Cadastros',
   relatorios_bi: "KPI's & BI",
   configuracoes: 'Configurações',
+  estoque: 'Estoque',
+  pedidos: 'Pedidos',
+  cadastros_financeiros: 'Cadastros Financeiros',
 };
 
 const FLAG_KEYS = [
