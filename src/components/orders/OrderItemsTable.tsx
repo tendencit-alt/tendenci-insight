@@ -605,7 +605,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
         </Card>
       )}
 
-      <div className="space-y-3 xl:hidden">
+      <div className="space-y-3 2xl:hidden">
         {items.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="py-8 text-center text-muted-foreground">
@@ -728,8 +728,9 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
         )}
       </div>
 
-      <div className="hidden overflow-x-auto rounded-lg border xl:block">
-        <Table className="min-w-[900px]">
+      <div className="hidden overflow-x-auto rounded-lg border 2xl:block">
+        <Table className="min-w-[1000px]">
+
           <TableHeader>
             <TableRow>
               {showFiscalFields && <TableHead className="w-[90px]">Código</TableHead>}
