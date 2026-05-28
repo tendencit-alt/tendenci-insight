@@ -2,7 +2,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Users, Building2, DollarSign, Package, ShoppingCart, Factory, Truck, UserCog, Wallet, ArrowDownCircle, ArrowUpCircle, Info } from 'lucide-react';
-import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionsContext } from '@/contexts/PermissionsContext';
 import { Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -81,7 +81,7 @@ function useOwnerMetrics() {
 }
 
 export default function OwnerControlTower() {
-  const { isOwner } = usePermissions();
+  const { isOwner } = usePermissionsContext();
   const { data, isLoading, error } = useOwnerMetrics();
   const cons = useOwnerConsolidated();
 
