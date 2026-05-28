@@ -85,6 +85,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const [isTenantOwner, setIsTenantOwner] = useState(false);
   const [isTenantAdmin, setIsTenantAdmin] = useState(false);
   const [userLevel, setUserLevel] = useState<'system_owner' | 'tenant_owner' | 'tenant_admin' | 'operational'>('operational');
+  const [overridesMap, setOverridesMap] = useState<Record<string, { can_view: boolean | null; can_create: boolean | null; can_edit: boolean | null; can_delete: boolean | null }>>({});
 
   const fetchPermissions = useCallback(async () => {
     if (!user?.id) return;
