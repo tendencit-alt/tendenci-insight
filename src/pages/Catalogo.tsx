@@ -13,6 +13,9 @@ import { ProductDetailModal } from "@/components/catalogo/ProductDetailModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { CatalogoAdminBar } from "@/components/catalogo/CatalogoAdminBar";
+import { SharePublicCatalogPanel } from "@/components/catalogo/SharePublicCatalogPanel";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 interface Product {
   id: string;
@@ -210,8 +213,12 @@ export default function Catalogo() {
   };
 
   return (
-    <div className="min-h-screen bg-background" style={{ ["--catalog-primary" as any]: primaryColor }}>
-      <CatalogoHeader
+    <ProtectedRoute>
+      <DashboardLayout>
+        <div className="min-h-screen bg-background" style={{ ["--catalog-primary" as any]: primaryColor }}>
+          <SharePublicCatalogPanel />
+          <div className="mt-6">
+          <CatalogoHeader
         categories={categories}
         selectedCategory={selectedCategory}
         onSelectCategory={setSelectedCategory}
@@ -360,12 +367,16 @@ export default function Catalogo() {
         </div>
       </footer>
 
-      <ProductDetailModal
-        product={selectedProduct}
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        onBuyNow={handleBuyNow}
-      />
-    </div>
+          <ProductDetailModal
+            product={selectedProduct}
+            open={modalOpen}
+            onOpenChange={setModalOpen}
+            onBuyNow={handleBuyNow}
+          />
+          </div>
+        </div>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }
+

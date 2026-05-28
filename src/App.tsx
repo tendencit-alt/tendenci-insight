@@ -35,6 +35,7 @@ import Produtos from "./pages/Produtos";
 
 import ActivityCenter from "./pages/ActivityCenter";
 import Catalogo from "./pages/Catalogo";
+import CatalogoPublico from "./pages/CatalogoPublico";
 import Financeiro from "./pages/Financeiro";
 import CadastrosFinanceiros from "./pages/CadastrosFinanceiros";
 import FinanceiroRhPj from "./pages/FinanceiroRhPj";
@@ -122,6 +123,11 @@ const App = () => (
               <Route path="/auth" element={<Navigate to="/autenticacao" replace />} />
               <Route path="/redefinir-senha" element={<ResetPassword />} />
               <Route path="/reset-password" element={<Navigate to="/redefinir-senha" replace />} />
+
+              {/* Catálogo público externo (sem autenticação) */}
+              <Route path="/c/:tenant_slug" element={<CatalogoPublico />} />
+              <Route path="/c/:tenant_slug/p/:product_id" element={<CatalogoPublico />} />
+
 
               <Route path="/catalogo" element={<ProtectedRoute><PermissionGuard module="comercial"><Catalogo /></PermissionGuard></ProtectedRoute>} />
               {/* Simplificação MVP: "/" mostra a tela "Hoje". HomeLauncher antigo continua em /central-navegacao-completo. */}
