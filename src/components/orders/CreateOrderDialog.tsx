@@ -468,19 +468,16 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     },
   });
 
-  const {
-    vendedores: vendedoresAll,
-    orcamentistas: orcamentistasAll,
-    projetistas: projetistasAll,
-    montadores: montadoresAll,
-    producoes: producoesAll,
-  } = useOrderResponsibles(open);
+  const { byChartAccount } = useOrderResponsibles(open);
 
-  const vendedores = vendedoresAll.filter((item) => item.is_active);
-  const orcamentistas = orcamentistasAll.filter((item) => item.is_active);
-  const projetistas = projetistasAll.filter((item) => item.is_active);
-  const montadores = montadoresAll.filter((item) => item.is_active);
-  const producoes = producoesAll.filter((item) => item.is_active);
+  // Espelha os responsáveis cadastrados em Cadastros Financeiros → Compromissos
+  // sobre Venda, filtrando pelo chart_account_id de cada compromisso (vínculo
+  // dinâmico — substitui o filtro legado por `type`).
+  const vendedores    = resourceDefaults.vendedor.chartAccountId    ? byChartAccount(resourceDefaults.vendedor.chartAccountId)    : [];
+  const orcamentistas = resourceDefaults.orcamentista.chartAccountId ? byChartAccount(resourceDefaults.orcamentista.chartAccountId) : [];
+  const projetistas   = resourceDefaults.projetista.chartAccountId  ? byChartAccount(resourceDefaults.projetista.chartAccountId)  : [];
+  const montadores    = resourceDefaults.montador.chartAccountId    ? byChartAccount(resourceDefaults.montador.chartAccountId)    : [];
+  const producoes     = resourceDefaults.producao.chartAccountId    ? byChartAccount(resourceDefaults.producao.chartAccountId)    : [];
 
   const selectedClient = clients?.find(c => c.id === formData.client_id);
   
