@@ -28,6 +28,9 @@ interface ProfileType {
   is_system: boolean;
 }
 
+const isMasterProfileType = (profileType?: ProfileType | null) =>
+  profileType?.name === 'master' || profileType?.name === 'admin';
+
 interface UserProfile {
   id: string;
   email: string;
@@ -71,7 +74,7 @@ const UserManagement = () => {
         .order('display_name');
 
       if (error) throw error;
-      setProfileTypes(data || []);
+      setProfileTypes((data || []).filter((pt) => !(isMasterProfileType(pt) && !pt.is_system)));
     } catch (error) {
       console.error('Erro ao buscar tipos de perfil:', error);
     }
@@ -146,7 +149,7 @@ const UserManagement = () => {
             borderColor: `${pt.color}50`,
           }}
         >
-          {pt.name === 'admin' ? <Shield className="w-3 h-3 mr-1" /> : <User className="w-3 h-3 mr-1" />}
+          {isMasterProfileType(pt) ? <Shield className="w-3 h-3 mr-1" /> : <User className="w-3 h-3 mr-1" />}
           {pt.display_name}
         </Badge>
       );

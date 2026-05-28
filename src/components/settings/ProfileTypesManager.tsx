@@ -57,6 +57,8 @@ export function ProfileTypesManager() {
   const [deleting, setDeleting] = useState(false);
   const [templatesManagerOpen, setTemplatesManagerOpen] = useState(false);
 
+  const isAssignableMaster = (pt: ProfileType) => pt.name === 'master' || pt.name === 'admin';
+
   useEffect(() => {
     fetchProfileTypes();
   }, []);
@@ -64,10 +66,6 @@ export function ProfileTypesManager() {
   const fetchProfileTypes = async () => {
     try {
       setLoading(true);
-      // Garante que os tipos de perfil padrão do sistema estejam disponíveis
-      // (cópia editável) na empresa do usuário atual.
-      await supabase.rpc('seed_tenant_profile_types' as any);
-
       const { data, error } = await supabase
         .from('profile_types')
         .select('*')
@@ -79,6 +77,7 @@ export function ProfileTypesManager() {
       const filtered = (data || []).filter((pt: ProfileType) => {
         if (pt.name === 'owner') return false; // platform-only
         if (pt.is_system && !pt.is_active) return false; // archived/deactivated system types
+        if (isAssignableMaster(pt) && !pt.is_system) return false; // only the single system Master should exist in UI
         return true;
       });
       setProfileTypes(filtered);

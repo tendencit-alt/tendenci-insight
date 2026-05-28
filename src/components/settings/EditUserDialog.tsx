@@ -13,7 +13,11 @@ interface ProfileType {
   name: string;
   display_name: string;
   color: string;
+  is_system?: boolean;
 }
+
+const isMasterProfileType = (profileType?: Pick<ProfileType, 'name' | 'is_system'> | null) =>
+  profileType?.name === 'master' || profileType?.name === 'admin';
 
 interface EditUserDialogProps {
   open: boolean;
@@ -68,15 +72,14 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
       setLoadingTypes(true);
       const { data, error } = await supabase
         .from('profile_types')
-        .select('id, name, display_name, color')
+        .select('id, name, display_name, color, is_system')
         .eq('is_active', true)
-        .neq('name', 'admin') // master (name='admin') não atribuível
         .neq('name', 'owner') // 'owner' é papel de plataforma, não atribuível por tenant
         .order('is_system', { ascending: false })
         .order('display_name');
 
       if (error) throw error;
-      setProfileTypes(data || []);
+       setProfileTypes((data || []).filter((pt) => !(isMasterProfileType(pt) && !pt.is_system)));
     } catch (error) {
       console.error('Erro ao buscar tipos de perfil:', error);
     } finally {

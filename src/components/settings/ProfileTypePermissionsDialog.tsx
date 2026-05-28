@@ -24,6 +24,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
+import { ALL_TREE_MODULES } from '@/config/menuPermissionMap';
 
 const FLAG_LABELS: Record<string, string> = {
   can_view: 'Visualizar (leitura)',
@@ -82,15 +83,14 @@ interface StatusRule {
   active: boolean;
 }
 
-const ALL_MODULES = [
-  'dashboard_executivo', 'comercial', 'operacional', 'financeiro',
-  'controladoria', 'planejamento', 'cadastros', 'relatorios_bi', 'configuracoes',
-];
+const ALL_MODULES = Array.from(new Set([...ALL_TREE_MODULES, 'dashboard'])) as string[];
 
 const MODULE_LABELS: Record<string, string> = {
+  dashboard: 'Hoje',
   dashboard_executivo: 'Dashboard Executivo', comercial: 'Comercial', operacional: 'Operacional',
   financeiro: 'Financeiro', controladoria: 'Controladoria', planejamento: 'Planejamento',
   cadastros: 'Cadastros', relatorios_bi: "KPI's & BI", configuracoes: 'Configurações',
+  producao: 'Produção (legado)', estoque: 'Estoque', pedidos: 'Pedidos', cadastros_financeiros: 'Cadastros Financeiros',
 };
 
 // Simplificado: 4 permissões essenciais por módulo. As permissões avançadas
@@ -371,7 +371,7 @@ export function ProfileTypePermissionsDialog({
           can_edit: existing.can_edit || false, can_delete: existing.can_delete || false,
           can_approve: existing.can_approve || false, can_conciliate: existing.can_conciliate || false,
           can_export: existing.can_export || false, can_admin: existing.can_admin || false,
-        } : emptyModulePermission();
+        } : (isMasterType ? fullModulePermission() : emptyModulePermission());
       });
       setPermissions(permMap);
       // Snapshot para detectar alterações não salvas (baseline do "Restaurar padrões").
