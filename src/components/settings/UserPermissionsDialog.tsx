@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { describeError } from '@/lib/errorMessage';
+import { ALL_TREE_MODULES } from '@/config/menuPermissionMap';
 
 interface UserPermissionsDialogProps {
   open: boolean;
@@ -31,15 +32,14 @@ interface ModulePermission {
 }
 
 // IMPORTANTE: deve espelhar exatamente ProfileTypePermissionsDialog
-const ALL_MODULES = [
-  'dashboard_executivo', 'comercial', 'operacional', 'financeiro',
-  'controladoria', 'planejamento', 'cadastros', 'relatorios_bi', 'configuracoes',
-];
+const ALL_MODULES = Array.from(new Set([...ALL_TREE_MODULES, 'dashboard'])) as string[];
 
 const MODULE_LABELS: Record<string, string> = {
+  dashboard: 'Hoje',
   dashboard_executivo: 'Dashboard Executivo', comercial: 'Comercial', operacional: 'Operacional',
   financeiro: 'Financeiro', controladoria: 'Controladoria', planejamento: 'Planejamento',
   cadastros: 'Cadastros', relatorios_bi: "KPI's & BI", configuracoes: 'Configurações',
+  producao: 'Produção (legado)', estoque: 'Estoque', pedidos: 'Pedidos', cadastros_financeiros: 'Cadastros Financeiros',
 };
 
 const PERMISSION_COLUMNS = [
