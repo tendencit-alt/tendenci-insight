@@ -57,6 +57,8 @@ export function ProfileTypesManager() {
   const [deleting, setDeleting] = useState(false);
   const [templatesManagerOpen, setTemplatesManagerOpen] = useState(false);
 
+  const isAssignableMaster = (pt: ProfileType) => pt.name === 'master' || pt.name === 'admin';
+
   useEffect(() => {
     fetchProfileTypes();
   }, []);
@@ -79,6 +81,7 @@ export function ProfileTypesManager() {
       const filtered = (data || []).filter((pt: ProfileType) => {
         if (pt.name === 'owner') return false; // platform-only
         if (pt.is_system && !pt.is_active) return false; // archived/deactivated system types
+        if (isAssignableMaster(pt) && !pt.is_system) return false; // only the single system Master should exist in UI
         return true;
       });
       setProfileTypes(filtered);
