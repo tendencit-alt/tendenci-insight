@@ -1,12 +1,9 @@
 import { AppNavbar } from "./AppNavbar";
 import { OwnerImpersonationBanner } from "./OwnerImpersonationBanner";
+import { AppFooter } from "./AppFooter";
 import { useGlobalRealtime } from "@/hooks/useGlobalRealtime";
 import { SmartBreadcrumb } from "@/components/navigation-intelligence/SmartBreadcrumb";
 import { RecentNavigationBar } from "@/components/navigation-intelligence/RecentNavigationBar";
-// Simplificação MVP: barras "AÇÕES:" e "PRÓXIMO:" ocultas (componentes preservados).
-// import { ContextualShortcutsBar } from "@/components/navigation-intelligence/ContextualShortcutsBar";
-// import { NextActionSuggestion } from "@/components/navigation-intelligence/NextActionSuggestion";
-// PermissionSimulatorTrigger removido do layout global por solicitação.
 import { useProductAnalytics } from "@/hooks/useProductAnalytics";
 
 interface DashboardLayoutProps {
@@ -22,14 +19,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <OwnerImpersonationBanner />
       <AppNavbar />
 
-      <main className="flex-1 p-4 lg:p-6 bg-background min-h-screen max-w-[1800px] mx-auto w-full">
+      <main className="flex-1 p-4 lg:p-6 bg-background max-w-[1800px] mx-auto w-full">
         <RecentNavigationBar />
         <SmartBreadcrumb />
-        {/* <ContextualShortcutsBar /> */}
-        {/* <NextActionSuggestion /> */}
-        {/* Simular permissões removido */}
         {children}
       </main>
+      <AppFooter />
     </div>
   );
 }
