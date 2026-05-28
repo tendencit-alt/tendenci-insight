@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 import type { Database } from "@/integrations/supabase/types";
 
 export type OrderResponsible = Database["public"]["Tables"]["order_responsibles"]["Row"] & {
@@ -10,13 +11,15 @@ export type OrderResponsible = Database["public"]["Tables"]["order_responsibles"
 export type OrderResponsibleType = Database["public"]["Enums"]["order_responsible_type"];
 
 export function useOrderResponsibles(enabled = true) {
+  const { activeTenantId } = useActiveTenant();
   const query = useQuery({
-    queryKey: ["order-responsibles"],
-    enabled,
+    queryKey: ["order-responsibles", activeTenantId],
+    enabled: enabled && !!activeTenantId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("order_responsibles")
         .select("id, name, type, chart_account_id, is_active, supplier_id, tenant_id, created_at, updated_at")
+        .eq("tenant_id", activeTenantId!)
         .order("name");
 
       if (error) throw error;

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 import type { Database } from "@/integrations/supabase/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ type OrderResponsible = Database["public"]["Tables"]["order_responsibles"]["Row"
 };
 
 export function OrderResponsiblesManager() {
+  const { activeTenantId } = useActiveTenant();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<OrderResponsible | null>(null);
   const [deleting, setDeleting] = useState<OrderResponsible | null>(null);
@@ -61,11 +63,13 @@ export function OrderResponsiblesManager() {
   };
 
   const { data: responsibles, isLoading, refetch } = useQuery({
-    queryKey: ["order-responsibles-manager"],
+    queryKey: ["order-responsibles-manager", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("order_responsibles")
         .select("*, suppliers(id, name)")
+        .eq("tenant_id", activeTenantId!)
         .order("name");
 
       if (error) throw error;
