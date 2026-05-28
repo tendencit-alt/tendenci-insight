@@ -262,6 +262,8 @@ export function ProfileTypePermissionsDialog({
   const { isOwner } = usePermissionsContext();
   const [permissions, setPermissions] = useState<Record<string, ModulePermission>>({});
   const [initialPermissions, setInitialPermissions] = useState<Record<string, ModulePermission>>({});
+  const [overrides, setOverrides] = useState<Record<string, { can_view: boolean | null; can_create: boolean | null; can_edit: boolean | null; can_delete: boolean | null }>>({});
+  const [initialOverrides, setInitialOverrides] = useState<Record<string, { can_view: boolean | null; can_create: boolean | null; can_edit: boolean | null; can_delete: boolean | null }>>({});
 
   // Detecta se há alterações não salvas comparando estado atual com o snapshot inicial.
   const hasUnsavedChanges = ALL_MODULES.some(m => {
