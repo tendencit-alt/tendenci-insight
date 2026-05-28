@@ -618,7 +618,7 @@ export function ProfileTypePermissionsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
@@ -643,7 +643,7 @@ export function ProfileTypePermissionsDialog({
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="mt-3">
+          <div className="mt-3 flex-1 overflow-y-auto min-h-0 pr-1">
             <PermissionTree
               permissions={permissions as Record<string, ModulePermissionRecord>}
               overrides={overrides}
