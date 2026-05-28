@@ -29,6 +29,9 @@ interface ProfileType {
   is_system: boolean;
 }
 
+const isMasterProfileType = (profileType?: Pick<ProfileType, 'name' | 'is_system'> | null) =>
+  profileType?.name === 'master' || profileType?.name === 'admin';
+
 interface CreateUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -71,11 +74,12 @@ export function CreateUserDialog({
         .order('display_name');
 
       if (error) throw error;
-      setProfileTypes(data || []);
+      const filtered = (data || []).filter((pt) => !(isMasterProfileType(pt) && !pt.is_system));
+      setProfileTypes(filtered);
 
       // Default selection: comercial (substitui antigo 'vendedor')
-      if (data && data.length > 0 && !formData.profile_type_id) {
-        const def = data.find(pt => pt.name === 'comercial') ?? data.find(pt => pt.name === 'vendedor') ?? data[0];
+      if (filtered.length > 0 && !formData.profile_type_id) {
+        const def = filtered.find(pt => pt.name === 'comercial') ?? filtered.find(pt => pt.name === 'vendedor') ?? filtered[0];
         if (def) {
           setFormData(prev => ({ ...prev, profile_type_id: def.id, role: def.name === 'administrador' ? 'admin' : (def.name === 'comercial' ? 'vendedor' : prev.role) }));
         }
