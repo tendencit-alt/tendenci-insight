@@ -12,7 +12,7 @@
  *   é por módulo agregado.
  */
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Search, Share2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import {
   MENU_PERMISSION_MAP,
-  leavesByModule,
   type MenuLeaf,
   type MenuRoot,
 } from '@/config/menuPermissionMap';
