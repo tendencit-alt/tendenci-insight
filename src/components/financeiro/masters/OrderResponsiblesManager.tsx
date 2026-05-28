@@ -63,11 +63,13 @@ export function OrderResponsiblesManager() {
   };
 
   const { data: responsibles, isLoading, refetch } = useQuery({
-    queryKey: ["order-responsibles-manager"],
+    queryKey: ["order-responsibles-manager", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("order_responsibles")
         .select("*, suppliers(id, name)")
+        .eq("tenant_id", activeTenantId!)
         .order("name");
 
       if (error) throw error;
