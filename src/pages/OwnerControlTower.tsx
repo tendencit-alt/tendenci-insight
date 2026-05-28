@@ -81,7 +81,7 @@ function useOwnerMetrics() {
 }
 
 export default function OwnerControlTower() {
-  const { isOwner } = usePermissions();
+  const { isOwner } = usePermissionsContext();
   const { data, isLoading, error } = useOwnerMetrics();
   const cons = useOwnerConsolidated();
 
