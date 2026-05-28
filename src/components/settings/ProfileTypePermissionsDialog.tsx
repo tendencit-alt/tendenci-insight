@@ -12,7 +12,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Info, Shield, ShieldAlert, Lock, Target, DollarSign, FileCheck, RotateCcw, Save, LayoutTemplate, Sparkles, AlertTriangle } from 'lucide-react';
+import { Loader2, Info, Shield, ShieldAlert, Lock, Target, DollarSign, FileCheck, RotateCcw, Save, LayoutTemplate, Sparkles, AlertTriangle, ListTree } from 'lucide-react';
+import { PermissionTree, type ModulePermissionRecord } from './permissions/PermissionTree';
+import { usePermissionsContext } from '@/contexts/PermissionsContext';
 import { validateTemplateCompleteness, TEMPLATE_MODULE_LABELS, describeTemplateGaps } from '@/lib/profileTemplateValidation';
 import { Textarea } from '@/components/ui/textarea';
 import { useUpsertProfileTemplate, useProfileTemplates } from '@/hooks/useProfileTemplates';
@@ -256,7 +258,8 @@ export function ProfileTypePermissionsDialog({
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState('modules');
+  const [tab, setTab] = useState('tree');
+  const { isOwner } = usePermissionsContext();
   const [permissions, setPermissions] = useState<Record<string, ModulePermission>>({});
   const [initialPermissions, setInitialPermissions] = useState<Record<string, ModulePermission>>({});
 
@@ -609,7 +612,8 @@ export function ProfileTypePermissionsDialog({
           </div>
         ) : (
           <Tabs value={tab} onValueChange={setTab}>
-            <TabsList className="grid grid-cols-5 w-full">
+            <TabsList className="grid grid-cols-6 w-full">
+              <TabsTrigger value="tree" className="gap-1 text-xs"><ListTree className="h-3.5 w-3.5" />Árvore (Menu)</TabsTrigger>
               <TabsTrigger value="modules" className="gap-1 text-xs"><Shield className="h-3.5 w-3.5" />Módulos</TabsTrigger>
               <TabsTrigger value="scopes" className="gap-1 text-xs"><Target className="h-3.5 w-3.5" />Escopos</TabsTrigger>
               <TabsTrigger value="values" className="gap-1 text-xs"><DollarSign className="h-3.5 w-3.5" />Valores</TabsTrigger>
@@ -617,9 +621,19 @@ export function ProfileTypePermissionsDialog({
               <TabsTrigger value="segregation" className="gap-1 text-xs"><Lock className="h-3.5 w-3.5" />Segregação</TabsTrigger>
             </TabsList>
 
+            {/* TREE TAB — espelha o menu do sistema */}
+            <TabsContent value="tree" className="mt-3">
+              <PermissionTree
+                permissions={permissions as Record<string, ModulePermissionRecord>}
+                onChange={(next) => setPermissions(next as Record<string, ModulePermission>)}
+                showOwnerSections={isOwner}
+              />
+            </TabsContent>
+
             {/* MODULES TAB */}
             <TabsContent value="modules" className="mt-3">
               <ScrollArea className="max-h-[50vh] pr-4">
+
                 <TooltipProvider delayDuration={200}>
                 <div className="space-y-1">
                   <div className="grid gap-2 pb-2 border-b text-[11px] font-semibold text-muted-foreground uppercase tracking-wide"

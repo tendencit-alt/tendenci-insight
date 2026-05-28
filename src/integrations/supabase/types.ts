@@ -16166,6 +16166,45 @@ export type Database = {
           },
         ]
       }
+      profile_type_feature_overrides: {
+        Row: {
+          can_create: boolean | null
+          can_delete: boolean | null
+          can_edit: boolean | null
+          can_view: boolean | null
+          created_at: string
+          feature_key: string
+          id: string
+          profile_type_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          can_create?: boolean | null
+          can_delete?: boolean | null
+          can_edit?: boolean | null
+          can_view?: boolean | null
+          created_at?: string
+          feature_key: string
+          id?: string
+          profile_type_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          can_create?: boolean | null
+          can_delete?: boolean | null
+          can_edit?: boolean | null
+          can_view?: boolean | null
+          created_at?: string
+          feature_key?: string
+          id?: string
+          profile_type_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profile_type_permissions: {
         Row: {
           can_admin: boolean
@@ -23818,6 +23857,10 @@ export type Database = {
       }
       has_entitlement: {
         Args: { _code: string; _tenant_id: string }
+        Returns: boolean
+      }
+      has_feature_access: {
+        Args: { _action: string; _feature_key: string; _user_id: string }
         Returns: boolean
       }
       has_module_permission: {
