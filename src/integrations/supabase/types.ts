@@ -16472,6 +16472,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_owner: boolean | null
+          onboarding_completed_at: string | null
           profile_type_id: string | null
           role: Database["public"]["Enums"]["user_role"]
           scheduled_hard_delete_at: string | null
@@ -16489,6 +16490,7 @@ export type Database = {
           full_name?: string | null
           id: string
           is_owner?: boolean | null
+          onboarding_completed_at?: string | null
           profile_type_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           scheduled_hard_delete_at?: string | null
@@ -16506,6 +16508,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_owner?: boolean | null
+          onboarding_completed_at?: string | null
           profile_type_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           scheduled_hard_delete_at?: string | null
@@ -17290,6 +17293,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rate_limit_signup: {
+        Row: {
+          attempts: number
+          ip: string
+          last_attempt_at: string
+          window_start: string
+        }
+        Insert: {
+          attempts?: number
+          ip: string
+          last_attempt_at?: string
+          window_start?: string
+        }
+        Update: {
+          attempts?: number
+          ip?: string
+          last_attempt_at?: string
+          window_start?: string
+        }
+        Relationships: []
       }
       rbac_critical_permissions: {
         Row: {
@@ -20863,10 +20887,61 @@ export type Database = {
           },
         ]
       }
+      tenant_subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          external_subscription_id: string | null
+          id: string
+          metadata: Json
+          plan_slug: string
+          status: string
+          tenant_id: string
+          trial_ends_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          external_subscription_id?: string | null
+          id?: string
+          metadata?: Json
+          plan_slug?: string
+          status?: string
+          tenant_id: string
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          external_subscription_id?: string | null
+          id?: string
+          metadata?: Json
+          plan_slug?: string
+          status?: string
+          tenant_id?: string
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_subscriptions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           active: boolean | null
           catalogo_publico_ativo: boolean
+          cnpj: string | null
           created_at: string
           id: string
           max_users: number
@@ -20878,6 +20953,7 @@ export type Database = {
         Insert: {
           active?: boolean | null
           catalogo_publico_ativo?: boolean
+          cnpj?: string | null
           created_at?: string
           id?: string
           max_users?: number
@@ -20889,6 +20965,7 @@ export type Database = {
         Update: {
           active?: boolean | null
           catalogo_publico_ativo?: boolean
+          cnpj?: string | null
           created_at?: string
           id?: string
           max_users?: number
