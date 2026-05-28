@@ -415,18 +415,6 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     },
   });
 
-  const { data: architects } = useQuery({
-    queryKey: ['architects-for-order'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('architects')
-        .select('id, name, company, commission_percent')
-        .eq('active', true)
-        .order('name');
-      return data || [];
-    },
-  });
-
   const { data: revenueAccounts } = useQuery({
     queryKey: ['revenue-accounts-for-order'],
     queryFn: async () => {
@@ -473,6 +461,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   // Espelha os responsáveis cadastrados em Cadastros Financeiros → Compromissos
   // sobre Venda, filtrando pelo chart_account_id de cada compromisso (vínculo
   // dinâmico — substitui o filtro legado por `type`).
+  const rts           = resourceDefaults.rt.chartAccountId           ? byChartAccount(resourceDefaults.rt.chartAccountId)           : [];
   const vendedores    = resourceDefaults.vendedor.chartAccountId    ? byChartAccount(resourceDefaults.vendedor.chartAccountId)    : [];
   const orcamentistas = resourceDefaults.orcamentista.chartAccountId ? byChartAccount(resourceDefaults.orcamentista.chartAccountId) : [];
   const projetistas   = resourceDefaults.projetista.chartAccountId  ? byChartAccount(resourceDefaults.projetista.chartAccountId)  : [];
@@ -1578,8 +1567,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="_none">-</SelectItem>
-                              {architects?.map((a) => (
-                                <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                              {rts?.map((responsavel) => (
+                                <SelectItem key={responsavel.id} value={responsavel.id}>{responsavel.full_name}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
