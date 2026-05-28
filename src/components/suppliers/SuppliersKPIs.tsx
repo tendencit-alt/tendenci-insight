@@ -3,10 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Truck, ShoppingCart, DollarSign, Clock } from "lucide-react";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
+import { MASTER_OWNER_TENANT_ID } from "@/components/tenant/OwnerTenantEmptyState";
 
 export default function SuppliersKPIs() {
+  const { activeTenantId, isOwner, homeTenantId } = useActiveTenant();
+  const onMasterOwner =
+    isOwner && (activeTenantId === MASTER_OWNER_TENANT_ID || activeTenantId === homeTenantId);
+
   const { data: metrics, isLoading } = useQuery({
-    queryKey: ["suppliers-metrics"],
+    queryKey: ["suppliers-metrics", activeTenantId],
+    enabled: !!activeTenantId && !onMasterOwner,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("suppliers_metrics");
       if (error) throw error;
