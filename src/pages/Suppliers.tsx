@@ -11,6 +11,8 @@ import SuppliersTable from "@/components/suppliers/SuppliersTable";
 import CreateSupplierDialog from "@/components/suppliers/CreateSupplierDialog";
 import SupplierDetailSheet from "@/components/suppliers/SupplierDetailSheet";
 import { ClientesFornecedoresTabs } from "@/components/layout/ClientesFornecedoresTabs";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
+import { OwnerTenantEmptyState, MASTER_OWNER_TENANT_ID } from "@/components/tenant/OwnerTenantEmptyState";
 
 export default function Suppliers() {
   const [createOpen, setCreateOpen] = useState(false);
@@ -20,13 +22,18 @@ export default function Suppliers() {
     status: "all",
     city: ""
   });
+  const { activeTenantId, isOwner, homeTenantId } = useActiveTenant();
+  const onMasterOwner =
+    isOwner && (activeTenantId === MASTER_OWNER_TENANT_ID || activeTenantId === homeTenantId);
 
   const { data: suppliers = [], isLoading, refetch } = useQuery({
-    queryKey: ["suppliers", filters],
+    queryKey: ["suppliers", filters, activeTenantId],
+    enabled: !!activeTenantId && !onMasterOwner,
     queryFn: async () => {
       let query = supabase
         .from("suppliers")
         .select("*")
+        .eq("tenant_id", activeTenantId!)
         .order("name");
 
       if (filters.search) {
@@ -65,11 +72,15 @@ export default function Suppliers() {
         filters={<SuppliersFilters filters={filters} setFilters={setFilters} />}
         overview={<SuppliersKPIs />}
         records={
-          <SuppliersTable
-            suppliers={suppliers}
-            isLoading={isLoading}
-            onSelect={setSelectedSupplier}
-          />
+          onMasterOwner ? (
+            <OwnerTenantEmptyState entity="fornecedores" />
+          ) : (
+            <SuppliersTable
+              suppliers={suppliers}
+              isLoading={isLoading}
+              onSelect={setSelectedSupplier}
+            />
+          )
         }
       />
 

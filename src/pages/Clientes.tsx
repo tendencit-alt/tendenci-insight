@@ -64,6 +64,7 @@ import { DeleteClientDialog } from "@/components/clients/DeleteClientDialog";
 import { useCostCenters } from "@/hooks/useCostCenters";
 import { Can } from "@/components/auth/Can";
 import { ClientesFornecedoresTabs } from "@/components/layout/ClientesFornecedoresTabs";
+import { OwnerTenantEmptyState, MASTER_OWNER_TENANT_ID } from "@/components/tenant/OwnerTenantEmptyState";
 
 interface ClientRow {
   id: string;
@@ -81,7 +82,9 @@ interface ClientRow {
 
 export default function Clientes() {
   const queryClient = useQueryClient();
-  const { activeTenantId } = useActiveTenant();
+  const { activeTenantId, isOwner, homeTenantId } = useActiveTenant();
+  const onMasterOwner =
+    isOwner && (activeTenantId === MASTER_OWNER_TENANT_ID || activeTenantId === homeTenantId);
   const { costCenters } = useCostCenters();
   const [createOpen, setCreateOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientRow | null>(null);
@@ -244,7 +247,9 @@ export default function Clientes() {
     </div>
   );
 
-  const records = (
+  const records = onMasterOwner ? (
+    <OwnerTenantEmptyState entity="clientes" />
+  ) : (
     <div className="space-y-4">
       <Card className="p-4">
         <div className="grid gap-3 md:grid-cols-5">
