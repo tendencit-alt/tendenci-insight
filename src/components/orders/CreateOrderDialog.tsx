@@ -210,7 +210,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     if (!open || !resourceDefaultsLoaded || hasAppliedResourceDefaultsRef.current) return;
 
     setComissoes((prev) => ({
-      rt: { ...prev.rt, percentual: resourceDefaults.rt.percentage },
+      rt: { ...prev.rt, habilitado: resourceDefaults.rt.active, percentual: resourceDefaults.rt.percentage },
       vendedor: { ...prev.vendedor, habilitado: resourceDefaults.vendedor.active, percentual: resourceDefaults.vendedor.percentage },
       orcamentista: { ...prev.orcamentista, habilitado: resourceDefaults.orcamentista.active, percentual: resourceDefaults.orcamentista.percentage },
       projetista: { ...prev.projetista, habilitado: resourceDefaults.projetista.active, percentual: resourceDefaults.projetista.percentage },
