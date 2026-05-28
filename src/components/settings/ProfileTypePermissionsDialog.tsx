@@ -262,6 +262,8 @@ export function ProfileTypePermissionsDialog({
   const { isOwner } = usePermissionsContext();
   const [permissions, setPermissions] = useState<Record<string, ModulePermission>>({});
   const [initialPermissions, setInitialPermissions] = useState<Record<string, ModulePermission>>({});
+  const [overrides, setOverrides] = useState<Record<string, { can_view: boolean | null; can_create: boolean | null; can_edit: boolean | null; can_delete: boolean | null }>>({});
+  const [initialOverrides, setInitialOverrides] = useState<Record<string, { can_view: boolean | null; can_create: boolean | null; can_edit: boolean | null; can_delete: boolean | null }>>({});
 
   // Detecta se há alterações não salvas comparando estado atual com o snapshot inicial.
   const hasUnsavedChanges = ALL_MODULES.some(m => {
@@ -340,14 +342,26 @@ export function ProfileTypePermissionsDialog({
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [modRes, critRes, segRes, scopeRes, valRes, statusRes] = await Promise.all([
+      const [modRes, critRes, segRes, scopeRes, valRes, statusRes, ovRes] = await Promise.all([
         supabase.from('profile_type_permissions').select('*').eq('profile_type_id', profileType.id),
         supabase.from('rbac_critical_permissions').select('*').eq('profile_type_id', profileType.id),
         supabase.from('rbac_segregation_rules').select('*').eq('profile_type_id', profileType.id),
         supabase.from('rbac_scope_restrictions' as any).select('*').eq('profile_type_id', profileType.id),
         supabase.from('rbac_value_limits' as any).select('*').eq('profile_type_id', profileType.id),
         supabase.from('rbac_status_rules' as any).select('*').eq('profile_type_id', profileType.id),
+        supabase.from('profile_type_feature_overrides' as any).select('*').eq('profile_type_id', profileType.id),
       ]);
+
+      // Feature overrides (granularidade por rota/aba)
+      const ovMap: Record<string, { can_view: boolean | null; can_create: boolean | null; can_edit: boolean | null; can_delete: boolean | null }> = {};
+      ((ovRes.data as any[]) || []).forEach((row: any) => {
+        ovMap[row.feature_key] = {
+          can_view: row.can_view, can_create: row.can_create,
+          can_edit: row.can_edit, can_delete: row.can_delete,
+        };
+      });
+      setOverrides(ovMap);
+      setInitialOverrides(JSON.parse(JSON.stringify(ovMap)));
 
       // Module permissions
       const permMap: Record<string, ModulePermission> = {};
@@ -495,6 +509,25 @@ export function ProfileTypePermissionsDialog({
         if (error) throw error;
       }
 
+      // Save feature overrides (granularidade por rota/aba)
+      // Estratégia idempotente: delete + insert apenas dos com algum valor != null
+      const tenantId = (await supabase.rpc('get_user_tenant_id' as any)).data as string | null;
+      await supabase.from('profile_type_feature_overrides' as any)
+        .delete().eq('profile_type_id', profileType.id);
+      const overridesToInsert = Object.entries(overrides)
+        .filter(([_, v]) => v && (v.can_view !== null || v.can_create !== null || v.can_edit !== null || v.can_delete !== null))
+        .map(([feature_key, v]) => ({
+          profile_type_id: profileType.id,
+          tenant_id: tenantId,
+          feature_key,
+          can_view: v.can_view, can_create: v.can_create,
+          can_edit: v.can_edit, can_delete: v.can_delete,
+        }));
+      if (overridesToInsert.length > 0) {
+        const { error: ovErr } = await supabase.from('profile_type_feature_overrides' as any).insert(overridesToInsert);
+        if (ovErr) throw ovErr;
+      }
+
       // Validation: re-read and verify all 8 flags persisted correctly per module
       const { data: verifyRows, error: verifyErr } = await supabase
         .from('profile_type_permissions')
@@ -621,11 +654,15 @@ export function ProfileTypePermissionsDialog({
               <TabsTrigger value="segregation" className="gap-1 text-xs"><Lock className="h-3.5 w-3.5" />Segregação</TabsTrigger>
             </TabsList>
 
-            {/* TREE TAB — espelha o menu do sistema */}
+            {/* TREE TAB — espelha o menu do sistema (com overrides por rota/aba) */}
             <TabsContent value="tree" className="mt-3">
               <PermissionTree
                 permissions={permissions as Record<string, ModulePermissionRecord>}
-                onChange={(next) => setPermissions(next as Record<string, ModulePermission>)}
+                overrides={overrides}
+                onChange={(next) => {
+                  setPermissions(next.permissions as Record<string, ModulePermission>);
+                  setOverrides(next.overrides);
+                }}
                 showOwnerSections={isOwner}
               />
             </TabsContent>

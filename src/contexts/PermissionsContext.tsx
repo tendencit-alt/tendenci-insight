@@ -45,6 +45,10 @@ interface PermissionsContextType {
   isTenantAdmin: boolean;
   userLevel: 'system_owner' | 'tenant_owner' | 'tenant_admin' | 'operational';
   hasModuleAccess: (module: AppModule | string, action?: PermissionAction) => boolean;
+  /** Override por rota/aba. null = sem override (caller deve usar fallback de módulo). */
+  hasFeatureAccess: (featureKey: string, action?: 'view' | 'create' | 'edit' | 'delete') => boolean | null;
+  /** Efetivo: override (se houver) → senão módulo. Recomendado para gating de menu/rota. */
+  hasAccess: (module: AppModule | string, featureKey: string | undefined | null, action?: 'view' | 'create' | 'edit' | 'delete') => boolean;
   hasCriticalPermission: (key: string) => boolean;
   checkValueLimit: (module: string, value: number) => Promise<{ allowed: boolean; reason: string; requires_approval?: boolean; max_value?: number }>;
   checkStatusRule: (module: string, status: string, action?: string) => Promise<boolean>;
@@ -81,6 +85,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const [isTenantOwner, setIsTenantOwner] = useState(false);
   const [isTenantAdmin, setIsTenantAdmin] = useState(false);
   const [userLevel, setUserLevel] = useState<'system_owner' | 'tenant_owner' | 'tenant_admin' | 'operational'>('operational');
+  const [overridesMap, setOverridesMap] = useState<Record<string, { can_view: boolean | null; can_create: boolean | null; can_edit: boolean | null; can_delete: boolean | null }>>({});
 
   const fetchPermissions = useCallback(async () => {
     if (!user?.id) return;
@@ -173,6 +178,24 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
           can_delete: existing.can_delete || !!row.can_delete,
         };
       });
+
+      // 5) Feature overrides (granularidade por rota/aba)
+      if (profile?.profile_type_id && !isAdmin) {
+        const { data: ovRows } = await supabase
+          .from('profile_type_feature_overrides' as any)
+          .select('feature_key, can_view, can_create, can_edit, can_delete')
+          .eq('profile_type_id', profile.profile_type_id);
+        const ovMap: Record<string, any> = {};
+        ((ovRows as any[]) || []).forEach((r: any) => {
+          ovMap[r.feature_key] = {
+            can_view: r.can_view, can_create: r.can_create,
+            can_edit: r.can_edit, can_delete: r.can_delete,
+          };
+        });
+        setOverridesMap(ovMap);
+      } else {
+        setOverridesMap({});
+      }
 
       console.log('[Permissions] Matrix loaded modules:', Object.keys(matrix).length);
 
@@ -278,8 +301,26 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     await fetchPermissions();
   }, [fetchPermissions]);
 
+  const hasFeatureAccess = useCallback((featureKey: string, action: 'view' | 'create' | 'edit' | 'delete' = 'view'): boolean | null => {
+    if (loading) return null;
+    if (isMaster) return true;
+    const ov = overridesMap[featureKey];
+    if (!ov) return null;
+    const v = ov[`can_${action}` as 'can_view' | 'can_create' | 'can_edit' | 'can_delete'];
+    return v === null || v === undefined ? null : !!v;
+  }, [loading, isMaster, overridesMap]);
+
+  const hasAccess = useCallback((module: AppModule | string, featureKey: string | undefined | null, action: 'view' | 'create' | 'edit' | 'delete' = 'view'): boolean => {
+    if (isMaster) return true;
+    if (featureKey) {
+      const ov = hasFeatureAccess(featureKey, action);
+      if (ov !== null) return ov;
+    }
+    return hasModuleAccess(module, action as PermissionAction);
+  }, [isMaster, hasFeatureAccess, hasModuleAccess]);
+
   return (
-    <PermissionsContext.Provider value={{ permissions, loading, isMaster, isOwner, isTenantOwner, isTenantAdmin, userLevel, hasModuleAccess, hasCriticalPermission, checkValueLimit, checkStatusRule, refetch }}>
+    <PermissionsContext.Provider value={{ permissions, loading, isMaster, isOwner, isTenantOwner, isTenantAdmin, userLevel, hasModuleAccess, hasFeatureAccess, hasAccess, hasCriticalPermission, checkValueLimit, checkStatusRule, refetch }}>
       {children}
     </PermissionsContext.Provider>
   );

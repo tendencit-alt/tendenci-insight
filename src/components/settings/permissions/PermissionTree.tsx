@@ -1,19 +1,19 @@
 /**
  * PermissionTree — UI em árvore espelhada do menu do sistema.
  *
- * - Cada raiz expande para as folhas (itens/abas) que aparecem no menu.
- * - Cada folha exibe checkboxes Ver / Criar / Editar / Excluir, mapeando
- *   para os 8 flags reais (mesma lógica do dialog de Módulos).
- * - Raiz tem tri-state (all / partial / none) com cascata para todos os
- *   módulos das folhas filhas.
- * - Busca rápida filtra a árvore mantendo a hierarquia.
- * - Quando 2+ folhas mapeiam ao mesmo módulo, ligar uma reflete em todas
- *   (badge "compartilhado") — comportamento esperado, pois o enforcement
- *   é por módulo agregado.
+ * MODELO DE DADOS:
+ * - `permissions[module]`         → permissão por módulo (baseline / fallback)
+ * - `overrides[feature_key]`      → permissão explícita por folha (rota/aba)
+ *
+ * EFETIVO: override ?? module. Ao salvar:
+ * - Toggle em folha → escreve apenas no override daquela feature_key.
+ * - Toggle em raiz (cascata) → escreve override em TODAS as folhas filhas.
+ * - "Marcar tudo / Desmarcar tudo" → escreve overrides explícitos.
+ * Backfill: ausência total de overrides == comportamento atual (só módulo).
  */
 
 import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronRight, Search, Share2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Search } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -22,7 +22,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import {
   MENU_PERMISSION_MAP,
-  leavesByModule,
   type MenuLeaf,
   type MenuRoot,
 } from '@/config/menuPermissionMap';
@@ -47,14 +46,22 @@ export interface ModulePermissionRecord {
   can_admin: boolean;
 }
 
-interface PermissionTreeProps {
-  permissions: Record<string, ModulePermissionRecord>;
-  onChange: (next: Record<string, ModulePermissionRecord>) => void;
-  /** Owner vê seções `ownerOnly`. Admin de tenant, não. */
-  showOwnerSections?: boolean;
+export interface FeatureOverride {
+  can_view: boolean | null;
+  can_create: boolean | null;
+  can_edit: boolean | null;
+  can_delete: boolean | null;
 }
 
-type TriState = 'all' | 'partial' | 'none';
+interface PermissionTreeProps {
+  permissions: Record<string, ModulePermissionRecord>;
+  overrides: Record<string, FeatureOverride>;
+  onChange: (next: {
+    permissions: Record<string, ModulePermissionRecord>;
+    overrides: Record<string, FeatureOverride>;
+  }) => void;
+  showOwnerSections?: boolean;
+}
 
 function moduleHasAction(perm: ModulePermissionRecord | undefined, action: TreeAction): boolean {
   if (!perm) return false;
@@ -62,36 +69,33 @@ function moduleHasAction(perm: ModulePermissionRecord | undefined, action: TreeA
   return cols.flags.every(f => !!perm[f as keyof ModulePermissionRecord]);
 }
 
-function applyActionToModule(
-  perm: ModulePermissionRecord | undefined,
+/** Valor efetivo: override (se !== null) → senão módulo. */
+function effective(
+  leaf: MenuLeaf,
   action: TreeAction,
-  value: boolean,
-): ModulePermissionRecord {
-  const cols = ACTION_COLUMNS.find(c => c.key === action)!;
-  const next: ModulePermissionRecord = {
-    can_view: !!perm?.can_view, can_create: !!perm?.can_create,
-    can_edit: !!perm?.can_edit, can_delete: !!perm?.can_delete,
-    can_approve: !!perm?.can_approve, can_conciliate: !!perm?.can_conciliate,
-    can_export: !!perm?.can_export, can_admin: !!perm?.can_admin,
-  };
-  cols.flags.forEach(f => { next[f as keyof ModulePermissionRecord] = value; });
-  return next;
+  permissions: Record<string, ModulePermissionRecord>,
+  overrides: Record<string, FeatureOverride>,
+): boolean {
+  const ov = overrides[leaf.key];
+  if (ov && ov[action] !== null && ov[action] !== undefined) return !!ov[action];
+  return moduleHasAction(permissions[leaf.module], action);
 }
 
-function rootTriState(root: MenuRoot, perms: Record<string, ModulePermissionRecord>): TriState {
-  let onCount = 0, offCount = 0;
-  root.leaves.forEach(leaf => {
-    ACTION_COLUMNS.forEach(col => {
-      if (moduleHasAction(perms[leaf.module], col.key)) onCount++; else offCount++;
-    });
-  });
-  if (onCount === 0) return 'none';
-  if (offCount === 0) return 'all';
-  return 'partial';
+function setOverride(
+  overrides: Record<string, FeatureOverride>,
+  featureKey: string,
+  action: TreeAction,
+  value: boolean,
+): Record<string, FeatureOverride> {
+  const cur: FeatureOverride = overrides[featureKey] ?? {
+    can_view: null, can_create: null, can_edit: null, can_delete: null,
+  };
+  return { ...overrides, [featureKey]: { ...cur, [action]: value } };
 }
 
 export function PermissionTree({
   permissions,
+  overrides,
   onChange,
   showOwnerSections = false,
 }: PermissionTreeProps) {
@@ -101,8 +105,6 @@ export function PermissionTree({
     return init;
   });
   const [query, setQuery] = useState('');
-
-  const moduleLeaves = useMemo(() => leavesByModule(), []);
 
   const visibleRoots = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -119,28 +121,39 @@ export function PermissionTree({
       .filter(r => r.leaves.length > 0);
   }, [query, showOwnerSections]);
 
-  const setLeafAction = (leaf: MenuLeaf, action: TreeAction, value: boolean) => {
-    const updated = applyActionToModule(permissions[leaf.module], action, value);
-    onChange({ ...permissions, [leaf.module]: updated });
+  const toggleLeaf = (leaf: MenuLeaf, action: TreeAction, value: boolean) => {
+    onChange({
+      permissions,
+      overrides: setOverride(overrides, leaf.key, action, value),
+    });
   };
 
-  const setRootAll = (root: MenuRoot, value: boolean) => {
-    const next = { ...permissions };
-    // dedupe módulos para não aplicar 2x
-    const mods = Array.from(new Set(root.leaves.map(l => l.module)));
-    mods.forEach(mod => {
-      let perm = next[mod];
-      ACTION_COLUMNS.forEach(col => {
-        perm = applyActionToModule(perm, col.key, value);
-      });
-      next[mod] = perm;
+  const cascadeRoot = (root: MenuRoot, action: TreeAction, value: boolean) => {
+    let nextOverrides = overrides;
+    root.leaves.forEach(leaf => {
+      nextOverrides = setOverride(nextOverrides, leaf.key, action, value);
     });
-    onChange(next);
+    onChange({ permissions, overrides: nextOverrides });
+  };
+
+  const cascadeRootAll = (root: MenuRoot, value: boolean) => {
+    let nextOverrides = overrides;
+    root.leaves.forEach(leaf => {
+      ACTION_COLUMNS.forEach(col => {
+        nextOverrides = setOverride(nextOverrides, leaf.key, col.key, value);
+      });
+    });
+    onChange({ permissions, overrides: nextOverrides });
+  };
+
+  const clearLeafOverrides = (leaf: MenuLeaf) => {
+    const next = { ...overrides };
+    delete next[leaf.key];
+    onChange({ permissions, overrides: next });
   };
 
   return (
     <div className="space-y-3">
-      {/* Busca + cabeçalho */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -151,12 +164,11 @@ export function PermissionTree({
             className="pl-8 h-8 text-sm"
           />
         </div>
-        <Badge variant="outline" className="text-[10px] gap-1">
-          <Share2 className="h-3 w-3" /> Persistência por módulo
+        <Badge variant="outline" className="text-[10px]">
+          Granularidade por rota/aba
         </Badge>
       </div>
 
-      {/* Cabeçalho de colunas */}
       <div
         className="grid gap-2 pb-1.5 border-b text-[10px] font-semibold text-muted-foreground uppercase tracking-wide"
         style={{ gridTemplateColumns: '1fr repeat(4, 70px)' }}
@@ -170,7 +182,6 @@ export function PermissionTree({
       <ScrollArea className="max-h-[55vh] pr-3">
         <div className="space-y-1">
           {visibleRoots.map(root => {
-            const tri = rootTriState(root, permissions);
             const isOpen = expanded[root.key] ?? true;
             return (
               <div key={root.key} className="rounded border border-border/40">
@@ -185,26 +196,16 @@ export function PermissionTree({
                     {root.ownerOnly && (
                       <Badge variant="outline" className="text-[9px] h-4 ml-1">Owner</Badge>
                     )}
-                    {tri === 'partial' && (
-                      <Badge variant="secondary" className="text-[9px] h-4 ml-1">parcial</Badge>
-                    )}
                   </div>
                   {ACTION_COLUMNS.map(col => {
-                    // raiz: marcado se TODAS as folhas têm essa ação ligada
-                    const allOn = root.leaves.every(l => moduleHasAction(permissions[l.module], col.key));
-                    const someOn = root.leaves.some(l => moduleHasAction(permissions[l.module], col.key));
+                    const states = root.leaves.map(l => effective(l, col.key, permissions, overrides));
+                    const allOn = states.every(Boolean);
+                    const someOn = states.some(Boolean);
                     return (
                       <div key={col.key} className="flex justify-center" onClick={(e) => e.stopPropagation()}>
                         <Checkbox
                           checked={allOn ? true : (someOn ? 'indeterminate' : false)}
-                          onCheckedChange={(v) => {
-                            const next = { ...permissions };
-                            const mods = Array.from(new Set(root.leaves.map(l => l.module)));
-                            mods.forEach(mod => {
-                              next[mod] = applyActionToModule(next[mod], col.key, !!v);
-                            });
-                            onChange(next);
-                          }}
+                          onCheckedChange={(v) => cascadeRoot(root, col.key, !!v)}
                         />
                       </div>
                     );
@@ -214,7 +215,7 @@ export function PermissionTree({
                 {isOpen && (
                   <div className="divide-y divide-border/30">
                     {root.leaves.map(leaf => {
-                      const shared = (moduleLeaves[leaf.module] || []).filter(l => l.key !== leaf.key);
+                      const hasOverride = !!overrides[leaf.key];
                       return (
                         <div
                           key={leaf.key}
@@ -224,24 +225,25 @@ export function PermissionTree({
                           <div className="pl-5 text-sm flex items-center gap-1.5 min-w-0">
                             <span className="truncate">{leaf.label}</span>
                             <code className="text-[9px] text-muted-foreground/60 truncate">{leaf.key}</code>
-                            {shared.length > 0 && (
-                              <Badge
-                                variant="outline"
-                                className="text-[9px] h-4 shrink-0 gap-0.5"
-                                title={`Compartilha módulo "${leaf.module}" com: ${shared.map(s => s.label).join(', ')}`}
+                            {hasOverride && (
+                              <button
+                                type="button"
+                                onClick={() => clearLeafOverrides(leaf)}
+                                title="Limpar override (volta a herdar do módulo)"
+                                className="text-[9px] text-primary hover:underline shrink-0"
                               >
-                                <Share2 className="h-2.5 w-2.5" />
-                                {shared.length}
-                              </Badge>
+                                ✕ override
+                              </button>
                             )}
                           </div>
                           {ACTION_COLUMNS.map(col => {
-                            const checked = moduleHasAction(permissions[leaf.module], col.key);
+                            const checked = effective(leaf, col.key, permissions, overrides);
                             return (
                               <div key={col.key} className="flex justify-center">
                                 <Checkbox
                                   checked={checked}
-                                  onCheckedChange={(v) => setLeafAction(leaf, col.key, !!v)}
+                                  onCheckedChange={(v) => toggleLeaf(leaf, col.key, !!v)}
+                                  className={cn(hasOverride && 'data-[state=checked]:bg-primary')}
                                 />
                               </div>
                             );
@@ -252,20 +254,19 @@ export function PermissionTree({
                   </div>
                 )}
 
-                {/* Atalhos do header */}
                 {isOpen && (
                   <div className="px-2 py-1 border-t border-border/30 bg-muted/10 flex items-center justify-end gap-2">
                     <Button
                       type="button" variant="ghost" size="sm"
                       className="h-6 text-[10px]"
-                      onClick={() => setRootAll(root, true)}
+                      onClick={() => cascadeRootAll(root, true)}
                     >
                       Marcar tudo
                     </Button>
                     <Button
                       type="button" variant="ghost" size="sm"
                       className="h-6 text-[10px]"
-                      onClick={() => setRootAll(root, false)}
+                      onClick={() => cascadeRootAll(root, false)}
                     >
                       Desmarcar tudo
                     </Button>
@@ -287,10 +288,9 @@ export function PermissionTree({
         'text-[11px] text-muted-foreground/80 leading-relaxed',
         'border-l-2 border-primary/40 pl-2'
       )}>
-        A árvore reflete o menu do sistema. Como o enforcement é por módulo,
-        folhas que compartilham módulo (marcadas com <Share2 className="inline h-2.5 w-2.5" />)
-        são ligadas/desligadas em conjunto. Para granularidade fina por folha,
-        use a tabela de overrides na próxima versão da configuração.
+        Cada folha é uma rota/aba específica. Override explícito (marcado ou
+        desmarcado) sobrepõe o módulo. Sem override, a folha herda do módulo.
+        Clique <code>✕ override</code> para voltar a herdar.
       </p>
     </div>
   );
