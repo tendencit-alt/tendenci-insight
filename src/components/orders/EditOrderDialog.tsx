@@ -360,7 +360,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
   // Estado unificado para comissões (incluindo RT)
   const [comissoes, setComissoes] = useState({
-    rt: { habilitado: false, percentual: resourceDefaults.rt.percentage, valor: 0, responsavel_id: '' },
+    rt: { habilitado: resourceDefaults.rt.active, percentual: resourceDefaults.rt.percentage, valor: 0, responsavel_id: '' },
     vendedor: { habilitado: resourceDefaults.vendedor.active, percentual: resourceDefaults.vendedor.percentage, valor: 0, responsavel_id: '' },
     orcamentista: { habilitado: resourceDefaults.orcamentista.active, percentual: resourceDefaults.orcamentista.percentage, valor: 0, responsavel_id: '' },
     projetista: { habilitado: resourceDefaults.projetista.active, percentual: resourceDefaults.projetista.percentage, valor: 0, responsavel_id: '' },
