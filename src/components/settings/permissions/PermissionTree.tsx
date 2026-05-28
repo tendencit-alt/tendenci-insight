@@ -282,7 +282,7 @@ export function PermissionTree({
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
 
       <p className={cn(
         'text-[11px] text-muted-foreground/80 leading-relaxed',
