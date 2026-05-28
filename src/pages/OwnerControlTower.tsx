@@ -83,6 +83,7 @@ function useOwnerMetrics() {
 export default function OwnerControlTower() {
   const { isOwner } = usePermissions();
   const { data, isLoading, error } = useOwnerMetrics();
+  const cons = useOwnerConsolidated();
 
   if (!isOwner) return <Navigate to="/" replace />;
 
@@ -96,7 +97,16 @@ export default function OwnerControlTower() {
           <p className="text-muted-foreground text-lg">
             Visão consolidada da base de tenants — dados em tempo real
           </p>
+          <div className="flex items-start gap-2 rounded-md border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
+            <Info className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+            <div>
+              <strong className="text-foreground">Owner = apenas estrutura (templates).</strong> Plano de contas, centros de custo, taxas, categorias, módulos e automações servem como base para novos inquilinos.
+              Nenhum dado operacional (pedidos, financeiro, ponto, clientes) pertence ao Owner.
+              Os painéis abaixo são <strong className="text-foreground">Visão Consolidada (read-only)</strong> agregando TODOS os inquilinos.
+            </div>
+          </div>
         </div>
+
 
         {isLoading && (
           <div className="flex justify-center py-12">
