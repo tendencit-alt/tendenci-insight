@@ -509,6 +509,25 @@ export function ProfileTypePermissionsDialog({
         if (error) throw error;
       }
 
+      // Save feature overrides (granularidade por rota/aba)
+      // Estratégia idempotente: delete + insert apenas dos com algum valor != null
+      const tenantId = (await supabase.rpc('get_user_tenant_id' as any)).data as string | null;
+      await supabase.from('profile_type_feature_overrides' as any)
+        .delete().eq('profile_type_id', profileType.id);
+      const overridesToInsert = Object.entries(overrides)
+        .filter(([_, v]) => v && (v.can_view !== null || v.can_create !== null || v.can_edit !== null || v.can_delete !== null))
+        .map(([feature_key, v]) => ({
+          profile_type_id: profileType.id,
+          tenant_id: tenantId,
+          feature_key,
+          can_view: v.can_view, can_create: v.can_create,
+          can_edit: v.can_edit, can_delete: v.can_delete,
+        }));
+      if (overridesToInsert.length > 0) {
+        const { error: ovErr } = await supabase.from('profile_type_feature_overrides' as any).insert(overridesToInsert);
+        if (ovErr) throw ovErr;
+      }
+
       // Validation: re-read and verify all 8 flags persisted correctly per module
       const { data: verifyRows, error: verifyErr } = await supabase
         .from('profile_type_permissions')
