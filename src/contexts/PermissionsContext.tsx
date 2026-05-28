@@ -301,8 +301,26 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     await fetchPermissions();
   }, [fetchPermissions]);
 
+  const hasFeatureAccess = useCallback((featureKey: string, action: 'view' | 'create' | 'edit' | 'delete' = 'view'): boolean | null => {
+    if (loading) return null;
+    if (isMaster) return true;
+    const ov = overridesMap[featureKey];
+    if (!ov) return null;
+    const v = ov[`can_${action}` as 'can_view' | 'can_create' | 'can_edit' | 'can_delete'];
+    return v === null || v === undefined ? null : !!v;
+  }, [loading, isMaster, overridesMap]);
+
+  const hasAccess = useCallback((module: AppModule | string, featureKey: string | undefined | null, action: 'view' | 'create' | 'edit' | 'delete' = 'view'): boolean => {
+    if (isMaster) return true;
+    if (featureKey) {
+      const ov = hasFeatureAccess(featureKey, action);
+      if (ov !== null) return ov;
+    }
+    return hasModuleAccess(module, action as PermissionAction);
+  }, [isMaster, hasFeatureAccess, hasModuleAccess]);
+
   return (
-    <PermissionsContext.Provider value={{ permissions, loading, isMaster, isOwner, isTenantOwner, isTenantAdmin, userLevel, hasModuleAccess, hasCriticalPermission, checkValueLimit, checkStatusRule, refetch }}>
+    <PermissionsContext.Provider value={{ permissions, loading, isMaster, isOwner, isTenantOwner, isTenantAdmin, userLevel, hasModuleAccess, hasFeatureAccess, hasAccess, hasCriticalPermission, checkValueLimit, checkStatusRule, refetch }}>
       {children}
     </PermissionsContext.Provider>
   );
