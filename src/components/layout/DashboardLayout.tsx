@@ -1,4 +1,5 @@
 import { AppNavbar } from "./AppNavbar";
+import { OwnerImpersonationBanner } from "./OwnerImpersonationBanner";
 import { useGlobalRealtime } from "@/hooks/useGlobalRealtime";
 import { SmartBreadcrumb } from "@/components/navigation-intelligence/SmartBreadcrumb";
 import { RecentNavigationBar } from "@/components/navigation-intelligence/RecentNavigationBar";
