@@ -50,8 +50,8 @@ export const MENU_PERMISSION_MAP: MenuRoot[] = [
     label: 'Hoje',
     leaves: [
       { key: '/central-navegacao',  label: 'Central de Navegação', module: 'dashboard' },
-      { key: '/control-tower',      label: 'Control Tower',         module: 'dashboard_executivo' },
-      { key: '/executive',          label: 'Executive Center',      module: 'dashboard_executivo' },
+      { key: '/control-tower',      label: 'Control Tower',         module: 'dashboard_executivo', ownerOnly: true },
+      { key: '/executive',          label: 'Executive Center',      module: 'dashboard_executivo', ownerOnly: true },
     ],
   },
   {
