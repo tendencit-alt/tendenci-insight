@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
-import { Search, Instagram, Phone, X, ArrowLeft } from "lucide-react";
+import { Search, Instagram, Phone, X } from "lucide-react";
 import { PublicLeadDialog } from "@/components/catalogo-public/PublicLeadDialog";
 
 interface PublicTenant {
