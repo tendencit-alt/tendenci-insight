@@ -25,6 +25,8 @@ import Perfil from "./pages/Perfil";
 import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
 import TermosUso from "./pages/TermosUso";
 import Auth from "./pages/Auth";
+import Cadastro from "./pages/Cadastro";
+import BoasVindas from "./pages/BoasVindas";
 import Production from "./pages/Production";
 import Orders from "./pages/Orders";
 import Suppliers from "./pages/Suppliers";
@@ -127,6 +129,10 @@ const App = () => (
               <Route path="/auth" element={<Navigate to="/autenticacao" replace />} />
               <Route path="/redefinir-senha" element={<ResetPassword />} />
               <Route path="/reset-password" element={<Navigate to="/redefinir-senha" replace />} />
+
+              {/* Cadastro público (signup de novo tenant) */}
+              <Route path="/cadastro" element={<Cadastro />} />
+              <Route path="/boas-vindas" element={<ProtectedRoute><BoasVindas /></ProtectedRoute>} />
 
               {/* Catálogo público externo (sem autenticação) */}
               <Route path="/c/:tenant_slug" element={<CatalogoPublico />} />
