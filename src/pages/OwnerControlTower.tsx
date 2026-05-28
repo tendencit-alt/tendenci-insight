@@ -178,8 +178,38 @@ export default function OwnerControlTower() {
                 </div>
               </CardContent>
             </Card>
+
+            <Card className="border-primary/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Badge variant="outline" className="border-primary/40 text-primary">Visão Consolidada</Badge>
+                  <span>Operação agregada de TODOS os inquilinos (read-only)</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {cons.isLoading ? (
+                  <div className="flex justify-center py-6"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+                ) : cons.error ? (
+                  <p className="text-sm text-destructive">Erro: {(cons.error as Error).message}</p>
+                ) : cons.data && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <KPICard icon={ShoppingCart} label="Pedidos" value={cons.data.ordersCount} sub={fmtMoney(cons.data.ordersAmt)} />
+                      <KPICard icon={ArrowDownCircle} label="Contas a pagar (abertas)" value={cons.data.payablesOpenCount} sub={fmtMoney(cons.data.payablesOpenAmt)} />
+                      <KPICard icon={ArrowUpCircle} label="Contas a receber (abertas)" value={cons.data.recvOpenCount} sub={fmtMoney(cons.data.recvOpenAmt)} />
+                      <KPICard icon={Wallet} label="Saldo a receber - a pagar" value={fmtMoney(cons.data.recvOpenAmt - cons.data.payablesOpenAmt)} />
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <KPICard icon={Factory} label="OPs de produção" value={cons.data.prodCount} />
+                      <KPICard icon={Truck} label="Entregas" value={cons.data.delCount} sub={`${cons.data.instCount} instalações`} />
+                      <KPICard icon={UserCog} label="Colaboradores CLT" value={cons.data.empCount} sub={`${cons.data.pjCount} PJs`} />
+                      <KPICard icon={Users} label="Clientes / Fornecedores" value={`${cons.data.clientsCount} / ${cons.data.suppliersCount}`} />
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </>
-        )}
       </div>
     </DashboardLayout>
   );
