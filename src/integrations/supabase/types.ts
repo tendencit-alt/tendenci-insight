@@ -20336,6 +20336,8 @@ export type Database = {
       }
       tenant_catalogo_settings: {
         Row: {
+          banner_url: string | null
+          catalogo_indexavel: boolean
           created_at: string
           footer_company_name: string | null
           footer_copyright: string | null
@@ -20343,12 +20345,15 @@ export type Database = {
           hero_title: string | null
           instagram_url: string | null
           logo_url: string | null
+          meta_description: string | null
           primary_color: string | null
           tenant_id: string
           updated_at: string
           whatsapp_url: string | null
         }
         Insert: {
+          banner_url?: string | null
+          catalogo_indexavel?: boolean
           created_at?: string
           footer_company_name?: string | null
           footer_copyright?: string | null
@@ -20356,12 +20361,15 @@ export type Database = {
           hero_title?: string | null
           instagram_url?: string | null
           logo_url?: string | null
+          meta_description?: string | null
           primary_color?: string | null
           tenant_id: string
           updated_at?: string
           whatsapp_url?: string | null
         }
         Update: {
+          banner_url?: string | null
+          catalogo_indexavel?: boolean
           created_at?: string
           footer_company_name?: string | null
           footer_copyright?: string | null
@@ -20369,6 +20377,7 @@ export type Database = {
           hero_title?: string | null
           instagram_url?: string | null
           logo_url?: string | null
+          meta_description?: string | null
           primary_color?: string | null
           tenant_id?: string
           updated_at?: string
@@ -20791,6 +20800,7 @@ export type Database = {
       tenants: {
         Row: {
           active: boolean | null
+          catalogo_publico_ativo: boolean
           created_at: string
           id: string
           max_users: number
@@ -20801,6 +20811,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean | null
+          catalogo_publico_ativo?: boolean
           created_at?: string
           id?: string
           max_users?: number
@@ -20811,6 +20822,7 @@ export type Database = {
         }
         Update: {
           active?: boolean | null
+          catalogo_publico_ativo?: boolean
           created_at?: string
           id?: string
           max_users?: number
@@ -23787,6 +23799,51 @@ export type Database = {
               whatsapp_valido: boolean
             }[]
           }
+      get_public_catalog_categories: {
+        Args: { p_slug: string }
+        Returns: {
+          color: string
+          id: string
+          name: string
+          sort_position: number
+        }[]
+      }
+      get_public_catalog_product: {
+        Args: { p_product_id: string; p_slug: string }
+        Returns: {
+          category_id: string
+          category_name: string
+          descricao_curta: string
+          descricao_longa: string
+          dimensoes: Json
+          id: string
+          image_url: string
+          imagens: string[]
+          name: string
+          prazo_producao_dias: number
+          sale_price: number
+          tenant_id: string
+        }[]
+      }
+      get_public_catalog_products: {
+        Args: {
+          p_category_id?: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_slug: string
+        }
+        Returns: {
+          category_id: string
+          category_name: string
+          descricao_curta: string
+          id: string
+          image_url: string
+          imagens: string[]
+          name: string
+          sale_price: number
+        }[]
+      }
       get_record_lineage: {
         Args: { p_entity_id: string; p_entity_type: string }
         Returns: Json
@@ -24219,6 +24276,24 @@ export type Database = {
           signal_id: string
         }[]
       }
+      resolve_public_catalog: {
+        Args: { p_slug: string }
+        Returns: {
+          banner_url: string
+          catalogo_indexavel: boolean
+          footer_company_name: string
+          footer_copyright: string
+          hero_subtitle: string
+          hero_title: string
+          instagram_url: string
+          logo_url: string
+          meta_description: string
+          primary_color: string
+          tenant_id: string
+          tenant_name: string
+          whatsapp_url: string
+        }[]
+      }
       resolve_self_healing_escalation: {
         Args: { p_id: string; p_note?: string; p_status: string }
         Returns: undefined
@@ -24280,6 +24355,17 @@ export type Database = {
       }
       storage_tenant_for: {
         Args: { _bucket: string; _name: string }
+        Returns: string
+      }
+      submit_public_catalog_lead: {
+        Args: {
+          p_email: string
+          p_message: string
+          p_name: string
+          p_phone: string
+          p_product_id?: string
+          p_slug: string
+        }
         Returns: string
       }
       suggest_purchase_orders: {
