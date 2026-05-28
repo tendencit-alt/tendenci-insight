@@ -612,7 +612,8 @@ export function ProfileTypePermissionsDialog({
           </div>
         ) : (
           <Tabs value={tab} onValueChange={setTab}>
-            <TabsList className="grid grid-cols-5 w-full">
+            <TabsList className="grid grid-cols-6 w-full">
+              <TabsTrigger value="tree" className="gap-1 text-xs"><ListTree className="h-3.5 w-3.5" />Árvore (Menu)</TabsTrigger>
               <TabsTrigger value="modules" className="gap-1 text-xs"><Shield className="h-3.5 w-3.5" />Módulos</TabsTrigger>
               <TabsTrigger value="scopes" className="gap-1 text-xs"><Target className="h-3.5 w-3.5" />Escopos</TabsTrigger>
               <TabsTrigger value="values" className="gap-1 text-xs"><DollarSign className="h-3.5 w-3.5" />Valores</TabsTrigger>
@@ -620,9 +621,19 @@ export function ProfileTypePermissionsDialog({
               <TabsTrigger value="segregation" className="gap-1 text-xs"><Lock className="h-3.5 w-3.5" />Segregação</TabsTrigger>
             </TabsList>
 
+            {/* TREE TAB — espelha o menu do sistema */}
+            <TabsContent value="tree" className="mt-3">
+              <PermissionTree
+                permissions={permissions as Record<string, ModulePermissionRecord>}
+                onChange={(next) => setPermissions(next as Record<string, ModulePermission>)}
+                showOwnerSections={isOwner}
+              />
+            </TabsContent>
+
             {/* MODULES TAB */}
             <TabsContent value="modules" className="mt-3">
               <ScrollArea className="max-h-[50vh] pr-4">
+
                 <TooltipProvider delayDuration={200}>
                 <div className="space-y-1">
                   <div className="grid gap-2 pb-2 border-b text-[11px] font-semibold text-muted-foreground uppercase tracking-wide"
