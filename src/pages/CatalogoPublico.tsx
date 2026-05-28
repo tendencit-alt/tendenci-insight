@@ -278,7 +278,11 @@ export default function CatalogoPublico() {
                   key={p.id}
                   className="overflow-hidden group hover:shadow-lg transition-shadow flex flex-col"
                 >
-                  <div className="aspect-square bg-muted overflow-hidden">
+                  <Link
+                    to={`/c/${tenant_slug}/p/${p.id}`}
+                    className="block aspect-square bg-muted overflow-hidden"
+                    aria-label={`Ver detalhes de ${p.name}`}
+                  >
                     {cover ? (
                       <img
                         src={cover}
@@ -291,28 +295,38 @@ export default function CatalogoPublico() {
                         Sem imagem
                       </div>
                     )}
-                  </div>
+                  </Link>
                   <div className="p-4 flex-1 flex flex-col gap-2">
                     {p.category_name && (
                       <span className="text-xs text-muted-foreground">{p.category_name}</span>
                     )}
-                    <h3 className="font-semibold leading-tight line-clamp-2">{p.name}</h3>
+                    <Link
+                      to={`/c/${tenant_slug}/p/${p.id}`}
+                      className="font-semibold leading-tight line-clamp-2 hover:underline"
+                    >
+                      {p.name}
+                    </Link>
                     {p.descricao_curta && (
                       <p className="text-sm text-muted-foreground line-clamp-2">
                         {p.descricao_curta}
                       </p>
                     )}
-                    <div className="mt-auto pt-2 flex items-center justify-between">
+                    <div className="mt-auto pt-2 flex items-center justify-between gap-2">
                       <span className="font-bold" style={{ color: primary }}>
                         {formatBRL(p.sale_price)}
                       </span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleAskQuote(p.id)}
-                      >
-                        Orçar
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="ghost" asChild>
+                          <Link to={`/c/${tenant_slug}/p/${p.id}`}>Detalhes</Link>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleAskQuote(p.id)}
+                        >
+                          Orçar
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </Card>

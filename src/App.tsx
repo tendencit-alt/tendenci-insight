@@ -36,6 +36,7 @@ import Produtos from "./pages/Produtos";
 import ActivityCenter from "./pages/ActivityCenter";
 import Catalogo from "./pages/Catalogo";
 import CatalogoPublico from "./pages/CatalogoPublico";
+import CatalogoPublicoProduto from "./pages/CatalogoPublicoProduto";
 import Financeiro from "./pages/Financeiro";
 import CadastrosFinanceiros from "./pages/CadastrosFinanceiros";
 import FinanceiroRhPj from "./pages/FinanceiroRhPj";
@@ -126,7 +127,7 @@ const App = () => (
 
               {/* Catálogo público externo (sem autenticação) */}
               <Route path="/c/:tenant_slug" element={<CatalogoPublico />} />
-              <Route path="/c/:tenant_slug/p/:product_id" element={<CatalogoPublico />} />
+              <Route path="/c/:tenant_slug/p/:product_id" element={<CatalogoPublicoProduto />} />
 
 
               <Route path="/catalogo" element={<ProtectedRoute><PermissionGuard module="comercial"><Catalogo /></PermissionGuard></ProtectedRoute>} />
