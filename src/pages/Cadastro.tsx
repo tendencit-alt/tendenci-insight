@@ -100,7 +100,7 @@ export default function Cadastro() {
         navigate("/autenticacao", { replace: true });
         return;
       }
-      navigate("/onboarding", { replace: true });
+      navigate("/boas-vindas", { replace: true });
     } catch (e: any) {
       toast.error(e?.message || "Erro ao criar conta");
     } finally {
