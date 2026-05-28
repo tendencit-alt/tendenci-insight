@@ -26,6 +26,7 @@ import Production from "./pages/Production";
 import Orders from "./pages/Orders";
 import Suppliers from "./pages/Suppliers";
 import Clientes from "./pages/Clientes";
+import Contatos from "./pages/Contatos";
 import Leads from "./pages/Leads";
 import Comissoes from "./pages/Comissoes";
 import Notificacoes from "./pages/Notificacoes";
@@ -157,6 +158,7 @@ const App = () => (
               <Route path="/pedidos" element={<ProtectedRoute><PermissionGuard module="pedidos"><Orders /></PermissionGuard></ProtectedRoute>} />
               <Route path="/fornecedores" element={<ProtectedRoute><PermissionGuard module="fornecedores"><Suppliers /></PermissionGuard></ProtectedRoute>} />
               <Route path="/clientes" element={<ProtectedRoute><PermissionGuard module="comercial"><Clientes /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/contatos" element={<ProtectedRoute><PermissionGuard module="comercial"><Contatos /></PermissionGuard></ProtectedRoute>} />
               <Route path="/leads" element={<ProtectedRoute><PermissionGuard module="comercial"><Leads /></PermissionGuard></ProtectedRoute>} />
               {/* CRM unificado (substitui projetos, crm-comercial, prospecção, propostas, contratos) */}
               <Route path="/crm" element={<ProtectedRoute><PermissionGuard module="comercial"><CRM /></PermissionGuard></ProtectedRoute>} />
