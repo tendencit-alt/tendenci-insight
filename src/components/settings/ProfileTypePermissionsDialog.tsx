@@ -623,11 +623,15 @@ export function ProfileTypePermissionsDialog({
               <TabsTrigger value="segregation" className="gap-1 text-xs"><Lock className="h-3.5 w-3.5" />Segregação</TabsTrigger>
             </TabsList>
 
-            {/* TREE TAB — espelha o menu do sistema */}
+            {/* TREE TAB — espelha o menu do sistema (com overrides por rota/aba) */}
             <TabsContent value="tree" className="mt-3">
               <PermissionTree
                 permissions={permissions as Record<string, ModulePermissionRecord>}
-                onChange={(next) => setPermissions(next as Record<string, ModulePermission>)}
+                overrides={overrides}
+                onChange={(next) => {
+                  setPermissions(next.permissions as Record<string, ModulePermission>);
+                  setOverrides(next.overrides);
+                }}
                 showOwnerSections={isOwner}
               />
             </TabsContent>
