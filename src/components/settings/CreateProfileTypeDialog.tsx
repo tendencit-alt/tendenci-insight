@@ -19,6 +19,7 @@ import { useProfileTemplates } from '@/hooks/useProfileTemplates';
 import { ProfileTemplatesManager } from './ProfileTemplatesManager';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { validateTemplateCompleteness, TEMPLATE_MODULE_LABELS, describeTemplateGaps } from '@/lib/profileTemplateValidation';
+import { ALL_TREE_MODULES } from '@/config/menuPermissionMap';
 
 interface ProfileType {
   id: string;
@@ -48,10 +49,7 @@ type FlagSet = {
   can_approve: boolean; can_conciliate: boolean; can_export: boolean; can_admin: boolean;
 };
 
-const ALL_MODULES = [
-  'dashboard_executivo', 'comercial', 'operacional', 'financeiro',
-  'controladoria', 'planejamento', 'cadastros', 'relatorios_bi', 'configuracoes',
-];
+const ALL_MODULES = Array.from(new Set([...ALL_TREE_MODULES, 'dashboard'])) as string[];
 
 const empty = (): FlagSet => ({
   can_view: false, can_create: false, can_edit: false, can_delete: false,
