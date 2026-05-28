@@ -1,11 +1,12 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Users, Building2, DollarSign, Package } from 'lucide-react';
+import { Loader2, Users, Building2, DollarSign, Package, ShoppingCart, Factory, Truck, UserCog, Wallet, ArrowDownCircle, ArrowUpCircle, Info } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOwnerConsolidated } from '@/hooks/useOwnerConsolidated';
 
 const fmtMoney = (v: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
