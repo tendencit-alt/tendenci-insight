@@ -15,6 +15,8 @@ import RlsAudit from "./pages/RlsAudit";
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionGuard } from "@/components/auth/PermissionGuard";
+import { FeatureGate } from "@/components/auth/FeatureGate";
+import Assinatura from "./pages/Assinatura";
 import { DynamicRouteHandler } from "@/components/routing/DynamicRouteHandler";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ProjectSettings from "./pages/ProjectSettings";
@@ -144,6 +146,7 @@ const App = () => (
 
               {/* Perfil do usuário (autenticado) */}
               <Route path="/configuracoes/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
+              <Route path="/configuracoes/assinatura" element={<ProtectedRoute><Assinatura /></ProtectedRoute>} />
 
 
 
@@ -168,7 +171,9 @@ const App = () => (
               <Route path="/tarefas" element={<ProtectedRoute><Tarefas /></ProtectedRoute>} />
               <Route path="/automacoes" element={<ProtectedRoute><Automacoes /></ProtectedRoute>} />
               <Route path="/bi-dashboard" element={<ProtectedRoute><DashboardBI /></ProtectedRoute>} />
-              <Route path="/bi-dashboard-completo" element={<ProtectedRoute><DashboardBI /></ProtectedRoute>} />
+              <Route path="/bi-dashboard-completo" element={<ProtectedRoute><FeatureGate feature="bi_completo"><DashboardBI /></FeatureGate></ProtectedRoute>} />
+              <Route path="/kpis-avancados" element={<ProtectedRoute><FeatureGate feature="kpis_avancados"><DashboardBI /></FeatureGate></ProtectedRoute>} />
+              <Route path="/visao-consolidada" element={<ProtectedRoute><FeatureGate feature="visao_consolidada"><ExecutiveCenter /></FeatureGate></ProtectedRoute>} />
 
               {/* Configurações (PT canônico + redirects EN) */}
               <Route path="/configuracoes" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ProjectSettings /></PermissionGuard></ProtectedRoute>} />
@@ -178,7 +183,7 @@ const App = () => (
               <Route path="/settings" element={<Navigate to="/configuracoes" replace />} />
               <Route path="/settings/users" element={<Navigate to="/configuracoes/usuarios" replace />} />
 
-              <Route path="/producao" element={<ProtectedRoute><PermissionGuard module="producao"><Production /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/producao" element={<ProtectedRoute><FeatureGate feature="producao"><PermissionGuard module="producao"><Production /></PermissionGuard></FeatureGate></ProtectedRoute>} />
               <Route path="/pedidos" element={<ProtectedRoute><PermissionGuard module="pedidos"><Orders /></PermissionGuard></ProtectedRoute>} />
               <Route path="/fornecedores" element={<ProtectedRoute><PermissionGuard module="fornecedores"><Suppliers /></PermissionGuard></ProtectedRoute>} />
               <Route path="/clientes" element={<ProtectedRoute><PermissionGuard module="comercial"><Clientes /></PermissionGuard></ProtectedRoute>} />
@@ -204,7 +209,7 @@ const App = () => (
               <Route path="/projects" element={<Navigate to="/crm?view=gestor&tab=overview" replace />} />
 
               <Route path="/suprimentos" element={<ProtectedRoute><Suprimentos /></ProtectedRoute>} />
-              <Route path="/entregas-montagem" element={<ProtectedRoute><EntregasMontagem /></ProtectedRoute>} />
+              <Route path="/entregas-montagem" element={<ProtectedRoute><FeatureGate feature="entregas"><EntregasMontagem /></FeatureGate></ProtectedRoute>} />
               <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
               <Route path="/atividades" element={<ProtectedRoute><ActivityCenter /></ProtectedRoute>} />
               <Route path="/data-flow" element={<ProtectedRoute><DataFlowMap /></ProtectedRoute>} />
