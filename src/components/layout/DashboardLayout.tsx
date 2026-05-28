@@ -27,7 +27,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <SmartBreadcrumb />
         {/* <ContextualShortcutsBar /> */}
         {/* <NextActionSuggestion /> */}
-        <div className="flex justify-end mb-2"><PermissionSimulatorTrigger /></div>
+        {/* Simular permissões removido */}
         {children}
       </main>
     </div>
