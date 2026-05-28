@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Info, Shield, RotateCcw, Save, LayoutTemplate } from 'lucide-react';
+import { Loader2, Info, Shield, RotateCcw, Save, LayoutTemplate, Sparkles, AlertTriangle } from 'lucide-react';
 import { PermissionTree, type ModulePermissionRecord } from './permissions/PermissionTree';
 import { usePermissionsContext } from '@/contexts/PermissionsContext';
 import { validateTemplateCompleteness, TEMPLATE_MODULE_LABELS, describeTemplateGaps } from '@/lib/profileTemplateValidation';
