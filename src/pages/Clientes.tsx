@@ -247,7 +247,9 @@ export default function Clientes() {
     </div>
   );
 
-  const records = (
+  const records = onMasterOwner ? (
+    <OwnerTenantEmptyState entity="clientes" />
+  ) : (
     <div className="space-y-4">
       <Card className="p-4">
         <div className="grid gap-3 md:grid-cols-5">
