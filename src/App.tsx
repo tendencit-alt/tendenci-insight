@@ -130,6 +130,10 @@ const App = () => (
               <Route path="/redefinir-senha" element={<ResetPassword />} />
               <Route path="/reset-password" element={<Navigate to="/redefinir-senha" replace />} />
 
+              {/* Cadastro público (signup de novo tenant) */}
+              <Route path="/cadastro" element={<Cadastro />} />
+              <Route path="/boas-vindas" element={<ProtectedRoute><BoasVindas /></ProtectedRoute>} />
+
               {/* Catálogo público externo (sem autenticação) */}
               <Route path="/c/:tenant_slug" element={<CatalogoPublico />} />
               <Route path="/c/:tenant_slug/p/:product_id" element={<CatalogoPublicoProduto />} />
