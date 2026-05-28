@@ -25,6 +25,8 @@ import Perfil from "./pages/Perfil";
 import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
 import TermosUso from "./pages/TermosUso";
 import Auth from "./pages/Auth";
+import Cadastro from "./pages/Cadastro";
+import BoasVindas from "./pages/BoasVindas";
 import Production from "./pages/Production";
 import Orders from "./pages/Orders";
 import Suppliers from "./pages/Suppliers";
