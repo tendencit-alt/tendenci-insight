@@ -45,6 +45,10 @@ interface PermissionsContextType {
   isTenantAdmin: boolean;
   userLevel: 'system_owner' | 'tenant_owner' | 'tenant_admin' | 'operational';
   hasModuleAccess: (module: AppModule | string, action?: PermissionAction) => boolean;
+  /** Override por rota/aba. null = sem override (caller deve usar fallback de módulo). */
+  hasFeatureAccess: (featureKey: string, action?: 'view' | 'create' | 'edit' | 'delete') => boolean | null;
+  /** Efetivo: override (se houver) → senão módulo. Recomendado para gating de menu/rota. */
+  hasAccess: (module: AppModule | string, featureKey: string | undefined | null, action?: 'view' | 'create' | 'edit' | 'delete') => boolean;
   hasCriticalPermission: (key: string) => boolean;
   checkValueLimit: (module: string, value: number) => Promise<{ allowed: boolean; reason: string; requires_approval?: boolean; max_value?: number }>;
   checkStatusRule: (module: string, status: string, action?: string) => Promise<boolean>;
