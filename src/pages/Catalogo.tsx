@@ -13,6 +13,9 @@ import { ProductDetailModal } from "@/components/catalogo/ProductDetailModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { CatalogoAdminBar } from "@/components/catalogo/CatalogoAdminBar";
+import { SharePublicCatalogPanel } from "@/components/catalogo/SharePublicCatalogPanel";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 interface Product {
   id: string;
