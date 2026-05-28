@@ -5963,6 +5963,39 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_catalog: {
+        Row: {
+          created_at: string
+          feature_key: string
+          label: string
+          module: string
+          owner_only: boolean
+          root_key: string
+          root_label: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          feature_key: string
+          label: string
+          module: string
+          owner_only?: boolean
+          root_key: string
+          root_label: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          feature_key?: string
+          label?: string
+          module?: string
+          owner_only?: boolean
+          root_key?: string
+          root_label?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       feature_flag_overrides: {
         Row: {
           created_at: string
@@ -24289,6 +24322,18 @@ export type Database = {
       validate_profile_template_completeness: {
         Args: { perms: Json }
         Returns: Json
+      }
+      verificar_acesso_ao_recurso: {
+        Args: { _action: string; _resource_key: string; _user_id: string }
+        Returns: boolean
+      }
+      verificar_acesso_por_perfil: {
+        Args: {
+          _action: string
+          _profile_type_id: string
+          _resource_key: string
+        }
+        Returns: boolean
       }
       verify_post_recovery_stability: {
         Args: {
