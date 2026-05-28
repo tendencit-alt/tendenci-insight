@@ -1876,12 +1876,6 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                       {totalPercentual.toFixed(1)}%
                     </span>
                   </div>
-                  {resourceDefaults.rt.visible && comissoes.rt.habilitado && comissoes.rt.valor > 0 && (
-                    <div className="flex items-center justify-between text-foreground">
-                      <span className="text-sm">{resourceDefaults.rt.label} ({comissoes.rt.percentual.toFixed(2)}%):</span>
-                      <span className="text-sm font-medium">- {formatCurrency(comissoes.rt.valor)}</span>
-                    </div>
-                  )}
                   {resourceDefaults.vendedor.visible && comissoes.vendedor.habilitado && comissoes.vendedor.valor > 0 && (
                     <div className="flex items-center justify-between text-foreground">
                       <span className="text-sm">{resourceDefaults.vendedor.label} ({comissoes.vendedor.percentual.toFixed(2)}%):</span>
@@ -1912,6 +1906,13 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                       <span className="text-sm font-medium">- {formatCurrency(comissoes.producao.valor)}</span>
                     </div>
                   )}
+                  {resourceDefaults.rt.visible && comissoes.rt.habilitado && comissoes.rt.valor > 0 && (
+                    <div className="flex items-center justify-between text-foreground">
+                      <span className="text-sm">{resourceDefaults.rt.label} ({comissoes.rt.percentual.toFixed(2)}%):</span>
+                      <span className="text-sm font-medium">- {formatCurrency(comissoes.rt.valor)}</span>
+                    </div>
+                  )}
+
                   {taxaCartao.valor > 0 && (
                     <div className="flex items-center justify-between text-foreground">
                       <span className="text-sm">💳 Taxa Cartão ({taxaCartao.percentual.toFixed(2)}%):</span>
