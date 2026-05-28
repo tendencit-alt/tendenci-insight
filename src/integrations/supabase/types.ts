@@ -19264,6 +19264,45 @@ export type Database = {
           },
         ]
       }
+      subscription_plans: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          features_jsonb: Json
+          id: string
+          is_active: boolean
+          modules_jsonb: Json
+          nome: string
+          preco_mensal: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          features_jsonb?: Json
+          id?: string
+          is_active?: boolean
+          modules_jsonb?: Json
+          nome: string
+          preco_mensal?: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          features_jsonb?: Json
+          id?: string
+          is_active?: boolean
+          modules_jsonb?: Json
+          nome?: string
+          preco_mensal?: number
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           billing_cycle: string
@@ -20939,6 +20978,8 @@ export type Database = {
       }
       tenant_subscriptions: {
         Row: {
+          asaas_customer_id: string | null
+          asaas_subscription_id: string | null
           created_at: string
           current_period_end: string | null
           current_period_start: string | null
@@ -20952,6 +20993,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
@@ -20965,6 +21008,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
@@ -24585,6 +24630,7 @@ export type Database = {
         Args: { p_ia_produto_id: string }
         Returns: string
       }
+      tenant_has_feature: { Args: { _feature_key: string }; Returns: boolean }
       tenant_rls_check: { Args: { row_tenant_id: string }; Returns: boolean }
       user_can_access_module: {
         Args: {
