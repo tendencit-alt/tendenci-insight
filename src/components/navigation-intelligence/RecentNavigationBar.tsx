@@ -40,22 +40,7 @@ export function RecentNavigationBar() {
         </Popover>
       )}
 
-      {/* Adaptive favorites as inline chips */}
-      {adaptiveFavorites.slice(0, 4).map((path) => {
-        const label = path.split("/").filter(Boolean).pop() || "Home";
-        const formatted = label.charAt(0).toUpperCase() + label.slice(1).replace(/-/g, " ");
-        return (
-          <Badge
-            key={path}
-            variant="outline"
-            className="text-[9px] h-5 cursor-pointer hover:bg-muted/60 transition-colors shrink-0 gap-1"
-            onClick={() => navigate(path)}
-          >
-            <Star className="h-2.5 w-2.5 text-amber-500" />
-            {formatted}
-          </Badge>
-        );
-      })}
+      {/* Chips de favoritos adaptativos removidos por solicitação. */}
     </div>
   );
 }
