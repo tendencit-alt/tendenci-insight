@@ -114,16 +114,27 @@ export function usePermissions() {
     [simActive, simLoading, simMatrix, ctx]
   );
 
+  const hasAccess = useCallback(
+    (module: AppModule | string, featureKey: string | undefined | null, action: 'view' | 'create' | 'edit' | 'delete' = 'view'): boolean => {
+      if (simActive) {
+        // Durante simulação ignoramos overrides (não carregados); cai no módulo simulado.
+        return hasModuleAccess(module, action as PermissionAction);
+      }
+      return ctx.hasAccess(module, featureKey, action);
+    },
+    [simActive, hasModuleAccess, ctx]
+  );
+
   return useMemo(
     () => ({
       ...ctx,
-      // Durante simulação owner perde o bypass para refletir o papel alvo
       isMaster: simActive ? false : ctx.isMaster,
       isOwner: simActive ? false : ctx.isOwner,
       hasModuleAccess,
+      hasAccess,
       loading: ctx.loading || (simActive && simLoading),
       isSimulating: simActive,
     }),
-    [ctx, hasModuleAccess, simActive, simLoading]
+    [ctx, hasModuleAccess, hasAccess, simActive, simLoading]
   );
 }
