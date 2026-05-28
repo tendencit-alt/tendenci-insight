@@ -258,7 +258,8 @@ export function ProfileTypePermissionsDialog({
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState('modules');
+  const [tab, setTab] = useState('tree');
+  const { isOwner } = usePermissionsContext();
   const [permissions, setPermissions] = useState<Record<string, ModulePermission>>({});
   const [initialPermissions, setInitialPermissions] = useState<Record<string, ModulePermission>>({});
 
