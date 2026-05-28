@@ -72,11 +72,15 @@ export default function Suppliers() {
         filters={<SuppliersFilters filters={filters} setFilters={setFilters} />}
         overview={<SuppliersKPIs />}
         records={
-          <SuppliersTable
-            suppliers={suppliers}
-            isLoading={isLoading}
-            onSelect={setSelectedSupplier}
-          />
+          onMasterOwner ? (
+            <OwnerTenantEmptyState entity="fornecedores" />
+          ) : (
+            <SuppliersTable
+              suppliers={suppliers}
+              isLoading={isLoading}
+              onSelect={setSelectedSupplier}
+            />
+          )
         }
       />
 
