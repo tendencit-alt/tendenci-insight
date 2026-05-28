@@ -211,7 +211,20 @@ Deno.serve(async (req) => {
       metadata: { email, provisioning: provisioningResults },
     });
 
-    // TODO: chamar send-email (fase 4) com welcome template
+    // Welcome email (fire-and-forget — não bloqueia signup se falhar)
+    try {
+      await admin.functions.invoke("send-email", {
+        body: {
+          template_id: "welcome_signup",
+          to: email,
+          tenant_id: tenant.id,
+          user_id: userId,
+          variables: { nome: full_name, empresa: company_name },
+        },
+      });
+    } catch (e) {
+      console.warn("welcome_signup email dispatch failed:", e);
+    }
 
     return json({
       success: true,

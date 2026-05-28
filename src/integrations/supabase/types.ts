@@ -5452,6 +5452,56 @@ export type Database = {
         }
         Relationships: []
       }
+      email_log: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          provider_id: string | null
+          sent_at: string
+          status: string
+          template_id: string
+          tenant_id: string | null
+          to_email: string
+          user_id: string | null
+          variables: Json
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          provider_id?: string | null
+          sent_at?: string
+          status: string
+          template_id: string
+          tenant_id?: string | null
+          to_email: string
+          user_id?: string | null
+          variables?: Json
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          provider_id?: string | null
+          sent_at?: string
+          status?: string
+          template_id?: string
+          tenant_id?: string | null
+          to_email?: string
+          user_id?: string | null
+          variables?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_log_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entitlement_access_log: {
         Row: {
           allowed: boolean
