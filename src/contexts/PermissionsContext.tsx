@@ -326,10 +326,24 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   );
 }
 
+const DEFAULT_PERMISSIONS_CTX: PermissionsContextType = {
+  permissions: null,
+  loading: true,
+  isMaster: false,
+  isOwner: false,
+  isTenantOwner: false,
+  isTenantAdmin: false,
+  userLevel: 'operational',
+  hasModuleAccess: () => false,
+  hasFeatureAccess: () => null,
+  hasAccess: () => false,
+  hasCriticalPermission: () => false,
+  checkValueLimit: async () => ({ allowed: false, reason: 'no_provider' }),
+  checkStatusRule: async () => false,
+  refetch: async () => {},
+};
+
 export function usePermissionsContext() {
   const context = useContext(PermissionsContext);
-  if (context === undefined) {
-    throw new Error('usePermissionsContext must be used within a PermissionsProvider');
-  }
-  return context;
+  return context ?? DEFAULT_PERMISSIONS_CTX;
 }
