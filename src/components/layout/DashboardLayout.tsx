@@ -6,7 +6,7 @@ import { RecentNavigationBar } from "@/components/navigation-intelligence/Recent
 // Simplificação MVP: barras "AÇÕES:" e "PRÓXIMO:" ocultas (componentes preservados).
 // import { ContextualShortcutsBar } from "@/components/navigation-intelligence/ContextualShortcutsBar";
 // import { NextActionSuggestion } from "@/components/navigation-intelligence/NextActionSuggestion";
-import { PermissionSimulatorTrigger } from "@/components/smart-permissions/PermissionSimulator";
+// PermissionSimulatorTrigger removido do layout global por solicitação.
 import { useProductAnalytics } from "@/hooks/useProductAnalytics";
 
 interface DashboardLayoutProps {
