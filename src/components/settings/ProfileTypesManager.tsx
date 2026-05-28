@@ -66,10 +66,6 @@ export function ProfileTypesManager() {
   const fetchProfileTypes = async () => {
     try {
       setLoading(true);
-      // Garante que os tipos de perfil padrão do sistema estejam disponíveis
-      // (cópia editável) na empresa do usuário atual.
-      await supabase.rpc('seed_tenant_profile_types' as any);
-
       const { data, error } = await supabase
         .from('profile_types')
         .select('*')
