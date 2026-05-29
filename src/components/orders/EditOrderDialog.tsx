@@ -176,6 +176,19 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     { value: 'terceirizada', label: 'Terceirizada' },
   ];
   const linkRatesDb = usePaymentLinkRates();
+  const financeRates = useFinanceRates();
+  // Mapas efetivos: priorizam taxas configuradas no DB, com fallback para constantes locais
+  const TAXAS_CARTAO_CREDITO: Record<number, number> = { ...TAXAS_CARTAO_CREDITO_FALLBACK, ...financeRates.credit };
+  const TAXAS_CARTAO_DEBITO: Record<number, number> = { 1: financeRates.debit || TAXAS_CARTAO_DEBITO_FALLBACK[1] };
+  const TAXAS_LINK_PAGAMENTO: Record<number, number> = { ...TAXAS_LINK_PAGAMENTO_FALLBACK, ...financeRates.link };
+  const TAXAS_BOLETO: Record<number, Record<number, number>> = (() => {
+    const merged: Record<number, Record<number, number>> = { ...TAXAS_BOLETO_FALLBACK };
+    Object.entries(financeRates.boleto).forEach(([c, rates]) => {
+      const key = Number(c);
+      merged[key] = { ...(merged[key] || {}), ...(rates as Record<number, number>) };
+    });
+    return merged;
+  })();
   const { defaults: resourceDefaults, isLoaded: resourceDefaultsLoaded } = useStrategicResourceDefaults();
   const { isMaster } = usePermissions();
   const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
