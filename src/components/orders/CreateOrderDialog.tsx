@@ -1474,7 +1474,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                                 if (!FORMAS_COM_PARCELAS.includes(v)) {
                                   newParcelas[index].numero_parcelas = 1;
                                 }
-                                if (v !== 'cartao_credito' && v !== 'boleto') {
+                                if (!FORMAS_COM_ANTECIPACAO.includes(v)) {
                                   newParcelas[index].antecipacao_automatica = false;
                                 }
                                 if (v === 'link_pagamento') {
