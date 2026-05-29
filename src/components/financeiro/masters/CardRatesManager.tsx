@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, Pencil, X, CreditCard, Link2, Building2, Plus, BookOpen } from "lucide-react";
+import { Check, Pencil, X, CreditCard, Link2, Building2, Plus, BookOpen, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { QuickCreateSupplierDialog } from "@/components/financeiro/QuickCreateSupplierDialog";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
@@ -18,6 +18,7 @@ interface RateRow {
   installments: number;
   rate_percent: number;
   active: boolean;
+  carencia_dias?: number;
 }
 
 interface FeeSupplierConfig {
@@ -38,22 +39,26 @@ interface ChartAccount {
   name: string;
 }
 
-function useEditableRate(tableName: string, queryKey: string) {
+function useEditableRate(tableName: string, queryKey: string, tenantId: string | null | undefined, hasCarencia = false) {
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
   const { data: rates, isLoading } = useQuery({
-    queryKey: [queryKey],
+    queryKey: [queryKey, tenantId],
+    enabled: !!tenantId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from(tableName as any)
         .select("*")
-        .order("installments");
+        .eq("tenant_id", tenantId!)
+        .order(hasCarencia ? "carencia_dias" : "installments");
       if (error) throw error;
       return (data || []) as unknown as RateRow[];
     },
   });
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: [queryKey, tenantId] });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, rate_percent }: { id: string; rate_percent: number }) => {
@@ -64,11 +69,37 @@ function useEditableRate(tableName: string, queryKey: string) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [queryKey] });
+      invalidate();
       toast.success("Taxa atualizada com sucesso!");
       setEditingId(null);
     },
-    onError: () => toast.error("Erro ao atualizar taxa"),
+    onError: (e: any) => toast.error("Erro ao atualizar taxa: " + (e?.message || "")),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (payload: { installments: number; rate_percent: number; carencia_dias?: number }) => {
+      if (!tenantId) throw new Error("Tenant não selecionado");
+      const row: any = { ...payload, active: true, tenant_id: tenantId };
+      const { error } = await supabase.from(tableName as any).insert(row);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidate();
+      toast.success("Taxa adicionada!");
+    },
+    onError: (e: any) => toast.error("Erro ao adicionar: " + (e?.message || "")),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from(tableName as any).delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidate();
+      toast.success("Taxa removida!");
+    },
+    onError: (e: any) => toast.error("Erro ao remover: " + (e?.message || "")),
   });
 
   const startEdit = (rate: RateRow) => {
@@ -95,7 +126,7 @@ function useEditableRate(tableName: string, queryKey: string) {
     if (e.key === "Escape") cancelEdit();
   };
 
-  return { rates, isLoading, editingId, editValue, setEditValue, startEdit, cancelEdit, saveEdit, handleKeyDown };
+  return { rates, isLoading, editingId, editValue, setEditValue, startEdit, cancelEdit, saveEdit, handleKeyDown, createMutation, deleteMutation };
 }
 
 function FeeSupplierSelector({ feeType, label, configs, suppliers, chartAccounts, onUpdate, onUpdateChartAccount, onRefreshSuppliers }: {
@@ -184,6 +215,10 @@ function RatesTable({
   saveEdit,
   handleKeyDown,
   emptyMessage,
+  onDelete,
+  onCreate,
+  hasCarencia = false,
+  installmentsLabel = "Parcelas",
 }: {
   rates: RateRow[];
   editingId: string | null;
@@ -194,19 +229,42 @@ function RatesTable({
   saveEdit: (id: string) => void;
   handleKeyDown: (e: React.KeyboardEvent, id: string) => void;
   emptyMessage: string;
+  onDelete?: (id: string) => void;
+  onCreate?: (payload: { installments: number; rate_percent: number; carencia_dias?: number }) => void;
+  hasCarencia?: boolean;
+  installmentsLabel?: string;
 }) {
+  const [newInstallments, setNewInstallments] = useState("");
+  const [newCarencia, setNewCarencia] = useState("");
+  const [newRate, setNewRate] = useState("");
+
+  const handleAdd = () => {
+    const inst = parseInt(newInstallments, 10);
+    const rate = parseFloat(newRate.replace(",", "."));
+    const carencia = hasCarencia ? parseInt(newCarencia, 10) : undefined;
+    if (isNaN(inst) || inst < 0) return toast.error("Informe parcelas válidas");
+    if (isNaN(rate) || rate < 0) return toast.error("Informe taxa válida");
+    if (hasCarencia && (isNaN(carencia!) || carencia! < 0)) return toast.error("Informe carência válida");
+    onCreate?.({ installments: inst, rate_percent: rate, ...(hasCarencia ? { carencia_dias: carencia } : {}) });
+    setNewInstallments(""); setNewCarencia(""); setNewRate("");
+  };
+
+  const colCount = (hasCarencia ? 1 : 0) + 3;
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[200px]">Parcelas</TableHead>
+          {hasCarencia && <TableHead className="w-[140px]">Carência (dias)</TableHead>}
+          <TableHead className="w-[180px]">{installmentsLabel}</TableHead>
           <TableHead>Taxa (%)</TableHead>
-          <TableHead className="w-[100px] text-right">Ações</TableHead>
+          <TableHead className="w-[120px] text-right">Ações</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {rates.map((rate) => (
           <TableRow key={rate.id}>
+            {hasCarencia && <TableCell className="font-medium">{rate.carencia_dias ?? 0}</TableCell>}
             <TableCell className="font-medium">
               {rate.installments === 1 ? "À vista (1x)" : `${rate.installments}x`}
             </TableCell>
@@ -237,17 +295,53 @@ function RatesTable({
                   </Button>
                 </div>
               ) : (
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => startEdit(rate)}>
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
+                <div className="flex justify-end gap-1">
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => startEdit(rate)}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  {onDelete && (
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(rate.id)}>
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  )}
+                </div>
               )}
             </TableCell>
           </TableRow>
         ))}
         {rates.length === 0 && (
           <TableRow>
-            <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+            <TableCell colSpan={colCount} className="text-center text-muted-foreground py-6">
               {emptyMessage}
+            </TableCell>
+          </TableRow>
+        )}
+        {onCreate && (
+          <TableRow className="bg-muted/30">
+            {hasCarencia && (
+              <TableCell>
+                <Input placeholder="Ex: 30" value={newCarencia} onChange={(e) => setNewCarencia(e.target.value)} className="h-8 text-sm" />
+              </TableCell>
+            )}
+            <TableCell>
+              <Input placeholder="Ex: 1" value={newInstallments} onChange={(e) => setNewInstallments(e.target.value)} className="h-8 text-sm" />
+            </TableCell>
+            <TableCell>
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Ex: 2,99"
+                  value={newRate}
+                  onChange={(e) => setNewRate(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                  className="w-28 h-8 text-sm"
+                />
+                <span className="text-sm text-muted-foreground">%</span>
+              </div>
+            </TableCell>
+            <TableCell className="text-right">
+              <Button size="sm" variant="outline" className="h-8" onClick={handleAdd}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+              </Button>
             </TableCell>
           </TableRow>
         )}
@@ -256,11 +350,37 @@ function RatesTable({
   );
 }
 
+function DebitCreator({ onCreate }: { onCreate: (rate: number) => void }) {
+  const [val, setVal] = useState("");
+  const submit = () => {
+    const parsed = parseFloat(val.replace(",", "."));
+    if (isNaN(parsed) || parsed < 0) return toast.error("Informe taxa válida");
+    onCreate(parsed);
+    setVal("");
+  };
+  return (
+    <div className="flex items-center gap-2">
+      <Input
+        placeholder="Ex: 1,99"
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && submit()}
+        className="w-28 h-8 text-sm"
+      />
+      <span className="text-sm text-muted-foreground">%</span>
+      <Button size="sm" variant="outline" className="h-8" onClick={submit}>
+        <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+      </Button>
+    </div>
+  );
+}
+
 export function CardRatesManager() {
   const queryClient = useQueryClient();
   const { activeTenantId } = useActiveTenant();
-  const card = useEditableRate("credit_card_rates", "card-rates-all");
-  const link = useEditableRate("payment_link_rates", "link-rates-all");
+  const card = useEditableRate("credit_card_rates", "card-rates", activeTenantId);
+  const link = useEditableRate("payment_link_rates", "link-rates", activeTenantId);
+  const boleto = useEditableRate("boleto_rates", "boleto-rates", activeTenantId, true);
 
   const { data: suppliers = [] } = useQuery({
     queryKey: ["suppliers-for-fees"],
@@ -344,14 +464,19 @@ export function CardRatesManager() {
   const debitRate = card.rates?.find((r) => r.installments === 0);
   const creditRates = card.rates?.filter((r) => r.installments > 0) || [];
   const linkRates = link.rates || [];
+  const boletoRates = boleto.rates || [];
 
-  if (card.isLoading || link.isLoading) {
+  if (card.isLoading || link.isLoading || boleto.isLoading) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-32 w-full" />
         <Skeleton className="h-64 w-full" />
       </div>
     );
+  }
+
+  if (!activeTenantId) {
+    return <p className="text-sm text-muted-foreground">Selecione um tenant ativo para gerenciar as taxas.</p>;
   }
 
   return (
@@ -397,7 +522,10 @@ export function CardRatesManager() {
               )}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Nenhuma taxa de débito cadastrada.</p>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">Cadastrar taxa à vista (Débito):</span>
+              <DebitCreator onCreate={(rate) => card.createMutation.mutate({ installments: 0, rate_percent: rate })} />
+            </div>
           )}
           <FeeSupplierSelector
             feeType="cartao_debito"
@@ -431,6 +559,8 @@ export function CardRatesManager() {
             saveEdit={card.saveEdit}
             handleKeyDown={card.handleKeyDown}
             emptyMessage="Nenhuma taxa de crédito cadastrada."
+            onCreate={(p) => card.createMutation.mutate(p)}
+            onDelete={(id) => card.deleteMutation.mutate(id)}
           />
           <FeeSupplierSelector
             feeType="cartao_credito"
@@ -453,7 +583,21 @@ export function CardRatesManager() {
             Taxa de Boleto
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          <RatesTable
+            rates={boletoRates}
+            editingId={boleto.editingId}
+            editValue={boleto.editValue}
+            setEditValue={boleto.setEditValue}
+            startEdit={boleto.startEdit}
+            cancelEdit={boleto.cancelEdit}
+            saveEdit={boleto.saveEdit}
+            handleKeyDown={boleto.handleKeyDown}
+            emptyMessage="Nenhuma taxa de boleto cadastrada."
+            onCreate={(p) => boleto.createMutation.mutate(p)}
+            onDelete={(id) => boleto.deleteMutation.mutate(id)}
+            hasCarencia
+          />
           <FeeSupplierSelector
             feeType="boleto"
             label="Fornecedor Boleto"
@@ -486,6 +630,8 @@ export function CardRatesManager() {
             saveEdit={link.saveEdit}
             handleKeyDown={link.handleKeyDown}
             emptyMessage="Nenhuma taxa de link de pagamento cadastrada."
+            onCreate={(p) => link.createMutation.mutate(p)}
+            onDelete={(id) => link.deleteMutation.mutate(id)}
           />
           <FeeSupplierSelector
             feeType="link_pagamento"
