@@ -90,3 +90,82 @@ export function ManageProductionStatusDialog() {
     </Dialog>
   );
 }
+
+interface StatusRowProps {
+  column: ProductionStatusColumn;
+  onUpdate: (patch: { label?: string; color?: string; sort_order?: number }) => void;
+  onDelete: () => void;
+}
+
+function StatusRow({ column, onUpdate, onDelete }: StatusRowProps) {
+  const [label, setLabel] = useState(column.label);
+  const [order, setOrder] = useState<string>(String(column.sort_order));
+
+  // Re-sync if server value changes (e.g. another tab)
+  useEffect(() => { setLabel(column.label); }, [column.label]);
+  useEffect(() => { setOrder(String(column.sort_order)); }, [column.sort_order]);
+
+  const commitLabel = () => {
+    const trimmed = label.trim();
+    if (!trimmed) { setLabel(column.label); return; }
+    if (trimmed !== column.label) onUpdate({ label: trimmed });
+  };
+
+  const commitOrder = () => {
+    const raw = Number(order);
+    if (!Number.isFinite(raw)) { setOrder(String(column.sort_order)); return; }
+    const snapped = Math.max(0, Math.round(raw / 10) * 10);
+    setOrder(String(snapped));
+    if (snapped !== column.sort_order) onUpdate({ sort_order: snapped });
+  };
+
+  return (
+    <div className="flex items-center gap-2 p-2 rounded-md border">
+      <Input
+        value={label}
+        onChange={(e) => setLabel(e.target.value)}
+        onBlur={commitLabel}
+        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+        className="flex-1"
+      />
+      <div className="flex gap-1">
+        {STATUS_COLOR_PALETTE.map((p) => (
+          <button
+            key={p.key}
+            type="button"
+            onClick={() => onUpdate({ color: p.key })}
+            className={`h-6 w-6 rounded-full border-2 ${p.tone} ${column.color === p.key ? "ring-2 ring-foreground" : ""}`}
+            title={p.key}
+          />
+        ))}
+      </div>
+      <Input
+        type="number"
+        step={10}
+        min={0}
+        value={order}
+        onChange={(e) => setOrder(e.target.value)}
+        onBlur={commitOrder}
+        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+        className="w-20"
+        title="Ordem em múltiplos de 10 (ex.: 10, 20, 30)"
+      />
+      {column.is_system ? (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="outline" className="gap-1 cursor-help"><Lock className="h-3 w-3" />Sistema</Badge>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              Status padrão do sistema. Pode ser renomeado e ter a cor/ordem alterada, mas não pode ser excluído para preservar a integridade dos fluxos de produção.
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      ) : (
+        <Button variant="ghost" size="icon" onClick={onDelete}>
+          <Trash2 className="h-4 w-4 text-destructive" />
+        </Button>
+      )}
+    </div>
+  );
+}
