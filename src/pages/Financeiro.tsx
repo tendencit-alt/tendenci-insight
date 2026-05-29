@@ -41,7 +41,8 @@ import {
 
 export default function Financeiro() {
   const [searchParams] = useSearchParams();
-  const initialTab = searchParams.get("tab") || "receivables";
+  const rawTab = searchParams.get("tab") || "obligations";
+  const initialTab = rawTab === "receivables" || rawTab === "payables" ? "obligations" : rawTab;
 
   useFinanceiroRealtime();
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -82,11 +83,11 @@ export default function Financeiro() {
                   </Button>
                 </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuItem onClick={() => setActiveTab("receivables")}>
+                <DropdownMenuItem onClick={() => setActiveTab("obligations")}>
                   <ArrowUpCircle className="h-4 w-4 mr-2" />
                   Conta a Receber
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setActiveTab("payables")}>
+                <DropdownMenuItem onClick={() => setActiveTab("obligations")}>
                   <ArrowDownCircle className="h-4 w-4 mr-2" />
                   Conta a Pagar
                 </DropdownMenuItem>
@@ -104,13 +105,9 @@ export default function Financeiro() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <div className="w-full rounded-xl bg-card border border-border p-1.5 overflow-x-auto">
               <TabsList className="flex h-auto justify-start gap-1 rounded-none bg-transparent p-0 min-w-max">
-                <TabsTrigger value="receivables" className={tabClass}>
+                <TabsTrigger value="obligations" className={tabClass}>
                   <ArrowUpCircle className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="whitespace-nowrap">Contas a Receber</span>
-                </TabsTrigger>
-                <TabsTrigger value="payables" className={tabClass}>
-                  <ArrowDownCircle className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="whitespace-nowrap">Contas a Pagar</span>
+                  <span className="whitespace-nowrap">Contas a Pagar e Receber</span>
                 </TabsTrigger>
                 <TabsTrigger value="treasury" className={tabClass}>
                   <Landmark className="h-3.5 w-3.5 flex-shrink-0" />
@@ -133,11 +130,7 @@ export default function Financeiro() {
 
             <OrphanEntriesAlert />
 
-            <TabsContent value="receivables" forceMount className={activeTab === "receivables" ? "space-y-4" : "hidden"}>
-              <PayablesReceivablesTab filters={filters} />
-            </TabsContent>
-
-            <TabsContent value="payables" forceMount className={activeTab === "payables" ? "space-y-4" : "hidden"}>
+            <TabsContent value="obligations" forceMount className={activeTab === "obligations" ? "space-y-4" : "hidden"}>
               <PayablesReceivablesTab filters={filters} />
             </TabsContent>
 
