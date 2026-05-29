@@ -12,7 +12,7 @@ export function SupReceivingTab() {
       const { data, error } = await supabase
         .from("purchase_orders")
         .select("*, suppliers(name), purchase_order_items(*, products(name, code, unit))")
-        .in("status", ["aprovado", "parcial", "recebido"])
+        .in("status", ["aprovado", "confirmado", "recebido_parcial", "recebido_total", "parcial", "recebido"])
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
