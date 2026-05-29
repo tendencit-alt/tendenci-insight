@@ -23,10 +23,17 @@ interface FeeSupplierConfig {
   id: string;
   fee_type: string;
   supplier_id: string | null;
+  chart_account_id: string | null;
 }
 
 interface Supplier {
   id: string;
+  name: string;
+}
+
+interface ChartAccount {
+  id: string;
+  code: string;
   name: string;
 }
 
