@@ -274,7 +274,7 @@ const App = () => (
               <Route path="/painel" element={<Navigate to="/dashboard" replace />} />
 
               <Route path="/ia-configuracao" element={<Navigate to="/" replace />} />
-              <Route path="/compras" element={<Navigate to="/suprimentos" replace />} />
+              {/* /compras é a rota canônica (definida acima) */}
               {/* Rotas dinâmicas */}
               <Route path="*" element={
                 <ProtectedRoute>
