@@ -126,7 +126,7 @@ function useEditableRate(tableName: string, queryKey: string, tenantId: string |
     if (e.key === "Escape") cancelEdit();
   };
 
-  return { rates, isLoading, editingId, editValue, setEditValue, startEdit, cancelEdit, saveEdit, handleKeyDown, createMutation, deleteMutation };
+  return { rates, isLoading, editingId, editValue, setEditValue, startEdit, cancelEdit, saveEdit, handleKeyDown, createMutation, updateMutation, deleteMutation };
 }
 
 function FeeSupplierSelector({ feeType, label, configs, suppliers, chartAccounts, onUpdate, onUpdateChartAccount, onRefreshSuppliers }: {
