@@ -64,6 +64,13 @@ function slugify(label: string): string {
     .slice(0, 40) || `status_${Date.now()}`;
 }
 
+function makeSlugCandidate(baseSlug: string, attempt: number): string {
+  if (attempt <= 1) return baseSlug;
+  const suffix = `_${attempt}`;
+  const trimmedBase = baseSlug.slice(0, Math.max(1, 40 - suffix.length));
+  return `${trimmedBase}${suffix}`;
+}
+
 export function useCreateProductionStatusColumn() {
   const qc = useQueryClient();
   const { activeTenantId } = useActiveTenant();
@@ -76,21 +83,35 @@ export function useCreateProductionStatusColumn() {
         .select("slug")
         .eq("tenant_id", activeTenantId);
       const taken = new Set((existing ?? []).map((r: any) => r.slug));
-      let slug = baseSlug;
-      let i = 2;
-      while (taken.has(slug)) {
-        slug = `${baseSlug}_${i++}`.slice(0, 40);
+      let attempt = 1;
+      while (taken.has(makeSlugCandidate(baseSlug, attempt))) attempt += 1;
+
+      for (let retries = 0; retries < 8; retries += 1) {
+        const slug = makeSlugCandidate(baseSlug, attempt);
+        const { error } = await supabase.from("production_status_columns" as any).insert({
+          tenant_id: activeTenantId,
+          slug,
+          label: input.label,
+          color: input.color,
+          sort_order: input.sort_order ?? 100,
+          sla_days: input.sla_days ?? null,
+          is_system: false,
+        } as any);
+
+        if (!error) return;
+
+        const isDuplicateSlug =
+          error.code === "23505" ||
+          error.message?.includes("production_status_columns_tenant_id_slug_key") ||
+          error.message?.toLowerCase().includes("duplicate key value");
+
+        if (!isDuplicateSlug) throw error;
+
+        taken.add(slug);
+        attempt += 1;
       }
-      const { error } = await supabase.from("production_status_columns" as any).insert({
-        tenant_id: activeTenantId,
-        slug,
-        label: input.label,
-        color: input.color,
-        sort_order: input.sort_order ?? 100,
-        sla_days: input.sla_days ?? null,
-        is_system: false,
-      } as any);
-      if (error) throw error;
+
+      throw new Error("Não foi possível gerar um identificador único para o status. Tente novamente.");
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["production_status_columns"] });
