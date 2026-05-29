@@ -497,7 +497,10 @@ export function CardRatesManager() {
               )}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Nenhuma taxa de débito cadastrada.</p>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">Cadastrar taxa à vista (Débito):</span>
+              <DebitCreator onCreate={(rate) => card.createMutation.mutate({ installments: 0, rate_percent: rate })} />
+            </div>
           )}
           <FeeSupplierSelector
             feeType="cartao_debito"
