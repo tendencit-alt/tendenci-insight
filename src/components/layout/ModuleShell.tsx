@@ -116,7 +116,9 @@ export function ModuleShell({
   integrations,
   reports,
   defaultSection = "records",
+  hideReports = false,
 }: ModuleShellProps) {
+
   const [searchParams, setSearchParams] = useSearchParams();
 
   const slots: Record<ModuleSectionKey, ReactNode> = {
