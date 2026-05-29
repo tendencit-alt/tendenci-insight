@@ -558,7 +558,21 @@ export function CardRatesManager() {
             Taxa de Boleto
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          <RatesTable
+            rates={boletoRates}
+            editingId={boleto.editingId}
+            editValue={boleto.editValue}
+            setEditValue={boleto.setEditValue}
+            startEdit={boleto.startEdit}
+            cancelEdit={boleto.cancelEdit}
+            saveEdit={boleto.saveEdit}
+            handleKeyDown={boleto.handleKeyDown}
+            emptyMessage="Nenhuma taxa de boleto cadastrada."
+            onCreate={(p) => boleto.createMutation.mutate(p)}
+            onDelete={(id) => boleto.deleteMutation.mutate(id)}
+            hasCarencia
+          />
           <FeeSupplierSelector
             feeType="boleto"
             label="Fornecedor Boleto"
