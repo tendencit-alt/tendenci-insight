@@ -177,6 +177,20 @@ function StatusRow({ column, onUpdate, onDelete }: StatusRowProps) {
         className="w-20"
         title="Ordem em múltiplos de 10 (ex.: 10, 20, 30)"
       />
+      <div className="relative">
+        <AlarmClock className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+        <Input
+          type="number"
+          min={0}
+          placeholder="—"
+          value={sla}
+          onChange={(e) => setSla(e.target.value)}
+          onBlur={commitSla}
+          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+          className="w-20 pl-7"
+          title="Prazo SLA em dias. Vazio = sem prazo"
+        />
+      </div>
       {column.is_system ? (
         <TooltipProvider delayDuration={150}>
           <Tooltip>
