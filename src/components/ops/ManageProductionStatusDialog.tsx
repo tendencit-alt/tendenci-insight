@@ -13,7 +13,6 @@ import {
   useUpdateProductionStatusColumn,
   useDeleteProductionStatusColumn,
   STATUS_COLOR_PALETTE,
-  colorTone,
 } from "@/hooks/useProductionStatusColumns";
 
 export function ManageProductionStatusDialog() {
@@ -37,6 +36,8 @@ export function ManageProductionStatusDialog() {
     );
   };
 
+  const sortedColumns = [...columns].sort((a, b) => a.sort_order - b.sort_order || a.label.localeCompare(b.label, "pt-BR"));
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -49,7 +50,7 @@ export function ManageProductionStatusDialog() {
 
         <div className="space-y-4">
           <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-            {columns.map((c) => (
+            {sortedColumns.map((c) => (
               <StatusRow
                 key={c.id}
                 column={c}
