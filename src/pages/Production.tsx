@@ -14,6 +14,8 @@ import { ProductionOrderDetailSheet } from '@/components/production/ProductionOr
 import { ManageProductionStagesDialog } from '@/components/production/ManageProductionStagesDialog';
 import { ManageProductionAutomationsDialog } from '@/components/production/ManageProductionAutomationsDialog';
 import { UnifyOpsDialog } from '@/components/production/UnifyOpsDialog';
+import { ProductionListView } from '@/components/production/ProductionListView';
+import { LayoutGrid, List as ListIcon } from 'lucide-react';
 
 import { getTailwindColor } from '@/utils/tailwindColors';
 import { toast } from 'sonner';
