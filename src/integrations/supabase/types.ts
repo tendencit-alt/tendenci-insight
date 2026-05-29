@@ -6144,6 +6144,7 @@ export type Database = {
       fee_supplier_configs: {
         Row: {
           chart_account_id: string | null
+          cost_center_id: string | null
           created_at: string | null
           fee_type: string
           id: string
@@ -6153,6 +6154,7 @@ export type Database = {
         }
         Insert: {
           chart_account_id?: string | null
+          cost_center_id?: string | null
           created_at?: string | null
           fee_type: string
           id?: string
@@ -6162,6 +6164,7 @@ export type Database = {
         }
         Update: {
           chart_account_id?: string | null
+          cost_center_id?: string | null
           created_at?: string | null
           fee_type?: string
           id?: string
@@ -6175,6 +6178,13 @@ export type Database = {
             columns: ["chart_account_id"]
             isOneToOne: false
             referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fee_supplier_configs_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
             referencedColumns: ["id"]
           },
           {
