@@ -11,6 +11,17 @@ export interface ProductionStatusColumn {
   color: string;
   sort_order: number;
   is_system: boolean;
+  sla_days: number | null;
+}
+
+/** Compute SLA state for an entry that has been at a given status since `since`. */
+export function slaState(slaDays: number | null | undefined, since: string | null | undefined) {
+  if (!slaDays || slaDays <= 0 || !since) return { days: 0, level: "ok" as const, ratio: 0 };
+  const ms = Date.now() - new Date(since).getTime();
+  const days = Math.max(0, Math.floor(ms / 86400000));
+  const ratio = days / slaDays;
+  const level = ratio >= 1 ? "overdue" : ratio >= 0.75 ? "warning" : "ok";
+  return { days, level, ratio };
 }
 
 export const STATUS_COLOR_PALETTE = [
