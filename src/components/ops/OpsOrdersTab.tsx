@@ -250,7 +250,7 @@ export function OpsOrdersTab() {
                       <div className="flex items-center gap-1 shrink-0">
                         {col.sla_days ? (
                           <Badge variant="outline" className="text-[10px] gap-0.5 px-1.5 py-0">
-                            <Clock className="h-2.5 w-2.5" />{col.sla_days}d
+                            <Clock className="h-2.5 w-2.5" />{col.sla_days}{slaSuffix(col.sla_unit)}
                           </Badge>
                         ) : null}
                         {breaches > 0 && (
