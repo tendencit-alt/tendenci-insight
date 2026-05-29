@@ -1,8 +1,10 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Truck, Wrench } from "lucide-react";
+import { Truck, Wrench, CalendarDays } from "lucide-react";
 import { DeliveriesTab } from "@/components/entregas/DeliveriesTab";
 import { InstallationsTab } from "@/components/entregas/InstallationsTab";
+import { DeliveryKPIs } from "@/components/entregas/DeliveryKPIs";
+import { DeliveryCalendar } from "@/components/entregas/DeliveryCalendar";
 import { useCan } from "@/hooks/useCan";
 import { NoAccess } from "@/components/auth/NoAccess";
 
@@ -22,12 +24,16 @@ export default function EntregasMontagem() {
           </p>
         </header>
 
+        <DeliveryKPIs />
+
         <Tabs defaultValue="entregas" className="space-y-3">
           <TabsList>
             <TabsTrigger value="entregas"><Truck className="h-4 w-4 mr-1" />Entregas</TabsTrigger>
+            <TabsTrigger value="calendario"><CalendarDays className="h-4 w-4 mr-1" />Calendário</TabsTrigger>
             <TabsTrigger value="montagem"><Wrench className="h-4 w-4 mr-1" />Montagem</TabsTrigger>
           </TabsList>
           <TabsContent value="entregas"><DeliveriesTab /></TabsContent>
+          <TabsContent value="calendario"><DeliveryCalendar /></TabsContent>
           <TabsContent value="montagem"><InstallationsTab /></TabsContent>
         </Tabs>
       </div>
