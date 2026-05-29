@@ -439,14 +439,19 @@ export function CardRatesManager() {
   const debitRate = card.rates?.find((r) => r.installments === 0);
   const creditRates = card.rates?.filter((r) => r.installments > 0) || [];
   const linkRates = link.rates || [];
+  const boletoRates = boleto.rates || [];
 
-  if (card.isLoading || link.isLoading) {
+  if (card.isLoading || link.isLoading || boleto.isLoading) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-32 w-full" />
         <Skeleton className="h-64 w-full" />
       </div>
     );
+  }
+
+  if (!activeTenantId) {
+    return <p className="text-sm text-muted-foreground">Selecione um tenant ativo para gerenciar as taxas.</p>;
   }
 
   return (
