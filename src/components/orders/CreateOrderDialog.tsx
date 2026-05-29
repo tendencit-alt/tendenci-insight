@@ -517,8 +517,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     }
   }, [parcelas, totalSemTaxa, taxaPercentual, taxaTotalCartao, numParcelasCartao, parcelasCartao.length]);
 
-  // Calcular taxa de boleto automaticamente - SOMA de todos os boletos
-  const parcelasBoleto = parcelas.filter(p => p.forma_pagamento === 'boleto');
+  // Calcular taxa de boleto automaticamente - SOMA de todos os boletos COM antecipação automática
+  const parcelasBoleto = parcelas.filter(p => p.forma_pagamento === 'boleto' && p.antecipacao_automatica === true);
   
   // Calcular taxa total somando todas as parcelas de boleto
   const taxaTotalBoleto = parcelasBoleto.reduce((acc, parcela) => {
