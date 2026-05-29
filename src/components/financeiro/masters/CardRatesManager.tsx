@@ -542,8 +542,23 @@ export function CardRatesManager() {
     },
   });
 
+  const { data: costCenters = [] } = useQuery({
+    queryKey: ["cost-centers-for-fees", activeTenantId],
+    enabled: !!activeTenantId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("fin_cost_centers")
+        .select("id, code, name")
+        .eq("active", true)
+        .eq("tenant_id", activeTenantId!)
+        .order("code");
+      if (error) throw error;
+      return (data || []) as CostCenterOpt[];
+    },
+  });
+
   const upsertFeeConfig = useMutation({
-    mutationFn: async (patch: { feeType: string; supplierId?: string | null; chartAccountId?: string | null }) => {
+    mutationFn: async (patch: { feeType: string; supplierId?: string | null; chartAccountId?: string | null; costCenterId?: string | null }) => {
       if (!activeTenantId) throw new Error("Tenant não selecionado");
       const existing = feeConfigs.find((c) => c.fee_type === patch.feeType);
       const row: any = {
@@ -551,6 +566,7 @@ export function CardRatesManager() {
         fee_type: patch.feeType,
         supplier_id: patch.supplierId !== undefined ? patch.supplierId : existing?.supplier_id ?? null,
         chart_account_id: patch.chartAccountId !== undefined ? patch.chartAccountId : existing?.chart_account_id ?? null,
+        cost_center_id: patch.costCenterId !== undefined ? patch.costCenterId : existing?.cost_center_id ?? null,
         updated_at: new Date().toISOString(),
       };
       const { error } = await supabase
@@ -560,7 +576,10 @@ export function CardRatesManager() {
     },
     onSuccess: (_d, vars) => {
       queryClient.invalidateQueries({ queryKey: ["fee-supplier-configs", activeTenantId] });
-      toast.success(vars.chartAccountId !== undefined ? "Plano de contas atualizado!" : "Fornecedor atualizado!");
+      const msg = vars.costCenterId !== undefined ? "Centro de custo atualizado!"
+        : vars.chartAccountId !== undefined ? "Plano de contas atualizado!"
+        : "Fornecedor atualizado!";
+      toast.success(msg);
     },
     onError: (e: any) => toast.error("Erro ao salvar: " + (e?.message || "")),
   });
