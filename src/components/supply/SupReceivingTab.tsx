@@ -22,9 +22,9 @@ export function SupReceivingTab() {
 
   const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
 
-  const totalReceived = orders.filter((o: any) => o.status === "recebido").length;
-  const totalPartial = orders.filter((o: any) => o.status === "parcial").length;
-  const totalPending = orders.filter((o: any) => o.status === "aprovado").length;
+  const totalReceived = orders.filter((o: any) => o.status === "recebido_total" || o.status === "recebido").length;
+  const totalPartial = orders.filter((o: any) => o.status === "recebido_parcial" || o.status === "parcial").length;
+  const totalPending = orders.filter((o: any) => o.status === "aprovado" || o.status === "confirmado").length;
 
   return (
     <div className="space-y-4">
