@@ -258,6 +258,7 @@ function RatesTable({
 
 export function CardRatesManager() {
   const queryClient = useQueryClient();
+  const { activeTenantId } = useActiveTenant();
   const card = useEditableRate("credit_card_rates", "card-rates-all");
   const link = useEditableRate("payment_link_rates", "link-rates-all");
 
