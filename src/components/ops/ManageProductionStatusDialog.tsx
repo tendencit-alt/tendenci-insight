@@ -151,13 +151,25 @@ function StatusRow({ column, onUpdate, onDelete }: StatusRowProps) {
         title="Ordem em múltiplos de 10 (ex.: 10, 20, 30)"
       />
       {column.is_system ? (
-        <TooltipProvider>
+        <TooltipProvider delayDuration={150}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Badge variant="outline" className="gap-1 cursor-help"><Lock className="h-3 w-3" />Sistema</Badge>
+              <Badge variant="outline" className="gap-1 cursor-help border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">
+                <Lock className="h-3 w-3" />Sistema
+              </Badge>
             </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-xs">
-              Status padrão do sistema. Pode ser renomeado e ter a cor/ordem alterada, mas não pode ser excluído para preservar a integridade dos fluxos de produção.
+            <TooltipContent side="top" align="center" sideOffset={8} className="max-w-[260px] p-0 overflow-hidden">
+              <div className="flex items-start gap-2 p-3">
+                <div className="mt-0.5 rounded-md bg-amber-500/15 p-1.5 text-amber-600 dark:text-amber-400">
+                  <Lock className="h-3.5 w-3.5" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold leading-none">Status do sistema</p>
+                  <p className="text-xs text-muted-foreground leading-snug">
+                    Pode ser renomeado e ter cor ou ordem alteradas, mas <span className="font-medium text-foreground">não pode ser excluído</span> para preservar a integridade dos fluxos de produção.
+                  </p>
+                </div>
+              </div>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
