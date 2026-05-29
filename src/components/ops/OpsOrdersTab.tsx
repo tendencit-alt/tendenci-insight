@@ -246,11 +246,24 @@ export function OpsOrdersTab() {
             >
               {statusColumns.map((col) => {
                 const colRows = filtered.filter((o) => o._slug === col.slug);
+                const breaches = colRows.filter((o) => o._sla.level !== "ok").length;
                 return (
                   <div key={col.id} className="bg-muted/30 rounded-lg p-2 min-h-[200px]">
-                    <div className="flex items-center justify-between mb-2 px-1">
-                      <span className="text-xs font-semibold text-foreground">{col.label}</span>
-                      <Badge variant="secondary" className="text-xs">{colRows.length}</Badge>
+                    <div className="flex items-center justify-between mb-2 px-1 gap-1">
+                      <span className="text-xs font-semibold text-foreground truncate">{col.label}</span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {col.sla_days ? (
+                          <Badge variant="outline" className="text-[10px] gap-0.5 px-1.5 py-0">
+                            <Clock className="h-2.5 w-2.5" />{col.sla_days}d
+                          </Badge>
+                        ) : null}
+                        {breaches > 0 && (
+                          <Badge className="text-[10px] gap-0.5 px-1.5 py-0 bg-destructive/15 text-destructive border-destructive/30 hover:bg-destructive/15">
+                            <AlertTriangle className="h-2.5 w-2.5" />{breaches}
+                          </Badge>
+                        )}
+                        <Badge variant="secondary" className="text-xs">{colRows.length}</Badge>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       {colRows.map((o) => {
