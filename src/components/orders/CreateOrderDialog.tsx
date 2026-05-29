@@ -483,8 +483,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const descontoTotal = descontoPercentual + Number(formData.desconto_valor || 0);
   const totalSemTaxa = subtotal - descontoTotal + Number(formData.valor_frete || 0);
   
-  // Calcular taxa de cartão automaticamente - SOMA de todos os cartões
-  const parcelasCartao = parcelas.filter(p => p.forma_pagamento === 'cartao_credito');
+  // Calcular taxa de cartão automaticamente - SOMA de todos os cartões COM antecipação automática
+  const parcelasCartao = parcelas.filter(p => p.forma_pagamento === 'cartao_credito' && p.antecipacao_automatica === true);
   
   // Calcular taxa total somando todas as parcelas de cartão
   const taxaTotalCartao = parcelasCartao.reduce((acc, parcela) => {
