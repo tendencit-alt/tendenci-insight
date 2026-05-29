@@ -14,17 +14,12 @@ import {
   Factory, Plus, Trash2,
 } from "lucide-react";
 import { useOpsOrders, useCreateOpsOrder, useDeleteOpsOrder, useProductionTypes } from "@/hooks/useOpsData";
-
-type OrderStatus = "aguardando" | "em_producao" | "em_andamento" | "concluido" | "entregue" | "cancelado";
-
-const STATUS_META: Record<string, { label: string; tone: string }> = {
-  aguardando: { label: "Aguardando", tone: "bg-blue-500/10 text-blue-700 border-blue-500/30" },
-  em_producao: { label: "Em Produção", tone: "bg-amber-500/10 text-amber-700 border-amber-500/30" },
-  em_andamento: { label: "Em Andamento", tone: "bg-amber-500/10 text-amber-700 border-amber-500/30" },
-  concluido: { label: "Concluído", tone: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30" },
-  entregue: { label: "Entregue", tone: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30" },
-  cancelado: { label: "Cancelado", tone: "bg-muted text-muted-foreground border-border" },
-};
+import {
+  useProductionStatusColumns,
+  useUpdateProductionOrderStatus,
+  colorTone,
+} from "@/hooks/useProductionStatusColumns";
+import { ManageProductionStatusDialog } from "./ManageProductionStatusDialog";
 
 const PRIORITY_META: Record<string, { label: string; tone: string }> = {
   low: { label: "Baixa", tone: "bg-muted text-muted-foreground border-border" },
@@ -33,13 +28,17 @@ const PRIORITY_META: Record<string, { label: string; tone: string }> = {
   urgent: { label: "Urgente", tone: "bg-destructive/10 text-destructive border-destructive/30" },
 };
 
-const KANBAN_COLUMNS: { key: string; label: string; match: (s: string) => boolean }[] = [
-  { key: "aguardando", label: "Aguardando", match: (s) => s === "aguardando" },
-  { key: "em_producao", label: "Em Produção", match: (s) => s === "em_producao" || s === "em_andamento" },
-  { key: "concluido", label: "Concluído", match: (s) => s === "concluido" },
-  { key: "entregue", label: "Entregue", match: (s) => s === "entregue" },
-  { key: "cancelado", label: "Cancelado", match: (s) => s === "cancelado" },
-];
+// Map legacy slugs to defaults so existing data keeps showing in the right column.
+const SLUG_ALIASES: Record<string, string> = {
+  em_andamento: "em_producao",
+};
+
+function resolveSlug(status: string, validSlugs: Set<string>): string {
+  if (validSlugs.has(status)) return status;
+  const alias = SLUG_ALIASES[status];
+  if (alias && validSlugs.has(alias)) return alias;
+  return status;
+}
 
 export function OpsOrdersTab() {
   const [typeFilter, setTypeFilter] = useState<string>("");
@@ -56,19 +55,30 @@ export function OpsOrdersTab() {
     status: statusFilter || undefined,
   });
   const { data: productionTypes = [] } = useProductionTypes();
+  const { data: statusColumns = [] } = useProductionStatusColumns();
   const createMut = useCreateOpsOrder();
   const deleteMut = useDeleteOpsOrder();
+  const updateStatusMut = useUpdateProductionOrderStatus();
 
   const today = new Date();
+  const validSlugs = useMemo(() => new Set(statusColumns.map((c) => c.slug)), [statusColumns]);
+
+  // Build a fast slug → column map for badges/colors
+  const slugToColumn = useMemo(() => {
+    const m: Record<string, typeof statusColumns[number]> = {};
+    statusColumns.forEach((c) => { m[c.slug] = c; });
+    return m;
+  }, [statusColumns]);
 
   const enriched = useMemo(() => {
     return (orders as any[]).map((o) => {
+      const slug = resolveSlug(o.status, validSlugs);
       const isLate = !!o.planned_end_date &&
         new Date(o.planned_end_date) < today &&
-        o.status !== "concluido" && o.status !== "entregue" && o.status !== "cancelado";
-      return { ...o, isLate };
+        slug !== "concluido" && slug !== "entregue" && slug !== "cancelado";
+      return { ...o, _slug: slug, isLate };
     });
-  }, [orders]);
+  }, [orders, validSlugs]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -82,10 +92,10 @@ export function OpsOrdersTab() {
   }, [enriched, search]);
 
   const kpis = useMemo(() => {
-    const inProd = filtered.filter((o) => o.status === "em_producao" || o.status === "em_andamento").length;
-    const waiting = filtered.filter((o) => o.status === "aguardando").length;
+    const inProd = filtered.filter((o) => o._slug === "em_producao").length;
+    const waiting = filtered.filter((o) => o._slug === "aguardando").length;
     const late = filtered.filter((o) => o.isLate).length;
-    const done = filtered.filter((o) => o.status === "concluido" || o.status === "entregue").length;
+    const done = filtered.filter((o) => o._slug === "concluido" || o._slug === "entregue").length;
     const total = filtered.length;
     const donePct = total === 0 ? 0 : Math.round((done / total) * 100);
     return { inProd, waiting, late, done, donePct };
@@ -150,11 +160,12 @@ export function OpsOrdersTab() {
             <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos status</SelectItem>
-              {Object.entries(STATUS_META).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v.label}</SelectItem>
+              {statusColumns.map((c) => (
+                <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
+          <ManageProductionStatusDialog />
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" />Nova Ordem</Button>
@@ -225,11 +236,14 @@ export function OpsOrdersTab() {
               <Loader2 className="h-5 w-5 animate-spin mr-2" />Carregando…
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-              {KANBAN_COLUMNS.map((col) => {
-                const colRows = filtered.filter((o) => col.match(o.status));
+            <div
+              className="grid gap-3"
+              style={{ gridTemplateColumns: `repeat(${Math.max(statusColumns.length, 1)}, minmax(220px, 1fr))` }}
+            >
+              {statusColumns.map((col) => {
+                const colRows = filtered.filter((o) => o._slug === col.slug);
                 return (
-                  <div key={col.key} className="bg-muted/30 rounded-lg p-2 min-h-[200px]">
+                  <div key={col.id} className="bg-muted/30 rounded-lg p-2 min-h-[200px]">
                     <div className="flex items-center justify-between mb-2 px-1">
                       <span className="text-xs font-semibold text-foreground">{col.label}</span>
                       <Badge variant="secondary" className="text-xs">{colRows.length}</Badge>
@@ -263,6 +277,19 @@ export function OpsOrdersTab() {
                                   : "Sem prazo"}
                               </span>
                               {o.isLate && <span className="text-destructive font-medium">Atrasada</span>}
+                            </div>
+                            <div className="mt-2">
+                              <Select
+                                value={o._slug}
+                                onValueChange={(v) => updateStatusMut.mutate({ id: o.id, status: v })}
+                              >
+                                <SelectTrigger className="h-7 text-[11px]"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  {statusColumns.map((c) => (
+                                    <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                           </Card>
                         );
@@ -305,7 +332,7 @@ export function OpsOrdersTab() {
                     Nenhuma ordem encontrada
                   </TableCell></TableRow>
                 ) : filtered.map((o) => {
-                  const st = STATUS_META[o.status] || { label: o.status, tone: "" };
+                  const col = slugToColumn[o._slug];
                   const pr = PRIORITY_META[o.priority] || PRIORITY_META.normal;
                   return (
                     <TableRow key={o.id}>
@@ -319,7 +346,21 @@ export function OpsOrdersTab() {
                         {o.planned_end_date ? new Date(o.planned_end_date).toLocaleDateString("pt-BR") : "—"}
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm">{fmt(Number(o.value ?? 0))}</TableCell>
-                      <TableCell><Badge variant="outline" className={st.tone}>{st.label}</Badge></TableCell>
+                      <TableCell>
+                        <Select
+                          value={o._slug}
+                          onValueChange={(v) => updateStatusMut.mutate({ id: o.id, status: v })}
+                        >
+                          <SelectTrigger className={`h-7 text-xs w-[140px] ${col ? colorTone(col.color) : ""}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {statusColumns.map((c) => (
+                              <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
                       <TableCell>
                         <Button variant="ghost" size="icon" onClick={() => deleteMut.mutate(o.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
