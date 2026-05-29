@@ -64,9 +64,15 @@ export function SupReceivingTab() {
                         <TableCell className="text-right font-mono text-sm">{fmt(o.total)}</TableCell>
                         <TableCell className="text-sm">{o.received_date ? new Date(o.received_date).toLocaleDateString("pt-BR") : "—"}</TableCell>
                         <TableCell>
-                          <Badge variant={o.status === "recebido" ? "default" : o.status === "parcial" ? "secondary" : "outline"}>
-                            {o.status === "recebido" ? "Completo" : o.status === "parcial" ? "Parcial" : "Aguardando"}
-                          </Badge>
+                          {(() => {
+                            const isFull = o.status === "recebido_total" || o.status === "recebido";
+                            const isPartial = o.status === "recebido_parcial" || o.status === "parcial";
+                            return (
+                              <Badge variant={isFull ? "default" : isPartial ? "secondary" : "outline"}>
+                                {isFull ? "Completo" : isPartial ? "Parcial" : "Aguardando"}
+                              </Badge>
+                            );
+                          })()}
                         </TableCell>
                       </TableRow>
                     );
