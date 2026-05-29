@@ -65,7 +65,10 @@ export interface ModuleShellProps {
 
   /** Aba inicial caso não haja `?section=` na URL. Default: "records". */
   defaultSection?: ModuleSectionKey;
+  /** Oculta a aba KPI's (Relatórios) deste módulo. */
+  hideReports?: boolean;
 }
+
 
 // Simplificação MVP: apenas Registros e KPI's são exibidos.
 // As demais seções (Visão Geral, Ações, Configurações, Integrações) ficam ocultas
