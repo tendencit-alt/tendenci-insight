@@ -537,11 +537,11 @@ export function CardRatesManager() {
 
 
   const handleSupplierUpdate = (feeType: string, supplierId: string | null) => {
-    updateFeeSupplier.mutate({ feeType, supplierId });
+    upsertFeeConfig.mutate({ feeType, supplierId });
   };
 
   const handleChartAccountUpdate = (feeType: string, chartAccountId: string | null) => {
-    updateFeeChartAccount.mutate({ feeType, chartAccountId });
+    upsertFeeConfig.mutate({ feeType, chartAccountId });
   };
 
   const debitRate = card.rates?.find((r) => r.installments === 0);
