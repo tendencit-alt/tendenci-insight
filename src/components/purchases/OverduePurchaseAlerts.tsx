@@ -28,7 +28,7 @@ export default function OverduePurchaseAlerts({ onSelectOrder }: OverduePurchase
           supplier:suppliers(name)
         `)
         .lt("expected_date", today)
-        .in("status", ["enviado", "confirmado", "parcial"])
+        .in("status", ["enviado", "confirmado", "aprovado", "recebido_parcial", "parcial"])
         .order("expected_date");
       if (error) throw error;
       return data;
