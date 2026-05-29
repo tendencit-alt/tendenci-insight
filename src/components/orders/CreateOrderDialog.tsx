@@ -1271,7 +1271,10 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                                   if (!FORMAS_COM_PARCELAS.includes(v)) {
                                     newParcelas[index].numero_parcelas = 1;
                                   }
-                                  if (v === 'cartao_credito' || v === 'link_pagamento') {
+                                  if (v !== 'cartao_credito' && v !== 'boleto') {
+                                    newParcelas[index].antecipacao_automatica = false;
+                                  }
+                                  if (v === 'link_pagamento') {
                                     newParcelas[index].data_vencimento = new Date().toISOString().split('T')[0];
                                   }
                                   setParcelas(newParcelas);
