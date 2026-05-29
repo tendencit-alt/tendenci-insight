@@ -99,10 +99,11 @@ export function OpsOrdersTab() {
     const inProd = filtered.filter((o) => o._slug === "em_producao").length;
     const waiting = filtered.filter((o) => o._slug === "aguardando").length;
     const late = filtered.filter((o) => o.isLate).length;
+    const slaAlerts = filtered.filter((o) => o._sla.level !== "ok").length;
     const done = filtered.filter((o) => o._slug === "concluido" || o._slug === "entregue").length;
     const total = filtered.length;
     const donePct = total === 0 ? 0 : Math.round((done / total) * 100);
-    return { inProd, waiting, late, done, donePct };
+    return { inProd, waiting, late, slaAlerts, done, donePct };
   }, [filtered]);
 
   const fmt = (v: number) =>
