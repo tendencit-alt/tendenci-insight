@@ -318,7 +318,24 @@ export function OpsProjectsTab() {
                           <span className="text-xs text-muted-foreground w-12 text-right">{r.done}/{r.total}</span>
                         </div>
                       </TableCell>
-                      <TableCell><Badge variant="outline" className={colMeta.tone}>{colMeta.label}</Badge></TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="outline" className={colMeta.tone}>{colMeta.label}</Badge>
+                          {r.slaAlerts > 0 && (
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] gap-0.5 px-1.5 py-0 ${
+                                r.slaOverdue > 0
+                                  ? "bg-destructive/10 text-destructive border-destructive/30"
+                                  : "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300"
+                              }`}
+                              title={`${r.slaAlerts} OP(s) com alerta de prazo${r.slaOverdue ? ` — ${r.slaOverdue} vencida(s)` : ""}`}
+                            >
+                              <Clock className="h-2.5 w-2.5" />SLA {r.slaAlerts}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
