@@ -2306,8 +2306,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="_none">-</SelectItem>
-                            {architects?.map((a) => (
-                              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                            {rts?.map((responsavel) => (
+                              <SelectItem key={responsavel.id} value={responsavel.id}>{responsavel.full_name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
