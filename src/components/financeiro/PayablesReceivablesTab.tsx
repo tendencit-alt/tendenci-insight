@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, CreditCard, Receipt, AlertTriangle, Clock, CheckCircle, ArrowDownCircle, ArrowUpCircle, Landmark, TrendingUp, TrendingDown, ArrowUpDown, ArrowUp, ArrowDown, Filter, X, Edit, Trash2, Loader2, Eye, Undo2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { parseDateLocal } from "@/lib/utils";
 import { CreatePayableDialog } from "./CreatePayableDialog";
 import { PayPayableDialog } from "./PayPayableDialog";
 import { CreateReceivableDialog } from "./CreateReceivableDialog";
