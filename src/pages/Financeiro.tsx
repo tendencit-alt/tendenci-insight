@@ -67,6 +67,7 @@ export default function Financeiro() {
     <DashboardLayout>
       <ModuleShell
         moduleKey="financeiro"
+        hideReports
         title="Financeiro"
         description="Gestão financeira completa: obrigações, tesouraria, resultado e capital"
         icon={<Wallet className="h-5 w-5" />}
