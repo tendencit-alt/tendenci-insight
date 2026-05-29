@@ -66,6 +66,7 @@ const FORMAS_PAGAMENTO = [
 ];
 
 const FORMAS_COM_PARCELAS = ['boleto', 'cartao_credito', 'link_pagamento'];
+const FORMAS_COM_ANTECIPACAO = ['cartao_credito', 'cartao_debito', 'boleto', 'link_pagamento'];
 
 // Taxas de link de pagamento por número de parcelas (fallback)
 const TAXAS_LINK_PAGAMENTO: Record<number, number> = {
@@ -79,6 +80,11 @@ const TAXAS_CARTAO_CREDITO: Record<number, number> = {
   1: 2.80, 2: 3.95, 3: 4.69, 4: 5.41,
   5: 6.13, 6: 6.84, 7: 7.30, 8: 8.00,
   9: 8.90, 10: 9.38, 11: 10.05, 12: 10.72
+};
+
+// Taxa de cartão de débito (fallback) — apenas 1x
+const TAXAS_CARTAO_DEBITO: Record<number, number> = {
+  1: 1.99,
 };
 
 // Taxas de boleto por carência e parcelas (fallback)
@@ -188,6 +194,14 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     responsavel: 'tendenci' as const,
     numeroParcelas: 1,
     carencia: 30 as 30 | 60
+  });
+
+  // Estado para taxas de cartão de débito - sempre Tendenci absorve
+  const [taxaDebito, setTaxaDebito] = useState({
+    percentual: 0,
+    valor: 0,
+    responsavel: 'tendenci' as const,
+    numeroParcelas: 1,
   });
 
   // Estado unificado para comissões (incluindo RT)
@@ -554,8 +568,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     }
   }, [parcelas, totalSemTaxa, taxaBoletoPercentual, taxaTotalBoleto, numParcelasBoleto, carenciaBoleto, parcelasBoleto.length]);
 
-  // Calcular taxa de link de pagamento automaticamente
-  const parcelasLink = parcelas.filter(p => p.forma_pagamento === 'link_pagamento');
+  // Calcular taxa de link de pagamento automaticamente - SOMA dos que estão COM antecipação automática
+  const parcelasLink = parcelas.filter(p => p.forma_pagamento === 'link_pagamento' && p.antecipacao_automatica === true);
   const taxaTotalLink = parcelasLink.reduce((acc, parcela) => {
     const numParcelas = parcela.numero_parcelas || 1;
     const taxaPerc = linkRatesDb[numParcelas] ?? TAXAS_LINK_PAGAMENTO[numParcelas] ?? 0;
@@ -580,6 +594,28 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       setTaxaLink({ percentual: 0, valor: 0, responsavel: 'tendenci', numeroParcelas: 1 });
     }
   }, [parcelas, totalSemTaxa, taxaLinkPercentual, taxaTotalLink, numParcelasLink, parcelasLink.length]);
+
+  // Calcular taxa de cartão de débito automaticamente - SOMA dos débitos COM antecipação automática
+  const parcelasDebito = parcelas.filter(p => p.forma_pagamento === 'cartao_debito' && p.antecipacao_automatica === true);
+  const taxaTotalDebito = parcelasDebito.reduce((acc, parcela) => {
+    const taxaPerc = TAXAS_CARTAO_DEBITO[1] || 0;
+    const valorBase = totalSemTaxa * (parcela.percentual / 100);
+    return acc + valorBase * (taxaPerc / 100);
+  }, 0);
+  const taxaDebitoPercentual = parcelasDebito.length > 0 ? (TAXAS_CARTAO_DEBITO[1] || 0) : 0;
+
+  useEffect(() => {
+    if (parcelasDebito.length > 0) {
+      setTaxaDebito(prev => ({
+        ...prev,
+        percentual: taxaDebitoPercentual,
+        valor: taxaTotalDebito,
+        numeroParcelas: 1,
+      }));
+    } else {
+      setTaxaDebito({ percentual: 0, valor: 0, responsavel: 'tendenci', numeroParcelas: 1 });
+    }
+  }, [parcelas, totalSemTaxa, taxaDebitoPercentual, taxaTotalDebito, parcelasDebito.length]);
   
   // Total final: taxas sempre absorvidas pela Tendenci, não adicionam ao total do cliente
   const total = totalSemTaxa;
@@ -593,8 +629,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     (comissoes.montador.habilitado ? comissoes.montador.valor : 0) +
     (comissoes.producao.habilitado ? comissoes.producao.valor : 0);
 
-  // Valor líquido Tendenci (deduz taxas de cartão, boleto e link)
-  const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor - taxaLink.valor;
+  // Valor líquido Tendenci (deduz taxas de cartão crédito, débito, boleto e link)
+  const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaDebito.valor - taxaBoleto.valor - taxaLink.valor;
 
   // Valor líquido após compromissos sobre venda (deduz taxas + comissões)
   const valorLiquidoRecursos = valorLiquidoTendenci - totalComissoes;
@@ -1271,7 +1307,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                                   if (!FORMAS_COM_PARCELAS.includes(v)) {
                                     newParcelas[index].numero_parcelas = 1;
                                   }
-                                  if (v !== 'cartao_credito' && v !== 'boleto') {
+                                  if (!FORMAS_COM_ANTECIPACAO.includes(v)) {
                                     newParcelas[index].antecipacao_automatica = false;
                                   }
                                   if (v === 'link_pagamento') {
@@ -1438,7 +1474,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                                 if (!FORMAS_COM_PARCELAS.includes(v)) {
                                   newParcelas[index].numero_parcelas = 1;
                                 }
-                                if (v !== 'cartao_credito' && v !== 'boleto') {
+                                if (!FORMAS_COM_ANTECIPACAO.includes(v)) {
                                   newParcelas[index].antecipacao_automatica = false;
                                 }
                                 if (v === 'link_pagamento') {
@@ -1557,6 +1593,69 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                                     <strong className="ml-1">{taxaCartaoParcelaPerc.toFixed(2)}%</strong>
                                     <span className="mx-1">→</span>
                                     <strong>{formatCurrency(taxaCartaoParcelaValor)}</strong>
+                                    <span className="ml-2">✓ Absorvida pela Tendenci</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Vencimento normal · sem taxa</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Antecipação Automática para Cartão de Débito */}
+                        {parcela.forma_pagamento === 'cartao_debito' && (() => {
+                          const taxaDebitoParcelaPerc = parcela.antecipacao_automatica ? (TAXAS_CARTAO_DEBITO[1] || 0) : 0;
+                          const taxaDebitoParcelaValor = valorParcela * (taxaDebitoParcelaPerc / 100);
+                          return (
+                            <div className={`flex items-center gap-3 h-10 px-3 rounded-lg border ${parcela.antecipacao_automatica ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800' : 'bg-muted/40 border-border'}`}>
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={!!parcela.antecipacao_automatica}
+                                  onCheckedChange={toggleAntecipacao}
+                                />
+                                <span className="text-xs font-medium">Antecipação automática</span>
+                              </div>
+                              <div className="flex-1 text-right">
+                                {parcela.antecipacao_automatica ? (
+                                  <span className="text-xs text-green-700 dark:text-green-300">
+                                    Taxa débito:
+                                    <strong className="ml-1">{taxaDebitoParcelaPerc.toFixed(2)}%</strong>
+                                    <span className="mx-1">→</span>
+                                    <strong>{formatCurrency(taxaDebitoParcelaValor)}</strong>
+                                    <span className="ml-2">✓ Absorvida pela Tendenci</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Vencimento normal · sem taxa</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Antecipação Automática para Link de Pagamento */}
+                        {parcela.forma_pagamento === 'link_pagamento' && (() => {
+                          const nParc = parcela.numero_parcelas || 1;
+                          const taxaLinkParcelaPerc = parcela.antecipacao_automatica
+                            ? (linkRatesDb[nParc] ?? TAXAS_LINK_PAGAMENTO[nParc] ?? 0)
+                            : 0;
+                          const taxaLinkParcelaValor = valorParcela * (taxaLinkParcelaPerc / 100);
+                          return (
+                            <div className={`flex items-center gap-3 h-10 px-3 rounded-lg border ${parcela.antecipacao_automatica ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800' : 'bg-muted/40 border-border'}`}>
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={!!parcela.antecipacao_automatica}
+                                  onCheckedChange={toggleAntecipacao}
+                                />
+                                <span className="text-xs font-medium">Antecipação automática</span>
+                              </div>
+                              <div className="flex-1 text-right">
+                                {parcela.antecipacao_automatica ? (
+                                  <span className="text-xs text-green-700 dark:text-green-300">
+                                    Taxa link {nParc}x:
+                                    <strong className="ml-1">{taxaLinkParcelaPerc.toFixed(2)}%</strong>
+                                    <span className="mx-1">→</span>
+                                    <strong>{formatCurrency(taxaLinkParcelaValor)}</strong>
                                     <span className="ml-2">✓ Absorvida pela Tendenci</span>
                                   </span>
                                 ) : (
