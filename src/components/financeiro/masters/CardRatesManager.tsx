@@ -707,17 +707,19 @@ export function CardRatesManager() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <RatesTable
+          <p className="text-xs text-muted-foreground">
+            Informe o percentual de cada parcelamento (1x a 18x) do link de pagamento. Deixe em branco para remover.
+          </p>
+          <InstallmentGrid
             rates={linkRates}
-            editingId={link.editingId}
-            editValue={link.editValue}
-            setEditValue={link.setEditValue}
-            startEdit={link.startEdit}
-            cancelEdit={link.cancelEdit}
-            saveEdit={link.saveEdit}
-            handleKeyDown={link.handleKeyDown}
-            emptyMessage="Nenhuma taxa de link de pagamento cadastrada."
-            onCreate={(p) => link.createMutation.mutate(p)}
+            maxInstallments={18}
+            onSave={(installments, rate_percent, existingId) => {
+              if (existingId) link.updateMutation.mutate({ id: existingId, rate_percent });
+              else link.createMutation.mutate({ installments, rate_percent });
+            }}
+            onDelete={(id) => link.deleteMutation.mutate(id)}
+          />
+
             onDelete={(id) => link.deleteMutation.mutate(id)}
           />
           <FeeSupplierSelector
