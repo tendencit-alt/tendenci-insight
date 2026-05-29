@@ -225,7 +225,7 @@ export function OpsProjectsTab() {
                   </TableCell></TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                    Nenhum projeto aprovado encontrado
+                    Nenhum pedido com produção encontrado
                   </TableCell></TableRow>
                 ) : filtered.map((r) => {
                   const meta = STATUS_META[r.aggStatus];
