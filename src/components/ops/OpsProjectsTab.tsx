@@ -106,12 +106,12 @@ export function OpsProjectsTab() {
   const { data: statusColumns = [] } = useProductionStatusColumns();
 
   // Build resolution structures from shared status registry
-  const { columnsBySlug, validSlugs, doneSlugs, semOpFirst } = useMemo(() => {
-    const map: Record<string, { sort_order: number; label: string; color: string }> = {};
-    statusColumns.forEach((c) => { map[c.slug] = { sort_order: c.sort_order, label: c.label, color: c.color }; });
+  const { columnsBySlug, validSlugs, doneSlugs } = useMemo(() => {
+    const map: Record<string, { sort_order: number; label: string; color: string; sla_days: number | null }> = {};
+    statusColumns.forEach((c) => { map[c.slug] = { sort_order: c.sort_order, label: c.label, color: c.color, sla_days: c.sla_days }; });
     const slugs = new Set(statusColumns.map((c) => c.slug));
     const done = new Set(["concluido", "entregue"].filter((s) => slugs.has(s)));
-    return { columnsBySlug: map, validSlugs: slugs, doneSlugs: done, semOpFirst: true };
+    return { columnsBySlug: map, validSlugs: slugs, doneSlugs: done };
   }, [statusColumns]);
 
   useEffect(() => {
