@@ -103,7 +103,7 @@ export function useCreateProductionStatusColumn() {
 export function useUpdateProductionStatusColumn() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { id: string; label?: string; color?: string; sort_order?: number }) => {
+    mutationFn: async (input: { id: string; label?: string; color?: string; sort_order?: number; sla_days?: number | null }) => {
       const { id, ...patch } = input;
       const { error } = await supabase
         .from("production_status_columns" as any)
