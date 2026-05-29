@@ -25,13 +25,15 @@ export function ManageProductionStatusDialog() {
 
   const [newLabel, setNewLabel] = useState("");
   const [newColor, setNewColor] = useState("slate");
+  const [newSla, setNewSla] = useState<string>("");
 
   const handleAdd = () => {
     if (!newLabel.trim()) return;
     const maxOrder = columns.reduce((m, c) => Math.max(m, c.sort_order), 0);
+    const slaParsed = newSla.trim() === "" ? null : Math.max(0, Math.floor(Number(newSla)));
     createMut.mutate(
-      { label: newLabel.trim(), color: newColor, sort_order: maxOrder + 10 },
-      { onSuccess: () => { setNewLabel(""); setNewColor("slate"); } }
+      { label: newLabel.trim(), color: newColor, sort_order: maxOrder + 10, sla_days: Number.isFinite(slaParsed as number) ? slaParsed : null },
+      { onSuccess: () => { setNewLabel(""); setNewColor("slate"); setNewSla(""); } }
     );
   };
 
