@@ -73,7 +73,7 @@ export default function ReceivePurchaseDialog({ order, items, open, onOpenChange
       }
 
       // Atualizar status do pedido
-      const newStatus = allReceived ? "recebido" : "parcial";
+      const newStatus = allReceived ? "recebido_total" : "recebido_parcial";
       const updates: any = { status: newStatus };
       if (allReceived) {
         updates.received_date = new Date().toISOString();
