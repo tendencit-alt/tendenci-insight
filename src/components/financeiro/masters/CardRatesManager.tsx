@@ -605,6 +605,8 @@ export function CardRatesManager() {
             saveEdit={link.saveEdit}
             handleKeyDown={link.handleKeyDown}
             emptyMessage="Nenhuma taxa de link de pagamento cadastrada."
+            onCreate={(p) => link.createMutation.mutate(p)}
+            onDelete={(id) => link.deleteMutation.mutate(id)}
           />
           <FeeSupplierSelector
             feeType="link_pagamento"
