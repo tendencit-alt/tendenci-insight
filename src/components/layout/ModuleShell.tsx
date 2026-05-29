@@ -65,7 +65,10 @@ export interface ModuleShellProps {
 
   /** Aba inicial caso não haja `?section=` na URL. Default: "records". */
   defaultSection?: ModuleSectionKey;
+  /** Oculta a aba KPI's (Relatórios) deste módulo. */
+  hideReports?: boolean;
 }
+
 
 // Simplificação MVP: apenas Registros e KPI's são exibidos.
 // As demais seções (Visão Geral, Ações, Configurações, Integrações) ficam ocultas
@@ -113,7 +116,9 @@ export function ModuleShell({
   integrations,
   reports,
   defaultSection = "records",
+  hideReports = false,
 }: ModuleShellProps) {
+
   const [searchParams, setSearchParams] = useSearchParams();
 
   const slots: Record<ModuleSectionKey, ReactNode> = {
@@ -131,7 +136,10 @@ export function ModuleShell({
     ? (localStorage.getItem(storageKey) as ModuleSectionKey | null)
     : null);
 
-  const visibleSections = SECTION_ORDER.filter((s) => MVP_VISIBLE_SECTIONS.includes(s.key));
+  const visibleSections = SECTION_ORDER.filter(
+    (s) => MVP_VISIBLE_SECTIONS.includes(s.key) && !(hideReports && s.key === "reports"),
+  );
+
 
   const isVisible = (k: ModuleSectionKey | null | undefined) =>
     !!k && visibleSections.some((s) => s.key === k);
