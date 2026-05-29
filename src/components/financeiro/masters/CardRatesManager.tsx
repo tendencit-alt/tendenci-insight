@@ -97,46 +97,69 @@ function useEditableRate(tableName: string, queryKey: string) {
   return { rates, isLoading, editingId, editValue, setEditValue, startEdit, cancelEdit, saveEdit, handleKeyDown };
 }
 
-function FeeSupplierSelector({ feeType, label, configs, suppliers, onUpdate, onRefreshSuppliers }: {
+function FeeSupplierSelector({ feeType, label, configs, suppliers, chartAccounts, onUpdate, onUpdateChartAccount, onRefreshSuppliers }: {
   feeType: string;
   label: string;
   configs: FeeSupplierConfig[];
   suppliers: Supplier[];
+  chartAccounts: ChartAccount[];
   onUpdate: (feeType: string, supplierId: string | null) => void;
+  onUpdateChartAccount: (feeType: string, chartAccountId: string | null) => void;
   onRefreshSuppliers: () => void;
 }) {
   const [showCreate, setShowCreate] = useState(false);
   const config = configs.find(c => c.fee_type === feeType);
   const currentSupplier = config?.supplier_id || "";
+  const currentChartAccount = config?.chart_account_id || "";
 
   return (
     <>
-      <div className="flex items-center gap-3 py-2 px-3 bg-muted/30 rounded-lg">
-        <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
-        <span className="text-sm text-muted-foreground whitespace-nowrap">{label}:</span>
-        <Select
-          value={currentSupplier || "none"}
-          onValueChange={(v) => onUpdate(feeType, v === "none" ? null : v)}
-        >
-          <SelectTrigger className="h-8 flex-1 max-w-[300px]">
-            <SelectValue placeholder="Selecionar fornecedor" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Nenhum fornecedor</SelectItem>
-            {suppliers.map(s => (
-              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button
-          size="icon"
-          variant="outline"
-          className="h-8 w-8 shrink-0"
-          onClick={() => setShowCreate(true)}
-          title="Criar novo fornecedor"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
+      <div className="flex flex-wrap items-center gap-3 py-2 px-3 bg-muted/30 rounded-lg">
+        <div className="flex items-center gap-2 flex-1 min-w-[260px]">
+          <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+          <span className="text-sm text-muted-foreground whitespace-nowrap">{label}:</span>
+          <Select
+            value={currentSupplier || "none"}
+            onValueChange={(v) => onUpdate(feeType, v === "none" ? null : v)}
+          >
+            <SelectTrigger className="h-8 flex-1 max-w-[260px]">
+              <SelectValue placeholder="Selecionar fornecedor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Nenhum fornecedor</SelectItem>
+              {suppliers.map(s => (
+                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-8 w-8 shrink-0"
+            onClick={() => setShowCreate(true)}
+            title="Criar novo fornecedor"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex items-center gap-2 flex-1 min-w-[260px]">
+          <BookOpen className="h-4 w-4 text-muted-foreground shrink-0" />
+          <span className="text-sm text-muted-foreground whitespace-nowrap">Plano de Contas:</span>
+          <Select
+            value={currentChartAccount || "none"}
+            onValueChange={(v) => onUpdateChartAccount(feeType, v === "none" ? null : v)}
+          >
+            <SelectTrigger className="h-8 flex-1 max-w-[320px]">
+              <SelectValue placeholder="Selecionar plano de contas" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Nenhum plano de contas</SelectItem>
+              {chartAccounts.map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.code} - {c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <QuickCreateSupplierDialog
         open={showCreate}
