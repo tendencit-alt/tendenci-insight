@@ -81,7 +81,7 @@ function buildAggregator(
         if (doneSlugs.has(x.status)) continue;
         const target = columnsBySlug[x.status]?.sla_days;
         if (!target) continue;
-        const s = slaState(target, x.status_changed_at);
+        const s = slaState(target, x.status_changed_at, columnsBySlug[x.status]?.sla_unit ?? "days");
         if (s.level === "overdue") { slaOverdue++; slaAlerts++; }
         else if (s.level === "warning") slaAlerts++;
       }
