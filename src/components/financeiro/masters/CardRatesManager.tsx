@@ -670,6 +670,8 @@ export function CardRatesManager() {
             suppliers={suppliers}
             onUpdate={handleSupplierUpdate}
             onUpdateChartAccount={handleChartAccountUpdate}
+            onUpdateCostCenter={handleCostCenterUpdate}
+            costCenters={costCenters}
             chartAccounts={chartAccounts}
             onRefreshSuppliers={refreshSuppliers}
           />
@@ -705,6 +707,8 @@ export function CardRatesManager() {
             suppliers={suppliers}
             onUpdate={handleSupplierUpdate}
             onUpdateChartAccount={handleChartAccountUpdate}
+            onUpdateCostCenter={handleCostCenterUpdate}
+            costCenters={costCenters}
             chartAccounts={chartAccounts}
             onRefreshSuppliers={refreshSuppliers}
           />
@@ -741,6 +745,8 @@ export function CardRatesManager() {
             suppliers={suppliers}
             onUpdate={handleSupplierUpdate}
             onUpdateChartAccount={handleChartAccountUpdate}
+            onUpdateCostCenter={handleCostCenterUpdate}
+            costCenters={costCenters}
             chartAccounts={chartAccounts}
             onRefreshSuppliers={refreshSuppliers}
           />
@@ -775,6 +781,8 @@ export function CardRatesManager() {
             suppliers={suppliers}
             onUpdate={handleSupplierUpdate}
             onUpdateChartAccount={handleChartAccountUpdate}
+            onUpdateCostCenter={handleCostCenterUpdate}
+            costCenters={costCenters}
             chartAccounts={chartAccounts}
             onRefreshSuppliers={refreshSuppliers}
           />
