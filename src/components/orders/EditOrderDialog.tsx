@@ -2031,6 +2031,9 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                             </Button>
                           )}
                         </div>
+                      </div>
+
+
 
                         {/* Antecipação Automática para Cartão de Crédito */}
                         {parcela.forma_pagamento === 'cartao_credito' && (() => {
