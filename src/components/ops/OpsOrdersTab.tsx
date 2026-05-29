@@ -293,7 +293,25 @@ export function OpsOrdersTab() {
                                   ? new Date(o.planned_end_date).toLocaleDateString("pt-BR")
                                   : "Sem prazo"}
                               </span>
-                              {o.isLate && <span className="text-destructive font-medium">Atrasada</span>}
+                              <div className="flex items-center gap-1">
+                                {o._slaTarget && o._sla.level !== "ok" && (
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-[10px] gap-0.5 px-1.5 py-0 ${
+                                      o._sla.level === "overdue"
+                                        ? "bg-destructive/10 text-destructive border-destructive/30"
+                                        : "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300"
+                                    }`}
+                                    title={`No status há ${o._sla.days} dia(s) — prazo ${o._slaTarget}d`}
+                                  >
+                                    <Clock className="h-2.5 w-2.5" />
+                                    {o._sla.level === "overdue"
+                                      ? `+${o._sla.days - o._slaTarget}d`
+                                      : `${o._sla.days}/${o._slaTarget}d`}
+                                  </Badge>
+                                )}
+                                {o.isLate && <span className="text-destructive font-medium">Atrasada</span>}
+                              </div>
                             </div>
                             <div className="mt-2">
                               <Select
