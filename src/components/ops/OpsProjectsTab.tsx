@@ -43,7 +43,7 @@ interface AggregatedRow extends ProjectProductionRow {
 const SEM_OP_META = { label: "Sem OP", tone: "bg-muted text-muted-foreground border-border" };
 
 function buildAggregator(
-  columnsBySlug: Record<string, { sort_order: number; sla_days?: number | null }>,
+  columnsBySlug: Record<string, { sort_order: number; sla_days?: number | null; sla_unit?: "days" | "hours" }>,
   validSlugs: Set<string>,
   doneSlugs: Set<string>,
 ) {
