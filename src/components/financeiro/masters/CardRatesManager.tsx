@@ -39,22 +39,26 @@ interface ChartAccount {
   name: string;
 }
 
-function useEditableRate(tableName: string, queryKey: string) {
+function useEditableRate(tableName: string, queryKey: string, tenantId: string | null | undefined, hasCarencia = false) {
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
   const { data: rates, isLoading } = useQuery({
-    queryKey: [queryKey],
+    queryKey: [queryKey, tenantId],
+    enabled: !!tenantId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from(tableName as any)
         .select("*")
-        .order("installments");
+        .eq("tenant_id", tenantId!)
+        .order(hasCarencia ? "carencia_dias" : "installments");
       if (error) throw error;
       return (data || []) as unknown as RateRow[];
     },
   });
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: [queryKey, tenantId] });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, rate_percent }: { id: string; rate_percent: number }) => {
@@ -65,11 +69,37 @@ function useEditableRate(tableName: string, queryKey: string) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [queryKey] });
+      invalidate();
       toast.success("Taxa atualizada com sucesso!");
       setEditingId(null);
     },
-    onError: () => toast.error("Erro ao atualizar taxa"),
+    onError: (e: any) => toast.error("Erro ao atualizar taxa: " + (e?.message || "")),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (payload: { installments: number; rate_percent: number; carencia_dias?: number }) => {
+      if (!tenantId) throw new Error("Tenant não selecionado");
+      const row: any = { ...payload, active: true, tenant_id: tenantId };
+      const { error } = await supabase.from(tableName as any).insert(row);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidate();
+      toast.success("Taxa adicionada!");
+    },
+    onError: (e: any) => toast.error("Erro ao adicionar: " + (e?.message || "")),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from(tableName as any).delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidate();
+      toast.success("Taxa removida!");
+    },
+    onError: (e: any) => toast.error("Erro ao remover: " + (e?.message || "")),
   });
 
   const startEdit = (rate: RateRow) => {
@@ -96,7 +126,7 @@ function useEditableRate(tableName: string, queryKey: string) {
     if (e.key === "Escape") cancelEdit();
   };
 
-  return { rates, isLoading, editingId, editValue, setEditValue, startEdit, cancelEdit, saveEdit, handleKeyDown };
+  return { rates, isLoading, editingId, editValue, setEditValue, startEdit, cancelEdit, saveEdit, handleKeyDown, createMutation, deleteMutation };
 }
 
 function FeeSupplierSelector({ feeType, label, configs, suppliers, chartAccounts, onUpdate, onUpdateChartAccount, onRefreshSuppliers }: {
