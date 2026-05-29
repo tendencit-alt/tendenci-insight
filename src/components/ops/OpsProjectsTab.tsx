@@ -81,21 +81,30 @@ export function OpsProjectsTab() {
     (async () => {
       setLoading(true);
       const { data, error } = await supabase
-        .from("projects")
+        .from("orders")
         .select(`
-          id, name, value, deadline,
+          id, order_number, valor_total, data_entrega_prevista, status,
           client:clients(name),
           architect:architects(name),
           pos:production_orders(status, planned_end_date)
         `)
-        .eq("stage", "aprovado")
-        .order("deadline", { ascending: true, nullsFirst: false });
+        .neq("status", "cancelado")
+        .order("data_entrega_prevista", { ascending: true, nullsFirst: false });
       if (cancelled) return;
       if (error) {
         console.error("OpsProjectsTab fetch error", error);
         setRows([]);
       } else {
-        setRows(aggregate((data ?? []) as any));
+        const mapped = (data ?? []).map((o: any) => ({
+          id: o.id,
+          name: `Pedido #${o.order_number}`,
+          value: Number(o.valor_total ?? 0),
+          deadline: o.data_entrega_prevista,
+          client: o.client,
+          architect: o.architect,
+          pos: o.pos ?? [],
+        }));
+        setRows(aggregate(mapped as any));
       }
       setLoading(false);
     })();
