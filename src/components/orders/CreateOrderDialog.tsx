@@ -196,6 +196,14 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     carencia: 30 as 30 | 60
   });
 
+  // Estado para taxas de cartão de débito - sempre Tendenci absorve
+  const [taxaDebito, setTaxaDebito] = useState({
+    percentual: 0,
+    valor: 0,
+    responsavel: 'tendenci' as const,
+    numeroParcelas: 1,
+  });
+
   // Estado unificado para comissões (incluindo RT)
   const [comissoes, setComissoes] = useState({
     rt: { habilitado: resourceDefaults.rt.active, percentual: resourceDefaults.rt.percentage, valor: 0, responsavel_id: '' },
