@@ -1917,6 +1917,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       </>
                     ) : (
                       /* Layout padrão para outras formas de pagamento */
+                      <>
                       <div className="grid grid-cols-12 gap-2 items-end">
                         <div className={`${FORMAS_COM_PARCELAS.includes(parcela.forma_pagamento) ? 'col-span-2' : 'col-span-3'} space-y-1`}>
                           <Label className="text-xs">Forma *</Label>
