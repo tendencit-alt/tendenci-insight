@@ -6143,6 +6143,7 @@ export type Database = {
       }
       fee_supplier_configs: {
         Row: {
+          chart_account_id: string | null
           created_at: string | null
           fee_type: string
           id: string
@@ -6151,6 +6152,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          chart_account_id?: string | null
           created_at?: string | null
           fee_type: string
           id?: string
@@ -6159,6 +6161,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          chart_account_id?: string | null
           created_at?: string | null
           fee_type?: string
           id?: string
@@ -6167,6 +6170,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fee_supplier_configs_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fee_supplier_configs_supplier_id_fkey"
             columns: ["supplier_id"]
