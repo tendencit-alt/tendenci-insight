@@ -289,12 +289,14 @@ export function CardRatesManager() {
   });
 
   const { data: chartAccounts = [] } = useQuery({
-    queryKey: ["chart-accounts-for-fees"],
+    queryKey: ["chart-accounts-for-fees", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("fin_chart_accounts")
         .select("id, code, name")
         .eq("active", true)
+        .eq("tenant_id", activeTenantId!)
         .order("code");
       if (error) throw error;
       return (data || []) as ChartAccount[];
