@@ -136,20 +136,23 @@ function useEditableRate(tableName: string, queryKey: string, tenantId: string |
   return { rates, isLoading, editingId, editValue, setEditValue, startEdit, cancelEdit, saveEdit, handleKeyDown, createMutation, updateMutation, deleteMutation };
 }
 
-function FeeSupplierSelector({ feeType, label, configs, suppliers, chartAccounts, onUpdate, onUpdateChartAccount, onRefreshSuppliers }: {
+function FeeSupplierSelector({ feeType, label, configs, suppliers, chartAccounts, costCenters, onUpdate, onUpdateChartAccount, onUpdateCostCenter, onRefreshSuppliers }: {
   feeType: string;
   label: string;
   configs: FeeSupplierConfig[];
   suppliers: Supplier[];
   chartAccounts: ChartAccount[];
+  costCenters: CostCenterOpt[];
   onUpdate: (feeType: string, supplierId: string | null) => void;
   onUpdateChartAccount: (feeType: string, chartAccountId: string | null) => void;
+  onUpdateCostCenter: (feeType: string, costCenterId: string | null) => void;
   onRefreshSuppliers: () => void;
 }) {
   const [showCreate, setShowCreate] = useState(false);
   const config = configs.find(c => c.fee_type === feeType);
   const currentSupplier = config?.supplier_id || "";
   const currentChartAccount = config?.chart_account_id || "";
+  const currentCostCenter = config?.cost_center_id || "";
 
   return (
     <>
@@ -195,6 +198,26 @@ function FeeSupplierSelector({ feeType, label, configs, suppliers, chartAccounts
               <SelectItem value="none">Nenhum plano de contas</SelectItem>
               {chartAccounts.map(c => (
                 <SelectItem key={c.id} value={c.id}>{c.code} - {c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2 flex-1 min-w-[240px]">
+          <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+          <span className="text-sm text-muted-foreground whitespace-nowrap">Centro de Custo:</span>
+          <Select
+            value={currentCostCenter || "none"}
+            onValueChange={(v) => onUpdateCostCenter(feeType, v === "none" ? null : v)}
+          >
+            <SelectTrigger className="h-8 flex-1 max-w-[260px]">
+              <SelectValue placeholder="Selecionar centro de custo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">— Usar CC do pedido —</SelectItem>
+              {costCenters.map(cc => (
+                <SelectItem key={cc.id} value={cc.id}>
+                  <span className="font-mono text-muted-foreground mr-1">{cc.code}</span>{cc.name}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
