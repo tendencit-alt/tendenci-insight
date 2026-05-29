@@ -4587,6 +4587,45 @@ export type Database = {
           },
         ]
       }
+      debug_fulfillment_trace: {
+        Row: {
+          attempted_status: string | null
+          caller: string | null
+          final_status: string | null
+          id: number
+          notes: Json | null
+          order_id: string | null
+          previous_status: string | null
+          trigger_depth: number | null
+          trigger_name: string | null
+          ts: string
+        }
+        Insert: {
+          attempted_status?: string | null
+          caller?: string | null
+          final_status?: string | null
+          id?: number
+          notes?: Json | null
+          order_id?: string | null
+          previous_status?: string | null
+          trigger_depth?: number | null
+          trigger_name?: string | null
+          ts?: string
+        }
+        Update: {
+          attempted_status?: string | null
+          caller?: string | null
+          final_status?: string | null
+          id?: number
+          notes?: Json | null
+          order_id?: string | null
+          previous_status?: string | null
+          trigger_depth?: number | null
+          trigger_name?: string | null
+          ts?: string
+        }
+        Relationships: []
+      }
       decision_engine_events: {
         Row: {
           created_at: string
