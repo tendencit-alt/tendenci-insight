@@ -534,6 +534,8 @@ export function CardRatesManager() {
             saveEdit={card.saveEdit}
             handleKeyDown={card.handleKeyDown}
             emptyMessage="Nenhuma taxa de crédito cadastrada."
+            onCreate={(p) => card.createMutation.mutate(p)}
+            onDelete={(id) => card.deleteMutation.mutate(id)}
           />
           <FeeSupplierSelector
             feeType="cartao_credito"
