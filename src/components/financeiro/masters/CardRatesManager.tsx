@@ -401,6 +401,8 @@ export function CardRatesManager() {
             configs={feeConfigs}
             suppliers={suppliers}
             onUpdate={handleSupplierUpdate}
+            onUpdateChartAccount={handleChartAccountUpdate}
+            chartAccounts={chartAccounts}
             onRefreshSuppliers={refreshSuppliers}
           />
         </CardContent>
@@ -432,6 +434,8 @@ export function CardRatesManager() {
             configs={feeConfigs}
             suppliers={suppliers}
             onUpdate={handleSupplierUpdate}
+            onUpdateChartAccount={handleChartAccountUpdate}
+            chartAccounts={chartAccounts}
             onRefreshSuppliers={refreshSuppliers}
           />
         </CardContent>
@@ -452,6 +456,8 @@ export function CardRatesManager() {
             configs={feeConfigs}
             suppliers={suppliers}
             onUpdate={handleSupplierUpdate}
+            onUpdateChartAccount={handleChartAccountUpdate}
+            chartAccounts={chartAccounts}
             onRefreshSuppliers={refreshSuppliers}
           />
         </CardContent>
@@ -483,6 +489,8 @@ export function CardRatesManager() {
             configs={feeConfigs}
             suppliers={suppliers}
             onUpdate={handleSupplierUpdate}
+            onUpdateChartAccount={handleChartAccountUpdate}
+            chartAccounts={chartAccounts}
             onRefreshSuppliers={refreshSuppliers}
           />
         </CardContent>
