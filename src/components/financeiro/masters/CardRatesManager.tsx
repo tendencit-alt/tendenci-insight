@@ -593,6 +593,10 @@ export function CardRatesManager() {
     upsertFeeConfig.mutate({ feeType, chartAccountId });
   };
 
+  const handleCostCenterUpdate = (feeType: string, costCenterId: string | null) => {
+    upsertFeeConfig.mutate({ feeType, costCenterId });
+  };
+
   const debitRate = card.rates?.find((r) => r.installments === 0);
   const creditRates = card.rates?.filter((r) => r.installments > 0) || [];
   const linkRates = link.rates || [];
