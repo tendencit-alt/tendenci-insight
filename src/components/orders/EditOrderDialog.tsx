@@ -264,12 +264,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const baseMontadores    = resourceDefaults.montador.chartAccountId     ? byChartAccount(resourceDefaults.montador.chartAccountId)    : [];
   const baseProducoes     = resourceDefaults.producao.chartAccountId     ? byChartAccount(resourceDefaults.producao.chartAccountId)    : [];
 
-  const rts           = withSelected(baseRts,           comissoes?.rt?.responsavel_id);
-  const vendedores    = withSelected(baseVendedores,    comissoes?.vendedor?.responsavel_id);
-  const orcamentistas = withSelected(baseOrcamentistas, comissoes?.orcamentista?.responsavel_id);
-  const projetistas   = withSelected(baseProjetistas,   comissoes?.projetista?.responsavel_id);
-  const montadores    = withSelected(baseMontadores,    comissoes?.montador?.responsavel_id);
-  const producoes     = withSelected(baseProducoes,     comissoes?.producao?.responsavel_id);
+  // As listas finais (com responsável já salvo incluído) são montadas
+  // após a declaração do state `comissoes` mais abaixo.
 
   const [parcelas, setParcelas] = useState<PagamentoParcela[]>([
     { id: '1', forma_pagamento: '', percentual: 100, data_vencimento: '', numero_parcelas: 1 }
