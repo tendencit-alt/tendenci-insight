@@ -26,6 +26,7 @@ interface FeeSupplierConfig {
   fee_type: string;
   supplier_id: string | null;
   chart_account_id: string | null;
+  cost_center_id: string | null;
 }
 
 interface Supplier {
@@ -34,6 +35,12 @@ interface Supplier {
 }
 
 interface ChartAccount {
+  id: string;
+  code: string;
+  name: string;
+}
+
+interface CostCenterOpt {
   id: string;
   code: string;
   name: string;
