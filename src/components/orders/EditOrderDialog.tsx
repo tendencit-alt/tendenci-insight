@@ -42,6 +42,7 @@ const FORMAS_PAGAMENTO = [
 ];
 
 const FORMAS_COM_PARCELAS = ['boleto', 'cartao_credito', 'link_pagamento'];
+const FORMAS_COM_ANTECIPACAO = ['cartao_credito', 'cartao_debito', 'boleto', 'link_pagamento'];
 
 // Taxas de link de pagamento por número de parcelas (fallback)
 const TAXAS_LINK_PAGAMENTO: Record<number, number> = {
@@ -55,6 +56,11 @@ const TAXAS_CARTAO_CREDITO: Record<number, number> = {
   1: 2.80, 2: 3.95, 3: 4.69, 4: 5.41,
   5: 6.13, 6: 6.84, 7: 7.30, 8: 8.00,
   9: 8.90, 10: 9.38, 11: 10.05, 12: 10.72
+};
+
+// Taxa de cartão de débito (fallback) — apenas 1x
+const TAXAS_CARTAO_DEBITO: Record<number, number> = {
+  1: 1.99,
 };
 
 // Taxas de boleto por carência e parcelas (fallback)
@@ -104,6 +110,7 @@ interface PagamentoParcela {
   data_vencimento: string;
   numero_parcelas: number;
   carencia_boleto?: 30 | 60;
+  antecipacao_automatica?: boolean;
 }
 
 interface ClientData {
@@ -367,6 +374,14 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     carencia: 30 as 30 | 60
   });
 
+  // Estado para taxas de cartão de débito - sempre Tendenci absorve
+  const [taxaDebito, setTaxaDebito] = useState({
+    percentual: 0,
+    valor: 0,
+    responsavel: 'tendenci' as const,
+    numeroParcelas: 1,
+  });
+
   // Estado unificado para comissões (incluindo RT)
   const [comissoes, setComissoes] = useState({
     rt: { habilitado: resourceDefaults.rt.active, percentual: resourceDefaults.rt.percentage, valor: 0, responsavel_id: '' },
@@ -438,7 +453,11 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           if (Array.isArray(parsed) && parsed.length > 0) {
             parcelasData = parsed.map((p: any) => ({
               ...p,
-              numero_parcelas: p.numero_parcelas || 1
+              numero_parcelas: p.numero_parcelas || 1,
+              // Backward-compat: pedidos antigos não tinham este campo; manter taxa ligada para preservar o comportamento anterior
+              antecipacao_automatica: typeof p.antecipacao_automatica === 'boolean'
+                ? p.antecipacao_automatica
+                : FORMAS_COM_ANTECIPACAO.includes(p.forma_pagamento),
             }));
           }
         } catch (parseError) {
@@ -641,7 +660,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const totalSemTaxa = subtotal - descontoTotal + Number(formData.valor_frete || 0);
 
   // Calcular taxa de cartão automaticamente - SOMA de todos os cartões
-  const parcelasCartao = parcelas.filter(p => p.forma_pagamento === 'cartao_credito');
+  const parcelasCartao = parcelas.filter(p => p.forma_pagamento === 'cartao_credito' && p.antecipacao_automatica === true);
   
   // Calcular taxa total somando todas as parcelas de cartão
   const taxaTotalCartao = parcelasCartao.reduce((acc, parcela) => {
@@ -675,7 +694,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   }, [parcelas, totalSemTaxa, taxaPercentual, taxaTotalCartao, numParcelasCartao, parcelasCartao.length]);
 
   // Calcular taxa de boleto automaticamente - SOMA de todos os boletos
-  const parcelasBoleto = parcelas.filter(p => p.forma_pagamento === 'boleto');
+  const parcelasBoleto = parcelas.filter(p => p.forma_pagamento === 'boleto' && p.antecipacao_automatica === true);
   
   // Calcular taxa total somando todas as parcelas de boleto
   const taxaTotalBoleto = parcelasBoleto.reduce((acc, parcela) => {
@@ -711,8 +730,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     }
   }, [parcelas, totalSemTaxa, taxaBoletoPercentual, taxaTotalBoleto, numParcelasBoleto, carenciaBoleto, parcelasBoleto.length]);
 
-  // Calcular taxa de link de pagamento automaticamente
-  const parcelasLink = parcelas.filter(p => p.forma_pagamento === 'link_pagamento');
+  // Calcular taxa de link de pagamento automaticamente - SOMA dos que estão COM antecipação automática
+  const parcelasLink = parcelas.filter(p => p.forma_pagamento === 'link_pagamento' && p.antecipacao_automatica === true);
   const taxaTotalLink = parcelasLink.reduce((acc, parcela) => {
     const numParcelas = parcela.numero_parcelas || 1;
     const taxaPerc = linkRatesDb[numParcelas] ?? TAXAS_LINK_PAGAMENTO[numParcelas] ?? 0;
@@ -738,6 +757,28 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     }
   }, [parcelas, totalSemTaxa, taxaLinkPercentual, taxaTotalLink, numParcelasLink, parcelasLink.length]);
 
+  // Calcular taxa de cartão de débito automaticamente - SOMA dos débitos COM antecipação automática
+  const parcelasDebito = parcelas.filter(p => p.forma_pagamento === 'cartao_debito' && p.antecipacao_automatica === true);
+  const taxaTotalDebito = parcelasDebito.reduce((acc, parcela) => {
+    const taxaPerc = TAXAS_CARTAO_DEBITO[1] || 0;
+    const valorBase = totalSemTaxa * (parcela.percentual / 100);
+    return acc + valorBase * (taxaPerc / 100);
+  }, 0);
+  const taxaDebitoPercentual = parcelasDebito.length > 0 ? (TAXAS_CARTAO_DEBITO[1] || 0) : 0;
+
+  useEffect(() => {
+    if (parcelasDebito.length > 0) {
+      setTaxaDebito(prev => ({
+        ...prev,
+        percentual: taxaDebitoPercentual,
+        valor: taxaTotalDebito,
+        numeroParcelas: 1,
+      }));
+    } else {
+      setTaxaDebito({ percentual: 0, valor: 0, responsavel: 'tendenci', numeroParcelas: 1 });
+    }
+  }, [parcelas, totalSemTaxa, taxaDebitoPercentual, taxaTotalDebito, parcelasDebito.length]);
+
   // Total final: taxas sempre absorvidas pela Tendenci, não adicionam ao total do cliente
   const total = totalSemTaxa;
 
@@ -750,8 +791,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     (comissoes.montador.habilitado ? comissoes.montador.valor : 0) +
     (comissoes.producao.habilitado ? comissoes.producao.valor : 0);
 
-  // Valor líquido Tendenci (deduz taxas de cartão, boleto e link)
-  const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor - taxaLink.valor;
+  // Valor líquido Tendenci (deduz taxas de cartão crédito, débito, boleto e link)
+  const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaDebito.valor - taxaBoleto.valor - taxaLink.valor;
 
   // Valor líquido após compromissos sobre venda (deduz taxas + comissões)
   const valorLiquidoRecursos = valorLiquidoTendenci - totalComissoes;
@@ -1674,10 +1715,22 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
               <div className="space-y-3">
                 {parcelas.map((parcela, index) => {
                   const valorParcela = totalSemTaxa * (parcela.percentual / 100);
-                  const taxaBoletoParcelaPercentual = parcela.forma_pagamento === 'boleto' 
+                  const taxaBoletoParcelaPercentual = (parcela.forma_pagamento === 'boleto' && parcela.antecipacao_automatica === true)
                     ? (TAXAS_BOLETO[parcela.carencia_boleto || 30]?.[parcela.numero_parcelas || 1] || 0) 
                     : 0;
                   const taxaBoletoParcelaValor = valorParcela * (taxaBoletoParcelaPercentual / 100);
+                  const toggleAntecipacao = (checked: boolean) => {
+                    if (!isEditable) return;
+                    const newParcelas = [...parcelas];
+                    newParcelas[index].antecipacao_automatica = checked;
+                    if (checked) {
+                      const amanha = new Date();
+                      amanha.setDate(amanha.getDate() + 1);
+                      newParcelas[index].data_vencimento = amanha.toISOString().split('T')[0];
+                    }
+                    setParcelas(newParcelas);
+                  };
+                  
                   
                   return (
                   <div key={parcela.id} className={`p-3 bg-muted/30 rounded-lg relative ${parcela.forma_pagamento === 'boleto' ? 'space-y-3' : ''}`}>
@@ -1701,6 +1754,9 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                                 newParcelas[index].forma_pagamento = v === "_placeholder" ? "" : v;
                                 if (!FORMAS_COM_PARCELAS.includes(v)) {
                                   newParcelas[index].numero_parcelas = 1;
+                                }
+                                if (!FORMAS_COM_ANTECIPACAO.includes(v)) {
+                                  newParcelas[index].antecipacao_automatica = false;
                                 }
                                 if (v === 'cartao_credito' || v === 'link_pagamento') {
                                   newParcelas[index].data_vencimento = new Date().toISOString().split('T')[0];
@@ -1831,17 +1887,29 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                             />
                           </div>
 
-                          {/* Taxa inline - sempre Tendenci */}
+                          {/* Antecipação Automática para Boleto */}
                           <div className="col-span-8">
-                            <div className="flex items-center gap-3 h-10 px-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
-                              <div className="flex-1">
-                                <span className="text-xs text-green-700 dark:text-green-300">
-                                  Taxa {(parcela.carencia_boleto || 30)}d / {parcela.numero_parcelas || 1}x: 
-                                  <strong className="ml-1">{taxaBoletoParcelaPercentual.toFixed(2)}%</strong>
-                                  <span className="mx-1">→</span>
-                                  <strong>{formatCurrency(taxaBoletoParcelaValor)}</strong>
-                                  <span className="ml-2">✓ Absorvida pela Tendenci</span>
-                                </span>
+                            <div className={`flex items-center gap-3 h-10 px-3 rounded-lg border ${parcela.antecipacao_automatica ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800' : 'bg-muted/40 border-border'}`}>
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={!!parcela.antecipacao_automatica}
+                                  onCheckedChange={toggleAntecipacao}
+                                  disabled={!isEditable}
+                                />
+                                <span className="text-xs font-medium">Antecipação automática</span>
+                              </div>
+                              <div className="flex-1 text-right">
+                                {parcela.antecipacao_automatica ? (
+                                  <span className="text-xs text-green-700 dark:text-green-300">
+                                    Taxa {(parcela.carencia_boleto || 30)}d / {parcela.numero_parcelas || 1}x:
+                                    <strong className="ml-1">{taxaBoletoParcelaPercentual.toFixed(2)}%</strong>
+                                    <span className="mx-1">→</span>
+                                    <strong>{formatCurrency(taxaBoletoParcelaValor)}</strong>
+                                    <span className="ml-2">✓ Absorvida pela {companyName}</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Vencimento normal · sem taxa</span>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1849,6 +1917,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       </>
                     ) : (
                       /* Layout padrão para outras formas de pagamento */
+                      <>
                       <div className="grid grid-cols-12 gap-2 items-end">
                         <div className={`${FORMAS_COM_PARCELAS.includes(parcela.forma_pagamento) ? 'col-span-2' : 'col-span-3'} space-y-1`}>
                           <Label className="text-xs">Forma *</Label>
@@ -1859,6 +1928,9 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                               newParcelas[index].forma_pagamento = v === "_placeholder" ? "" : v;
                               if (!FORMAS_COM_PARCELAS.includes(v)) {
                                 newParcelas[index].numero_parcelas = 1;
+                              }
+                              if (!FORMAS_COM_ANTECIPACAO.includes(v)) {
+                                newParcelas[index].antecipacao_automatica = false;
                               }
                               if (v === 'cartao_credito' || v === 'link_pagamento') {
                                 newParcelas[index].data_vencimento = new Date().toISOString().split('T')[0];
@@ -1960,6 +2032,93 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                           )}
                         </div>
                       </div>
+
+
+
+                        {/* Antecipação Automática para Cartão de Crédito */}
+                        {parcela.forma_pagamento === 'cartao_credito' && (() => {
+                          const perc = parcela.antecipacao_automatica ? (TAXAS_CARTAO_CREDITO[parcela.numero_parcelas || 1] || 0) : 0;
+                          const val = valorParcela * (perc / 100);
+                          return (
+                            <div className={`mt-2 flex items-center gap-3 h-10 px-3 rounded-lg border ${parcela.antecipacao_automatica ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800' : 'bg-muted/40 border-border'}`}>
+                              <div className="flex items-center gap-2">
+                                <Switch checked={!!parcela.antecipacao_automatica} onCheckedChange={toggleAntecipacao} disabled={!isEditable} />
+                                <span className="text-xs font-medium">Antecipação automática</span>
+                              </div>
+                              <div className="flex-1 text-right">
+                                {parcela.antecipacao_automatica ? (
+                                  <span className="text-xs text-green-700 dark:text-green-300">
+                                    Taxa {parcela.numero_parcelas || 1}x:
+                                    <strong className="ml-1">{perc.toFixed(2)}%</strong>
+                                    <span className="mx-1">→</span>
+                                    <strong>{formatCurrency(val)}</strong>
+                                    <span className="ml-2">✓ Absorvida pela {companyName}</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Vencimento normal · sem taxa</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Antecipação Automática para Cartão de Débito */}
+                        {parcela.forma_pagamento === 'cartao_debito' && (() => {
+                          const perc = parcela.antecipacao_automatica ? (TAXAS_CARTAO_DEBITO[1] || 0) : 0;
+                          const val = valorParcela * (perc / 100);
+                          return (
+                            <div className={`mt-2 flex items-center gap-3 h-10 px-3 rounded-lg border ${parcela.antecipacao_automatica ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800' : 'bg-muted/40 border-border'}`}>
+                              <div className="flex items-center gap-2">
+                                <Switch checked={!!parcela.antecipacao_automatica} onCheckedChange={toggleAntecipacao} disabled={!isEditable} />
+                                <span className="text-xs font-medium">Antecipação automática</span>
+                              </div>
+                              <div className="flex-1 text-right">
+                                {parcela.antecipacao_automatica ? (
+                                  <span className="text-xs text-green-700 dark:text-green-300">
+                                    Taxa débito:
+                                    <strong className="ml-1">{perc.toFixed(2)}%</strong>
+                                    <span className="mx-1">→</span>
+                                    <strong>{formatCurrency(val)}</strong>
+                                    <span className="ml-2">✓ Absorvida pela {companyName}</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Vencimento normal · sem taxa</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Antecipação Automática para Link de Pagamento */}
+                        {parcela.forma_pagamento === 'link_pagamento' && (() => {
+                          const nParc = parcela.numero_parcelas || 1;
+                          const perc = parcela.antecipacao_automatica
+                            ? (linkRatesDb[nParc] ?? TAXAS_LINK_PAGAMENTO[nParc] ?? 0)
+                            : 0;
+                          const val = valorParcela * (perc / 100);
+                          return (
+                            <div className={`mt-2 flex items-center gap-3 h-10 px-3 rounded-lg border ${parcela.antecipacao_automatica ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800' : 'bg-muted/40 border-border'}`}>
+                              <div className="flex items-center gap-2">
+                                <Switch checked={!!parcela.antecipacao_automatica} onCheckedChange={toggleAntecipacao} disabled={!isEditable} />
+                                <span className="text-xs font-medium">Antecipação automática</span>
+                              </div>
+                              <div className="flex-1 text-right">
+                                {parcela.antecipacao_automatica ? (
+                                  <span className="text-xs text-green-700 dark:text-green-300">
+                                    Taxa link {nParc}x:
+                                    <strong className="ml-1">{perc.toFixed(2)}%</strong>
+                                    <span className="mx-1">→</span>
+                                    <strong>{formatCurrency(val)}</strong>
+                                    <span className="ml-2">✓ Absorvida pela {companyName}</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Vencimento normal · sem taxa</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </>
                     )}
                   </div>
                 )})}
