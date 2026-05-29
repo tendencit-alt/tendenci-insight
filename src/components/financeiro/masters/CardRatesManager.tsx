@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Check, Pencil, X, CreditCard, Link2, Building2, Plus, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { QuickCreateSupplierDialog } from "@/components/financeiro/QuickCreateSupplierDialog";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 
 interface RateRow {
   id: string;
@@ -257,6 +258,7 @@ function RatesTable({
 
 export function CardRatesManager() {
   const queryClient = useQueryClient();
+  const { activeTenantId } = useActiveTenant();
   const card = useEditableRate("credit_card_rates", "card-rates-all");
   const link = useEditableRate("payment_link_rates", "link-rates-all");
 
@@ -287,12 +289,14 @@ export function CardRatesManager() {
   });
 
   const { data: chartAccounts = [] } = useQuery({
-    queryKey: ["chart-accounts-for-fees"],
+    queryKey: ["chart-accounts-for-fees", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("fin_chart_accounts")
         .select("id, code, name")
         .eq("active", true)
+        .eq("tenant_id", activeTenantId!)
         .order("code");
       if (error) throw error;
       return (data || []) as ChartAccount[];
