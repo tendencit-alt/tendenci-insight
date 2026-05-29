@@ -9,8 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LayoutGrid, List, Search, RefreshCw, Loader2, AlertTriangle, Clock, CheckCircle2, Factory } from "lucide-react";
 import { ProjectDetailSheet } from "@/components/projects/ProjectDetailSheet";
+import { useProductionStatusColumns, colorTone } from "@/hooks/useProductionStatusColumns";
+import { ManageProductionStatusDialog } from "./ManageProductionStatusDialog";
 
-type POStatus = "aguardando" | "em_producao" | "pausado" | "concluido" | "cancelado";
+// Map legacy slugs that may still exist on production_orders rows.
+const SLUG_ALIASES: Record<string, string> = {
+  em_andamento: "em_producao",
+  pausado: "em_producao",
+};
 
 interface ProjectProductionRow {
   id: string;
@@ -19,7 +25,7 @@ interface ProjectProductionRow {
   deadline: string | null;
   client: { name: string | null } | null;
   architect: { name: string | null } | null;
-  pos: { status: POStatus; planned_end_date: string | null }[];
+  pos: { status: string; planned_end_date: string | null }[];
 }
 
 interface AggregatedRow extends ProjectProductionRow {
@@ -28,53 +34,73 @@ interface AggregatedRow extends ProjectProductionRow {
   inProgress: number;
   waiting: number;
   progressPct: number;
-  aggStatus: POStatus | "sem_op";
+  aggStatus: string; // slug or "sem_op"
   isLate: boolean;
 }
 
-const STATUS_META: Record<POStatus | "sem_op", { label: string; tone: string }> = {
-  aguardando: { label: "Aguardando", tone: "bg-blue-500/10 text-blue-700 border-blue-500/30" },
-  em_producao: { label: "Em Produção", tone: "bg-amber-500/10 text-amber-700 border-amber-500/30" },
-  pausado: { label: "Pausado", tone: "bg-orange-500/10 text-orange-700 border-orange-500/30" },
-  concluido: { label: "Concluído", tone: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30" },
-  cancelado: { label: "Cancelado", tone: "bg-muted text-muted-foreground border-border" },
-  sem_op: { label: "Sem OP", tone: "bg-muted text-muted-foreground border-border" },
-};
+const SEM_OP_META = { label: "Sem OP", tone: "bg-muted text-muted-foreground border-border" };
 
-const KANBAN_COLUMNS: (POStatus | "sem_op")[] = ["sem_op", "aguardando", "em_producao", "pausado", "concluido"];
+function buildAggregator(
+  columnsBySlug: Record<string, { sort_order: number }>,
+  validSlugs: Set<string>,
+  doneSlugs: Set<string>,
+) {
+  const resolve = (s: string) =>
+    validSlugs.has(s) ? s : SLUG_ALIASES[s] && validSlugs.has(SLUG_ALIASES[s]) ? SLUG_ALIASES[s] : s;
 
-function aggregate(rows: ProjectProductionRow[]): AggregatedRow[] {
-  const today = new Date();
-  return rows.map((p) => {
-    const pos = p.pos ?? [];
-    const total = pos.length;
-    const done = pos.filter((x) => x.status === "concluido").length;
-    const inProgress = pos.filter((x) => x.status === "em_producao").length;
-    const waiting = pos.filter((x) => x.status === "aguardando").length;
-    let aggStatus: POStatus | "sem_op" = "sem_op";
-    if (total > 0) {
-      if (done === total) aggStatus = "concluido";
-      else if (inProgress > 0) aggStatus = "em_producao";
-      else if (pos.some((x) => x.status === "pausado")) aggStatus = "pausado";
-      else aggStatus = "aguardando";
-    }
-    const isLate = !!p.deadline && new Date(p.deadline) < today && aggStatus !== "concluido";
-    return {
-      ...p,
-      total, done, inProgress, waiting,
-      progressPct: total === 0 ? 0 : Math.round((done / total) * 100),
-      aggStatus, isLate,
-    };
-  });
+  return (rows: ProjectProductionRow[]): AggregatedRow[] => {
+    const today = new Date();
+    return rows.map((p) => {
+      const pos = (p.pos ?? []).map((x) => ({ ...x, status: resolve(x.status) }));
+      const total = pos.length;
+      const done = pos.filter((x) => doneSlugs.has(x.status)).length;
+      const inProgress = pos.filter((x) => x.status === "em_producao").length;
+      const waiting = pos.filter((x) => x.status === "aguardando").length;
+
+      let aggStatus: string = "sem_op";
+      if (total > 0) {
+        if (done === total) {
+          // pick the slug that the OPs actually share (or the first done slug)
+          aggStatus = pos[0].status;
+        } else {
+          // Show the LOWEST (least-progressed) sort_order among the OPs not yet done.
+          const open = pos.filter((x) => !doneSlugs.has(x.status));
+          const sorted = [...open].sort((a, b) =>
+            (columnsBySlug[a.status]?.sort_order ?? 9999) -
+            (columnsBySlug[b.status]?.sort_order ?? 9999)
+          );
+          aggStatus = sorted[0]?.status ?? pos[0].status;
+        }
+      }
+      const isLate = !!p.deadline && new Date(p.deadline) < today && !doneSlugs.has(aggStatus);
+      return {
+        ...p,
+        total, done, inProgress, waiting,
+        progressPct: total === 0 ? 0 : Math.round((done / total) * 100),
+        aggStatus, isLate,
+      };
+    });
+  };
 }
 
 export function OpsProjectsTab() {
   const [loading, setLoading] = useState(true);
-  const [rows, setRows] = useState<AggregatedRow[]>([]);
+  const [rawRows, setRawRows] = useState<ProjectProductionRow[]>([]);
   const [search, setSearch] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [detailProject, setDetailProject] = useState<any>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+
+  const { data: statusColumns = [] } = useProductionStatusColumns();
+
+  // Build resolution structures from shared status registry
+  const { columnsBySlug, validSlugs, doneSlugs, semOpFirst } = useMemo(() => {
+    const map: Record<string, { sort_order: number; label: string; color: string }> = {};
+    statusColumns.forEach((c) => { map[c.slug] = { sort_order: c.sort_order, label: c.label, color: c.color }; });
+    const slugs = new Set(statusColumns.map((c) => c.slug));
+    const done = new Set(["concluido", "entregue"].filter((s) => slugs.has(s)));
+    return { columnsBySlug: map, validSlugs: slugs, doneSlugs: done, semOpFirst: true };
+  }, [statusColumns]);
 
   useEffect(() => {
     let cancelled = false;
@@ -93,7 +119,7 @@ export function OpsProjectsTab() {
       if (cancelled) return;
       if (error) {
         console.error("OpsProjectsTab fetch error", error);
-        setRows([]);
+        setRawRows([]);
       } else {
         const mapped = (data ?? []).map((o: any) => ({
           id: o.id,
@@ -104,12 +130,19 @@ export function OpsProjectsTab() {
           architect: o.architect,
           pos: o.pos ?? [],
         }));
-        setRows(aggregate(mapped as any));
+        setRawRows(mapped);
       }
       setLoading(false);
     })();
     return () => { cancelled = true; };
   }, [refreshKey]);
+
+  const aggregator = useMemo(
+    () => buildAggregator(columnsBySlug, validSlugs, doneSlugs),
+    [columnsBySlug, validSlugs, doneSlugs],
+  );
+
+  const rows = useMemo(() => aggregator(rawRows), [aggregator, rawRows]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -125,16 +158,22 @@ export function OpsProjectsTab() {
     const inProd = filtered.filter((r) => r.aggStatus === "em_producao").length;
     const waiting = filtered.filter((r) => r.aggStatus === "aguardando" || r.aggStatus === "sem_op").length;
     const late = filtered.filter((r) => r.isLate).length;
-    const doneMonth = filtered.filter((r) => r.aggStatus === "concluido").length;
+    const doneMonth = filtered.filter((r) => doneSlugs.has(r.aggStatus)).length;
     const totalPos = filtered.reduce((s, r) => s + r.total, 0);
     const donePos = filtered.reduce((s, r) => s + r.done, 0);
     const onTimePct = totalPos === 0 ? 0 : Math.round((donePos / totalPos) * 100);
     return { inProd, waiting, late, doneMonth, onTimePct };
-  }, [filtered]);
+  }, [filtered, doneSlugs]);
 
   const openDetail = async (_orderId: string) => {
     // detail sheet temporarily disabled while migrating from projects→orders
   };
+
+  // Kanban columns: "Sem OP" virtual column + every tenant-managed status, in sort_order.
+  const kanbanColumns: { slug: string; label: string; tone: string }[] = useMemo(() => {
+    const dyn = statusColumns.map((c) => ({ slug: c.slug, label: c.label, tone: colorTone(c.color) }));
+    return [{ slug: "sem_op", label: SEM_OP_META.label, tone: SEM_OP_META.tone }, ...dyn];
+  }, [statusColumns]);
 
   return (
     <div className="space-y-4">
@@ -153,9 +192,12 @@ export function OpsProjectsTab() {
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar projeto, cliente, arquiteto…" className="pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <Button variant="outline" size="sm" className="gap-2" onClick={() => setRefreshKey((k) => k + 1)}>
-          <RefreshCw className="h-4 w-4" />Atualizar
-        </Button>
+        <div className="flex gap-2">
+          <ManageProductionStatusDialog />
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => setRefreshKey((k) => k + 1)}>
+            <RefreshCw className="h-4 w-4" />Atualizar
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="kanban" className="space-y-4">
@@ -170,14 +212,16 @@ export function OpsProjectsTab() {
               <Loader2 className="h-5 w-5 animate-spin mr-2" />Carregando…
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-              {KANBAN_COLUMNS.map((col) => {
-                const colRows = filtered.filter((r) => r.aggStatus === col);
-                const meta = STATUS_META[col];
+            <div
+              className="grid gap-3"
+              style={{ gridTemplateColumns: `repeat(${Math.max(kanbanColumns.length, 1)}, minmax(220px, 1fr))` }}
+            >
+              {kanbanColumns.map((col) => {
+                const colRows = filtered.filter((r) => r.aggStatus === col.slug);
                 return (
-                  <div key={col} className="bg-muted/30 rounded-lg p-2 min-h-[200px]">
+                  <div key={col.slug} className="bg-muted/30 rounded-lg p-2 min-h-[200px]">
                     <div className="flex items-center justify-between mb-2 px-1">
-                      <span className="text-xs font-semibold text-foreground">{meta.label}</span>
+                      <span className="text-xs font-semibold text-foreground">{col.label}</span>
                       <Badge variant="secondary" className="text-xs">{colRows.length}</Badge>
                     </div>
                     <div className="space-y-2">
@@ -228,7 +272,9 @@ export function OpsProjectsTab() {
                     Nenhum pedido com produção encontrado
                   </TableCell></TableRow>
                 ) : filtered.map((r) => {
-                  const meta = STATUS_META[r.aggStatus];
+                  const colMeta = r.aggStatus === "sem_op"
+                    ? SEM_OP_META
+                    : { label: columnsBySlug[r.aggStatus]?.label ?? r.aggStatus, tone: colorTone(columnsBySlug[r.aggStatus]?.color ?? "slate") };
                   return (
                     <TableRow key={r.id} className="cursor-pointer" onClick={() => openDetail(r.id)}>
                       <TableCell className="font-medium">{r.name || "—"}</TableCell>
@@ -243,7 +289,7 @@ export function OpsProjectsTab() {
                           <span className="text-xs text-muted-foreground w-12 text-right">{r.done}/{r.total}</span>
                         </div>
                       </TableCell>
-                      <TableCell><Badge variant="outline" className={meta.tone}>{meta.label}</Badge></TableCell>
+                      <TableCell><Badge variant="outline" className={colMeta.tone}>{colMeta.label}</Badge></TableCell>
                     </TableRow>
                   );
                 })}
