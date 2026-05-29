@@ -132,13 +132,8 @@ export function OpsProjectsTab() {
     return { inProd, waiting, late, doneMonth, onTimePct };
   }, [filtered]);
 
-  const openDetail = async (projectId: string) => {
-    const { data } = await supabase
-      .from("projects")
-      .select(`*, client:clients(name, phone), architect:architects(name)`)
-      .eq("id", projectId)
-      .single();
-    if (data) { setDetailProject(data); setDetailOpen(true); }
+  const openDetail = async (_orderId: string) => {
+    // detail sheet temporarily disabled while migrating from projects→orders
   };
 
   return (
