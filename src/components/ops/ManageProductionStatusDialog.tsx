@@ -107,17 +107,19 @@ export function ManageProductionStatusDialog() {
 
 interface StatusRowProps {
   column: ProductionStatusColumn;
-  onUpdate: (patch: { label?: string; color?: string; sort_order?: number }) => void;
+  onUpdate: (patch: { label?: string; color?: string; sort_order?: number; sla_days?: number | null }) => void;
   onDelete: () => void;
 }
 
 function StatusRow({ column, onUpdate, onDelete }: StatusRowProps) {
   const [label, setLabel] = useState(column.label);
   const [order, setOrder] = useState<string>(String(column.sort_order));
+  const [sla, setSla] = useState<string>(column.sla_days != null ? String(column.sla_days) : "");
 
   // Re-sync if server value changes (e.g. another tab)
   useEffect(() => { setLabel(column.label); }, [column.label]);
   useEffect(() => { setOrder(String(column.sort_order)); }, [column.sort_order]);
+  useEffect(() => { setSla(column.sla_days != null ? String(column.sla_days) : ""); }, [column.sla_days]);
 
   const commitLabel = () => {
     const trimmed = label.trim();
@@ -131,6 +133,17 @@ function StatusRow({ column, onUpdate, onDelete }: StatusRowProps) {
     const snapped = Math.max(0, Math.round(raw / 10) * 10);
     setOrder(String(snapped));
     if (snapped !== column.sort_order) onUpdate({ sort_order: snapped });
+  };
+
+  const commitSla = () => {
+    const trimmed = sla.trim();
+    if (trimmed === "") {
+      if (column.sla_days != null) onUpdate({ sla_days: null });
+      return;
+    }
+    const raw = Math.max(0, Math.floor(Number(trimmed)));
+    if (!Number.isFinite(raw)) { setSla(column.sla_days != null ? String(column.sla_days) : ""); return; }
+    if (raw !== column.sla_days) onUpdate({ sla_days: raw });
   };
 
   return (
