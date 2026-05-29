@@ -719,9 +719,6 @@ export function CardRatesManager() {
             }}
             onDelete={(id) => link.deleteMutation.mutate(id)}
           />
-
-            onDelete={(id) => link.deleteMutation.mutate(id)}
-          />
           <FeeSupplierSelector
             feeType="link_pagamento"
             label="Fornecedor Link"
