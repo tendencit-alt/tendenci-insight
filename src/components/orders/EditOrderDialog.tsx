@@ -1715,10 +1715,22 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
               <div className="space-y-3">
                 {parcelas.map((parcela, index) => {
                   const valorParcela = totalSemTaxa * (parcela.percentual / 100);
-                  const taxaBoletoParcelaPercentual = parcela.forma_pagamento === 'boleto' 
+                  const taxaBoletoParcelaPercentual = (parcela.forma_pagamento === 'boleto' && parcela.antecipacao_automatica === true)
                     ? (TAXAS_BOLETO[parcela.carencia_boleto || 30]?.[parcela.numero_parcelas || 1] || 0) 
                     : 0;
                   const taxaBoletoParcelaValor = valorParcela * (taxaBoletoParcelaPercentual / 100);
+                  const toggleAntecipacao = (checked: boolean) => {
+                    if (!isEditable) return;
+                    const newParcelas = [...parcelas];
+                    newParcelas[index].antecipacao_automatica = checked;
+                    if (checked) {
+                      const amanha = new Date();
+                      amanha.setDate(amanha.getDate() + 1);
+                      newParcelas[index].data_vencimento = amanha.toISOString().split('T')[0];
+                    }
+                    setParcelas(newParcelas);
+                  };
+                  
                   
                   return (
                   <div key={parcela.id} className={`p-3 bg-muted/30 rounded-lg relative ${parcela.forma_pagamento === 'boleto' ? 'space-y-3' : ''}`}>
