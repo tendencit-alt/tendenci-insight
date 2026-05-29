@@ -68,7 +68,7 @@ import RecursosHumanos from "./pages/RecursosHumanos";
 import ProducaoOperacoes from "./pages/ProducaoOperacoes";
 
 import CRM from "./pages/CRM";
-import Suprimentos from "./pages/Suprimentos";
+import Compras from "./pages/Compras";
 import EntregasMontagem from "./pages/EntregasMontagem";
 
 import Planning from "./pages/Planning";
