@@ -2,32 +2,40 @@ import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClipboardList, Calendar, Play, DollarSign, BarChart3, FolderKanban } from "lucide-react";
-import { OpsOrdersTab } from "@/components/ops/OpsOrdersTab";
-import { OpsPlanningTab } from "@/components/ops/OpsPlanningTab";
-import { OpsExecutionTab } from "@/components/ops/OpsExecutionTab";
-import { OpsCostsTab } from "@/components/ops/OpsCostsTab";
-import { OpsAnalyticsTab } from "@/components/ops/OpsAnalyticsTab";
-import { OpsProjectsTab } from "@/components/ops/OpsProjectsTab";
+import { Factory, CalendarRange, LineChart } from "lucide-react";
+import { OpsWorkTab } from "@/components/ops/OpsWorkTab";
+import { OpsCronogramaTab } from "@/components/ops/OpsCronogramaTab";
+import { OpsInsightsTab } from "@/components/ops/OpsInsightsTab";
 
-const VALID_TABS = ["ordens", "projetos", "planejamento", "execucao", "custos", "analytics"];
+const VALID_TABS = ["producao", "cronograma", "insights"];
+// legacy → new mapping for backward compatibility
+const LEGACY: Record<string, string> = {
+  ordens: "producao",
+  projetos: "producao",
+  planejamento: "cronograma",
+  execucao: "cronograma",
+  custos: "insights",
+  analytics: "insights",
+};
 
 export default function ProducaoOperacoes() {
   const [params, setParams] = useSearchParams();
-  const tabFromUrl = params.get("tab");
-  const activeTab = VALID_TABS.includes(tabFromUrl ?? "") ? (tabFromUrl as string) : "ordens";
+  const raw = params.get("tab") ?? "";
+  const mapped = LEGACY[raw] ?? raw;
+  const activeTab = VALID_TABS.includes(mapped) ? mapped : "producao";
 
   useEffect(() => {
-    if (tabFromUrl && !VALID_TABS.includes(tabFromUrl)) {
-      params.delete("tab");
-      setParams(params, { replace: true });
+    if (raw && !VALID_TABS.includes(raw)) {
+      const next = new URLSearchParams(params);
+      if (LEGACY[raw]) next.set("tab", LEGACY[raw]); else next.delete("tab");
+      setParams(next, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tabFromUrl]);
+  }, [raw]);
 
   const handleChange = (v: string) => {
     const next = new URLSearchParams(params);
-    if (v === "ordens") next.delete("tab"); else next.set("tab", v);
+    if (v === "producao") next.delete("tab"); else next.set("tab", v);
     setParams(next, { replace: true });
   };
 
@@ -36,25 +44,21 @@ export default function ProducaoOperacoes() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Produção e Operações</h1>
-          <p className="text-muted-foreground text-sm">Planejamento, execução e custo real das ordens operacionais</p>
+          <p className="text-muted-foreground text-sm">
+            Acompanhe ordens, cronograma e indicadores em uma visão única.
+          </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={handleChange} className="space-y-4">
-          <TabsList className="flex-wrap h-auto gap-1">
-            <TabsTrigger value="ordens" className="gap-1.5"><ClipboardList className="h-4 w-4" />Ordens</TabsTrigger>
-            <TabsTrigger value="projetos" className="gap-1.5"><FolderKanban className="h-4 w-4" />Projetos</TabsTrigger>
-            <TabsTrigger value="planejamento" className="gap-1.5"><Calendar className="h-4 w-4" />Planejamento</TabsTrigger>
-            <TabsTrigger value="execucao" className="gap-1.5"><Play className="h-4 w-4" />Execução</TabsTrigger>
-            <TabsTrigger value="custos" className="gap-1.5"><DollarSign className="h-4 w-4" />Custos</TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-1.5"><BarChart3 className="h-4 w-4" />Analytics</TabsTrigger>
+          <TabsList>
+            <TabsTrigger value="producao" className="gap-1.5"><Factory className="h-4 w-4" />Produção</TabsTrigger>
+            <TabsTrigger value="cronograma" className="gap-1.5"><CalendarRange className="h-4 w-4" />Cronograma</TabsTrigger>
+            <TabsTrigger value="insights" className="gap-1.5"><LineChart className="h-4 w-4" />Custos & Analytics</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="ordens"><OpsOrdersTab /></TabsContent>
-          <TabsContent value="projetos"><OpsProjectsTab /></TabsContent>
-          <TabsContent value="planejamento"><OpsPlanningTab /></TabsContent>
-          <TabsContent value="execucao"><OpsExecutionTab /></TabsContent>
-          <TabsContent value="custos"><OpsCostsTab /></TabsContent>
-          <TabsContent value="analytics"><OpsAnalyticsTab /></TabsContent>
+          <TabsContent value="producao"><OpsWorkTab /></TabsContent>
+          <TabsContent value="cronograma"><OpsCronogramaTab /></TabsContent>
+          <TabsContent value="insights"><OpsInsightsTab /></TabsContent>
         </Tabs>
       </div>
     </DashboardLayout>
