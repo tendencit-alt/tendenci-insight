@@ -130,6 +130,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     data_vencimento: string;
     numero_parcelas: number;
     carencia_boleto?: 30 | 60;
+    antecipacao_automatica?: boolean;
   }
 
   const { projects } = useProjects();
