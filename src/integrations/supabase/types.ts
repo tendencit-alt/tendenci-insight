@@ -8879,7 +8879,7 @@ export type Database = {
       fin_projects: {
         Row: {
           budget: number | null
-          budget_percent: number
+          budget_percent: number | null
           chart_account_id: string | null
           client_id: string | null
           code: string | null
@@ -8899,7 +8899,7 @@ export type Database = {
         }
         Insert: {
           budget?: number | null
-          budget_percent?: number
+          budget_percent?: number | null
           chart_account_id?: string | null
           client_id?: string | null
           code?: string | null
@@ -8919,7 +8919,7 @@ export type Database = {
         }
         Update: {
           budget?: number | null
-          budget_percent?: number
+          budget_percent?: number | null
           chart_account_id?: string | null
           client_id?: string | null
           code?: string | null
