@@ -1005,6 +1005,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           rt_habilitado: comissoes.rt.habilitado,
           rt_percentual: comissoes.rt.habilitado ? comissoes.rt.percentual : 0,
           rt_valor: comissoes.rt.habilitado ? comissoes.rt.valor : 0,
+          rt_responsavel_id: comissoes.rt.habilitado ? (comissoes.rt.responsavel_id || null) : null,
           seller_responsible_id: comissoes.vendedor.responsavel_id || null,
           comissao_vendedor_percentual: comissoes.vendedor.habilitado ? comissoes.vendedor.percentual : 0,
           comissao_vendedor_valor: comissoes.vendedor.habilitado ? comissoes.vendedor.valor : 0,
