@@ -83,11 +83,11 @@ export default function Financeiro() {
                   </Button>
                 </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuItem onClick={() => setActiveTab("receivables")}>
+                <DropdownMenuItem onClick={() => setActiveTab("obligations")}>
                   <ArrowUpCircle className="h-4 w-4 mr-2" />
                   Conta a Receber
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setActiveTab("payables")}>
+                <DropdownMenuItem onClick={() => setActiveTab("obligations")}>
                   <ArrowDownCircle className="h-4 w-4 mr-2" />
                   Conta a Pagar
                 </DropdownMenuItem>
