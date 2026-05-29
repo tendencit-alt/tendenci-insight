@@ -636,19 +636,19 @@ export function CardRatesManager() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <RatesTable
+          <p className="text-xs text-muted-foreground">
+            Informe o percentual de cada parcelamento (1x a 18x). O valor preenchido é usado para calcular automaticamente a taxa no pedido. Deixe em branco para remover.
+          </p>
+          <InstallmentGrid
             rates={creditRates}
-            editingId={card.editingId}
-            editValue={card.editValue}
-            setEditValue={card.setEditValue}
-            startEdit={card.startEdit}
-            cancelEdit={card.cancelEdit}
-            saveEdit={card.saveEdit}
-            handleKeyDown={card.handleKeyDown}
-            emptyMessage="Nenhuma taxa de crédito cadastrada."
-            onCreate={(p) => card.createMutation.mutate(p)}
+            maxInstallments={18}
+            onSave={(installments, rate_percent, existingId) => {
+              if (existingId) card.updateMutation.mutate({ id: existingId, rate_percent });
+              else card.createMutation.mutate({ installments, rate_percent });
+            }}
             onDelete={(id) => card.deleteMutation.mutate(id)}
           />
+
           <FeeSupplierSelector
             feeType="cartao_credito"
             label="Fornecedor Crédito"
