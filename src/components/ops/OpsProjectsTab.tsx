@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LayoutGrid, List, Search, RefreshCw, Loader2, AlertTriangle, Clock, CheckCircle2, Factory } from "lucide-react";
 import { ProjectDetailSheet } from "@/components/projects/ProjectDetailSheet";
-import { useProductionStatusColumns, colorTone } from "@/hooks/useProductionStatusColumns";
+import { useProductionStatusColumns, colorTone, slaState } from "@/hooks/useProductionStatusColumns";
 import { ManageProductionStatusDialog } from "./ManageProductionStatusDialog";
 
 // Map legacy slugs that may still exist on production_orders rows.
