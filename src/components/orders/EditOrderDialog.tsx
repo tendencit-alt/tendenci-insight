@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePaymentLinkRates } from '@/hooks/usePaymentLinkRates';
+import { useFinanceRates } from '@/hooks/useFinanceRates';
 import { useStrategicResourceDefaults } from '@/hooks/useStrategicResourceDefaults';
 import { useCompanyName } from '@/hooks/useCompanySettings';
 import { useQuery } from '@tanstack/react-query';
