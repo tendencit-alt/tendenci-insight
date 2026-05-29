@@ -5174,42 +5174,6 @@ export type Database = {
           },
         ]
       }
-      e2e_stock_results: {
-        Row: {
-          bug: string | null
-          created_at: string | null
-          details: Json | null
-          expected: string | null
-          fix: string | null
-          id: string
-          obtained: string | null
-          scenario: string
-          status: string
-        }
-        Insert: {
-          bug?: string | null
-          created_at?: string | null
-          details?: Json | null
-          expected?: string | null
-          fix?: string | null
-          id?: string
-          obtained?: string | null
-          scenario: string
-          status: string
-        }
-        Update: {
-          bug?: string | null
-          created_at?: string | null
-          details?: Json | null
-          expected?: string | null
-          fix?: string | null
-          id?: string
-          obtained?: string | null
-          scenario?: string
-          status?: string
-        }
-        Relationships: []
-      }
       education_certifications: {
         Row: {
           certified_at: string
