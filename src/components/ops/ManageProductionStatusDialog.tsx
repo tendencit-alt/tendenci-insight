@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import type { ProductionStatusColumn } from "@/hooks/useProductionStatusColumns";
+import type { ProductionStatusColumn, SlaUnit } from "@/hooks/useProductionStatusColumns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Settings2, Plus, Trash2, Lock, AlarmClock } from "lucide-react";
 import {
@@ -25,14 +26,21 @@ export function ManageProductionStatusDialog() {
   const [newLabel, setNewLabel] = useState("");
   const [newColor, setNewColor] = useState("slate");
   const [newSla, setNewSla] = useState<string>("");
+  const [newUnit, setNewUnit] = useState<SlaUnit>("days");
 
   const handleAdd = () => {
     if (!newLabel.trim()) return;
     const maxOrder = columns.reduce((m, c) => Math.max(m, c.sort_order), 0);
     const slaParsed = newSla.trim() === "" ? null : Math.max(0, Math.floor(Number(newSla)));
     createMut.mutate(
-      { label: newLabel.trim(), color: newColor, sort_order: maxOrder + 10, sla_days: Number.isFinite(slaParsed as number) ? slaParsed : null },
-      { onSuccess: () => { setNewLabel(""); setNewColor("slate"); setNewSla(""); } }
+      {
+        label: newLabel.trim(),
+        color: newColor,
+        sort_order: maxOrder + 10,
+        sla_days: Number.isFinite(slaParsed as number) ? slaParsed : null,
+        sla_unit: newUnit,
+      },
+      { onSuccess: () => { setNewLabel(""); setNewColor("slate"); setNewSla(""); setNewUnit("days"); } }
     );
   };
 
@@ -89,15 +97,22 @@ export function ManageProductionStatusDialog() {
                   value={newSla}
                   onChange={(e) => setNewSla(e.target.value)}
                   className="w-24 pl-7"
-                  title="Prazo SLA em dias (opcional)"
+                  title="Prazo SLA (opcional)"
                 />
               </div>
+              <Select value={newUnit} onValueChange={(v) => setNewUnit(v as SlaUnit)}>
+                <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="days">Dias</SelectItem>
+                  <SelectItem value="hours">Horas</SelectItem>
+                </SelectContent>
+              </Select>
               <Button onClick={handleAdd} disabled={!newLabel.trim() || createMut.isPending} className="gap-1.5">
                 <Plus className="h-4 w-4" />Adicionar
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Status são isolados por empresa. Defina um <span className="font-medium text-foreground">prazo em dias</span> para que ordens paradas no status gerem alertas automáticos. Status do sistema não podem ser excluídos.
+              Status são isolados por empresa. Defina um <span className="font-medium text-foreground">prazo (em dias ou horas)</span> para que ordens paradas no status gerem alertas automáticos. Status do sistema não podem ser excluídos.
             </p>
           </div>
         </div>
@@ -108,7 +123,7 @@ export function ManageProductionStatusDialog() {
 
 interface StatusRowProps {
   column: ProductionStatusColumn;
-  onUpdate: (patch: { label?: string; color?: string; sort_order?: number; sla_days?: number | null }) => void;
+  onUpdate: (patch: { label?: string; color?: string; sort_order?: number; sla_days?: number | null; sla_unit?: SlaUnit }) => void;
   onDelete: () => void;
 }
 
@@ -189,9 +204,16 @@ function StatusRow({ column, onUpdate, onDelete }: StatusRowProps) {
           onBlur={commitSla}
           onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
           className="w-20 pl-7"
-          title="Prazo SLA em dias. Vazio = sem prazo"
+          title={`Prazo SLA em ${column.sla_unit === "hours" ? "horas" : "dias"}. Vazio = sem prazo`}
         />
       </div>
+      <Select value={column.sla_unit} onValueChange={(v) => onUpdate({ sla_unit: v as SlaUnit })}>
+        <SelectTrigger className="w-[88px]"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="days">Dias</SelectItem>
+          <SelectItem value="hours">Horas</SelectItem>
+        </SelectContent>
+      </Select>
       {column.is_system ? (
         <TooltipProvider delayDuration={150}>
           <Tooltip>
@@ -208,7 +230,7 @@ function StatusRow({ column, onUpdate, onDelete }: StatusRowProps) {
                 <div className="space-y-1">
                   <p className="text-xs font-semibold leading-none">Status do sistema</p>
                   <p className="text-xs text-muted-foreground leading-snug">
-                    Pode ser renomeado e ter cor ou ordem alteradas, mas <span className="font-medium text-foreground">não pode ser excluído</span> para preservar a integridade dos fluxos de produção.
+                    Pode ser renomeado e ter cor, prazo ou ordem alterados, mas <span className="font-medium text-foreground">não pode ser excluído</span> para preservar a integridade dos fluxos de produção.
                   </p>
                 </div>
               </div>

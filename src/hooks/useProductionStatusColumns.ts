@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { toast } from "sonner";
 
+export type SlaUnit = "days" | "hours";
+
 export interface ProductionStatusColumn {
   id: string;
   tenant_id: string;
@@ -12,17 +14,37 @@ export interface ProductionStatusColumn {
   sort_order: number;
   is_system: boolean;
   sla_days: number | null;
+  sla_unit: SlaUnit;
 }
 
 /** Compute SLA state for an entry that has been at a given status since `since`. */
-export function slaState(slaDays: number | null | undefined, since: string | null | undefined) {
-  if (!slaDays || slaDays <= 0 || !since) return { days: 0, level: "ok" as const, ratio: 0 };
+export function slaState(
+  slaValue: number | null | undefined,
+  since: string | null | undefined,
+  unit: SlaUnit = "days",
+) {
+  if (!slaValue || slaValue <= 0 || !since) {
+    return { elapsed: 0, days: 0, hours: 0, level: "ok" as const, ratio: 0, unit };
+  }
   const ms = Date.now() - new Date(since).getTime();
-  const days = Math.max(0, Math.floor(ms / 86400000));
-  const ratio = days / slaDays;
+  const unitMs = unit === "hours" ? 3_600_000 : 86_400_000;
+  const elapsed = Math.max(0, Math.floor(ms / unitMs));
+  const ratio = elapsed / slaValue;
   const level = ratio >= 1 ? "overdue" : ratio >= 0.75 ? "warning" : "ok";
-  return { days, level, ratio };
+  return {
+    elapsed,
+    days: unit === "days" ? elapsed : Math.floor(elapsed / 24),
+    hours: unit === "hours" ? elapsed : elapsed * 24,
+    level,
+    ratio,
+    unit,
+  };
 }
+
+export function slaSuffix(unit: SlaUnit): string {
+  return unit === "hours" ? "h" : "d";
+}
+
 
 export const STATUS_COLOR_PALETTE = [
   { key: "slate",   tone: "bg-slate-500/10 text-slate-700 border-slate-500/30 dark:text-slate-300" },
@@ -75,7 +97,7 @@ export function useCreateProductionStatusColumn() {
   const qc = useQueryClient();
   const { activeTenantId } = useActiveTenant();
   return useMutation({
-    mutationFn: async (input: { label: string; color: string; sort_order?: number; sla_days?: number | null }) => {
+    mutationFn: async (input: { label: string; color: string; sort_order?: number; sla_days?: number | null; sla_unit?: SlaUnit }) => {
       if (!activeTenantId) throw new Error("Sem empresa ativa");
       const baseSlug = slugify(input.label);
       const { data: existing } = await supabase
@@ -95,8 +117,10 @@ export function useCreateProductionStatusColumn() {
           color: input.color,
           sort_order: input.sort_order ?? 100,
           sla_days: input.sla_days ?? null,
+          sla_unit: input.sla_unit ?? "days",
           is_system: false,
         } as any);
+
 
         if (!error) return;
 
@@ -124,7 +148,7 @@ export function useCreateProductionStatusColumn() {
 export function useUpdateProductionStatusColumn() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { id: string; label?: string; color?: string; sort_order?: number; sla_days?: number | null }) => {
+    mutationFn: async (input: { id: string; label?: string; color?: string; sort_order?: number; sla_days?: number | null; sla_unit?: SlaUnit }) => {
       const { id, ...patch } = input;
       const { error } = await supabase
         .from("production_status_columns" as any)

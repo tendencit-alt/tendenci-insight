@@ -16140,6 +16140,7 @@ export type Database = {
           is_system: boolean
           label: string
           sla_days: number | null
+          sla_unit: string
           slug: string
           sort_order: number
           tenant_id: string
@@ -16152,6 +16153,7 @@ export type Database = {
           is_system?: boolean
           label: string
           sla_days?: number | null
+          sla_unit?: string
           slug: string
           sort_order?: number
           tenant_id: string
@@ -16164,6 +16166,7 @@ export type Database = {
           is_system?: boolean
           label?: string
           sla_days?: number | null
+          sla_unit?: string
           slug?: string
           sort_order?: number
           tenant_id?: string

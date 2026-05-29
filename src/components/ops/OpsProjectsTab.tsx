@@ -43,7 +43,7 @@ interface AggregatedRow extends ProjectProductionRow {
 const SEM_OP_META = { label: "Sem OP", tone: "bg-muted text-muted-foreground border-border" };
 
 function buildAggregator(
-  columnsBySlug: Record<string, { sort_order: number; sla_days?: number | null }>,
+  columnsBySlug: Record<string, { sort_order: number; sla_days?: number | null; sla_unit?: "days" | "hours" }>,
   validSlugs: Set<string>,
   doneSlugs: Set<string>,
 ) {
@@ -81,7 +81,7 @@ function buildAggregator(
         if (doneSlugs.has(x.status)) continue;
         const target = columnsBySlug[x.status]?.sla_days;
         if (!target) continue;
-        const s = slaState(target, x.status_changed_at);
+        const s = slaState(target, x.status_changed_at, columnsBySlug[x.status]?.sla_unit ?? "days");
         if (s.level === "overdue") { slaOverdue++; slaAlerts++; }
         else if (s.level === "warning") slaAlerts++;
       }
@@ -107,8 +107,8 @@ export function OpsProjectsTab() {
 
   // Build resolution structures from shared status registry
   const { columnsBySlug, validSlugs, doneSlugs } = useMemo(() => {
-    const map: Record<string, { sort_order: number; label: string; color: string; sla_days: number | null }> = {};
-    statusColumns.forEach((c) => { map[c.slug] = { sort_order: c.sort_order, label: c.label, color: c.color, sla_days: c.sla_days }; });
+    const map: Record<string, { sort_order: number; label: string; color: string; sla_days: number | null; sla_unit: "days" | "hours" }> = {};
+    statusColumns.forEach((c) => { map[c.slug] = { sort_order: c.sort_order, label: c.label, color: c.color, sla_days: c.sla_days, sla_unit: c.sla_unit }; });
     const slugs = new Set(statusColumns.map((c) => c.slug));
     const done = new Set(["concluido", "entregue"].filter((s) => slugs.has(s)));
     return { columnsBySlug: map, validSlugs: slugs, doneSlugs: done };

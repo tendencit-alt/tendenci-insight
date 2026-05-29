@@ -19,6 +19,7 @@ import {
   useUpdateProductionOrderStatus,
   colorTone,
   slaState,
+  slaSuffix,
 } from "@/hooks/useProductionStatusColumns";
 import { ManageProductionStatusDialog } from "./ManageProductionStatusDialog";
 
@@ -79,8 +80,10 @@ export function OpsOrdersTab() {
         slug !== "concluido" && slug !== "entregue" && slug !== "cancelado";
       const col = slugToColumn[slug];
       const isClosed = slug === "concluido" || slug === "entregue" || slug === "cancelado";
-      const sla = !isClosed ? slaState(col?.sla_days, o.status_changed_at) : { days: 0, level: "ok" as const, ratio: 0 };
-      return { ...o, _slug: slug, isLate, _sla: sla, _slaTarget: col?.sla_days ?? null };
+      const sla = !isClosed
+        ? slaState(col?.sla_days, o.status_changed_at, col?.sla_unit ?? "days")
+        : { elapsed: 0, days: 0, hours: 0, level: "ok" as const, ratio: 0, unit: "days" as const };
+      return { ...o, _slug: slug, isLate, _sla: sla, _slaTarget: col?.sla_days ?? null, _slaUnit: col?.sla_unit ?? "days" };
     });
   }, [orders, validSlugs, slugToColumn]);
 
@@ -247,7 +250,7 @@ export function OpsOrdersTab() {
                       <div className="flex items-center gap-1 shrink-0">
                         {col.sla_days ? (
                           <Badge variant="outline" className="text-[10px] gap-0.5 px-1.5 py-0">
-                            <Clock className="h-2.5 w-2.5" />{col.sla_days}d
+                            <Clock className="h-2.5 w-2.5" />{col.sla_days}{slaSuffix(col.sla_unit)}
                           </Badge>
                         ) : null}
                         {breaches > 0 && (
@@ -295,12 +298,12 @@ export function OpsOrdersTab() {
                                         ? "bg-destructive/10 text-destructive border-destructive/30"
                                         : "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300"
                                     }`}
-                                    title={`No status há ${o._sla.days} dia(s) — prazo ${o._slaTarget}d`}
+                                    title={`No status há ${o._sla.elapsed} ${o._slaUnit === "hours" ? "hora(s)" : "dia(s)"} — prazo ${o._slaTarget}${slaSuffix(o._slaUnit)}`}
                                   >
                                     <Clock className="h-2.5 w-2.5" />
                                     {o._sla.level === "overdue"
-                                      ? `+${o._sla.days - o._slaTarget}d`
-                                      : `${o._sla.days}/${o._slaTarget}d`}
+                                      ? `+${o._sla.elapsed - o._slaTarget}${slaSuffix(o._slaUnit)}`
+                                      : `${o._sla.elapsed}/${o._slaTarget}${slaSuffix(o._slaUnit)}`}
                                   </Badge>
                                 )}
                                 {o.isLate && <span className="text-destructive font-medium">Atrasada</span>}
