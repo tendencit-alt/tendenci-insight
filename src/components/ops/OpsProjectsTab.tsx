@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LayoutGrid, List, Search, RefreshCw, Loader2, AlertTriangle, Clock, CheckCircle2, Factory } from "lucide-react";
 import { ProjectDetailSheet } from "@/components/projects/ProjectDetailSheet";
-import { useProductionStatusColumns, colorTone } from "@/hooks/useProductionStatusColumns";
+import { useProductionStatusColumns, colorTone, slaState } from "@/hooks/useProductionStatusColumns";
 import { ManageProductionStatusDialog } from "./ManageProductionStatusDialog";
 
 // Map legacy slugs that may still exist on production_orders rows.
@@ -25,7 +25,7 @@ interface ProjectProductionRow {
   deadline: string | null;
   client: { name: string | null } | null;
   architect: { name: string | null } | null;
-  pos: { status: string; planned_end_date: string | null }[];
+  pos: { status: string; planned_end_date: string | null; status_changed_at: string | null }[];
 }
 
 interface AggregatedRow extends ProjectProductionRow {
@@ -36,12 +36,14 @@ interface AggregatedRow extends ProjectProductionRow {
   progressPct: number;
   aggStatus: string; // slug or "sem_op"
   isLate: boolean;
+  slaAlerts: number;
+  slaOverdue: number;
 }
 
 const SEM_OP_META = { label: "Sem OP", tone: "bg-muted text-muted-foreground border-border" };
 
 function buildAggregator(
-  columnsBySlug: Record<string, { sort_order: number }>,
+  columnsBySlug: Record<string, { sort_order: number; sla_days?: number | null }>,
   validSlugs: Set<string>,
   doneSlugs: Set<string>,
 ) {
@@ -73,11 +75,21 @@ function buildAggregator(
         }
       }
       const isLate = !!p.deadline && new Date(p.deadline) < today && !doneSlugs.has(aggStatus);
+      let slaAlerts = 0;
+      let slaOverdue = 0;
+      for (const x of pos) {
+        if (doneSlugs.has(x.status)) continue;
+        const target = columnsBySlug[x.status]?.sla_days;
+        if (!target) continue;
+        const s = slaState(target, x.status_changed_at);
+        if (s.level === "overdue") { slaOverdue++; slaAlerts++; }
+        else if (s.level === "warning") slaAlerts++;
+      }
       return {
         ...p,
         total, done, inProgress, waiting,
         progressPct: total === 0 ? 0 : Math.round((done / total) * 100),
-        aggStatus, isLate,
+        aggStatus, isLate, slaAlerts, slaOverdue,
       };
     });
   };
@@ -94,12 +106,12 @@ export function OpsProjectsTab() {
   const { data: statusColumns = [] } = useProductionStatusColumns();
 
   // Build resolution structures from shared status registry
-  const { columnsBySlug, validSlugs, doneSlugs, semOpFirst } = useMemo(() => {
-    const map: Record<string, { sort_order: number; label: string; color: string }> = {};
-    statusColumns.forEach((c) => { map[c.slug] = { sort_order: c.sort_order, label: c.label, color: c.color }; });
+  const { columnsBySlug, validSlugs, doneSlugs } = useMemo(() => {
+    const map: Record<string, { sort_order: number; label: string; color: string; sla_days: number | null }> = {};
+    statusColumns.forEach((c) => { map[c.slug] = { sort_order: c.sort_order, label: c.label, color: c.color, sla_days: c.sla_days }; });
     const slugs = new Set(statusColumns.map((c) => c.slug));
     const done = new Set(["concluido", "entregue"].filter((s) => slugs.has(s)));
-    return { columnsBySlug: map, validSlugs: slugs, doneSlugs: done, semOpFirst: true };
+    return { columnsBySlug: map, validSlugs: slugs, doneSlugs: done };
   }, [statusColumns]);
 
   useEffect(() => {
@@ -112,7 +124,7 @@ export function OpsProjectsTab() {
           id, order_number, valor_total, data_entrega_prevista, status,
           client:clients(name),
           architect:architects(name),
-          pos:production_orders(status, planned_end_date)
+          pos:production_orders(status, planned_end_date, status_changed_at)
         `)
         .neq("status", "cancelado")
         .order("data_entrega_prevista", { ascending: true, nullsFirst: false });
@@ -158,11 +170,12 @@ export function OpsProjectsTab() {
     const inProd = filtered.filter((r) => r.aggStatus === "em_producao").length;
     const waiting = filtered.filter((r) => r.aggStatus === "aguardando" || r.aggStatus === "sem_op").length;
     const late = filtered.filter((r) => r.isLate).length;
+    const slaAlerts = filtered.filter((r) => r.slaAlerts > 0).length;
     const doneMonth = filtered.filter((r) => doneSlugs.has(r.aggStatus)).length;
     const totalPos = filtered.reduce((s, r) => s + r.total, 0);
     const donePos = filtered.reduce((s, r) => s + r.done, 0);
     const onTimePct = totalPos === 0 ? 0 : Math.round((donePos / totalPos) * 100);
-    return { inProd, waiting, late, doneMonth, onTimePct };
+    return { inProd, waiting, late, slaAlerts, doneMonth, onTimePct };
   }, [filtered, doneSlugs]);
 
   const openDetail = async (_orderId: string) => {
@@ -178,10 +191,11 @@ export function OpsProjectsTab() {
   return (
     <div className="space-y-4">
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <KpiCard icon={<Factory className="h-4 w-4" />} label="Em produção" value={kpis.inProd} tone="text-amber-600" />
         <KpiCard icon={<Clock className="h-4 w-4" />} label="Aguardando" value={kpis.waiting} tone="text-blue-600" />
         <KpiCard icon={<AlertTriangle className="h-4 w-4" />} label="Atrasados" value={kpis.late} tone="text-destructive" />
+        <KpiCard icon={<Clock className="h-4 w-4" />} label="Alertas SLA" value={kpis.slaAlerts} tone="text-amber-600" />
         <KpiCard icon={<CheckCircle2 className="h-4 w-4" />} label="Concluídos" value={kpis.doneMonth} tone="text-emerald-600" />
         <KpiCard icon={<CheckCircle2 className="h-4 w-4" />} label="% OPs concluídas" value={`${kpis.onTimePct}%`} tone="text-primary" />
       </div>
@@ -231,9 +245,24 @@ export function OpsProjectsTab() {
                           <div className="text-xs text-muted-foreground truncate">{r.client?.name ?? "—"}</div>
                           <div className="mt-2">
                             <Progress value={r.progressPct} className="h-1.5" />
-                            <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground">
+                            <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground gap-1">
                               <span>{r.done}/{r.total} OPs</span>
-                              {r.isLate && <span className="text-destructive font-medium">Atrasado</span>}
+                              <div className="flex items-center gap-1">
+                                {r.slaAlerts > 0 && (
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-[10px] gap-0.5 px-1.5 py-0 ${
+                                      r.slaOverdue > 0
+                                        ? "bg-destructive/10 text-destructive border-destructive/30"
+                                        : "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300"
+                                    }`}
+                                    title={`${r.slaAlerts} OP(s) com alerta de prazo${r.slaOverdue ? ` — ${r.slaOverdue} vencida(s)` : ""}`}
+                                  >
+                                    <Clock className="h-2.5 w-2.5" />SLA {r.slaAlerts}
+                                  </Badge>
+                                )}
+                                {r.isLate && <span className="text-destructive font-medium">Atrasado</span>}
+                              </div>
                             </div>
                           </div>
                         </Card>
@@ -289,7 +318,24 @@ export function OpsProjectsTab() {
                           <span className="text-xs text-muted-foreground w-12 text-right">{r.done}/{r.total}</span>
                         </div>
                       </TableCell>
-                      <TableCell><Badge variant="outline" className={colMeta.tone}>{colMeta.label}</Badge></TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="outline" className={colMeta.tone}>{colMeta.label}</Badge>
+                          {r.slaAlerts > 0 && (
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] gap-0.5 px-1.5 py-0 ${
+                                r.slaOverdue > 0
+                                  ? "bg-destructive/10 text-destructive border-destructive/30"
+                                  : "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300"
+                              }`}
+                              title={`${r.slaAlerts} OP(s) com alerta de prazo${r.slaOverdue ? ` — ${r.slaOverdue} vencida(s)` : ""}`}
+                            >
+                              <Clock className="h-2.5 w-2.5" />SLA {r.slaAlerts}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   );
                 })}

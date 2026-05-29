@@ -18,6 +18,7 @@ import {
   useProductionStatusColumns,
   useUpdateProductionOrderStatus,
   colorTone,
+  slaState,
 } from "@/hooks/useProductionStatusColumns";
 import { ManageProductionStatusDialog } from "./ManageProductionStatusDialog";
 
@@ -76,9 +77,12 @@ export function OpsOrdersTab() {
       const isLate = !!o.planned_end_date &&
         new Date(o.planned_end_date) < today &&
         slug !== "concluido" && slug !== "entregue" && slug !== "cancelado";
-      return { ...o, _slug: slug, isLate };
+      const col = slugToColumn[slug];
+      const isClosed = slug === "concluido" || slug === "entregue" || slug === "cancelado";
+      const sla = !isClosed ? slaState(col?.sla_days, o.status_changed_at) : { days: 0, level: "ok" as const, ratio: 0 };
+      return { ...o, _slug: slug, isLate, _sla: sla, _slaTarget: col?.sla_days ?? null };
     });
-  }, [orders, validSlugs]);
+  }, [orders, validSlugs, slugToColumn]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -95,10 +99,11 @@ export function OpsOrdersTab() {
     const inProd = filtered.filter((o) => o._slug === "em_producao").length;
     const waiting = filtered.filter((o) => o._slug === "aguardando").length;
     const late = filtered.filter((o) => o.isLate).length;
+    const slaAlerts = filtered.filter((o) => o._sla.level !== "ok").length;
     const done = filtered.filter((o) => o._slug === "concluido" || o._slug === "entregue").length;
     const total = filtered.length;
     const donePct = total === 0 ? 0 : Math.round((done / total) * 100);
-    return { inProd, waiting, late, done, donePct };
+    return { inProd, waiting, late, slaAlerts, done, donePct };
   }, [filtered]);
 
   const fmt = (v: number) =>
@@ -127,10 +132,11 @@ export function OpsOrdersTab() {
   return (
     <div className="space-y-4">
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <KpiCard icon={<Factory className="h-4 w-4" />} label="Em produção" value={kpis.inProd} tone="text-amber-600" />
         <KpiCard icon={<Clock className="h-4 w-4" />} label="Aguardando" value={kpis.waiting} tone="text-blue-600" />
         <KpiCard icon={<AlertTriangle className="h-4 w-4" />} label="Atrasadas" value={kpis.late} tone="text-destructive" />
+        <KpiCard icon={<Clock className="h-4 w-4" />} label="Alertas SLA" value={kpis.slaAlerts} tone="text-amber-600" />
         <KpiCard icon={<CheckCircle2 className="h-4 w-4" />} label="Concluídas" value={kpis.done} tone="text-emerald-600" />
         <KpiCard icon={<CheckCircle2 className="h-4 w-4" />} label="% Concluídas" value={`${kpis.donePct}%`} tone="text-primary" />
       </div>
@@ -242,11 +248,24 @@ export function OpsOrdersTab() {
             >
               {statusColumns.map((col) => {
                 const colRows = filtered.filter((o) => o._slug === col.slug);
+                const breaches = colRows.filter((o) => o._sla.level !== "ok").length;
                 return (
                   <div key={col.id} className="bg-muted/30 rounded-lg p-2 min-h-[200px]">
-                    <div className="flex items-center justify-between mb-2 px-1">
-                      <span className="text-xs font-semibold text-foreground">{col.label}</span>
-                      <Badge variant="secondary" className="text-xs">{colRows.length}</Badge>
+                    <div className="flex items-center justify-between mb-2 px-1 gap-1">
+                      <span className="text-xs font-semibold text-foreground truncate">{col.label}</span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {col.sla_days ? (
+                          <Badge variant="outline" className="text-[10px] gap-0.5 px-1.5 py-0">
+                            <Clock className="h-2.5 w-2.5" />{col.sla_days}d
+                          </Badge>
+                        ) : null}
+                        {breaches > 0 && (
+                          <Badge className="text-[10px] gap-0.5 px-1.5 py-0 bg-destructive/15 text-destructive border-destructive/30 hover:bg-destructive/15">
+                            <AlertTriangle className="h-2.5 w-2.5" />{breaches}
+                          </Badge>
+                        )}
+                        <Badge variant="secondary" className="text-xs">{colRows.length}</Badge>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       {colRows.map((o) => {
@@ -276,7 +295,25 @@ export function OpsOrdersTab() {
                                   ? new Date(o.planned_end_date).toLocaleDateString("pt-BR")
                                   : "Sem prazo"}
                               </span>
-                              {o.isLate && <span className="text-destructive font-medium">Atrasada</span>}
+                              <div className="flex items-center gap-1">
+                                {o._slaTarget && o._sla.level !== "ok" && (
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-[10px] gap-0.5 px-1.5 py-0 ${
+                                      o._sla.level === "overdue"
+                                        ? "bg-destructive/10 text-destructive border-destructive/30"
+                                        : "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300"
+                                    }`}
+                                    title={`No status há ${o._sla.days} dia(s) — prazo ${o._slaTarget}d`}
+                                  >
+                                    <Clock className="h-2.5 w-2.5" />
+                                    {o._sla.level === "overdue"
+                                      ? `+${o._sla.days - o._slaTarget}d`
+                                      : `${o._sla.days}/${o._slaTarget}d`}
+                                  </Badge>
+                                )}
+                                {o.isLate && <span className="text-destructive font-medium">Atrasada</span>}
+                              </div>
                             </div>
                             <div className="mt-2">
                               <Select
@@ -347,19 +384,37 @@ export function OpsOrdersTab() {
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm">{fmt(Number(o.value ?? 0))}</TableCell>
                       <TableCell>
-                        <Select
-                          value={o._slug}
-                          onValueChange={(v) => updateStatusMut.mutate({ id: o.id, status: v })}
-                        >
-                          <SelectTrigger className={`h-7 text-xs w-[140px] ${col ? colorTone(col.color) : ""}`}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {statusColumns.map((c) => (
-                              <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-1.5">
+                          <Select
+                            value={o._slug}
+                            onValueChange={(v) => updateStatusMut.mutate({ id: o.id, status: v })}
+                          >
+                            <SelectTrigger className={`h-7 text-xs w-[140px] ${col ? colorTone(col.color) : ""}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {statusColumns.map((c) => (
+                                <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {o._slaTarget && o._sla.level !== "ok" && (
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] gap-0.5 px-1.5 py-0 ${
+                                o._sla.level === "overdue"
+                                  ? "bg-destructive/10 text-destructive border-destructive/30"
+                                  : "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300"
+                              }`}
+                              title={`No status há ${o._sla.days} dia(s) — prazo ${o._slaTarget}d`}
+                            >
+                              <Clock className="h-2.5 w-2.5" />
+                              {o._sla.level === "overdue"
+                                ? `+${o._sla.days - o._slaTarget}d`
+                                : `${o._sla.days}/${o._slaTarget}d`}
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Button variant="ghost" size="icon" onClick={() => deleteMut.mutate(o.id)}>

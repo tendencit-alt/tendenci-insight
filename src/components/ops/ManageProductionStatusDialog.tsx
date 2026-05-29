@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Settings2, Plus, Trash2, Lock } from "lucide-react";
+import { Settings2, Plus, Trash2, Lock, AlarmClock } from "lucide-react";
 import {
   useProductionStatusColumns,
   useCreateProductionStatusColumn,
@@ -25,13 +25,15 @@ export function ManageProductionStatusDialog() {
 
   const [newLabel, setNewLabel] = useState("");
   const [newColor, setNewColor] = useState("slate");
+  const [newSla, setNewSla] = useState<string>("");
 
   const handleAdd = () => {
     if (!newLabel.trim()) return;
     const maxOrder = columns.reduce((m, c) => Math.max(m, c.sort_order), 0);
+    const slaParsed = newSla.trim() === "" ? null : Math.max(0, Math.floor(Number(newSla)));
     createMut.mutate(
-      { label: newLabel.trim(), color: newColor, sort_order: maxOrder + 10 },
-      { onSuccess: () => { setNewLabel(""); setNewColor("slate"); } }
+      { label: newLabel.trim(), color: newColor, sort_order: maxOrder + 10, sla_days: Number.isFinite(slaParsed as number) ? slaParsed : null },
+      { onSuccess: () => { setNewLabel(""); setNewColor("slate"); setNewSla(""); } }
     );
   };
 
@@ -59,8 +61,8 @@ export function ManageProductionStatusDialog() {
 
           <div className="border-t pt-4 space-y-2">
             <Label className="text-sm font-medium">Adicionar status personalizado</Label>
-            <div className="flex items-end gap-2">
-              <div className="flex-1">
+            <div className="flex items-end gap-2 flex-wrap">
+              <div className="flex-1 min-w-[180px]">
                 <Input
                   placeholder="Ex.: Em Revisão"
                   value={newLabel}
@@ -77,12 +79,24 @@ export function ManageProductionStatusDialog() {
                   />
                 ))}
               </div>
+              <div className="relative">
+                <AlarmClock className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <Input
+                  type="number"
+                  min={0}
+                  placeholder="Prazo"
+                  value={newSla}
+                  onChange={(e) => setNewSla(e.target.value)}
+                  className="w-24 pl-7"
+                  title="Prazo SLA em dias (opcional)"
+                />
+              </div>
               <Button onClick={handleAdd} disabled={!newLabel.trim() || createMut.isPending} className="gap-1.5">
                 <Plus className="h-4 w-4" />Adicionar
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Status são isolados por empresa. Status do sistema não podem ser excluídos, mas podem ser renomeados e recoloridos.
+              Status são isolados por empresa. Defina um <span className="font-medium text-foreground">prazo em dias</span> para que ordens paradas no status gerem alertas automáticos. Status do sistema não podem ser excluídos.
             </p>
           </div>
         </div>
@@ -93,17 +107,19 @@ export function ManageProductionStatusDialog() {
 
 interface StatusRowProps {
   column: ProductionStatusColumn;
-  onUpdate: (patch: { label?: string; color?: string; sort_order?: number }) => void;
+  onUpdate: (patch: { label?: string; color?: string; sort_order?: number; sla_days?: number | null }) => void;
   onDelete: () => void;
 }
 
 function StatusRow({ column, onUpdate, onDelete }: StatusRowProps) {
   const [label, setLabel] = useState(column.label);
   const [order, setOrder] = useState<string>(String(column.sort_order));
+  const [sla, setSla] = useState<string>(column.sla_days != null ? String(column.sla_days) : "");
 
   // Re-sync if server value changes (e.g. another tab)
   useEffect(() => { setLabel(column.label); }, [column.label]);
   useEffect(() => { setOrder(String(column.sort_order)); }, [column.sort_order]);
+  useEffect(() => { setSla(column.sla_days != null ? String(column.sla_days) : ""); }, [column.sla_days]);
 
   const commitLabel = () => {
     const trimmed = label.trim();
@@ -117,6 +133,17 @@ function StatusRow({ column, onUpdate, onDelete }: StatusRowProps) {
     const snapped = Math.max(0, Math.round(raw / 10) * 10);
     setOrder(String(snapped));
     if (snapped !== column.sort_order) onUpdate({ sort_order: snapped });
+  };
+
+  const commitSla = () => {
+    const trimmed = sla.trim();
+    if (trimmed === "") {
+      if (column.sla_days != null) onUpdate({ sla_days: null });
+      return;
+    }
+    const raw = Math.max(0, Math.floor(Number(trimmed)));
+    if (!Number.isFinite(raw)) { setSla(column.sla_days != null ? String(column.sla_days) : ""); return; }
+    if (raw !== column.sla_days) onUpdate({ sla_days: raw });
   };
 
   return (
@@ -150,6 +177,20 @@ function StatusRow({ column, onUpdate, onDelete }: StatusRowProps) {
         className="w-20"
         title="Ordem em múltiplos de 10 (ex.: 10, 20, 30)"
       />
+      <div className="relative">
+        <AlarmClock className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+        <Input
+          type="number"
+          min={0}
+          placeholder="—"
+          value={sla}
+          onChange={(e) => setSla(e.target.value)}
+          onBlur={commitSla}
+          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+          className="w-20 pl-7"
+          title="Prazo SLA em dias. Vazio = sem prazo"
+        />
+      </div>
       {column.is_system ? (
         <TooltipProvider delayDuration={150}>
           <Tooltip>

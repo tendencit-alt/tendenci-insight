@@ -12900,6 +12900,7 @@ export type Database = {
           source_order_id: string | null
           start_date: string | null
           status: string
+          status_changed_at: string | null
           team_id: string | null
           tenant_id: string | null
           title: string
@@ -12928,6 +12929,7 @@ export type Database = {
           source_order_id?: string | null
           start_date?: string | null
           status?: string
+          status_changed_at?: string | null
           team_id?: string | null
           tenant_id?: string | null
           title: string
@@ -12956,6 +12958,7 @@ export type Database = {
           source_order_id?: string | null
           start_date?: string | null
           status?: string
+          status_changed_at?: string | null
           team_id?: string | null
           tenant_id?: string | null
           title?: string
@@ -15666,6 +15669,7 @@ export type Database = {
           responsible_id: string | null
           specifications: Json | null
           status: string
+          status_changed_at: string | null
           supplier_id: string | null
           tenant_id: string | null
           title: string
@@ -15698,6 +15702,7 @@ export type Database = {
           responsible_id?: string | null
           specifications?: Json | null
           status?: string
+          status_changed_at?: string | null
           supplier_id?: string | null
           tenant_id?: string | null
           title: string
@@ -15730,6 +15735,7 @@ export type Database = {
           responsible_id?: string | null
           specifications?: Json | null
           status?: string
+          status_changed_at?: string | null
           supplier_id?: string | null
           tenant_id?: string | null
           title?: string
@@ -16133,6 +16139,7 @@ export type Database = {
           id: string
           is_system: boolean
           label: string
+          sla_days: number | null
           slug: string
           sort_order: number
           tenant_id: string
@@ -16144,6 +16151,7 @@ export type Database = {
           id?: string
           is_system?: boolean
           label: string
+          sla_days?: number | null
           slug: string
           sort_order?: number
           tenant_id: string
@@ -16155,6 +16163,7 @@ export type Database = {
           id?: string
           is_system?: boolean
           label?: string
+          sla_days?: number | null
           slug?: string
           sort_order?: number
           tenant_id?: string
