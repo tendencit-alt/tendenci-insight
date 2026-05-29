@@ -19,6 +19,7 @@ export const MODULE_ROUTE_MAP: Record<string, string> = {
   "clientes": "/clientes",
   "catalogo-produtos": "/catalogo",
   "pedidos": "/pedidos",
+  "compras": "/compras",
   "estoque": "/estoque",
   "financeiro": "/financeiro",
   "dashboard": "/bi-dashboard",
@@ -79,6 +80,15 @@ const COMMERCIAL_ORDER: Record<string, number> = {
   comissoes: 60,
 };
 
+const OPERATIONAL_ORDER: Record<string, number> = {
+  "producao-operacoes": 10,
+  compras: 20,
+  estoque: 30,
+  "entregas-montagem": 40,
+  automacoes: 50,
+  producao: 60,
+};
+
 function normalizeMenuModule(module: ModuleConfig): ModuleConfig {
   if (module.module_key === "dashboard") {
     return {
@@ -115,10 +125,27 @@ function normalizeMenuModule(module: ModuleConfig): ModuleConfig {
     };
   }
 
+  if (module.module_key === "suprimentos" || module.module_key === "compras") {
+    return {
+      ...module,
+      module_key: "compras",
+      label: "Compras",
+      category: "operacional",
+      sort_order: OPERATIONAL_ORDER.compras,
+    };
+  }
+
   if (module.category === "comercial" && module.module_key in COMMERCIAL_ORDER) {
     return {
       ...module,
       sort_order: COMMERCIAL_ORDER[module.module_key],
+    };
+  }
+
+  if (module.category === "operacional" && module.module_key in OPERATIONAL_ORDER) {
+    return {
+      ...module,
+      sort_order: OPERATIONAL_ORDER[module.module_key],
     };
   }
 
@@ -187,6 +214,30 @@ export function useVisibleModuleGroups() {
     // Safe fallback: if planModules is null/undefined → no gating.
     .filter((m) => !planModules || planModules.has(m.module_key))
     .map(normalizeMenuModule);
+
+  const canShowCompras =
+    !planModules ||
+    planModules.has("compras") ||
+    planModules.has("suprimentos") ||
+    planModules.has("operacional");
+
+  if (!normalized.some((module) => module.module_key === "compras") && canShowCompras) {
+    const hiddenPurchasesModule = data.find(
+      (module) => module.module_key === "compras" || module.module_key === "suprimentos",
+    );
+
+    normalized.push(
+      normalizeMenuModule({
+        module_key: "compras",
+        label: "Compras",
+        icon: hiddenPurchasesModule?.icon ?? "Package",
+        category: "operacional",
+        visible_in_menu: true,
+        visible_in_routes: hiddenPurchasesModule?.visible_in_routes ?? true,
+        sort_order: OPERATIONAL_ORDER.compras,
+      }),
+    );
+  }
 
   const visible = Array.from(
     normalized.reduce((acc, module) => {

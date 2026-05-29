@@ -87,6 +87,15 @@ interface ModuleGroup {
   ownerOnly?: boolean;
 }
 
+const OPERATIONAL_ROUTE_ORDER = [
+  "/producao-operacoes",
+  "/compras",
+  "/estoque",
+  "/entregas-montagem",
+  "/automacoes",
+  "/producao",
+];
+
 const ERP_MODULES: ModuleGroup[] = [
   {
     key: "comercial",
@@ -332,8 +341,19 @@ export function AppNavbar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
-  // Sort items by usage frequency (most used first)
-  const sortByUsage = (items: ModuleItem[]) => {
+  // Keep a fixed business order for Operação; other groups can still float by usage.
+  const sortItemsForGroup = (groupKey: string, items: ModuleItem[]) => {
+    if (groupKey === "operacional") {
+      const routeOrder = new Map(OPERATIONAL_ROUTE_ORDER.map((route, index) => [route, index]));
+
+      return [...items].sort((a, b) => {
+        const aw = routeOrder.get(a.route) ?? Number.MAX_SAFE_INTEGER;
+        const bw = routeOrder.get(b.route) ?? Number.MAX_SAFE_INTEGER;
+        if (aw !== bw) return aw - bw;
+        return a.label.localeCompare(b.label, "pt-BR");
+      });
+    }
+
     return [...items].sort((a, b) => {
       const ai = topPaths.indexOf(a.route);
       const bi = topPaths.indexOf(b.route);
@@ -395,7 +415,7 @@ export function AppNavbar() {
     });
     if (visibleItems.length === 0) return null;
 
-    const sortedItems = sortByUsage(visibleItems);
+    const sortedItems = sortItemsForGroup(mod.key, visibleItems);
     const isModuleActive = mod.items.some(
       (i) => !isComingSoon(i) && (location.pathname === i.route || location.pathname.startsWith(i.route.split("?")[0]))
     );
@@ -583,7 +603,7 @@ export function AppNavbar() {
                   });
                   if (visibleItems.length === 0) return null;
 
-                  const sortedItems = sortByUsage(visibleItems);
+                  const sortedItems = sortItemsForGroup(mod.key, visibleItems);
                   const isOpen = openMainGroup === mod.key;
                   const isModuleActive = mod.items.some(
                     (i) => !isComingSoon(i) && (location.pathname === i.route || location.pathname.startsWith(i.route.split("?")[0]))
