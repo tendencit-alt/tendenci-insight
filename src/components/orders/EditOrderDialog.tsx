@@ -244,19 +244,17 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     enabled: isMaster && open,
   });
 
-  const {
-    vendedores: vendedoresAll,
-    orcamentistas: orcamentistasAll,
-    projetistas: projetistasAll,
-    montadores: montadoresAll,
-    producoes: producoesAll,
-  } = useOrderResponsibles(open);
+  const { byChartAccount } = useOrderResponsibles(open);
 
-  const vendedores = vendedoresAll.filter((item) => item.is_active);
-  const orcamentistas = orcamentistasAll.filter((item) => item.is_active);
-  const projetistas = projetistasAll.filter((item) => item.is_active);
-  const montadores = montadoresAll.filter((item) => item.is_active);
-  const producoes = producoesAll.filter((item) => item.is_active);
+  // Espelha exatamente a lógica do CreateOrderDialog: dropdowns filtrados
+  // pelo chart_account_id de cada compromisso sobre venda (vínculo com
+  // Cadastros Financeiros → Compromissos Sobre Venda).
+  const rts           = resourceDefaults.rt.chartAccountId           ? byChartAccount(resourceDefaults.rt.chartAccountId)           : [];
+  const vendedores    = resourceDefaults.vendedor.chartAccountId     ? byChartAccount(resourceDefaults.vendedor.chartAccountId)    : [];
+  const orcamentistas = resourceDefaults.orcamentista.chartAccountId ? byChartAccount(resourceDefaults.orcamentista.chartAccountId) : [];
+  const projetistas   = resourceDefaults.projetista.chartAccountId   ? byChartAccount(resourceDefaults.projetista.chartAccountId)  : [];
+  const montadores    = resourceDefaults.montador.chartAccountId     ? byChartAccount(resourceDefaults.montador.chartAccountId)    : [];
+  const producoes     = resourceDefaults.producao.chartAccountId     ? byChartAccount(resourceDefaults.producao.chartAccountId)    : [];
 
   const [parcelas, setParcelas] = useState<PagamentoParcela[]>([
     { id: '1', forma_pagamento: '', percentual: 100, data_vencimento: '', numero_parcelas: 1 }
