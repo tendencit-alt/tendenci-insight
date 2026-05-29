@@ -1755,6 +1755,9 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                                 if (!FORMAS_COM_PARCELAS.includes(v)) {
                                   newParcelas[index].numero_parcelas = 1;
                                 }
+                                if (!FORMAS_COM_ANTECIPACAO.includes(v)) {
+                                  newParcelas[index].antecipacao_automatica = false;
+                                }
                                 if (v === 'cartao_credito' || v === 'link_pagamento') {
                                   newParcelas[index].data_vencimento = new Date().toISOString().split('T')[0];
                                 }
