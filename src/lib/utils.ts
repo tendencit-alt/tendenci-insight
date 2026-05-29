@@ -12,6 +12,23 @@ export function formatCurrency(value: number): string {
   }).format(value);
 }
 
+/**
+ * Parse a date string as LOCAL date, avoiding timezone shifts.
+ * Use this instead of `new Date(str)` for date-only strings (YYYY-MM-DD)
+ * coming from Postgres `date` columns, which otherwise get parsed as UTC
+ * midnight and may render as the previous day in timezones west of UTC.
+ */
+export function parseDateLocal(value: string | Date | null | undefined): Date {
+  if (!value) return new Date(NaN);
+  if (value instanceof Date) return value;
+  const isoDateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (isoDateOnly) {
+    return new Date(Number(isoDateOnly[1]), Number(isoDateOnly[2]) - 1, Number(isoDateOnly[3]));
+  }
+  // For full timestamps or other formats, fall back to native parsing.
+  return new Date(value);
+}
+
 // File validation constants and helpers
 export const ALLOWED_FILE_EXTENSIONS = [
   'pdf', 'doc', 'docx', 'xls', 'xlsx', 'xlsm', 'dwg', 'skp',

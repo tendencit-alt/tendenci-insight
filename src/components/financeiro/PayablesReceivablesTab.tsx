@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, CreditCard, Receipt, AlertTriangle, Clock, CheckCircle, ArrowDownCircle, ArrowUpCircle, Landmark, TrendingUp, TrendingDown, ArrowUpDown, ArrowUp, ArrowDown, Filter, X, Edit, Trash2, Loader2, Eye, Undo2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { parseDateLocal } from "@/lib/utils";
 import { CreatePayableDialog } from "./CreatePayableDialog";
 import { PayPayableDialog } from "./PayPayableDialog";
 import { CreateReceivableDialog } from "./CreateReceivableDialog";
@@ -213,9 +214,9 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
         vencidasValor: vencidas.reduce((sum, d) => sum + Number(d.amount) - Number(d.paid_amount || 0), 0),
         pagasCount: pagas.length,
         pagasValor: pagas.reduce((sum, d) => sum + Number(d.paid_amount || d.amount), 0),
-        aVencer7d: abertas.filter(d => new Date(d.due_date) <= in7Days).length,
-        aVencer15d: abertas.filter(d => new Date(d.due_date) <= in15Days).length,
-        aVencer30d: abertas.filter(d => new Date(d.due_date) <= in30Days).length,
+        aVencer7d: abertas.filter(d => parseDateLocal(d.due_date) <= in7Days).length,
+        aVencer15d: abertas.filter(d => parseDateLocal(d.due_date) <= in15Days).length,
+        aVencer30d: abertas.filter(d => parseDateLocal(d.due_date) <= in30Days).length,
       };
     },
   });
@@ -245,9 +246,9 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
         vencidasValor: vencidas.reduce((sum, d) => sum + Number(d.amount) - Number(d.received_amount || 0), 0),
         recebidasCount: recebidas.length,
         recebidasValor: recebidas.reduce((sum, d) => sum + Number(d.received_amount || d.amount), 0),
-        aVencer7d: abertas.filter(d => new Date(d.due_date) <= in7Days).length,
-        aVencer15d: abertas.filter(d => new Date(d.due_date) <= in15Days).length,
-        aVencer30d: abertas.filter(d => new Date(d.due_date) <= in30Days).length,
+        aVencer7d: abertas.filter(d => parseDateLocal(d.due_date) <= in7Days).length,
+        aVencer15d: abertas.filter(d => parseDateLocal(d.due_date) <= in15Days).length,
+        aVencer30d: abertas.filter(d => parseDateLocal(d.due_date) <= in30Days).length,
       };
     },
   });
@@ -301,7 +302,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
     if (!payables) return [];
 
     let result = payables.filter((p) => {
-      if (payableColumnFilters.due_date && !format(new Date(p.due_date), "dd/MM/yyyy").includes(payableColumnFilters.due_date)) return false;
+      if (payableColumnFilters.due_date && !format(parseDateLocal(p.due_date), "dd/MM/yyyy").includes(payableColumnFilters.due_date)) return false;
       if (payableColumnFilters.supplier && !(p.supplier?.name || "").toLowerCase().includes(payableColumnFilters.supplier.toLowerCase())) return false;
       if (payableColumnFilters.description && !(p.description || "").toLowerCase().includes(payableColumnFilters.description.toLowerCase())) return false;
       if (payableColumnFilters.category) {
@@ -317,7 +318,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
       result.sort((a, b) => {
         let aVal: any, bVal: any;
         switch (payableSortColumn) {
-          case "due_date": aVal = new Date(a.due_date).getTime(); bVal = new Date(b.due_date).getTime(); break;
+          case "due_date": aVal = parseDateLocal(a.due_date).getTime(); bVal = parseDateLocal(b.due_date).getTime(); break;
           case "supplier": aVal = a.supplier?.name || ""; bVal = b.supplier?.name || ""; break;
           case "description": aVal = a.description || ""; bVal = b.description || ""; break;
           case "category": aVal = a.chart_account?.name || ""; bVal = b.chart_account?.name || ""; break;
@@ -338,7 +339,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
     if (!receivables) return [];
 
     let result = receivables.filter((r) => {
-      if (receivableColumnFilters.due_date && !format(new Date(r.due_date), "dd/MM/yyyy").includes(receivableColumnFilters.due_date)) return false;
+      if (receivableColumnFilters.due_date && !format(parseDateLocal(r.due_date), "dd/MM/yyyy").includes(receivableColumnFilters.due_date)) return false;
       if (receivableColumnFilters.customer && !(r.customer?.name || "").toLowerCase().includes(receivableColumnFilters.customer.toLowerCase())) return false;
       if (receivableColumnFilters.description && !(r.description || "").toLowerCase().includes(receivableColumnFilters.description.toLowerCase())) return false;
       if (receivableColumnFilters.category) {
@@ -354,7 +355,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
       result.sort((a, b) => {
         let aVal: any, bVal: any;
         switch (receivableSortColumn) {
-          case "due_date": aVal = new Date(a.due_date).getTime(); bVal = new Date(b.due_date).getTime(); break;
+          case "due_date": aVal = parseDateLocal(a.due_date).getTime(); bVal = parseDateLocal(b.due_date).getTime(); break;
           case "customer": aVal = a.customer?.name || ""; bVal = b.customer?.name || ""; break;
           case "description": aVal = a.description || ""; bVal = b.description || ""; break;
           case "category": aVal = a.chart_account?.name || ""; bVal = b.chart_account?.name || ""; break;
@@ -884,7 +885,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
                       filteredPayables.map((payable) => (
                         <TableRow key={payable.id} className={selectedPayableIds.has(payable.id) ? "bg-muted/50" : ""}>
                           <TableCell><Checkbox checked={selectedPayableIds.has(payable.id)} onCheckedChange={() => togglePayableSelect(payable.id)} /></TableCell>
-                          <TableCell className="font-medium text-xs sm:text-sm">{format(new Date(payable.due_date), "dd/MM/yy", { locale: ptBR })}</TableCell>
+                          <TableCell className="font-medium text-xs sm:text-sm">{format(parseDateLocal(payable.due_date), "dd/MM/yy", { locale: ptBR })}</TableCell>
                           <TableCell className="text-xs sm:text-sm max-w-[120px] truncate">{payable.supplier?.name || "-"}</TableCell>
                           <TableCell className="text-xs sm:text-sm max-w-[150px] truncate hidden md:table-cell">{payable.description || "-"}</TableCell>
                           <TableCell className="text-xs hidden lg:table-cell">{payable.chart_account?.name || "-"}</TableCell>
@@ -1011,7 +1012,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
                       filteredReceivables.map((receivable) => (
                         <TableRow key={receivable.id} className={selectedReceivableIds.has(receivable.id) ? "bg-muted/50" : ""}>
                           <TableCell><Checkbox checked={selectedReceivableIds.has(receivable.id)} onCheckedChange={() => toggleReceivableSelect(receivable.id)} /></TableCell>
-                          <TableCell className="font-medium text-xs sm:text-sm">{format(new Date(receivable.due_date), "dd/MM/yy", { locale: ptBR })}</TableCell>
+                          <TableCell className="font-medium text-xs sm:text-sm">{format(parseDateLocal(receivable.due_date), "dd/MM/yy", { locale: ptBR })}</TableCell>
                           <TableCell className="text-xs sm:text-sm max-w-[120px] truncate">{receivable.customer?.name || "-"}</TableCell>
                           <TableCell className="text-xs sm:text-sm max-w-[150px] truncate hidden md:table-cell">{receivable.description || "-"}</TableCell>
                           <TableCell className="text-xs hidden lg:table-cell">{receivable.chart_account?.name || "-"}</TableCell>

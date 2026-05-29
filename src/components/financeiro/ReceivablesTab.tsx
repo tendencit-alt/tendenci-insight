@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Receipt, AlertTriangle, Clock, CheckCircle, ArrowUpCircle, Trash2, Edit, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Filter, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { parseDateLocal } from "@/lib/utils";
 import { CreateReceivableDialog } from "./CreateReceivableDialog";
 import { ReceivePaymentDialog } from "./ReceivePaymentDialog";
 import { toast } from "sonner";
@@ -122,9 +123,9 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
         vencidasValor: vencidas.reduce((sum, d) => sum + Number(d.amount) - Number(d.received_amount || 0), 0),
         recebidasCount: recebidas.length,
         recebidasValor: recebidas.reduce((sum, d) => sum + Number(d.amount), 0),
-        aVencer7d: abertas.filter(d => new Date(d.due_date) <= in7Days).length,
-        aVencer15d: abertas.filter(d => new Date(d.due_date) <= in15Days).length,
-        aVencer30d: abertas.filter(d => new Date(d.due_date) <= in30Days).length,
+        aVencer7d: abertas.filter(d => parseDateLocal(d.due_date) <= in7Days).length,
+        aVencer15d: abertas.filter(d => parseDateLocal(d.due_date) <= in15Days).length,
+        aVencer30d: abertas.filter(d => parseDateLocal(d.due_date) <= in30Days).length,
       };
     },
   });
@@ -134,7 +135,7 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
     if (!receivables) return [];
 
     let result = receivables.filter((r) => {
-      if (columnFilters.due_date && !format(new Date(r.due_date), "dd/MM/yyyy").includes(columnFilters.due_date)) return false;
+      if (columnFilters.due_date && !format(parseDateLocal(r.due_date), "dd/MM/yyyy").includes(columnFilters.due_date)) return false;
       if (columnFilters.customer && !(r.customer?.name || "").toLowerCase().includes(columnFilters.customer.toLowerCase())) return false;
       if (columnFilters.description && !(r.description || "").toLowerCase().includes(columnFilters.description.toLowerCase())) return false;
       if (columnFilters.category) {
@@ -151,8 +152,8 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
         let aVal: any, bVal: any;
         switch (sortColumn) {
           case "due_date":
-            aVal = new Date(a.due_date).getTime();
-            bVal = new Date(b.due_date).getTime();
+            aVal = parseDateLocal(a.due_date).getTime();
+            bVal = parseDateLocal(b.due_date).getTime();
             break;
           case "customer":
             aVal = a.customer?.name || "";
@@ -554,7 +555,7 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
                           />
                         </TableCell>
                         <TableCell className="font-medium">
-                          {format(new Date(receivable.due_date), "dd/MM/yyyy", { locale: ptBR })}
+                          {format(parseDateLocal(receivable.due_date), "dd/MM/yyyy", { locale: ptBR })}
                         </TableCell>
                         <TableCell>{receivable.customer?.name || "-"}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{receivable.description || "-"}</TableCell>
