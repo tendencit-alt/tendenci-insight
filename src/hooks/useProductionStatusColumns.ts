@@ -182,6 +182,26 @@ export function useDeleteProductionStatusColumn() {
   });
 }
 
+export function useSetTenantSlaUnit() {
+  const qc = useQueryClient();
+  const { activeTenantId } = useActiveTenant();
+  return useMutation({
+    mutationFn: async (unit: SlaUnit) => {
+      if (!activeTenantId) throw new Error("Sem empresa ativa");
+      const { error } = await supabase
+        .from("production_status_columns" as any)
+        .update({ sla_unit: unit } as any)
+        .eq("tenant_id", activeTenantId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["production_status_columns"] });
+      toast.success("Unidade de prazo atualizada");
+    },
+    onError: (e: any) => toast.error("Erro ao atualizar unidade", { description: e.message }),
+  });
+}
+
 export function useUpdateProductionOrderStatus() {
   const qc = useQueryClient();
   return useMutation({
