@@ -377,6 +377,15 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     producao: { habilitado: resourceDefaults.producao.active, percentual: resourceDefaults.producao.percentage, valor: 0, responsavel_id: '' },
   });
 
+  // Listas finais: garantem que o responsável salvo no pedido sempre apareça,
+  // mesmo que o vínculo de chart_account_id tenha mudado.
+  const rts           = withSelected(baseRts,           comissoes.rt.responsavel_id);
+  const vendedores    = withSelected(baseVendedores,    comissoes.vendedor.responsavel_id);
+  const orcamentistas = withSelected(baseOrcamentistas, comissoes.orcamentista.responsavel_id);
+  const projetistas   = withSelected(baseProjetistas,   comissoes.projetista.responsavel_id);
+  const montadores    = withSelected(baseMontadores,    comissoes.montador.responsavel_id);
+  const producoes     = withSelected(baseProducoes,     comissoes.producao.responsavel_id);
+
   const { data: order, refetch } = useQuery({
     queryKey: ['order-for-edit', orderId],
     queryFn: async () => {
