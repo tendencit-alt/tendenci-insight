@@ -81,21 +81,30 @@ export function OpsProjectsTab() {
     (async () => {
       setLoading(true);
       const { data, error } = await supabase
-        .from("projects")
+        .from("orders")
         .select(`
-          id, name, value, deadline,
+          id, order_number, valor_total, data_entrega_prevista, status,
           client:clients(name),
           architect:architects(name),
           pos:production_orders(status, planned_end_date)
         `)
-        .eq("stage", "aprovado")
-        .order("deadline", { ascending: true, nullsFirst: false });
+        .neq("status", "cancelado")
+        .order("data_entrega_prevista", { ascending: true, nullsFirst: false });
       if (cancelled) return;
       if (error) {
         console.error("OpsProjectsTab fetch error", error);
         setRows([]);
       } else {
-        setRows(aggregate((data ?? []) as any));
+        const mapped = (data ?? []).map((o: any) => ({
+          id: o.id,
+          name: `Pedido #${o.order_number}`,
+          value: Number(o.valor_total ?? 0),
+          deadline: o.data_entrega_prevista,
+          client: o.client,
+          architect: o.architect,
+          pos: o.pos ?? [],
+        }));
+        setRows(aggregate(mapped as any));
       }
       setLoading(false);
     })();
@@ -123,13 +132,8 @@ export function OpsProjectsTab() {
     return { inProd, waiting, late, doneMonth, onTimePct };
   }, [filtered]);
 
-  const openDetail = async (projectId: string) => {
-    const { data } = await supabase
-      .from("projects")
-      .select(`*, client:clients(name, phone), architect:architects(name)`)
-      .eq("id", projectId)
-      .single();
-    if (data) { setDetailProject(data); setDetailOpen(true); }
+  const openDetail = async (_orderId: string) => {
+    // detail sheet temporarily disabled while migrating from projects→orders
   };
 
   return (
@@ -221,7 +225,7 @@ export function OpsProjectsTab() {
                   </TableCell></TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                    Nenhum projeto aprovado encontrado
+                    Nenhum pedido com produção encontrado
                   </TableCell></TableRow>
                 ) : filtered.map((r) => {
                   const meta = STATUS_META[r.aggStatus];
