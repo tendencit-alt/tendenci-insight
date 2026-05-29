@@ -350,6 +350,31 @@ function RatesTable({
   );
 }
 
+function DebitCreator({ onCreate }: { onCreate: (rate: number) => void }) {
+  const [val, setVal] = useState("");
+  const submit = () => {
+    const parsed = parseFloat(val.replace(",", "."));
+    if (isNaN(parsed) || parsed < 0) return toast.error("Informe taxa válida");
+    onCreate(parsed);
+    setVal("");
+  };
+  return (
+    <div className="flex items-center gap-2">
+      <Input
+        placeholder="Ex: 1,99"
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && submit()}
+        className="w-28 h-8 text-sm"
+      />
+      <span className="text-sm text-muted-foreground">%</span>
+      <Button size="sm" variant="outline" className="h-8" onClick={submit}>
+        <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+      </Button>
+    </div>
+  );
+}
+
 export function CardRatesManager() {
   const queryClient = useQueryClient();
   const { activeTenantId } = useActiveTenant();
