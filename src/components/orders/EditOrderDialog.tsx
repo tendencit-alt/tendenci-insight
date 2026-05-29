@@ -244,17 +244,28 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     enabled: isMaster && open,
   });
 
-  const { byChartAccount } = useOrderResponsibles(open);
+  const { byChartAccount, responsibles: allResponsibles } = useOrderResponsibles(open);
 
   // Espelha exatamente a lógica do CreateOrderDialog: dropdowns filtrados
-  // pelo chart_account_id de cada compromisso sobre venda (vínculo com
-  // Cadastros Financeiros → Compromissos Sobre Venda).
-  const rts           = resourceDefaults.rt.chartAccountId           ? byChartAccount(resourceDefaults.rt.chartAccountId)           : [];
-  const vendedores    = resourceDefaults.vendedor.chartAccountId     ? byChartAccount(resourceDefaults.vendedor.chartAccountId)    : [];
-  const orcamentistas = resourceDefaults.orcamentista.chartAccountId ? byChartAccount(resourceDefaults.orcamentista.chartAccountId) : [];
-  const projetistas   = resourceDefaults.projetista.chartAccountId   ? byChartAccount(resourceDefaults.projetista.chartAccountId)  : [];
-  const montadores    = resourceDefaults.montador.chartAccountId     ? byChartAccount(resourceDefaults.montador.chartAccountId)    : [];
-  const producoes     = resourceDefaults.producao.chartAccountId     ? byChartAccount(resourceDefaults.producao.chartAccountId)    : [];
+  // pelo chart_account_id de cada compromisso sobre venda. Garantimos
+  // também que o responsável já salvo no pedido apareça na lista, mesmo
+  // que o vínculo de chart_account_id tenha mudado depois.
+  const withSelected = (list: typeof allResponsibles, selectedId?: string) => {
+    if (!selectedId) return list;
+    if (list.some((r) => r.id === selectedId)) return list;
+    const extra = allResponsibles.find((r) => r.id === selectedId);
+    return extra ? [extra, ...list] : list;
+  };
+
+  const baseRts           = resourceDefaults.rt.chartAccountId           ? byChartAccount(resourceDefaults.rt.chartAccountId)           : [];
+  const baseVendedores    = resourceDefaults.vendedor.chartAccountId     ? byChartAccount(resourceDefaults.vendedor.chartAccountId)    : [];
+  const baseOrcamentistas = resourceDefaults.orcamentista.chartAccountId ? byChartAccount(resourceDefaults.orcamentista.chartAccountId) : [];
+  const baseProjetistas   = resourceDefaults.projetista.chartAccountId   ? byChartAccount(resourceDefaults.projetista.chartAccountId)  : [];
+  const baseMontadores    = resourceDefaults.montador.chartAccountId     ? byChartAccount(resourceDefaults.montador.chartAccountId)    : [];
+  const baseProducoes     = resourceDefaults.producao.chartAccountId     ? byChartAccount(resourceDefaults.producao.chartAccountId)    : [];
+
+  // As listas finais (com responsável já salvo incluído) são montadas
+  // após a declaração do state `comissoes` mais abaixo.
 
   const [parcelas, setParcelas] = useState<PagamentoParcela[]>([
     { id: '1', forma_pagamento: '', percentual: 100, data_vencimento: '', numero_parcelas: 1 }
@@ -365,6 +376,15 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     montador: { habilitado: resourceDefaults.montador.active, percentual: resourceDefaults.montador.percentage, valor: 0, responsavel_id: '' },
     producao: { habilitado: resourceDefaults.producao.active, percentual: resourceDefaults.producao.percentage, valor: 0, responsavel_id: '' },
   });
+
+  // Listas finais: garantem que o responsável salvo no pedido sempre apareça,
+  // mesmo que o vínculo de chart_account_id tenha mudado.
+  const rts           = withSelected(baseRts,           comissoes.rt.responsavel_id);
+  const vendedores    = withSelected(baseVendedores,    comissoes.vendedor.responsavel_id);
+  const orcamentistas = withSelected(baseOrcamentistas, comissoes.orcamentista.responsavel_id);
+  const projetistas   = withSelected(baseProjetistas,   comissoes.projetista.responsavel_id);
+  const montadores    = withSelected(baseMontadores,    comissoes.montador.responsavel_id);
+  const producoes     = withSelected(baseProducoes,     comissoes.producao.responsavel_id);
 
   const { data: order, refetch } = useQuery({
     queryKey: ['order-for-edit', orderId],
