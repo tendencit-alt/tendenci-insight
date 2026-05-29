@@ -13363,6 +13363,7 @@ export type Database = {
           requer_montagem: boolean
           rt_habilitado: boolean | null
           rt_percentual: number | null
+          rt_responsavel_id: string | null
           rt_valor: number | null
           seller_responsible_id: string | null
           seller_responsible_name: string | null
@@ -13458,6 +13459,7 @@ export type Database = {
           requer_montagem?: boolean
           rt_habilitado?: boolean | null
           rt_percentual?: number | null
+          rt_responsavel_id?: string | null
           rt_valor?: number | null
           seller_responsible_id?: string | null
           seller_responsible_name?: string | null
@@ -13553,6 +13555,7 @@ export type Database = {
           requer_montagem?: boolean
           rt_habilitado?: boolean | null
           rt_percentual?: number | null
+          rt_responsavel_id?: string | null
           rt_valor?: number | null
           seller_responsible_id?: string | null
           seller_responsible_name?: string | null
