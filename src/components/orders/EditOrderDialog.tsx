@@ -562,7 +562,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           habilitado: orderAny.rt_habilitado || false,
           percentual: Number(orderAny.rt_percentual) || resourceDefaults.rt.percentage,
           valor: Number(orderAny.rt_valor) || 0,
-          responsavel_id: ''
+          responsavel_id: orderAny.rt_responsavel_id || ''
         },
         vendedor: {
           habilitado: (orderAny.comissao_vendedor_valor || 0) > 0 || (orderAny.comissao_vendedor_percentual || 0) > 0,
