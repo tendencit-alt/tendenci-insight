@@ -136,7 +136,10 @@ export function ModuleShell({
     ? (localStorage.getItem(storageKey) as ModuleSectionKey | null)
     : null);
 
-  const visibleSections = SECTION_ORDER.filter((s) => MVP_VISIBLE_SECTIONS.includes(s.key));
+  const visibleSections = SECTION_ORDER.filter(
+    (s) => MVP_VISIBLE_SECTIONS.includes(s.key) && !(hideReports && s.key === "reports"),
+  );
+
 
   const isVisible = (k: ModuleSectionKey | null | undefined) =>
     !!k && visibleSections.some((s) => s.key === k);
