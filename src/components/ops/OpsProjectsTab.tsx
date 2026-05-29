@@ -170,11 +170,12 @@ export function OpsProjectsTab() {
     const inProd = filtered.filter((r) => r.aggStatus === "em_producao").length;
     const waiting = filtered.filter((r) => r.aggStatus === "aguardando" || r.aggStatus === "sem_op").length;
     const late = filtered.filter((r) => r.isLate).length;
+    const slaAlerts = filtered.filter((r) => r.slaAlerts > 0).length;
     const doneMonth = filtered.filter((r) => doneSlugs.has(r.aggStatus)).length;
     const totalPos = filtered.reduce((s, r) => s + r.total, 0);
     const donePos = filtered.reduce((s, r) => s + r.done, 0);
     const onTimePct = totalPos === 0 ? 0 : Math.round((donePos / totalPos) * 100);
-    return { inProd, waiting, late, doneMonth, onTimePct };
+    return { inProd, waiting, late, slaAlerts, doneMonth, onTimePct };
   }, [filtered, doneSlugs]);
 
   const openDetail = async (_orderId: string) => {
