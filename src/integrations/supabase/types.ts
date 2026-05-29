@@ -23503,6 +23503,10 @@ export type Database = {
         Args: { _request_id: string }
         Returns: string
       }
+      copy_owner_finance_rates_to_tenant: {
+        Args: { p_target_tenant: string }
+        Returns: undefined
+      }
       create_daily_architect_goals: { Args: never; Returns: undefined }
       create_goal_reminder_notifications: { Args: never; Returns: undefined }
       crm_agg: {
