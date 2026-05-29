@@ -1423,6 +1423,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                         </>
                       ) : (
                         /* Layout padrão para outras formas de pagamento */
+                        <div className={parcela.forma_pagamento === 'cartao_credito' ? 'space-y-3' : ''}>
                         <div className="grid grid-cols-12 gap-2 items-end">
                           <div className={`${FORMAS_COM_PARCELAS.includes(parcela.forma_pagamento) ? 'col-span-2' : 'col-span-3'} space-y-1`}>
                             <Label className="text-xs">Forma *</Label>
@@ -1434,7 +1435,10 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                                 if (!FORMAS_COM_PARCELAS.includes(v)) {
                                   newParcelas[index].numero_parcelas = 1;
                                 }
-                                if (v === 'cartao_credito' || v === 'link_pagamento') {
+                                if (v !== 'cartao_credito' && v !== 'boleto') {
+                                  newParcelas[index].antecipacao_automatica = false;
+                                }
+                                if (v === 'link_pagamento') {
                                   newParcelas[index].data_vencimento = new Date().toISOString().split('T')[0];
                                 }
                                 setParcelas(newParcelas);
@@ -1529,10 +1533,42 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                             )}
                           </div>
                         </div>
+
+                        {/* Antecipação Automática para Cartão de Crédito */}
+                        {parcela.forma_pagamento === 'cartao_credito' && (() => {
+                          const taxaCartaoParcelaPerc = parcela.antecipacao_automatica ? (TAXAS_CARTAO_CREDITO[parcela.numero_parcelas || 1] || 0) : 0;
+                          const taxaCartaoParcelaValor = valorParcela * (taxaCartaoParcelaPerc / 100);
+                          return (
+                            <div className={`flex items-center gap-3 h-10 px-3 rounded-lg border ${parcela.antecipacao_automatica ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800' : 'bg-muted/40 border-border'}`}>
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={!!parcela.antecipacao_automatica}
+                                  onCheckedChange={toggleAntecipacao}
+                                />
+                                <span className="text-xs font-medium">Antecipação automática</span>
+                              </div>
+                              <div className="flex-1 text-right">
+                                {parcela.antecipacao_automatica ? (
+                                  <span className="text-xs text-green-700 dark:text-green-300">
+                                    Taxa {parcela.numero_parcelas || 1}x:
+                                    <strong className="ml-1">{taxaCartaoParcelaPerc.toFixed(2)}%</strong>
+                                    <span className="mx-1">→</span>
+                                    <strong>{formatCurrency(taxaCartaoParcelaValor)}</strong>
+                                    <span className="ml-2">✓ Absorvida pela Tendenci</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Vencimento normal · sem taxa</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                        </div>
                       )}
                     </div>
                   )})}
                 </div>
+
 
                 {/* Seção de Comissões (RT + Vendedor + Orçamentista + Projetista) */}
                 <Card className="p-4 border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20">
