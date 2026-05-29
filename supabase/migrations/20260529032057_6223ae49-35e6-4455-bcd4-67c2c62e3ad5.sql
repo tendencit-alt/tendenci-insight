@@ -1,0 +1,1 @@
+UPDATE public.orders SET updated_at = now() WHERE status IN ('ativo','faturado','em_producao');
