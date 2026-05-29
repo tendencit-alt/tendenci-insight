@@ -16998,6 +16998,7 @@ export type Database = {
       purchase_orders: {
         Row: {
           approved_by: string | null
+          chart_account_id: string | null
           cost_center_id: string | null
           created_at: string | null
           created_by: string | null
@@ -17023,6 +17024,7 @@ export type Database = {
         }
         Insert: {
           approved_by?: string | null
+          chart_account_id?: string | null
           cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -17048,6 +17050,7 @@ export type Database = {
         }
         Update: {
           approved_by?: string | null
+          chart_account_id?: string | null
           cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -24269,6 +24272,7 @@ export type Database = {
         Args: { _tenant_id: string }
         Returns: number
       }
+      notify_overdue_purchase_orders: { Args: never; Returns: undefined }
       orders_metrics:
         | {
             Args: {
