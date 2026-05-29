@@ -48,56 +48,12 @@ export function ManageProductionStatusDialog() {
         <div className="space-y-4">
           <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
             {columns.map((c) => (
-              <div key={c.id} className="flex items-center gap-2 p-2 rounded-md border">
-                <Input
-                  value={c.label}
-                  onChange={(e) => updateMut.mutate({ id: c.id, label: e.target.value })}
-                  className="flex-1"
-                />
-                <div className="flex gap-1">
-                  {STATUS_COLOR_PALETTE.map((p) => (
-                    <button
-                      key={p.key}
-                      type="button"
-                      onClick={() => updateMut.mutate({ id: c.id, color: p.key })}
-                      className={`h-6 w-6 rounded-full border-2 ${p.tone} ${c.color === p.key ? "ring-2 ring-foreground" : ""}`}
-                      title={p.key}
-                    />
-                  ))}
-                </div>
-                <Input
-                  type="number"
-                  step={10}
-                  min={0}
-                  value={c.sort_order}
-                  onChange={(e) => {
-                    const raw = Number(e.target.value) || 0;
-                    const snapped = Math.max(0, Math.round(raw / 10) * 10);
-                    updateMut.mutate({ id: c.id, sort_order: snapped });
-                  }}
-                  className="w-20"
-                  title="Ordem em múltiplos de 10 (ex.: 10, 20, 30)"
-                />
-                {c.is_system ? (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Badge variant="outline" className="gap-1 cursor-help"><Lock className="h-3 w-3" />Sistema</Badge>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs">
-                        Status padrão do sistema. Pode ser renomeado e ter a cor/ordem alterada, mas não pode ser excluído para preservar a integridade dos fluxos de produção.
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                ) : (
-                  <Button
-                    variant="ghost" size="icon"
-                    onClick={() => deleteMut.mutate(c.id)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                )}
-              </div>
+              <StatusRow
+                key={c.id}
+                column={c}
+                onUpdate={(patch) => updateMut.mutate({ id: c.id, ...patch })}
+                onDelete={() => deleteMut.mutate(c.id)}
+              />
             ))}
           </div>
 
