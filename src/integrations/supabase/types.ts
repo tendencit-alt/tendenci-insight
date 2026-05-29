@@ -24205,6 +24205,10 @@ export type Database = {
         }
         Returns: Json
       }
+      infer_order_responsible_type: {
+        Args: { _chart_account_id: string }
+        Returns: Database["public"]["Enums"]["order_responsible_type"]
+      }
       inventory_metrics: { Args: never; Returns: Json }
       inventory_metrics_advanced: {
         Args: { p_date_from?: string; p_date_to?: string }
