@@ -375,6 +375,93 @@ function DebitCreator({ onCreate }: { onCreate: (rate: number) => void }) {
   );
 }
 
+function InstallmentGrid({
+  rates,
+  maxInstallments = 18,
+  onSave,
+  onDelete,
+}: {
+  rates: RateRow[];
+  maxInstallments?: number;
+  onSave: (installments: number, ratePercent: number, existingId?: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const byInst = new Map<number, RateRow>();
+  rates.forEach((r) => byInst.set(r.installments, r));
+
+  const [values, setValues] = useState<Record<number, string>>({});
+
+  const getDisplay = (n: number) => {
+    if (values[n] !== undefined) return values[n];
+    const r = byInst.get(n);
+    return r ? String(r.rate_percent).replace(".", ",") : "";
+  };
+
+  const commit = (n: number) => {
+    const raw = values[n];
+    if (raw === undefined) return;
+    const existing = byInst.get(n);
+    const trimmed = raw.trim();
+    if (trimmed === "") {
+      if (existing) onDelete(existing.id);
+      setValues((v) => { const c = { ...v }; delete c[n]; return c; });
+      return;
+    }
+    const parsed = parseFloat(trimmed.replace(",", "."));
+    if (isNaN(parsed) || parsed < 0) {
+      toast.error(`Taxa inválida para ${n}x`);
+      return;
+    }
+    if (existing && existing.rate_percent === parsed) {
+      setValues((v) => { const c = { ...v }; delete c[n]; return c; });
+      return;
+    }
+    onSave(n, parsed, existing?.id);
+    setValues((v) => { const c = { ...v }; delete c[n]; return c; });
+  };
+
+  const cols = Array.from({ length: maxInstallments }, (_, i) => i + 1);
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+      {cols.map((n) => {
+        const existing = byInst.get(n);
+        return (
+          <div key={n} className="flex items-center gap-1 rounded-md border bg-card p-2">
+            <span className="text-xs font-semibold text-muted-foreground w-7 shrink-0">{n}x</span>
+            <Input
+              value={getDisplay(n)}
+              onChange={(e) => setValues((v) => ({ ...v, [n]: e.target.value }))}
+              onBlur={() => commit(n)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                if (e.key === "Escape") {
+                  setValues((v) => { const c = { ...v }; delete c[n]; return c; });
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              placeholder="0,00"
+              className="h-8 text-sm font-mono px-2"
+            />
+            <span className="text-xs text-muted-foreground">%</span>
+            {existing && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6 shrink-0"
+                onClick={() => onDelete(existing.id)}
+                title="Remover"
+              >
+                <Trash2 className="h-3 w-3 text-destructive" />
+              </Button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function CardRatesManager() {
   const queryClient = useQueryClient();
   const { activeTenantId } = useActiveTenant();
