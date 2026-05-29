@@ -286,6 +286,19 @@ export function CardRatesManager() {
     },
   });
 
+  const { data: chartAccounts = [] } = useQuery({
+    queryKey: ["chart-accounts-for-fees"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("fin_chart_accounts")
+        .select("id, code, name")
+        .eq("active", true)
+        .order("code");
+      if (error) throw error;
+      return (data || []) as ChartAccount[];
+    },
+  });
+
   const updateFeeSupplier = useMutation({
     mutationFn: async ({ feeType, supplierId }: { feeType: string; supplierId: string | null }) => {
       const { error } = await supabase
@@ -301,8 +314,27 @@ export function CardRatesManager() {
     onError: () => toast.error("Erro ao atualizar fornecedor"),
   });
 
+  const updateFeeChartAccount = useMutation({
+    mutationFn: async ({ feeType, chartAccountId }: { feeType: string; chartAccountId: string | null }) => {
+      const { error } = await supabase
+        .from("fee_supplier_configs" as any)
+        .update({ chart_account_id: chartAccountId, updated_at: new Date().toISOString() } as any)
+        .eq("fee_type", feeType);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fee-supplier-configs"] });
+      toast.success("Plano de contas atualizado!");
+    },
+    onError: () => toast.error("Erro ao atualizar plano de contas"),
+  });
+
   const handleSupplierUpdate = (feeType: string, supplierId: string | null) => {
     updateFeeSupplier.mutate({ feeType, supplierId });
+  };
+
+  const handleChartAccountUpdate = (feeType: string, chartAccountId: string | null) => {
+    updateFeeChartAccount.mutate({ feeType, chartAccountId });
   };
 
   const debitRate = card.rates?.find((r) => r.installments === 0);
