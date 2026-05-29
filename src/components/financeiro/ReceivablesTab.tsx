@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Receipt, AlertTriangle, Clock, CheckCircle, ArrowUpCircle, Trash2, Edit, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Filter, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { parseDateLocal } from "@/lib/utils";
 import { CreateReceivableDialog } from "./CreateReceivableDialog";
 import { ReceivePaymentDialog } from "./ReceivePaymentDialog";
 import { toast } from "sonner";
