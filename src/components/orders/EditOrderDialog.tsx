@@ -1887,17 +1887,29 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                             />
                           </div>
 
-                          {/* Taxa inline - sempre Tendenci */}
+                          {/* Antecipação Automática para Boleto */}
                           <div className="col-span-8">
-                            <div className="flex items-center gap-3 h-10 px-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
-                              <div className="flex-1">
-                                <span className="text-xs text-green-700 dark:text-green-300">
-                                  Taxa {(parcela.carencia_boleto || 30)}d / {parcela.numero_parcelas || 1}x: 
-                                  <strong className="ml-1">{taxaBoletoParcelaPercentual.toFixed(2)}%</strong>
-                                  <span className="mx-1">→</span>
-                                  <strong>{formatCurrency(taxaBoletoParcelaValor)}</strong>
-                                  <span className="ml-2">✓ Absorvida pela Tendenci</span>
-                                </span>
+                            <div className={`flex items-center gap-3 h-10 px-3 rounded-lg border ${parcela.antecipacao_automatica ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800' : 'bg-muted/40 border-border'}`}>
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={!!parcela.antecipacao_automatica}
+                                  onCheckedChange={toggleAntecipacao}
+                                  disabled={!isEditable}
+                                />
+                                <span className="text-xs font-medium">Antecipação automática</span>
+                              </div>
+                              <div className="flex-1 text-right">
+                                {parcela.antecipacao_automatica ? (
+                                  <span className="text-xs text-green-700 dark:text-green-300">
+                                    Taxa {(parcela.carencia_boleto || 30)}d / {parcela.numero_parcelas || 1}x:
+                                    <strong className="ml-1">{taxaBoletoParcelaPercentual.toFixed(2)}%</strong>
+                                    <span className="mx-1">→</span>
+                                    <strong>{formatCurrency(taxaBoletoParcelaValor)}</strong>
+                                    <span className="ml-2">✓ Absorvida pela {companyName}</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Vencimento normal · sem taxa</span>
+                                )}
                               </div>
                             </div>
                           </div>
