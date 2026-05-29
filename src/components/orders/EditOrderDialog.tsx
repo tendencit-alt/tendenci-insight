@@ -452,7 +452,11 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           if (Array.isArray(parsed) && parsed.length > 0) {
             parcelasData = parsed.map((p: any) => ({
               ...p,
-              numero_parcelas: p.numero_parcelas || 1
+              numero_parcelas: p.numero_parcelas || 1,
+              // Backward-compat: pedidos antigos não tinham este campo; manter taxa ligada para preservar o comportamento anterior
+              antecipacao_automatica: typeof p.antecipacao_automatica === 'boolean'
+                ? p.antecipacao_automatica
+                : FORMAS_COM_ANTECIPACAO.includes(p.forma_pagamento),
             }));
           }
         } catch (parseError) {
