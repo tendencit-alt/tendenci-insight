@@ -353,8 +353,9 @@ function RatesTable({
 export function CardRatesManager() {
   const queryClient = useQueryClient();
   const { activeTenantId } = useActiveTenant();
-  const card = useEditableRate("credit_card_rates", "card-rates-all");
-  const link = useEditableRate("payment_link_rates", "link-rates-all");
+  const card = useEditableRate("credit_card_rates", "card-rates", activeTenantId);
+  const link = useEditableRate("payment_link_rates", "link-rates", activeTenantId);
+  const boleto = useEditableRate("boleto_rates", "boleto-rates", activeTenantId, true);
 
   const { data: suppliers = [] } = useQuery({
     queryKey: ["suppliers-for-fees"],
