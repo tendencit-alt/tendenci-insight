@@ -80,8 +80,10 @@ export function OpsOrdersTab() {
         slug !== "concluido" && slug !== "entregue" && slug !== "cancelado";
       const col = slugToColumn[slug];
       const isClosed = slug === "concluido" || slug === "entregue" || slug === "cancelado";
-      const sla = !isClosed ? slaState(col?.sla_days, o.status_changed_at) : { days: 0, level: "ok" as const, ratio: 0 };
-      return { ...o, _slug: slug, isLate, _sla: sla, _slaTarget: col?.sla_days ?? null };
+      const sla = !isClosed
+        ? slaState(col?.sla_days, o.status_changed_at, col?.sla_unit ?? "days")
+        : { elapsed: 0, days: 0, hours: 0, level: "ok" as const, ratio: 0, unit: "days" as const };
+      return { ...o, _slug: slug, isLate, _sla: sla, _slaTarget: col?.sla_days ?? null, _slaUnit: col?.sla_unit ?? "days" };
     });
   }, [orders, validSlugs, slugToColumn]);
 
