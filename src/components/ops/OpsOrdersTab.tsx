@@ -382,19 +382,37 @@ export function OpsOrdersTab() {
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm">{fmt(Number(o.value ?? 0))}</TableCell>
                       <TableCell>
-                        <Select
-                          value={o._slug}
-                          onValueChange={(v) => updateStatusMut.mutate({ id: o.id, status: v })}
-                        >
-                          <SelectTrigger className={`h-7 text-xs w-[140px] ${col ? colorTone(col.color) : ""}`}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {statusColumns.map((c) => (
-                              <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-1.5">
+                          <Select
+                            value={o._slug}
+                            onValueChange={(v) => updateStatusMut.mutate({ id: o.id, status: v })}
+                          >
+                            <SelectTrigger className={`h-7 text-xs w-[140px] ${col ? colorTone(col.color) : ""}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {statusColumns.map((c) => (
+                                <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {o._slaTarget && o._sla.level !== "ok" && (
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] gap-0.5 px-1.5 py-0 ${
+                                o._sla.level === "overdue"
+                                  ? "bg-destructive/10 text-destructive border-destructive/30"
+                                  : "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300"
+                              }`}
+                              title={`No status há ${o._sla.days} dia(s) — prazo ${o._slaTarget}d`}
+                            >
+                              <Clock className="h-2.5 w-2.5" />
+                              {o._sla.level === "overdue"
+                                ? `+${o._sla.days - o._slaTarget}d`
+                                : `${o._sla.days}/${o._slaTarget}d`}
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Button variant="ghost" size="icon" onClick={() => deleteMut.mutate(o.id)}>
