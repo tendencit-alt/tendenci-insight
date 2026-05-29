@@ -568,8 +568,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     }
   }, [parcelas, totalSemTaxa, taxaBoletoPercentual, taxaTotalBoleto, numParcelasBoleto, carenciaBoleto, parcelasBoleto.length]);
 
-  // Calcular taxa de link de pagamento automaticamente
-  const parcelasLink = parcelas.filter(p => p.forma_pagamento === 'link_pagamento');
+  // Calcular taxa de link de pagamento automaticamente - SOMA dos que estão COM antecipação automática
+  const parcelasLink = parcelas.filter(p => p.forma_pagamento === 'link_pagamento' && p.antecipacao_automatica === true);
   const taxaTotalLink = parcelasLink.reduce((acc, parcela) => {
     const numParcelas = parcela.numero_parcelas || 1;
     const taxaPerc = linkRatesDb[numParcelas] ?? TAXAS_LINK_PAGAMENTO[numParcelas] ?? 0;
@@ -594,6 +594,28 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       setTaxaLink({ percentual: 0, valor: 0, responsavel: 'tendenci', numeroParcelas: 1 });
     }
   }, [parcelas, totalSemTaxa, taxaLinkPercentual, taxaTotalLink, numParcelasLink, parcelasLink.length]);
+
+  // Calcular taxa de cartão de débito automaticamente - SOMA dos débitos COM antecipação automática
+  const parcelasDebito = parcelas.filter(p => p.forma_pagamento === 'cartao_debito' && p.antecipacao_automatica === true);
+  const taxaTotalDebito = parcelasDebito.reduce((acc, parcela) => {
+    const taxaPerc = TAXAS_CARTAO_DEBITO[1] || 0;
+    const valorBase = totalSemTaxa * (parcela.percentual / 100);
+    return acc + valorBase * (taxaPerc / 100);
+  }, 0);
+  const taxaDebitoPercentual = parcelasDebito.length > 0 ? (TAXAS_CARTAO_DEBITO[1] || 0) : 0;
+
+  useEffect(() => {
+    if (parcelasDebito.length > 0) {
+      setTaxaDebito(prev => ({
+        ...prev,
+        percentual: taxaDebitoPercentual,
+        valor: taxaTotalDebito,
+        numeroParcelas: 1,
+      }));
+    } else {
+      setTaxaDebito({ percentual: 0, valor: 0, responsavel: 'tendenci', numeroParcelas: 1 });
+    }
+  }, [parcelas, totalSemTaxa, taxaDebitoPercentual, taxaTotalDebito, parcelasDebito.length]);
   
   // Total final: taxas sempre absorvidas pela Tendenci, não adicionam ao total do cliente
   const total = totalSemTaxa;
@@ -607,8 +629,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     (comissoes.montador.habilitado ? comissoes.montador.valor : 0) +
     (comissoes.producao.habilitado ? comissoes.producao.valor : 0);
 
-  // Valor líquido Tendenci (deduz taxas de cartão, boleto e link)
-  const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor - taxaLink.valor;
+  // Valor líquido Tendenci (deduz taxas de cartão crédito, débito, boleto e link)
+  const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaDebito.valor - taxaBoleto.valor - taxaLink.valor;
 
   // Valor líquido após compromissos sobre venda (deduz taxas + comissões)
   const valorLiquidoRecursos = valorLiquidoTendenci - totalComissoes;
