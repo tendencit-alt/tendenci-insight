@@ -15669,6 +15669,7 @@ export type Database = {
           responsible_id: string | null
           specifications: Json | null
           status: string
+          status_changed_at: string | null
           supplier_id: string | null
           tenant_id: string | null
           title: string
@@ -15701,6 +15702,7 @@ export type Database = {
           responsible_id?: string | null
           specifications?: Json | null
           status?: string
+          status_changed_at?: string | null
           supplier_id?: string | null
           tenant_id?: string | null
           title: string
@@ -15733,6 +15735,7 @@ export type Database = {
           responsible_id?: string | null
           specifications?: Json | null
           status?: string
+          status_changed_at?: string | null
           supplier_id?: string | null
           tenant_id?: string | null
           title?: string
