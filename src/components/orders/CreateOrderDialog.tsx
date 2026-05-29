@@ -123,7 +123,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     const merged: Record<number, Record<number, number>> = { ...TAXAS_BOLETO_FALLBACK };
     Object.entries(financeRates.boleto).forEach(([c, rates]) => {
       const key = Number(c);
-      merged[key] = { ...(merged[key] || {}), ...rates };
+      merged[key] = { ...(merged[key] || {}), ...(rates as Record<number, number>) };
     });
     return merged;
   })();
