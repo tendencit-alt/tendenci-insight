@@ -2030,7 +2030,91 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                             </Button>
                           )}
                         </div>
-                      </div>
+
+                        {/* Antecipação Automática para Cartão de Crédito */}
+                        {parcela.forma_pagamento === 'cartao_credito' && (() => {
+                          const perc = parcela.antecipacao_automatica ? (TAXAS_CARTAO_CREDITO[parcela.numero_parcelas || 1] || 0) : 0;
+                          const val = valorParcela * (perc / 100);
+                          return (
+                            <div className={`mt-2 flex items-center gap-3 h-10 px-3 rounded-lg border ${parcela.antecipacao_automatica ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800' : 'bg-muted/40 border-border'}`}>
+                              <div className="flex items-center gap-2">
+                                <Switch checked={!!parcela.antecipacao_automatica} onCheckedChange={toggleAntecipacao} disabled={!isEditable} />
+                                <span className="text-xs font-medium">Antecipação automática</span>
+                              </div>
+                              <div className="flex-1 text-right">
+                                {parcela.antecipacao_automatica ? (
+                                  <span className="text-xs text-green-700 dark:text-green-300">
+                                    Taxa {parcela.numero_parcelas || 1}x:
+                                    <strong className="ml-1">{perc.toFixed(2)}%</strong>
+                                    <span className="mx-1">→</span>
+                                    <strong>{formatCurrency(val)}</strong>
+                                    <span className="ml-2">✓ Absorvida pela {companyName}</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Vencimento normal · sem taxa</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Antecipação Automática para Cartão de Débito */}
+                        {parcela.forma_pagamento === 'cartao_debito' && (() => {
+                          const perc = parcela.antecipacao_automatica ? (TAXAS_CARTAO_DEBITO[1] || 0) : 0;
+                          const val = valorParcela * (perc / 100);
+                          return (
+                            <div className={`mt-2 flex items-center gap-3 h-10 px-3 rounded-lg border ${parcela.antecipacao_automatica ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800' : 'bg-muted/40 border-border'}`}>
+                              <div className="flex items-center gap-2">
+                                <Switch checked={!!parcela.antecipacao_automatica} onCheckedChange={toggleAntecipacao} disabled={!isEditable} />
+                                <span className="text-xs font-medium">Antecipação automática</span>
+                              </div>
+                              <div className="flex-1 text-right">
+                                {parcela.antecipacao_automatica ? (
+                                  <span className="text-xs text-green-700 dark:text-green-300">
+                                    Taxa débito:
+                                    <strong className="ml-1">{perc.toFixed(2)}%</strong>
+                                    <span className="mx-1">→</span>
+                                    <strong>{formatCurrency(val)}</strong>
+                                    <span className="ml-2">✓ Absorvida pela {companyName}</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Vencimento normal · sem taxa</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Antecipação Automática para Link de Pagamento */}
+                        {parcela.forma_pagamento === 'link_pagamento' && (() => {
+                          const nParc = parcela.numero_parcelas || 1;
+                          const perc = parcela.antecipacao_automatica
+                            ? (linkRatesDb[nParc] ?? TAXAS_LINK_PAGAMENTO[nParc] ?? 0)
+                            : 0;
+                          const val = valorParcela * (perc / 100);
+                          return (
+                            <div className={`mt-2 flex items-center gap-3 h-10 px-3 rounded-lg border ${parcela.antecipacao_automatica ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800' : 'bg-muted/40 border-border'}`}>
+                              <div className="flex items-center gap-2">
+                                <Switch checked={!!parcela.antecipacao_automatica} onCheckedChange={toggleAntecipacao} disabled={!isEditable} />
+                                <span className="text-xs font-medium">Antecipação automática</span>
+                              </div>
+                              <div className="flex-1 text-right">
+                                {parcela.antecipacao_automatica ? (
+                                  <span className="text-xs text-green-700 dark:text-green-300">
+                                    Taxa link {nParc}x:
+                                    <strong className="ml-1">{perc.toFixed(2)}%</strong>
+                                    <span className="mx-1">→</span>
+                                    <strong>{formatCurrency(val)}</strong>
+                                    <span className="ml-2">✓ Absorvida pela {companyName}</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Vencimento normal · sem taxa</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </>
                     )}
                   </div>
                 )})}
