@@ -1449,7 +1449,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                                       <strong className="ml-1">{taxaBoletoParcelaPercentual.toFixed(2)}%</strong>
                                       <span className="mx-1">→</span>
                                       <strong>{formatCurrency(taxaBoletoParcelaValor)}</strong>
-                                      <span className="ml-2">✓ Absorvida pela Tendenci</span>
+                                      <span className="ml-2">✓ Absorvida pela {companyName}</span>
                                     </span>
                                   ) : (
                                     <span className="text-xs text-muted-foreground">Vencimento normal · sem taxa</span>
@@ -1593,7 +1593,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                                     <strong className="ml-1">{taxaCartaoParcelaPerc.toFixed(2)}%</strong>
                                     <span className="mx-1">→</span>
                                     <strong>{formatCurrency(taxaCartaoParcelaValor)}</strong>
-                                    <span className="ml-2">✓ Absorvida pela Tendenci</span>
+                                    <span className="ml-2">✓ Absorvida pela {companyName}</span>
                                   </span>
                                 ) : (
                                   <span className="text-xs text-muted-foreground">Vencimento normal · sem taxa</span>
@@ -1623,7 +1623,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                                     <strong className="ml-1">{taxaDebitoParcelaPerc.toFixed(2)}%</strong>
                                     <span className="mx-1">→</span>
                                     <strong>{formatCurrency(taxaDebitoParcelaValor)}</strong>
-                                    <span className="ml-2">✓ Absorvida pela Tendenci</span>
+                                    <span className="ml-2">✓ Absorvida pela {companyName}</span>
                                   </span>
                                 ) : (
                                   <span className="text-xs text-muted-foreground">Vencimento normal · sem taxa</span>
@@ -1656,7 +1656,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                                     <strong className="ml-1">{taxaLinkParcelaPerc.toFixed(2)}%</strong>
                                     <span className="mx-1">→</span>
                                     <strong>{formatCurrency(taxaLinkParcelaValor)}</strong>
-                                    <span className="ml-2">✓ Absorvida pela Tendenci</span>
+                                    <span className="ml-2">✓ Absorvida pela {companyName}</span>
                                   </span>
                                 ) : (
                                   <span className="text-xs text-muted-foreground">Vencimento normal · sem taxa</span>
