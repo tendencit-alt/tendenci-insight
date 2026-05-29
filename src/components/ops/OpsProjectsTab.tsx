@@ -25,7 +25,7 @@ interface ProjectProductionRow {
   deadline: string | null;
   client: { name: string | null } | null;
   architect: { name: string | null } | null;
-  pos: { status: string; planned_end_date: string | null }[];
+  pos: { status: string; planned_end_date: string | null; status_changed_at: string | null }[];
 }
 
 interface AggregatedRow extends ProjectProductionRow {
@@ -36,6 +36,8 @@ interface AggregatedRow extends ProjectProductionRow {
   progressPct: number;
   aggStatus: string; // slug or "sem_op"
   isLate: boolean;
+  slaAlerts: number;
+  slaOverdue: number;
 }
 
 const SEM_OP_META = { label: "Sem OP", tone: "bg-muted text-muted-foreground border-border" };
