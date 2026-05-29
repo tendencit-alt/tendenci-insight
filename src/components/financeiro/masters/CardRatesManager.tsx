@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, Pencil, X, CreditCard, Link2, Building2, Plus, BookOpen } from "lucide-react";
+import { Check, Pencil, X, CreditCard, Link2, Building2, Plus, BookOpen, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { QuickCreateSupplierDialog } from "@/components/financeiro/QuickCreateSupplierDialog";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
@@ -18,6 +18,7 @@ interface RateRow {
   installments: number;
   rate_percent: number;
   active: boolean;
+  carencia_dias?: number;
 }
 
 interface FeeSupplierConfig {
