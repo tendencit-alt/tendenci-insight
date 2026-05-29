@@ -59,7 +59,17 @@ export function useCreateProductionStatusColumn() {
   return useMutation({
     mutationFn: async (input: { label: string; color: string; sort_order?: number }) => {
       if (!activeTenantId) throw new Error("Sem empresa ativa");
-      const slug = slugify(input.label);
+      const baseSlug = slugify(input.label);
+      const { data: existing } = await supabase
+        .from("production_status_columns" as any)
+        .select("slug")
+        .eq("tenant_id", activeTenantId);
+      const taken = new Set((existing ?? []).map((r: any) => r.slug));
+      let slug = baseSlug;
+      let i = 2;
+      while (taken.has(slug)) {
+        slug = `${baseSlug}_${i++}`.slice(0, 40);
+      }
       const { error } = await supabase.from("production_status_columns" as any).insert({
         tenant_id: activeTenantId,
         slug,
