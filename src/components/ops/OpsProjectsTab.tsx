@@ -75,11 +75,21 @@ function buildAggregator(
         }
       }
       const isLate = !!p.deadline && new Date(p.deadline) < today && !doneSlugs.has(aggStatus);
+      let slaAlerts = 0;
+      let slaOverdue = 0;
+      for (const x of pos) {
+        if (doneSlugs.has(x.status)) continue;
+        const target = columnsBySlug[x.status]?.sla_days;
+        if (!target) continue;
+        const s = slaState(target, x.status_changed_at);
+        if (s.level === "overdue") { slaOverdue++; slaAlerts++; }
+        else if (s.level === "warning") slaAlerts++;
+      }
       return {
         ...p,
         total, done, inProgress, waiting,
         progressPct: total === 0 ? 0 : Math.round((done / total) * 100),
-        aggStatus, isLate,
+        aggStatus, isLate, slaAlerts, slaOverdue,
       };
     });
   };
