@@ -41,7 +41,8 @@ import {
 
 export default function Financeiro() {
   const [searchParams] = useSearchParams();
-  const initialTab = searchParams.get("tab") || "receivables";
+  const rawTab = searchParams.get("tab") || "obligations";
+  const initialTab = rawTab === "receivables" || rawTab === "payables" ? "obligations" : rawTab;
 
   useFinanceiroRealtime();
   const [activeTab, setActiveTab] = useState(initialTab);
