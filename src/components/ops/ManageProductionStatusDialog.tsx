@@ -61,8 +61,8 @@ export function ManageProductionStatusDialog() {
 
           <div className="border-t pt-4 space-y-2">
             <Label className="text-sm font-medium">Adicionar status personalizado</Label>
-            <div className="flex items-end gap-2">
-              <div className="flex-1">
+            <div className="flex items-end gap-2 flex-wrap">
+              <div className="flex-1 min-w-[180px]">
                 <Input
                   placeholder="Ex.: Em Revisão"
                   value={newLabel}
@@ -79,12 +79,24 @@ export function ManageProductionStatusDialog() {
                   />
                 ))}
               </div>
+              <div className="relative">
+                <AlarmClock className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <Input
+                  type="number"
+                  min={0}
+                  placeholder="Prazo"
+                  value={newSla}
+                  onChange={(e) => setNewSla(e.target.value)}
+                  className="w-24 pl-7"
+                  title="Prazo SLA em dias (opcional)"
+                />
+              </div>
               <Button onClick={handleAdd} disabled={!newLabel.trim() || createMut.isPending} className="gap-1.5">
                 <Plus className="h-4 w-4" />Adicionar
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Status são isolados por empresa. Status do sistema não podem ser excluídos, mas podem ser renomeados e recoloridos.
+              Status são isolados por empresa. Defina um <span className="font-medium text-foreground">prazo em dias</span> para que ordens paradas no status gerem alertas automáticos. Status do sistema não podem ser excluídos.
             </p>
           </div>
         </div>
