@@ -215,6 +215,10 @@ function RatesTable({
   saveEdit,
   handleKeyDown,
   emptyMessage,
+  onDelete,
+  onCreate,
+  hasCarencia = false,
+  installmentsLabel = "Parcelas",
 }: {
   rates: RateRow[];
   editingId: string | null;
@@ -225,19 +229,42 @@ function RatesTable({
   saveEdit: (id: string) => void;
   handleKeyDown: (e: React.KeyboardEvent, id: string) => void;
   emptyMessage: string;
+  onDelete?: (id: string) => void;
+  onCreate?: (payload: { installments: number; rate_percent: number; carencia_dias?: number }) => void;
+  hasCarencia?: boolean;
+  installmentsLabel?: string;
 }) {
+  const [newInstallments, setNewInstallments] = useState("");
+  const [newCarencia, setNewCarencia] = useState("");
+  const [newRate, setNewRate] = useState("");
+
+  const handleAdd = () => {
+    const inst = parseInt(newInstallments, 10);
+    const rate = parseFloat(newRate.replace(",", "."));
+    const carencia = hasCarencia ? parseInt(newCarencia, 10) : undefined;
+    if (isNaN(inst) || inst < 0) return toast.error("Informe parcelas válidas");
+    if (isNaN(rate) || rate < 0) return toast.error("Informe taxa válida");
+    if (hasCarencia && (isNaN(carencia!) || carencia! < 0)) return toast.error("Informe carência válida");
+    onCreate?.({ installments: inst, rate_percent: rate, ...(hasCarencia ? { carencia_dias: carencia } : {}) });
+    setNewInstallments(""); setNewCarencia(""); setNewRate("");
+  };
+
+  const colCount = (hasCarencia ? 1 : 0) + 3;
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[200px]">Parcelas</TableHead>
+          {hasCarencia && <TableHead className="w-[140px]">Carência (dias)</TableHead>}
+          <TableHead className="w-[180px]">{installmentsLabel}</TableHead>
           <TableHead>Taxa (%)</TableHead>
-          <TableHead className="w-[100px] text-right">Ações</TableHead>
+          <TableHead className="w-[120px] text-right">Ações</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {rates.map((rate) => (
           <TableRow key={rate.id}>
+            {hasCarencia && <TableCell className="font-medium">{rate.carencia_dias ?? 0}</TableCell>}
             <TableCell className="font-medium">
               {rate.installments === 1 ? "À vista (1x)" : `${rate.installments}x`}
             </TableCell>
@@ -268,17 +295,53 @@ function RatesTable({
                   </Button>
                 </div>
               ) : (
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => startEdit(rate)}>
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
+                <div className="flex justify-end gap-1">
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => startEdit(rate)}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  {onDelete && (
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDelete(rate.id)}>
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  )}
+                </div>
               )}
             </TableCell>
           </TableRow>
         ))}
         {rates.length === 0 && (
           <TableRow>
-            <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+            <TableCell colSpan={colCount} className="text-center text-muted-foreground py-6">
               {emptyMessage}
+            </TableCell>
+          </TableRow>
+        )}
+        {onCreate && (
+          <TableRow className="bg-muted/30">
+            {hasCarencia && (
+              <TableCell>
+                <Input placeholder="Ex: 30" value={newCarencia} onChange={(e) => setNewCarencia(e.target.value)} className="h-8 text-sm" />
+              </TableCell>
+            )}
+            <TableCell>
+              <Input placeholder="Ex: 1" value={newInstallments} onChange={(e) => setNewInstallments(e.target.value)} className="h-8 text-sm" />
+            </TableCell>
+            <TableCell>
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Ex: 2,99"
+                  value={newRate}
+                  onChange={(e) => setNewRate(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                  className="w-28 h-8 text-sm"
+                />
+                <span className="text-sm text-muted-foreground">%</span>
+              </div>
+            </TableCell>
+            <TableCell className="text-right">
+              <Button size="sm" variant="outline" className="h-8" onClick={handleAdd}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+              </Button>
             </TableCell>
           </TableRow>
         )}
