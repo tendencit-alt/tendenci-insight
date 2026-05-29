@@ -298,12 +298,12 @@ export function OpsOrdersTab() {
                                         ? "bg-destructive/10 text-destructive border-destructive/30"
                                         : "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300"
                                     }`}
-                                    title={`No status há ${o._sla.days} dia(s) — prazo ${o._slaTarget}d`}
+                                    title={`No status há ${o._sla.elapsed} ${o._slaUnit === "hours" ? "hora(s)" : "dia(s)"} — prazo ${o._slaTarget}${slaSuffix(o._slaUnit)}`}
                                   >
                                     <Clock className="h-2.5 w-2.5" />
                                     {o._sla.level === "overdue"
-                                      ? `+${o._sla.days - o._slaTarget}d`
-                                      : `${o._sla.days}/${o._slaTarget}d`}
+                                      ? `+${o._sla.elapsed - o._slaTarget}${slaSuffix(o._slaUnit)}`
+                                      : `${o._sla.elapsed}/${o._slaTarget}${slaSuffix(o._slaUnit)}`}
                                   </Badge>
                                 )}
                                 {o.isLate && <span className="text-destructive font-medium">Atrasada</span>}
