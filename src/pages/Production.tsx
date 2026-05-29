@@ -32,6 +32,7 @@ export default function Production() {
   const [automationsDialogOpen, setAutomationsDialogOpen] = useState(false);
   const [unifyDialogOpen, setUnifyDialogOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'kanban' | 'lista'>('kanban');
   const [filters, setFilters] = useState({
     status: 'all',
     priority: 'all',
