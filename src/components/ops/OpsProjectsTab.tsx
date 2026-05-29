@@ -191,10 +191,11 @@ export function OpsProjectsTab() {
   return (
     <div className="space-y-4">
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <KpiCard icon={<Factory className="h-4 w-4" />} label="Em produção" value={kpis.inProd} tone="text-amber-600" />
         <KpiCard icon={<Clock className="h-4 w-4" />} label="Aguardando" value={kpis.waiting} tone="text-blue-600" />
         <KpiCard icon={<AlertTriangle className="h-4 w-4" />} label="Atrasados" value={kpis.late} tone="text-destructive" />
+        <KpiCard icon={<Clock className="h-4 w-4" />} label="Alertas SLA" value={kpis.slaAlerts} tone="text-amber-600" />
         <KpiCard icon={<CheckCircle2 className="h-4 w-4" />} label="Concluídos" value={kpis.doneMonth} tone="text-emerald-600" />
         <KpiCard icon={<CheckCircle2 className="h-4 w-4" />} label="% OPs concluídas" value={`${kpis.onTimePct}%`} tone="text-primary" />
       </div>
