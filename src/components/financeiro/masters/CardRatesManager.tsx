@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Check, Pencil, X, CreditCard, Link2, Building2, Plus, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { QuickCreateSupplierDialog } from "@/components/financeiro/QuickCreateSupplierDialog";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 
 interface RateRow {
   id: string;
