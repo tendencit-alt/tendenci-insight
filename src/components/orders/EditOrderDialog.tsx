@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePaymentLinkRates } from '@/hooks/usePaymentLinkRates';
+import { useFinanceRates } from '@/hooks/useFinanceRates';
 import { useStrategicResourceDefaults } from '@/hooks/useStrategicResourceDefaults';
 import { useCompanyName } from '@/hooks/useCompanySettings';
 import { useQuery } from '@tanstack/react-query';
@@ -45,31 +46,32 @@ const FORMAS_COM_PARCELAS = ['boleto', 'cartao_credito', 'link_pagamento'];
 const FORMAS_COM_ANTECIPACAO = ['cartao_credito', 'cartao_debito', 'boleto', 'link_pagamento'];
 
 // Taxas de link de pagamento por número de parcelas (fallback)
-const TAXAS_LINK_PAGAMENTO: Record<number, number> = {
+const TAXAS_LINK_PAGAMENTO_FALLBACK: Record<number, number> = {
   1: 0, 2: 0, 3: 0, 4: 0,
   5: 0, 6: 0, 7: 0, 8: 0,
   9: 0, 10: 0, 11: 0, 12: 0
 };
 
 // Taxas de cartão de crédito por número de parcelas (fallback)
-const TAXAS_CARTAO_CREDITO: Record<number, number> = {
+const TAXAS_CARTAO_CREDITO_FALLBACK: Record<number, number> = {
   1: 2.80, 2: 3.95, 3: 4.69, 4: 5.41,
   5: 6.13, 6: 6.84, 7: 7.30, 8: 8.00,
   9: 8.90, 10: 9.38, 11: 10.05, 12: 10.72
 };
 
 // Taxa de cartão de débito (fallback) — apenas 1x
-const TAXAS_CARTAO_DEBITO: Record<number, number> = {
+const TAXAS_CARTAO_DEBITO_FALLBACK: Record<number, number> = {
   1: 1.99,
 };
 
 // Taxas de boleto por carência e parcelas (fallback)
-const TAXAS_BOLETO: Record<number, Record<number, number>> = {
+const TAXAS_BOLETO_FALLBACK: Record<number, Record<number, number>> = {
   30: { 1: 2.62, 2: 3.89, 3: 5.15, 4: 6.38, 5: 7.59, 6: 8.78, 
         7: 9.43, 8: 10.53, 9: 11.60, 10: 12.66, 11: 13.70, 12: 14.73 },
   60: { 1: 5.17, 2: 6.41, 3: 7.63, 4: 8.83, 5: 10.01, 6: 11.17,
         7: 11.68, 8: 12.74, 9: 13.79, 10: 14.82, 11: 15.84, 12: 16.84 }
 };
+
 
 // TIPOS_ENTREGA is now dynamic - see inside component
 
@@ -174,6 +176,19 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     { value: 'terceirizada', label: 'Terceirizada' },
   ];
   const linkRatesDb = usePaymentLinkRates();
+  const financeRates = useFinanceRates();
+  // Mapas efetivos: priorizam taxas configuradas no DB, com fallback para constantes locais
+  const TAXAS_CARTAO_CREDITO: Record<number, number> = { ...TAXAS_CARTAO_CREDITO_FALLBACK, ...financeRates.credit };
+  const TAXAS_CARTAO_DEBITO: Record<number, number> = { 1: financeRates.debit || TAXAS_CARTAO_DEBITO_FALLBACK[1] };
+  const TAXAS_LINK_PAGAMENTO: Record<number, number> = { ...TAXAS_LINK_PAGAMENTO_FALLBACK, ...financeRates.link };
+  const TAXAS_BOLETO: Record<number, Record<number, number>> = (() => {
+    const merged: Record<number, Record<number, number>> = { ...TAXAS_BOLETO_FALLBACK };
+    Object.entries(financeRates.boleto).forEach(([c, rates]) => {
+      const key = Number(c);
+      merged[key] = { ...(merged[key] || {}), ...(rates as Record<number, number>) };
+    });
+    return merged;
+  })();
   const { defaults: resourceDefaults, isLoaded: resourceDefaultsLoaded } = useStrategicResourceDefaults();
   const { isMaster } = usePermissions();
   const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
