@@ -100,6 +100,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
   });
 
   const responsibleIds = order ? [
+    (order as any).rt_responsavel_id,
     (order as any).comissao_vendedor_responsible_id || (order as any).comissao_vendedor_responsavel_id,
     (order as any).comissao_orcamentista_responsible_id || (order as any).comissao_orcamentista_responsavel_id,
     (order as any).comissao_projetista_responsible_id || (order as any).comissao_projetista_responsavel_id,
@@ -282,7 +283,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
     if (!order) return [];
     const o = order as any;
     return [
-      { label: resourceDefaults.rt.label, perc: o.rt_percentual, valor: o.rt_valor, respId: null, habilitado: o.rt_habilitado },
+      { label: resourceDefaults.rt.label, perc: o.rt_percentual, valor: o.rt_valor, respId: o.rt_responsavel_id, habilitado: o.rt_habilitado },
       { label: resourceDefaults.vendedor.label, perc: o.comissao_vendedor_percentual, valor: o.comissao_vendedor_valor, respId: o.comissao_vendedor_responsible_id || o.comissao_vendedor_responsavel_id },
       { label: resourceDefaults.orcamentista.label, perc: o.comissao_orcamentista_percentual, valor: o.comissao_orcamentista_valor, respId: o.comissao_orcamentista_responsible_id || o.comissao_orcamentista_responsavel_id },
       { label: resourceDefaults.projetista.label, perc: o.comissao_projetista_percentual, valor: o.comissao_projetista_valor, respId: o.comissao_projetista_responsible_id || o.comissao_projetista_responsavel_id },
