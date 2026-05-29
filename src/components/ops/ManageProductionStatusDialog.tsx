@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Settings2, Plus, Trash2, Lock } from "lucide-react";
 import {
   useProductionStatusColumns,
@@ -65,12 +66,28 @@ export function ManageProductionStatusDialog() {
                 </div>
                 <Input
                   type="number"
+                  step={10}
+                  min={0}
                   value={c.sort_order}
-                  onChange={(e) => updateMut.mutate({ id: c.id, sort_order: Number(e.target.value) || 0 })}
-                  className="w-16"
+                  onChange={(e) => {
+                    const raw = Number(e.target.value) || 0;
+                    const snapped = Math.max(0, Math.round(raw / 10) * 10);
+                    updateMut.mutate({ id: c.id, sort_order: snapped });
+                  }}
+                  className="w-20"
+                  title="Ordem em múltiplos de 10 (ex.: 10, 20, 30)"
                 />
                 {c.is_system ? (
-                  <Badge variant="outline" className="gap-1"><Lock className="h-3 w-3" />Sistema</Badge>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="gap-1 cursor-help"><Lock className="h-3 w-3" />Sistema</Badge>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        Status padrão do sistema. Pode ser renomeado e ter a cor/ordem alterada, mas não pode ser excluído para preservar a integridade dos fluxos de produção.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 ) : (
                   <Button
                     variant="ghost" size="icon"
