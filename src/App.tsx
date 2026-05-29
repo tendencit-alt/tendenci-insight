@@ -68,7 +68,7 @@ import RecursosHumanos from "./pages/RecursosHumanos";
 import ProducaoOperacoes from "./pages/ProducaoOperacoes";
 
 import CRM from "./pages/CRM";
-import Suprimentos from "./pages/Suprimentos";
+import Compras from "./pages/Compras";
 import EntregasMontagem from "./pages/EntregasMontagem";
 
 import Planning from "./pages/Planning";
@@ -208,7 +208,8 @@ const App = () => (
               <Route path="/projetos" element={<Navigate to="/crm?view=gestor&tab=overview" replace />} />
               <Route path="/projects" element={<Navigate to="/crm?view=gestor&tab=overview" replace />} />
 
-              <Route path="/suprimentos" element={<ProtectedRoute><Suprimentos /></ProtectedRoute>} />
+              <Route path="/compras" element={<ProtectedRoute><Compras /></ProtectedRoute>} />
+              <Route path="/suprimentos" element={<Navigate to="/compras" replace />} />
               <Route path="/entregas-montagem" element={<ProtectedRoute><FeatureGate feature="entregas"><EntregasMontagem /></FeatureGate></ProtectedRoute>} />
               <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
               <Route path="/atividades" element={<ProtectedRoute><ActivityCenter /></ProtectedRoute>} />
@@ -273,7 +274,7 @@ const App = () => (
               <Route path="/painel" element={<Navigate to="/dashboard" replace />} />
 
               <Route path="/ia-configuracao" element={<Navigate to="/" replace />} />
-              <Route path="/compras" element={<Navigate to="/suprimentos" replace />} />
+              {/* /compras é a rota canônica (definida acima) */}
               {/* Rotas dinâmicas */}
               <Route path="*" element={
                 <ProtectedRoute>

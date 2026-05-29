@@ -145,11 +145,10 @@ const menuGroups: MenuGroup[] = [
     items: [
       { title: "Produção", url: "/producao-operacoes", icon: Factory, module: "operacional" },
       { title: "Produção (legado)", url: "/producao", icon: Factory, module: "producao" },
-      { title: "Automações", url: "/automacoes", icon: Zap, module: "operacional" },
-      { title: "Suprimentos", url: "/suprimentos", icon: Package, module: "operacional" },
+      { title: "Compras", url: "/compras", icon: Package, module: "operacional" },
       { title: "Estoque", url: "/estoque", icon: Layers, module: "operacional" },
       { title: "Entregas & Montagem", url: "/entregas-montagem", icon: Truck, module: "operacional" },
-      
+      { title: "Automações", url: "/automacoes", icon: Zap, module: "operacional" },
       { title: "KPI's", url: "/relatorios", icon: FileText, comingSoon: true, module: "operacional" },
     ],
   },
