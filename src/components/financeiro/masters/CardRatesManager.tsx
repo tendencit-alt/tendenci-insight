@@ -485,11 +485,13 @@ export function CardRatesManager() {
   const refreshSuppliers = () => queryClient.invalidateQueries({ queryKey: ["suppliers-for-fees"] });
 
   const { data: feeConfigs = [] } = useQuery({
-    queryKey: ["fee-supplier-configs"],
+    queryKey: ["fee-supplier-configs", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("fee_supplier_configs" as any)
-        .select("*");
+        .select("*")
+        .eq("tenant_id", activeTenantId!);
       if (error) throw error;
       return (data || []) as unknown as FeeSupplierConfig[];
     },
@@ -510,35 +512,29 @@ export function CardRatesManager() {
     },
   });
 
-  const updateFeeSupplier = useMutation({
-    mutationFn: async ({ feeType, supplierId }: { feeType: string; supplierId: string | null }) => {
+  const upsertFeeConfig = useMutation({
+    mutationFn: async (patch: { feeType: string; supplierId?: string | null; chartAccountId?: string | null }) => {
+      if (!activeTenantId) throw new Error("Tenant não selecionado");
+      const existing = feeConfigs.find((c) => c.fee_type === patch.feeType);
+      const row: any = {
+        tenant_id: activeTenantId,
+        fee_type: patch.feeType,
+        supplier_id: patch.supplierId !== undefined ? patch.supplierId : existing?.supplier_id ?? null,
+        chart_account_id: patch.chartAccountId !== undefined ? patch.chartAccountId : existing?.chart_account_id ?? null,
+        updated_at: new Date().toISOString(),
+      };
       const { error } = await supabase
         .from("fee_supplier_configs" as any)
-        .update({ supplier_id: supplierId, updated_at: new Date().toISOString() } as any)
-        .eq("fee_type", feeType);
+        .upsert(row, { onConflict: "tenant_id,fee_type" });
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["fee-supplier-configs"] });
-      toast.success("Fornecedor atualizado!");
+    onSuccess: (_d, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["fee-supplier-configs", activeTenantId] });
+      toast.success(vars.chartAccountId !== undefined ? "Plano de contas atualizado!" : "Fornecedor atualizado!");
     },
-    onError: () => toast.error("Erro ao atualizar fornecedor"),
+    onError: (e: any) => toast.error("Erro ao salvar: " + (e?.message || "")),
   });
 
-  const updateFeeChartAccount = useMutation({
-    mutationFn: async ({ feeType, chartAccountId }: { feeType: string; chartAccountId: string | null }) => {
-      const { error } = await supabase
-        .from("fee_supplier_configs" as any)
-        .update({ chart_account_id: chartAccountId, updated_at: new Date().toISOString() } as any)
-        .eq("fee_type", feeType);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["fee-supplier-configs"] });
-      toast.success("Plano de contas atualizado!");
-    },
-    onError: () => toast.error("Erro ao atualizar plano de contas"),
-  });
 
   const handleSupplierUpdate = (feeType: string, supplierId: string | null) => {
     updateFeeSupplier.mutate({ feeType, supplierId });
