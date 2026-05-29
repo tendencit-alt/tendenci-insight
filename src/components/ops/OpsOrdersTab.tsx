@@ -77,9 +77,12 @@ export function OpsOrdersTab() {
       const isLate = !!o.planned_end_date &&
         new Date(o.planned_end_date) < today &&
         slug !== "concluido" && slug !== "entregue" && slug !== "cancelado";
-      return { ...o, _slug: slug, isLate };
+      const col = slugToColumn[slug];
+      const isClosed = slug === "concluido" || slug === "entregue" || slug === "cancelado";
+      const sla = !isClosed ? slaState(col?.sla_days, o.status_changed_at) : { days: 0, level: "ok" as const, ratio: 0 };
+      return { ...o, _slug: slug, isLate, _sla: sla, _slaTarget: col?.sla_days ?? null };
     });
-  }, [orders, validSlugs]);
+  }, [orders, validSlugs, slugToColumn]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
