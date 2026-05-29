@@ -66,6 +66,7 @@ const FORMAS_PAGAMENTO = [
 ];
 
 const FORMAS_COM_PARCELAS = ['boleto', 'cartao_credito', 'link_pagamento'];
+const FORMAS_COM_ANTECIPACAO = ['cartao_credito', 'cartao_debito', 'boleto', 'link_pagamento'];
 
 // Taxas de link de pagamento por número de parcelas (fallback)
 const TAXAS_LINK_PAGAMENTO: Record<number, number> = {
@@ -79,6 +80,11 @@ const TAXAS_CARTAO_CREDITO: Record<number, number> = {
   1: 2.80, 2: 3.95, 3: 4.69, 4: 5.41,
   5: 6.13, 6: 6.84, 7: 7.30, 8: 8.00,
   9: 8.90, 10: 9.38, 11: 10.05, 12: 10.72
+};
+
+// Taxa de cartão de débito (fallback) — apenas 1x
+const TAXAS_CARTAO_DEBITO: Record<number, number> = {
+  1: 1.99,
 };
 
 // Taxas de boleto por carência e parcelas (fallback)
