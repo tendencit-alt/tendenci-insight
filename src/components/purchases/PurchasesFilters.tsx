@@ -56,8 +56,9 @@ export default function PurchasesFilters({ filters, setFilters }: PurchasesFilte
           <SelectItem value="rascunho">Rascunho</SelectItem>
           <SelectItem value="enviado">Enviado</SelectItem>
           <SelectItem value="confirmado">Confirmado</SelectItem>
-          <SelectItem value="parcial">Parcial</SelectItem>
-          <SelectItem value="recebido">Recebido</SelectItem>
+          <SelectItem value="aprovado">Aprovado</SelectItem>
+          <SelectItem value="recebido_parcial">Recebido Parcial</SelectItem>
+          <SelectItem value="recebido_total">Recebido</SelectItem>
           <SelectItem value="cancelado">Cancelado</SelectItem>
         </SelectContent>
       </Select>

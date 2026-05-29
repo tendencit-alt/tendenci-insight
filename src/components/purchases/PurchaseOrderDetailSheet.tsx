@@ -27,7 +27,11 @@ const statusConfig: Record<string, { label: string; variant: "default" | "second
   rascunho: { label: "Rascunho", variant: "secondary" },
   enviado: { label: "Enviado", variant: "outline" },
   confirmado: { label: "Confirmado", variant: "default" },
-  parcial: { label: "Parcial", variant: "outline" },
+  aprovado: { label: "Aprovado", variant: "default" },
+  recebido_parcial: { label: "Recebido Parcial", variant: "outline" },
+  recebido_total: { label: "Recebido", variant: "default" },
+  // legados (manter exibição correta caso existam registros antigos)
+  parcial: { label: "Recebido Parcial", variant: "outline" },
   recebido: { label: "Recebido", variant: "default" },
   cancelado: { label: "Cancelado", variant: "destructive" }
 };
@@ -64,7 +68,7 @@ export default function PurchaseOrderDetailSheet({ order, open, onOpenChange, on
   const updateStatus = async (newStatus: string) => {
     try {
       const updates: any = { status: newStatus };
-      if (newStatus === "recebido") {
+      if (newStatus === "recebido_total" || newStatus === "recebido") {
         updates.received_date = new Date().toISOString();
       }
 
@@ -280,7 +284,7 @@ export default function PurchaseOrderDetailSheet({ order, open, onOpenChange, on
                   Confirmar
                 </Button>
               )}
-              {["confirmado", "parcial"].includes(order.status) && (
+              {["confirmado", "aprovado", "enviado", "recebido_parcial", "parcial"].includes(order.status) && (
                 <Button onClick={() => setReceiveOpen(true)}>
                   <Package className="h-4 w-4 mr-1" />
                   Registrar Recebimento

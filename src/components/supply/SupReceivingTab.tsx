@@ -12,7 +12,7 @@ export function SupReceivingTab() {
       const { data, error } = await supabase
         .from("purchase_orders")
         .select("*, suppliers(name), purchase_order_items(*, products(name, code, unit))")
-        .in("status", ["aprovado", "parcial", "recebido"])
+        .in("status", ["aprovado", "confirmado", "recebido_parcial", "recebido_total", "parcial", "recebido"])
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
@@ -22,9 +22,9 @@ export function SupReceivingTab() {
 
   const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
 
-  const totalReceived = orders.filter((o: any) => o.status === "recebido").length;
-  const totalPartial = orders.filter((o: any) => o.status === "parcial").length;
-  const totalPending = orders.filter((o: any) => o.status === "aprovado").length;
+  const totalReceived = orders.filter((o: any) => o.status === "recebido_total" || o.status === "recebido").length;
+  const totalPartial = orders.filter((o: any) => o.status === "recebido_parcial" || o.status === "parcial").length;
+  const totalPending = orders.filter((o: any) => o.status === "aprovado" || o.status === "confirmado").length;
 
   return (
     <div className="space-y-4">
@@ -64,9 +64,15 @@ export function SupReceivingTab() {
                         <TableCell className="text-right font-mono text-sm">{fmt(o.total)}</TableCell>
                         <TableCell className="text-sm">{o.received_date ? new Date(o.received_date).toLocaleDateString("pt-BR") : "—"}</TableCell>
                         <TableCell>
-                          <Badge variant={o.status === "recebido" ? "default" : o.status === "parcial" ? "secondary" : "outline"}>
-                            {o.status === "recebido" ? "Completo" : o.status === "parcial" ? "Parcial" : "Aguardando"}
-                          </Badge>
+                          {(() => {
+                            const isFull = o.status === "recebido_total" || o.status === "recebido";
+                            const isPartial = o.status === "recebido_parcial" || o.status === "parcial";
+                            return (
+                              <Badge variant={isFull ? "default" : isPartial ? "secondary" : "outline"}>
+                                {isFull ? "Completo" : isPartial ? "Parcial" : "Aguardando"}
+                              </Badge>
+                            );
+                          })()}
                         </TableCell>
                       </TableRow>
                     );

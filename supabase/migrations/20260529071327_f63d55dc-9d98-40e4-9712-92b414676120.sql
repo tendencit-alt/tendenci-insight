@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS public.e2e_stock_results;
