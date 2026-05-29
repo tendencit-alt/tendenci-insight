@@ -110,6 +110,7 @@ interface PagamentoParcela {
   data_vencimento: string;
   numero_parcelas: number;
   carencia_boleto?: 30 | 60;
+  antecipacao_automatica?: boolean;
 }
 
 interface ClientData {
