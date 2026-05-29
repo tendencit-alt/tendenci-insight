@@ -97,7 +97,7 @@ export function useCreateProductionStatusColumn() {
   const qc = useQueryClient();
   const { activeTenantId } = useActiveTenant();
   return useMutation({
-    mutationFn: async (input: { label: string; color: string; sort_order?: number; sla_days?: number | null }) => {
+    mutationFn: async (input: { label: string; color: string; sort_order?: number; sla_days?: number | null; sla_unit?: SlaUnit }) => {
       if (!activeTenantId) throw new Error("Sem empresa ativa");
       const baseSlug = slugify(input.label);
       const { data: existing } = await supabase
@@ -117,8 +117,10 @@ export function useCreateProductionStatusColumn() {
           color: input.color,
           sort_order: input.sort_order ?? 100,
           sla_days: input.sla_days ?? null,
+          sla_unit: input.sla_unit ?? "days",
           is_system: false,
         } as any);
+
 
         if (!error) return;
 
