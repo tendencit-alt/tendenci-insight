@@ -245,9 +245,24 @@ export function OpsProjectsTab() {
                           <div className="text-xs text-muted-foreground truncate">{r.client?.name ?? "—"}</div>
                           <div className="mt-2">
                             <Progress value={r.progressPct} className="h-1.5" />
-                            <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground">
+                            <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground gap-1">
                               <span>{r.done}/{r.total} OPs</span>
-                              {r.isLate && <span className="text-destructive font-medium">Atrasado</span>}
+                              <div className="flex items-center gap-1">
+                                {r.slaAlerts > 0 && (
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-[10px] gap-0.5 px-1.5 py-0 ${
+                                      r.slaOverdue > 0
+                                        ? "bg-destructive/10 text-destructive border-destructive/30"
+                                        : "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300"
+                                    }`}
+                                    title={`${r.slaAlerts} OP(s) com alerta de prazo${r.slaOverdue ? ` — ${r.slaOverdue} vencida(s)` : ""}`}
+                                  >
+                                    <Clock className="h-2.5 w-2.5" />SLA {r.slaAlerts}
+                                  </Badge>
+                                )}
+                                {r.isLate && <span className="text-destructive font-medium">Atrasado</span>}
+                              </div>
                             </div>
                           </div>
                         </Card>
