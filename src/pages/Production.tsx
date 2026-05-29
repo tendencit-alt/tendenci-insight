@@ -213,29 +213,57 @@ export default function Production() {
         }
         overview={<ProductionKPIs productionTypeId={currentTypeId} filters={filters} />}
         records={
-          <Tabs value={selectedType || productionTypes[0]?.id || ''} onValueChange={setSelectedType} className="w-full">
-            <TabsList className="w-full justify-start overflow-x-auto">
-              {productionTypes.map((type) => (
-                <TabsTrigger key={type.id} value={type.id} className="min-w-fit gap-2">
-                  <span
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: getTailwindColor(type.color) }}
-                  />
-                  {type.name}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+          <div className="space-y-3">
+            <div className="flex items-center justify-end gap-1 border-b pb-2">
+              <Button
+                size="sm"
+                variant={viewMode === 'kanban' ? 'default' : 'ghost'}
+                onClick={() => setViewMode('kanban')}
+                className="gap-1.5"
+              >
+                <LayoutGrid className="h-4 w-4" /> Kanban
+              </Button>
+              <Button
+                size="sm"
+                variant={viewMode === 'lista' ? 'default' : 'ghost'}
+                onClick={() => setViewMode('lista')}
+                className="gap-1.5"
+              >
+                <ListIcon className="h-4 w-4" /> Lista
+              </Button>
+            </div>
+            <Tabs value={selectedType || productionTypes[0]?.id || ''} onValueChange={setSelectedType} className="w-full">
+              <TabsList className="w-full justify-start overflow-x-auto">
+                {productionTypes.map((type) => (
+                  <TabsTrigger key={type.id} value={type.id} className="min-w-fit gap-2">
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: getTailwindColor(type.color) }}
+                    />
+                    {type.name}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
 
-            {productionTypes.map((type) => (
-              <TabsContent key={type.id} value={type.id} className="mt-3">
-                <ProductionKanban
-                  productionTypeId={type.id}
-                  filters={filters}
-                  onOrderClick={(orderId) => setSelectedOrderId(orderId)}
-                />
-              </TabsContent>
-            ))}
-          </Tabs>
+              {productionTypes.map((type) => (
+                <TabsContent key={type.id} value={type.id} className="mt-3">
+                  {viewMode === 'kanban' ? (
+                    <ProductionKanban
+                      productionTypeId={type.id}
+                      filters={filters}
+                      onOrderClick={(orderId) => setSelectedOrderId(orderId)}
+                    />
+                  ) : (
+                    <ProductionListView
+                      productionTypeId={type.id}
+                      filters={filters}
+                      onOrderClick={(orderId) => setSelectedOrderId(orderId)}
+                    />
+                  )}
+                </TabsContent>
+              ))}
+            </Tabs>
+          </div>
         }
         actions={
           <div className="space-y-3">
