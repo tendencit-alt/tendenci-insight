@@ -378,7 +378,7 @@ export function OpsOrdersTab() {
                         <div className="text-xs text-muted-foreground text-center py-4">Vazio</div>
                       )}
                     </div>
-                  </div>
+                  </DropColumn>
                 );
               })}
             </div>
