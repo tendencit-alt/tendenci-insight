@@ -373,6 +373,7 @@ export function OpsOrdersTab() {
                               </Select>
                             </div>
                           </Card>
+                          </DragCard>
                         );
                       })}
                       {colRows.length === 0 && (
