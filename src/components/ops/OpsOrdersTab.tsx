@@ -65,6 +65,7 @@ export function OpsOrdersTab() {
   const createMut = useCreateOpsOrder();
   const deleteMut = useDeleteOpsOrder();
   const updateStatusMut = useUpdateProductionOrderStatus();
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const today = new Date();
   const validSlugs = useMemo(() => new Set(statusColumns.map((c) => c.slug)), [statusColumns]);
