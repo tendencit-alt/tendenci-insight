@@ -105,41 +105,50 @@ export function ManageProductionStatusDialog() {
             ))}
           </div>
 
-          <div className="border-t pt-4 space-y-2">
+          <div className="border-t pt-4 space-y-3">
             <Label className="text-sm font-medium">Adicionar status personalizado</Label>
-            <div className="flex items-end gap-2 flex-wrap">
-              <div className="flex-1 min-w-[180px]">
-                <Input
-                  placeholder="Ex.: Em Revisão"
-                  value={newLabel}
-                  onChange={(e) => setNewLabel(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-1">
-                {STATUS_COLOR_PALETTE.map((p) => (
-                  <button
-                    key={p.key}
-                    type="button"
-                    onClick={() => setNewColor(p.key)}
-                    className={`h-6 w-6 rounded-full border-2 ${p.tone} ${newColor === p.key ? "ring-2 ring-foreground" : ""}`}
+            <div className="space-y-2 rounded-md border bg-muted/20 p-3">
+              <div className="flex items-end gap-2 flex-wrap">
+                <div className="flex-1 min-w-[220px]">
+                  <Label className="text-xs text-muted-foreground mb-1 block">Nome do status</Label>
+                  <Input
+                    placeholder="Ex.: Em Revisão"
+                    value={newLabel}
+                    onChange={(e) => setNewLabel(e.target.value)}
                   />
-                ))}
+                </div>
+                <div className="relative">
+                  <Label className="text-xs text-muted-foreground mb-1 block">Prazo ({unitLabel})</Label>
+                  <div className="relative">
+                    <AlarmClock className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                    <Input
+                      type="number"
+                      min={0}
+                      placeholder={slaSuffix(tenantUnit)}
+                      value={newSla}
+                      onChange={(e) => setNewSla(e.target.value)}
+                      className="w-32 pl-7"
+                    />
+                  </div>
+                </div>
+                <Button onClick={handleAdd} disabled={!newLabel.trim() || createMut.isPending} className="gap-1.5">
+                  <Plus className="h-4 w-4" />Adicionar
+                </Button>
               </div>
-              <div className="relative">
-                <AlarmClock className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                <Input
-                  type="number"
-                  min={0}
-                  placeholder={`Prazo (${slaSuffix(tenantUnit)})`}
-                  value={newSla}
-                  onChange={(e) => setNewSla(e.target.value)}
-                  className="w-28 pl-7"
-                  title={`Prazo SLA em ${unitLabel} (opcional)`}
-                />
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">Cor</Label>
+                <div className="flex gap-1.5 flex-wrap">
+                  {STATUS_COLOR_PALETTE.map((p) => (
+                    <button
+                      key={p.key}
+                      type="button"
+                      onClick={() => setNewColor(p.key)}
+                      className={`h-7 w-7 rounded-full border-2 ${p.tone} ${newColor === p.key ? "ring-2 ring-offset-1 ring-foreground" : ""}`}
+                      title={p.key}
+                    />
+                  ))}
+                </div>
               </div>
-              <Button onClick={handleAdd} disabled={!newLabel.trim() || createMut.isPending} className="gap-1.5">
-                <Plus className="h-4 w-4" />Adicionar
-              </Button>
             </div>
             <p className="text-xs text-muted-foreground flex items-start gap-1.5">
               <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
@@ -148,6 +157,7 @@ export function ManageProductionStatusDialog() {
               </span>
             </p>
           </div>
+
         </div>
       </DialogContent>
     </Dialog>
