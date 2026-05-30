@@ -15642,6 +15642,53 @@ export type Database = {
           },
         ]
       }
+      production_order_phase_history: {
+        Row: {
+          created_at: string
+          direction: string
+          entered_at: string
+          exited_at: string | null
+          id: string
+          moved_by: string | null
+          phase: string
+          production_order_id: string
+          reason: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          direction: string
+          entered_at?: string
+          exited_at?: string | null
+          id?: string
+          moved_by?: string | null
+          phase: string
+          production_order_id: string
+          reason?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          entered_at?: string
+          exited_at?: string | null
+          id?: string
+          moved_by?: string | null
+          phase?: string
+          production_order_id?: string
+          reason?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_order_phase_history_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_orders: {
         Row: {
           actual_end_date: string | null
@@ -23492,6 +23539,10 @@ export type Database = {
       can_delete_master_idea:
         | { Args: never; Returns: boolean }
         | { Args: { p_master_idea_id: string }; Returns: boolean }
+      can_regress_production_phase: {
+        Args: { _tenant_id: string }
+        Returns: boolean
+      }
       can_view_hr_pii: { Args: { _tenant: string }; Returns: boolean }
       capacity_layer_summary: { Args: never; Returns: Json }
       capacity_top_risks: {
@@ -24367,6 +24418,10 @@ export type Database = {
         Args: { _tenant_id: string }
         Returns: number
       }
+      move_production_phase: {
+        Args: { _op_id: string; _reason?: string; _target_slug: string }
+        Returns: Json
+      }
       notify_overdue_purchase_orders: { Args: never; Returns: undefined }
       orders_metrics:
         | {
@@ -24595,6 +24650,10 @@ export type Database = {
           p_target_module?: string
         }
         Returns: string
+      }
+      reprogram_op: {
+        Args: { _new_due_date: string; _op_id: string; _reason: string }
+        Returns: Json
       }
       require_strategic_resource_chart_account: {
         Args: {
