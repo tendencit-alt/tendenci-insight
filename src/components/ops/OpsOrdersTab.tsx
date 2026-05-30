@@ -287,7 +287,7 @@ export function OpsOrdersTab() {
                 const colRows = filtered.filter((o) => o._slug === col.slug);
                 const breaches = colRows.filter((o) => o._sla.level !== "ok").length;
                 return (
-                  <div key={col.id} className="bg-muted/30 rounded-lg p-2 min-h-[200px]">
+                  <DropColumn key={col.id} slug={col.slug}>
                     <div className="flex items-center justify-between mb-2 px-1 gap-1">
                       <span className="text-xs font-semibold text-foreground truncate">{col.label}</span>
                       <div className="flex items-center gap-1 shrink-0">
