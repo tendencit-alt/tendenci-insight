@@ -240,6 +240,18 @@ export function OpsOrdersTab() {
               <Loader2 className="h-5 w-5 animate-spin mr-2" />Carregando…
             </div>
           ) : (
+            <DndContext
+              sensors={sensors}
+              onDragEnd={(e: DragEndEvent) => {
+                const overId = String(e.over?.id ?? "");
+                const activeId = String(e.active?.id ?? "");
+                if (!overId.startsWith("col-") || !activeId) return;
+                const newSlug = overId.slice(4);
+                const ord = filtered.find((o) => o.id === activeId);
+                if (!ord || ord._slug === newSlug) return;
+                updateStatusMut.mutate({ id: activeId, status: newSlug });
+              }}
+            >
             <div
               className="grid gap-3"
               style={{ gridTemplateColumns: `repeat(${Math.max(statusColumns.length, 1)}, minmax(220px, 1fr))` }}
