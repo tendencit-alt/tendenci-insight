@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DateBrInput } from "@/components/ui/date-br-input";
 import {
   LayoutGrid, List, Search, Loader2, AlertTriangle, Clock, CheckCircle2,
-  Factory, Plus, Trash2,
+  Factory, Plus, Trash2, GripVertical,
 } from "lucide-react";
 import { useOpsOrders, useCreateOpsOrder, useDeleteOpsOrder, useProductionTypes } from "@/hooks/useOpsData";
 import {
@@ -22,6 +22,10 @@ import {
   slaSuffix,
 } from "@/hooks/useProductionStatusColumns";
 import { ManageProductionStatusDialog } from "./ManageProductionStatusDialog";
+import {
+  DndContext, DragEndEvent, PointerSensor, useDroppable, useDraggable, useSensor, useSensors,
+} from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 
 const PRIORITY_META: Record<string, { label: string; tone: string }> = {
   low: { label: "Baixa", tone: "bg-muted text-muted-foreground border-border" },
