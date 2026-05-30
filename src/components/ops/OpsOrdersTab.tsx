@@ -314,7 +314,8 @@ export function OpsOrdersTab() {
                             ? "bg-amber-500/10 border-amber-500/40 dark:bg-amber-500/15"
                             : "";
                         return (
-                          <Card key={o.id} className={`p-3 transition-colors ${slaCardTone}`}>
+                          <DragCard key={o.id} id={o.id}>
+                          <Card className={`p-3 transition-colors ${slaCardTone}`}>
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0 flex-1">
                                 <div className="text-sm font-medium truncate">{o.title || "Sem título"}</div>
