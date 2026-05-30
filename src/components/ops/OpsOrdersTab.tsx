@@ -355,6 +355,7 @@ export function OpsOrdersTab() {
                 );
               })}
             </div>
+            </DndContext>
           )}
         </TabsContent>
 
