@@ -273,7 +273,8 @@ export function OpsProjectsTab() {
                             </div>
                           </div>
                         </Card>
-                      ))}
+                        );
+                      })}
                       {colRows.length === 0 && (
                         <div className="text-xs text-muted-foreground text-center py-4">Vazio</div>
                       )}
