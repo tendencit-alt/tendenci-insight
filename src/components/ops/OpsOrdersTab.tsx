@@ -359,7 +359,7 @@ export function OpsOrdersTab() {
                                 {o.isLate && <span className="text-destructive font-medium">Atrasada</span>}
                               </div>
                             </div>
-                            <div className="mt-2">
+                            <div className="mt-2" onPointerDown={(e) => e.stopPropagation()}>
                               <Select
                                 value={o._slug}
                                 onValueChange={(v) => updateStatusMut.mutate({ id: o.id, status: v })}
