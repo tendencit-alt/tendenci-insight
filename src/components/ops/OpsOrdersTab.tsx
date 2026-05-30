@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DateBrInput } from "@/components/ui/date-br-input";
 import {
   LayoutGrid, List, Search, Loader2, AlertTriangle, Clock, CheckCircle2,
-  Factory, Plus, Trash2,
+  Factory, Plus, Trash2, GripVertical,
 } from "lucide-react";
 import { useOpsOrders, useCreateOpsOrder, useDeleteOpsOrder, useProductionTypes } from "@/hooks/useOpsData";
 import {
@@ -22,6 +22,10 @@ import {
   slaSuffix,
 } from "@/hooks/useProductionStatusColumns";
 import { ManageProductionStatusDialog } from "./ManageProductionStatusDialog";
+import {
+  DndContext, DragEndEvent, PointerSensor, useDroppable, useDraggable, useSensor, useSensors,
+} from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 
 const PRIORITY_META: Record<string, { label: string; tone: string }> = {
   low: { label: "Baixa", tone: "bg-muted text-muted-foreground border-border" },
@@ -40,6 +44,32 @@ function resolveSlug(status: string, validSlugs: Set<string>): string {
   const alias = SLUG_ALIASES[status];
   if (alias && validSlugs.has(alias)) return alias;
   return status;
+}
+
+function DropColumn({ slug, children }: { slug: string; children: React.ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id: `col-${slug}` });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`bg-muted/30 rounded-lg p-2 min-h-[200px] transition-colors ${isOver ? "ring-2 ring-primary/50 bg-primary/5" : ""}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+function DragCard({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="touch-none cursor-grab active:cursor-grabbing">
+      {children}
+    </div>
+  );
 }
 
 export function OpsOrdersTab() {
@@ -61,6 +91,7 @@ export function OpsOrdersTab() {
   const createMut = useCreateOpsOrder();
   const deleteMut = useDeleteOpsOrder();
   const updateStatusMut = useUpdateProductionOrderStatus();
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const today = new Date();
   const validSlugs = useMemo(() => new Set(statusColumns.map((c) => c.slug)), [statusColumns]);
@@ -236,6 +267,18 @@ export function OpsOrdersTab() {
               <Loader2 className="h-5 w-5 animate-spin mr-2" />Carregando…
             </div>
           ) : (
+            <DndContext
+              sensors={sensors}
+              onDragEnd={(e: DragEndEvent) => {
+                const overId = String(e.over?.id ?? "");
+                const activeId = String(e.active?.id ?? "");
+                if (!overId.startsWith("col-") || !activeId) return;
+                const newSlug = overId.slice(4);
+                const ord = filtered.find((o) => o.id === activeId);
+                if (!ord || ord._slug === newSlug) return;
+                updateStatusMut.mutate({ id: activeId, status: newSlug });
+              }}
+            >
             <div
               className="grid gap-3"
               style={{ gridTemplateColumns: `repeat(${Math.max(statusColumns.length, 1)}, minmax(220px, 1fr))` }}
@@ -244,7 +287,7 @@ export function OpsOrdersTab() {
                 const colRows = filtered.filter((o) => o._slug === col.slug);
                 const breaches = colRows.filter((o) => o._sla.level !== "ok").length;
                 return (
-                  <div key={col.id} className="bg-muted/30 rounded-lg p-2 min-h-[200px]">
+                  <DropColumn key={col.id} slug={col.slug}>
                     <div className="flex items-center justify-between mb-2 px-1 gap-1">
                       <span className="text-xs font-semibold text-foreground truncate">{col.label}</span>
                       <div className="flex items-center gap-1 shrink-0">
@@ -271,7 +314,8 @@ export function OpsOrdersTab() {
                             ? "bg-amber-500/10 border-amber-500/40 dark:bg-amber-500/15"
                             : "";
                         return (
-                          <Card key={o.id} className={`p-3 transition-colors ${slaCardTone}`}>
+                          <DragCard key={o.id} id={o.id}>
+                          <Card className={`p-3 transition-colors ${slaCardTone}`}>
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0 flex-1">
                                 <div className="text-sm font-medium truncate">{o.title || "Sem título"}</div>
@@ -315,7 +359,7 @@ export function OpsOrdersTab() {
                                 {o.isLate && <span className="text-destructive font-medium">Atrasada</span>}
                               </div>
                             </div>
-                            <div className="mt-2">
+                            <div className="mt-2" onPointerDown={(e) => e.stopPropagation()}>
                               <Select
                                 value={o._slug}
                                 onValueChange={(v) => updateStatusMut.mutate({ id: o.id, status: v })}
@@ -329,16 +373,18 @@ export function OpsOrdersTab() {
                               </Select>
                             </div>
                           </Card>
+                          </DragCard>
                         );
                       })}
                       {colRows.length === 0 && (
                         <div className="text-xs text-muted-foreground text-center py-4">Vazio</div>
                       )}
                     </div>
-                  </div>
+                  </DropColumn>
                 );
               })}
             </div>
+            </DndContext>
           )}
         </TabsContent>
 
