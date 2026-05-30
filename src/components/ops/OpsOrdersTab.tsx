@@ -46,6 +46,32 @@ function resolveSlug(status: string, validSlugs: Set<string>): string {
   return status;
 }
 
+function DropColumn({ slug, children }: { slug: string; children: React.ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id: `col-${slug}` });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`bg-muted/30 rounded-lg p-2 min-h-[200px] transition-colors ${isOver ? "ring-2 ring-primary/50 bg-primary/5" : ""}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+function DragCard({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="touch-none cursor-grab active:cursor-grabbing">
+      {children}
+    </div>
+  );
+}
+
 export function OpsOrdersTab() {
   const [typeFilter, setTypeFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
