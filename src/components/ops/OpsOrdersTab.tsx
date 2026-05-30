@@ -11,21 +11,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DateBrInput } from "@/components/ui/date-br-input";
 import {
   LayoutGrid, List, Search, Loader2, AlertTriangle, Clock, CheckCircle2,
-  Factory, Plus, Trash2, GripVertical,
+  Factory, Plus, Trash2, GripVertical, Calendar, Undo2, Timer, History,
 } from "lucide-react";
 import { useOpsOrders, useCreateOpsOrder, useDeleteOpsOrder, useProductionTypes } from "@/hooks/useOpsData";
 import {
-  useProductionStatusColumns,
-  useUpdateProductionOrderStatus,
-  colorTone,
-  slaState,
-  slaSuffix,
+  useProductionStatusColumns, colorTone,
 } from "@/hooks/useProductionStatusColumns";
+import {
+  useMoveProductionPhase, useProductionPhaseSummary, formatElapsed, dueDateUrgency,
+} from "@/hooks/useProductionPhaseMove";
 import { ManageProductionStatusDialog } from "./ManageProductionStatusDialog";
+import { RegressReasonDialog } from "./RegressReasonDialog";
+import { ReprogramOpDialog } from "./ReprogramOpDialog";
+import { PhaseHistoryDialog } from "./PhaseHistoryDialog";
 import {
   DndContext, DragEndEvent, PointerSensor, useDroppable, useDraggable, useSensor, useSensors,
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
+import { toast } from "sonner";
 
 const PRIORITY_META: Record<string, { label: string; tone: string }> = {
   low: { label: "Baixa", tone: "bg-muted text-muted-foreground border-border" },
@@ -34,10 +37,7 @@ const PRIORITY_META: Record<string, { label: string; tone: string }> = {
   urgent: { label: "Urgente", tone: "bg-destructive/10 text-destructive border-destructive/30" },
 };
 
-// Map legacy slugs to defaults so existing data keeps showing in the right column.
-const SLUG_ALIASES: Record<string, string> = {
-  em_andamento: "em_producao",
-};
+const SLUG_ALIASES: Record<string, string> = { em_andamento: "em_producao" };
 
 function resolveSlug(status: string, validSlugs: Set<string>): string {
   if (validSlugs.has(status)) return status;
@@ -59,8 +59,7 @@ function DropColumn({ slug, children }: { slug: string; children: React.ReactNod
 }
 
 function DragCard({
-  id,
-  children,
+  id, children,
 }: {
   id: string;
   children: (handle: { ref: (el: HTMLElement | null) => void; props: any }) => React.ReactNode;
@@ -88,6 +87,11 @@ export function OpsOrdersTab() {
     planned_start_date: "", planned_end_date: "", notes: "",
   });
 
+  // Move flow state
+  const [pendingMove, setPendingMove] = useState<{ opId: string; fromSlug: string; toSlug: string } | null>(null);
+  const [reprogramOp, setReprogramOp] = useState<{ id: string; orderNumber: any; dueDate: string | null } | null>(null);
+  const [historyOp, setHistoryOp] = useState<{ id: string; orderNumber: any } | null>(null);
+
   const { data: orders = [], isLoading } = useOpsOrders({
     type: typeFilter || undefined,
     status: statusFilter || undefined,
@@ -96,33 +100,33 @@ export function OpsOrdersTab() {
   const { data: statusColumns = [] } = useProductionStatusColumns();
   const createMut = useCreateOpsOrder();
   const deleteMut = useDeleteOpsOrder();
-  const updateStatusMut = useUpdateProductionOrderStatus();
+  const moveMut = useMoveProductionPhase();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
-  const today = new Date();
   const validSlugs = useMemo(() => new Set(statusColumns.map((c) => c.slug)), [statusColumns]);
-
-  // Build a fast slug → column map for badges/colors
   const slugToColumn = useMemo(() => {
     const m: Record<string, typeof statusColumns[number]> = {};
     statusColumns.forEach((c) => { m[c.slug] = c; });
     return m;
   }, [statusColumns]);
 
+  const orderIds = useMemo(() => (orders as any[]).map((o) => o.id), [orders]);
+  const { data: phaseSummary = {} } = useProductionPhaseSummary(orderIds);
+
   const enriched = useMemo(() => {
     return (orders as any[]).map((o) => {
       const slug = resolveSlug(o.status, validSlugs);
-      const isLate = !!o.planned_end_date &&
-        new Date(o.planned_end_date) < today &&
-        slug !== "concluido" && slug !== "entregue" && slug !== "cancelado";
-      const col = slugToColumn[slug];
-      const isClosed = slug === "concluido" || slug === "entregue" || slug === "cancelado";
-      const sla = !isClosed
-        ? slaState(col?.sla_days, o.status_changed_at, col?.sla_unit ?? "days")
-        : { elapsed: 0, days: 0, hours: 0, level: "ok" as const, ratio: 0, unit: "days" as const };
-      return { ...o, _slug: slug, isLate, _sla: sla, _slaTarget: col?.sla_days ?? null, _slaUnit: col?.sla_unit ?? "days" };
+      const due = dueDateUrgency(o.created_at, o.planned_end_date);
+      const summary = phaseSummary[o.id] ?? { regressCount: 0, currentPhaseSince: o.status_changed_at };
+      return {
+        ...o,
+        _slug: slug,
+        _due: due,
+        _regressCount: summary.regressCount,
+        _phaseSince: summary.currentPhaseSince ?? o.status_changed_at ?? o.created_at,
+      };
     });
-  }, [orders, validSlugs, slugToColumn]);
+  }, [orders, validSlugs, phaseSummary]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -138,16 +142,46 @@ export function OpsOrdersTab() {
   const kpis = useMemo(() => {
     const inProd = filtered.filter((o) => o._slug === "em_producao").length;
     const waiting = filtered.filter((o) => o._slug === "aguardando").length;
-    const late = filtered.filter((o) => o.isLate).length;
-    const slaAlerts = filtered.filter((o) => o._sla.level !== "ok").length;
+    const late = filtered.filter((o) => o._due.level === "late").length;
+    const warn = filtered.filter((o) => o._due.level === "warn").length;
     const done = filtered.filter((o) => o._slug === "concluido" || o._slug === "entregue").length;
     const total = filtered.length;
     const donePct = total === 0 ? 0 : Math.round((done / total) * 100);
-    return { inProd, waiting, late, slaAlerts, done, donePct };
+    return { inProd, waiting, late, warn, done, donePct };
   }, [filtered]);
 
   const fmt = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
+
+  /** Single handler used by BOTH drag-drop and dropdown. */
+  const handleMove = (opId: string, fromSlug: string, toSlug: string) => {
+    if (fromSlug === toSlug) return;
+    const fromOrder = slugToColumn[fromSlug]?.sort_order ?? -1;
+    const toOrder = slugToColumn[toSlug]?.sort_order ?? -1;
+    const isRegress = fromOrder > toOrder;
+    if (isRegress) {
+      setPendingMove({ opId, fromSlug, toSlug });
+      return;
+    }
+    moveMut.mutate(
+      { op_id: opId, target_slug: toSlug },
+      {
+        onSuccess: () => toast.success("Fase avançada"),
+        onError: (e: any) => toast.error("Erro ao mover fase", { description: e.message }),
+      },
+    );
+  };
+
+  const confirmRegress = async (reason: string) => {
+    if (!pendingMove) return;
+    try {
+      await moveMut.mutateAsync({ op_id: pendingMove.opId, target_slug: pendingMove.toSlug, reason });
+      toast.success("Retrocesso registrado");
+      setPendingMove(null);
+    } catch (e: any) {
+      toast.error("Erro ao retroceder", { description: e.message });
+    }
+  };
 
   const handleCreate = () => {
     createMut.mutate(
@@ -176,7 +210,7 @@ export function OpsOrdersTab() {
         <KpiCard icon={<Factory className="h-4 w-4" />} label="Em produção" value={kpis.inProd} tone="text-amber-600" />
         <KpiCard icon={<Clock className="h-4 w-4" />} label="Aguardando" value={kpis.waiting} tone="text-blue-600" />
         <KpiCard icon={<AlertTriangle className="h-4 w-4" />} label="Atrasadas" value={kpis.late} tone="text-destructive" />
-        <KpiCard icon={<Clock className="h-4 w-4" />} label="Alertas SLA" value={kpis.slaAlerts} tone="text-amber-600" />
+        <KpiCard icon={<Timer className="h-4 w-4" />} label="Alerta prazo" value={kpis.warn} tone="text-amber-600" />
         <KpiCard icon={<CheckCircle2 className="h-4 w-4" />} label="Concluídas" value={kpis.done} tone="text-emerald-600" />
         <KpiCard icon={<CheckCircle2 className="h-4 w-4" />} label="% Concluídas" value={`${kpis.donePct}%`} tone="text-primary" />
       </div>
@@ -281,130 +315,166 @@ export function OpsOrdersTab() {
                 if (!overId.startsWith("col-") || !activeId) return;
                 const newSlug = overId.slice(4);
                 const ord = filtered.find((o) => o.id === activeId);
-                if (!ord || ord._slug === newSlug) return;
-                updateStatusMut.mutate({ id: activeId, status: newSlug });
+                if (!ord) return;
+                handleMove(activeId, ord._slug, newSlug);
               }}
             >
-            <div
-              className="grid gap-3"
-              style={{ gridTemplateColumns: `repeat(${Math.max(statusColumns.length, 1)}, minmax(220px, 1fr))` }}
-            >
-              {statusColumns.map((col) => {
-                const colRows = filtered.filter((o) => o._slug === col.slug);
-                const breaches = colRows.filter((o) => o._sla.level !== "ok").length;
-                return (
-                  <DropColumn key={col.id} slug={col.slug}>
-                    <div className="flex items-center justify-between mb-2 px-1 gap-1">
-                      <span className="text-xs font-semibold text-foreground truncate">{col.label}</span>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {col.sla_days ? (
-                          <Badge variant="outline" className="text-[10px] gap-0.5 px-1.5 py-0">
-                            <Clock className="h-2.5 w-2.5" />{col.sla_days}{slaSuffix(col.sla_unit)}
-                          </Badge>
-                        ) : null}
-                        {breaches > 0 && (
-                          <Badge className="text-[10px] gap-0.5 px-1.5 py-0 bg-destructive/15 text-destructive border-destructive/30 hover:bg-destructive/15">
-                            <AlertTriangle className="h-2.5 w-2.5" />{breaches}
-                          </Badge>
-                        )}
-                        <Badge variant="secondary" className="text-xs">{colRows.length}</Badge>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      {colRows.map((o) => {
-                        const pr = PRIORITY_META[o.priority] || PRIORITY_META.normal;
-                        const slaCardTone =
-                          o._sla.level === "overdue"
-                            ? "bg-destructive/10 border-destructive/40"
-                            : o._sla.level === "warning"
-                            ? "bg-amber-500/10 border-amber-500/40 dark:bg-amber-500/15"
-                            : "";
-                        return (
-                          <DragCard key={o.id} id={o.id}>
-                          {(handle) => (
-                          <Card className={`p-3 transition-colors ${slaCardTone}`}>
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex items-start gap-1.5 min-w-0 flex-1">
-                                <button
-                                  ref={handle.ref as any}
-                                  {...handle.props}
-                                  className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground -ml-1 mt-0.5 shrink-0"
-                                  aria-label="Arrastar"
-                                  type="button"
-                                >
-                                  <GripVertical className="h-4 w-4" />
-                                </button>
-                                <div className="min-w-0 flex-1">
-                                  <div className="text-sm font-medium truncate">{o.title || "Sem título"}</div>
-                                  <div className="text-xs text-muted-foreground truncate">
-                                    {o.clients?.name ?? o.suppliers?.name ?? "—"}
-                                  </div>
-                                </div>
-                              </div>
-                              <span className="font-mono text-[10px] text-muted-foreground shrink-0">
-                                #{o.order_number}
-                              </span>
-                            </div>
-                            <div className="mt-2 flex items-center justify-between gap-2">
-                              <Badge variant="outline" className={`${pr.tone} text-[10px]`}>{pr.label}</Badge>
-                              <span className="text-[11px] text-muted-foreground truncate">
-                                {o.production_types?.name ?? ""}
-                              </span>
-                            </div>
-                            <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground gap-2">
-                              <span className="truncate">
-                                {o.planned_end_date
-                                  ? new Date(o.planned_end_date).toLocaleDateString("pt-BR")
-                                  : "Sem prazo"}
-                              </span>
-                              <div className="flex items-center gap-1 shrink-0">
-                                {o._slaTarget ? (
-                                  <Badge
-                                    variant="outline"
-                                    className={`text-[10px] gap-0.5 px-1.5 py-0 ${
-                                      o._sla.level === "overdue"
-                                        ? "bg-destructive/10 text-destructive border-destructive/30"
-                                        : o._sla.level === "warning"
-                                        ? "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300"
-                                        : "bg-muted text-muted-foreground border-border"
-                                    }`}
-                                    title={`No status há ${o._sla.elapsed} ${o._slaUnit === "hours" ? "hora(s)" : "dia(s)"} — prazo ${o._slaTarget}${slaSuffix(o._slaUnit)}`}
-                                  >
-                                    <Clock className="h-2.5 w-2.5" />
-                                    {o._sla.level === "overdue"
-                                      ? `+${o._sla.elapsed - o._slaTarget}${slaSuffix(o._slaUnit)}`
-                                      : `${o._sla.elapsed}/${o._slaTarget}${slaSuffix(o._slaUnit)}`}
-                                  </Badge>
-                                ) : null}
-                                {o.isLate && <span className="text-destructive font-medium">Atrasada</span>}
-                              </div>
-                            </div>
-                            <div className="mt-2">
-                              <Select
-                                value={o._slug}
-                                onValueChange={(v) => updateStatusMut.mutate({ id: o.id, status: v })}
-                              >
-                                <SelectTrigger className="h-7 text-[11px]"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                  {statusColumns.map((c) => (
-                                    <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </Card>
+              <div
+                className="grid gap-3"
+                style={{ gridTemplateColumns: `repeat(${Math.max(statusColumns.length, 1)}, minmax(240px, 1fr))` }}
+              >
+                {statusColumns.map((col) => {
+                  const colRows = filtered.filter((o) => o._slug === col.slug);
+                  const lateCount = colRows.filter((o) => o._due.level === "late").length;
+                  return (
+                    <DropColumn key={col.id} slug={col.slug}>
+                      <div className="flex items-center justify-between mb-2 px-1 gap-1">
+                        <span className="text-xs font-semibold text-foreground truncate">{col.label}</span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {lateCount > 0 && (
+                            <Badge className="text-[10px] gap-0.5 px-1.5 py-0 bg-destructive/15 text-destructive border-destructive/30 hover:bg-destructive/15">
+                              <AlertTriangle className="h-2.5 w-2.5" />{lateCount}
+                            </Badge>
                           )}
-                          </DragCard>
-                        );
-                      })}
-                      {colRows.length === 0 && (
-                        <div className="text-xs text-muted-foreground text-center py-4">Vazio</div>
-                      )}
-                    </div>
-                  </DropColumn>
-                );
-              })}
-            </div>
+                          <Badge variant="secondary" className="text-xs">{colRows.length}</Badge>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        {colRows.map((o) => {
+                          const pr = PRIORITY_META[o.priority] || PRIORITY_META.normal;
+                          const dueTone =
+                            o._due.level === "late"
+                              ? "bg-destructive/10 border-destructive/40"
+                              : o._due.level === "warn"
+                              ? "bg-amber-500/10 border-amber-500/40"
+                              : o._due.hasDue
+                              ? "bg-emerald-500/5 border-emerald-500/30"
+                              : "";
+                          const dueBadgeTone =
+                            o._due.level === "late"
+                              ? "bg-destructive/10 text-destructive border-destructive/30"
+                              : o._due.level === "warn"
+                              ? "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300"
+                              : "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300";
+                          return (
+                            <DragCard key={o.id} id={o.id}>
+                              {(handle) => (
+                                <Card className={`p-3 space-y-1.5 transition-colors ${dueTone}`}>
+                                  {/* Linha 1: # + título */}
+                                  <div className="flex items-start gap-1.5">
+                                    <button
+                                      ref={handle.ref as any}
+                                      {...handle.props}
+                                      className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground -ml-1 mt-0.5 shrink-0"
+                                      aria-label="Arrastar"
+                                      type="button"
+                                    >
+                                      <GripVertical className="h-4 w-4" />
+                                    </button>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="text-sm font-semibold truncate">
+                                        <span className="font-mono text-xs text-muted-foreground mr-1">#{o.order_number}</span>
+                                        {o.title || "Sem título"}
+                                      </div>
+                                      {/* Linha 2: cliente */}
+                                      <div className="text-xs text-muted-foreground truncate">
+                                        {o.clients?.name ?? o.suppliers?.name ?? "Sem cliente"}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Linha 3: badges (prioridade + tipo + retrocessos) */}
+                                  <div className="flex items-center gap-1 flex-wrap">
+                                    <Badge variant="outline" className={`${pr.tone} text-[10px]`}>{pr.label}</Badge>
+                                    {o.production_types?.name && (
+                                      <Badge variant="outline" className="text-[10px] truncate max-w-[100px]">
+                                        {o.production_types.name}
+                                      </Badge>
+                                    )}
+                                    {o._regressCount > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); setHistoryOp({ id: o.id, orderNumber: o.order_number }); }}
+                                        className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded border bg-destructive/10 text-destructive border-destructive/30 hover:bg-destructive/20"
+                                        title="Ver histórico"
+                                      >
+                                        <Undo2 className="h-2.5 w-2.5" />{o._regressCount}
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  {/* Linha 4: prazo Xd/Yd */}
+                                  <div className="flex items-center justify-between gap-2">
+                                    {o._due.hasDue ? (
+                                      <Badge variant="outline" className={`text-[10px] gap-1 ${dueBadgeTone}`}>
+                                        <Calendar className="h-2.5 w-2.5" />
+                                        {o._due.elapsedDays}d / {o._due.totalDays}d
+                                        {o._due.level === "late" && " · atrasada"}
+                                      </Badge>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); setReprogramOp({ id: o.id, orderNumber: o.order_number, dueDate: null }); }}
+                                        className="text-[10px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1 underline decoration-dotted"
+                                      >
+                                        <Calendar className="h-2.5 w-2.5" />Sem prazo definido — definir
+                                      </button>
+                                    )}
+                                    {o._due.hasDue && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); setReprogramOp({ id: o.id, orderNumber: o.order_number, dueDate: o.planned_end_date }); }}
+                                        className="text-[10px] text-muted-foreground hover:text-primary"
+                                        title="Reprogramar prazo"
+                                      >
+                                        editar
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  {/* Linha 5: tempo na fase */}
+                                  <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                                    <span className="inline-flex items-center gap-1">
+                                      <Timer className="h-2.5 w-2.5" />
+                                      {formatElapsed(o._phaseSince)} nesta fase
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); setHistoryOp({ id: o.id, orderNumber: o.order_number }); }}
+                                      className="hover:text-foreground inline-flex items-center gap-0.5"
+                                      title="Histórico de fases"
+                                    >
+                                      <History className="h-3 w-3" />
+                                    </button>
+                                  </div>
+
+                                  {/* Dropdown de mudança de status */}
+                                  <div onPointerDown={(e) => e.stopPropagation()}>
+                                    <Select
+                                      value={o._slug}
+                                      onValueChange={(v) => handleMove(o.id, o._slug, v)}
+                                    >
+                                      <SelectTrigger className="h-7 text-[11px]"><SelectValue /></SelectTrigger>
+                                      <SelectContent>
+                                        {statusColumns.map((c) => (
+                                          <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </Card>
+                              )}
+                            </DragCard>
+                          );
+                        })}
+                        {colRows.length === 0 && (
+                          <div className="text-xs text-muted-foreground text-center py-4">Vazio</div>
+                        )}
+                      </div>
+                    </DropColumn>
+                  );
+                })}
+              </div>
             </DndContext>
           )}
         </TabsContent>
@@ -419,8 +489,8 @@ export function OpsOrdersTab() {
                   <TableHead>Tipo</TableHead>
                   <TableHead>Prioridade</TableHead>
                   <TableHead>Cliente</TableHead>
-                  <TableHead>Fornecedor</TableHead>
                   <TableHead>Prazo</TableHead>
+                  <TableHead>Tempo na fase</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead></TableHead>
@@ -445,43 +515,29 @@ export function OpsOrdersTab() {
                       <TableCell><Badge variant="outline">{o.production_types?.name ?? "—"}</Badge></TableCell>
                       <TableCell><Badge variant="outline" className={pr.tone}>{pr.label}</Badge></TableCell>
                       <TableCell className="text-muted-foreground">{o.clients?.name ?? "—"}</TableCell>
-                      <TableCell className="text-muted-foreground">{o.suppliers?.name ?? "—"}</TableCell>
-                      <TableCell className={o.isLate ? "text-destructive font-medium" : ""}>
-                        {o.planned_end_date ? new Date(o.planned_end_date).toLocaleDateString("pt-BR") : "—"}
+                      <TableCell className={
+                        o._due.level === "late" ? "text-destructive font-medium"
+                        : o._due.level === "warn" ? "text-amber-600 font-medium"
+                        : "text-muted-foreground"
+                      }>
+                        {o._due.hasDue ? `${o._due.elapsedDays}d / ${o._due.totalDays}d` : "—"}
                       </TableCell>
+                      <TableCell className="text-muted-foreground text-xs">{formatElapsed(o._phaseSince)}</TableCell>
                       <TableCell className="text-right font-mono text-sm">{fmt(Number(o.value ?? 0))}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1.5">
-                          <Select
-                            value={o._slug}
-                            onValueChange={(v) => updateStatusMut.mutate({ id: o.id, status: v })}
-                          >
-                            <SelectTrigger className={`h-7 text-xs w-[140px] ${col ? colorTone(col.color) : ""}`}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {statusColumns.map((c) => (
-                                <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {o._slaTarget && o._sla.level !== "ok" && (
-                            <Badge
-                              variant="outline"
-                              className={`text-[10px] gap-0.5 px-1.5 py-0 ${
-                                o._sla.level === "overdue"
-                                  ? "bg-destructive/10 text-destructive border-destructive/30"
-                                  : "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300"
-                              }`}
-                              title={`No status há ${o._sla.days} dia(s) — prazo ${o._slaTarget}d`}
-                            >
-                              <Clock className="h-2.5 w-2.5" />
-                              {o._sla.level === "overdue"
-                                ? `+${o._sla.days - o._slaTarget}d`
-                                : `${o._sla.days}/${o._slaTarget}d`}
-                            </Badge>
-                          )}
-                        </div>
+                        <Select
+                          value={o._slug}
+                          onValueChange={(v) => handleMove(o.id, o._slug, v)}
+                        >
+                          <SelectTrigger className={`h-7 text-xs w-[140px] ${col ? colorTone(col.color) : ""}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {statusColumns.map((c) => (
+                              <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell>
                         <Button variant="ghost" size="icon" onClick={() => deleteMut.mutate(o.id)}>
@@ -496,6 +552,31 @@ export function OpsOrdersTab() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Dialogs */}
+      <RegressReasonDialog
+        open={!!pendingMove}
+        onOpenChange={(v) => !v && setPendingMove(null)}
+        fromLabel={pendingMove ? (slugToColumn[pendingMove.fromSlug]?.label ?? pendingMove.fromSlug) : ""}
+        toLabel={pendingMove ? (slugToColumn[pendingMove.toSlug]?.label ?? pendingMove.toSlug) : ""}
+        onConfirm={confirmRegress}
+        loading={moveMut.isPending}
+      />
+      {reprogramOp && (
+        <ReprogramOpDialog
+          open={!!reprogramOp}
+          onOpenChange={(v) => !v && setReprogramOp(null)}
+          opId={reprogramOp.id}
+          orderNumber={reprogramOp.orderNumber}
+          currentDueDate={reprogramOp.dueDate}
+        />
+      )}
+      <PhaseHistoryDialog
+        open={!!historyOp}
+        onOpenChange={(v) => !v && setHistoryOp(null)}
+        opId={historyOp?.id ?? null}
+        orderNumber={historyOp?.orderNumber}
+      />
     </div>
   );
 }
