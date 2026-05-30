@@ -58,16 +58,22 @@ function DropColumn({ slug, children }: { slug: string; children: React.ReactNod
   );
 }
 
-function DragCard({ id, children }: { id: string; children: React.ReactNode }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
+function DragCard({
+  id,
+  children,
+}: {
+  id: string;
+  children: (handle: { ref: (el: HTMLElement | null) => void; props: any }) => React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, isDragging } = useDraggable({ id });
   const style = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 50 : undefined,
   };
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="touch-none cursor-grab active:cursor-grabbing">
-      {children}
+    <div ref={setNodeRef} style={style}>
+      {children({ ref: setActivatorNodeRef, props: { ...attributes, ...listeners } })}
     </div>
   );
 }
