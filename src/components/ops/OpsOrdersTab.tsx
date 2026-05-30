@@ -264,8 +264,14 @@ export function OpsOrdersTab() {
                     <div className="space-y-2">
                       {colRows.map((o) => {
                         const pr = PRIORITY_META[o.priority] || PRIORITY_META.normal;
+                        const slaCardTone =
+                          o._sla.level === "overdue"
+                            ? "bg-destructive/10 border-destructive/40"
+                            : o._sla.level === "warning"
+                            ? "bg-amber-500/10 border-amber-500/40 dark:bg-amber-500/15"
+                            : "";
                         return (
-                          <Card key={o.id} className="p-3">
+                          <Card key={o.id} className={`p-3 transition-colors ${slaCardTone}`}>
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0 flex-1">
                                 <div className="text-sm font-medium truncate">{o.title || "Sem título"}</div>
