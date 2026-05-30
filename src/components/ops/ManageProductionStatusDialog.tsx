@@ -67,7 +67,7 @@ export function ManageProductionStatusDialog() {
           <Settings2 className="h-4 w-4" />Status
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-3xl">
         <DialogHeader><DialogTitle>Status de Produção</DialogTitle></DialogHeader>
 
         <div className="space-y-4">
