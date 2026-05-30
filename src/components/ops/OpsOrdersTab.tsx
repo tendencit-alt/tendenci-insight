@@ -58,16 +58,22 @@ function DropColumn({ slug, children }: { slug: string; children: React.ReactNod
   );
 }
 
-function DragCard({ id, children }: { id: string; children: React.ReactNode }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
+function DragCard({
+  id,
+  children,
+}: {
+  id: string;
+  children: (handle: { ref: (el: HTMLElement | null) => void; props: any }) => React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, isDragging } = useDraggable({ id });
   const style = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 50 : undefined,
   };
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="touch-none cursor-grab active:cursor-grabbing">
-      {children}
+    <div ref={setNodeRef} style={style}>
+      {children({ ref: setActivatorNodeRef, props: { ...attributes, ...listeners } })}
     </div>
   );
 }
@@ -315,12 +321,24 @@ export function OpsOrdersTab() {
                             : "";
                         return (
                           <DragCard key={o.id} id={o.id}>
+                          {(handle) => (
                           <Card className={`p-3 transition-colors ${slaCardTone}`}>
                             <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0 flex-1">
-                                <div className="text-sm font-medium truncate">{o.title || "Sem título"}</div>
-                                <div className="text-xs text-muted-foreground truncate">
-                                  {o.clients?.name ?? o.suppliers?.name ?? "—"}
+                              <div className="flex items-start gap-1.5 min-w-0 flex-1">
+                                <button
+                                  ref={handle.ref as any}
+                                  {...handle.props}
+                                  className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground -ml-1 mt-0.5 shrink-0"
+                                  aria-label="Arrastar"
+                                  type="button"
+                                >
+                                  <GripVertical className="h-4 w-4" />
+                                </button>
+                                <div className="min-w-0 flex-1">
+                                  <div className="text-sm font-medium truncate">{o.title || "Sem título"}</div>
+                                  <div className="text-xs text-muted-foreground truncate">
+                                    {o.clients?.name ?? o.suppliers?.name ?? "—"}
+                                  </div>
                                 </div>
                               </div>
                               <span className="font-mono text-[10px] text-muted-foreground shrink-0">
@@ -333,20 +351,22 @@ export function OpsOrdersTab() {
                                 {o.production_types?.name ?? ""}
                               </span>
                             </div>
-                            <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-                              <span>
+                            <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground gap-2">
+                              <span className="truncate">
                                 {o.planned_end_date
                                   ? new Date(o.planned_end_date).toLocaleDateString("pt-BR")
                                   : "Sem prazo"}
                               </span>
-                              <div className="flex items-center gap-1">
-                                {o._slaTarget && o._sla.level !== "ok" && (
+                              <div className="flex items-center gap-1 shrink-0">
+                                {o._slaTarget ? (
                                   <Badge
                                     variant="outline"
                                     className={`text-[10px] gap-0.5 px-1.5 py-0 ${
                                       o._sla.level === "overdue"
                                         ? "bg-destructive/10 text-destructive border-destructive/30"
-                                        : "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300"
+                                        : o._sla.level === "warning"
+                                        ? "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300"
+                                        : "bg-muted text-muted-foreground border-border"
                                     }`}
                                     title={`No status há ${o._sla.elapsed} ${o._slaUnit === "hours" ? "hora(s)" : "dia(s)"} — prazo ${o._slaTarget}${slaSuffix(o._slaUnit)}`}
                                   >
@@ -355,11 +375,11 @@ export function OpsOrdersTab() {
                                       ? `+${o._sla.elapsed - o._slaTarget}${slaSuffix(o._slaUnit)}`
                                       : `${o._sla.elapsed}/${o._slaTarget}${slaSuffix(o._slaUnit)}`}
                                   </Badge>
-                                )}
+                                ) : null}
                                 {o.isLate && <span className="text-destructive font-medium">Atrasada</span>}
                               </div>
                             </div>
-                            <div className="mt-2" onPointerDown={(e) => e.stopPropagation()}>
+                            <div className="mt-2">
                               <Select
                                 value={o._slug}
                                 onValueChange={(v) => updateStatusMut.mutate({ id: o.id, status: v })}
@@ -373,6 +393,7 @@ export function OpsOrdersTab() {
                               </Select>
                             </div>
                           </Card>
+                          )}
                           </DragCard>
                         );
                       })}
