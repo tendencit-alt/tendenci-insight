@@ -239,8 +239,15 @@ export function OpsProjectsTab() {
                       <Badge variant="secondary" className="text-xs">{colRows.length}</Badge>
                     </div>
                     <div className="space-y-2">
-                      {colRows.map((r) => (
-                        <Card key={r.id} className="p-3 cursor-pointer hover:shadow-md transition" onClick={() => openDetail(r.id)}>
+                      {colRows.map((r) => {
+                        const projectSlaTone =
+                          r.slaOverdue > 0
+                            ? "bg-destructive/10 border-destructive/40"
+                            : r.slaAlerts > 0
+                            ? "bg-amber-500/10 border-amber-500/40 dark:bg-amber-500/15"
+                            : "";
+                        return (
+                        <Card key={r.id} className={`p-3 cursor-pointer hover:shadow-md transition ${projectSlaTone}`} onClick={() => openDetail(r.id)}>
                           <div className="text-sm font-medium truncate">{r.name || "Sem nome"}</div>
                           <div className="text-xs text-muted-foreground truncate">{r.client?.name ?? "—"}</div>
                           <div className="mt-2">
@@ -266,7 +273,8 @@ export function OpsProjectsTab() {
                             </div>
                           </div>
                         </Card>
-                      ))}
+                        );
+                      })}
                       {colRows.length === 0 && (
                         <div className="text-xs text-muted-foreground text-center py-4">Vazio</div>
                       )}
