@@ -184,8 +184,9 @@ export function OpsProjectsTab() {
     return { inProd, waiting, late, slaAlerts, doneMonth, onTimePct };
   }, [filtered, doneSlugs]);
 
-  const openDetail = async (_orderId: string) => {
-    // detail sheet temporarily disabled while migrating from projects→orders
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const openDetail = (orderId: string) => {
+    setSelectedOrderId(orderId);
   };
 
   // Kanban columns: "Sem OP" virtual column + every tenant-managed status, in sort_order.
