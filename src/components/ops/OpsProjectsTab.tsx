@@ -24,6 +24,7 @@ interface ProjectProductionRow {
   name: string | null;
   value: number;
   deadline: string | null;
+  tenant_id: string | null;
   client: { name: string | null } | null;
   architect: { name: string | null } | null;
   pos: { status: string; planned_end_date: string | null; status_changed_at: string | null }[];
