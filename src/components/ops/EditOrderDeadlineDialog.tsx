@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ interface HistoryRow {
 }
 
 export function EditOrderDeadlineDialog({ open, onOpenChange, orderId, orderLabel, currentDeadline, tenantId, onSaved }: Props) {
+  const queryClient = useQueryClient();
   const [newDate, setNewDate] = useState<string>(currentDeadline ? currentDeadline.slice(0, 10) : "");
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
@@ -79,6 +81,17 @@ export function EditOrderDeadlineDialog({ open, onOpenChange, orderId, orderLabe
       if (histError) throw histError;
 
       toast.success("Prazo atualizado");
+      // Invalida caches relacionados para refletir nas demais telas
+      await queryClient.invalidateQueries({
+        predicate: (q) => {
+          const k = q.queryKey[0];
+          return typeof k === "string" && (
+            k === "orders" || k.startsWith("order-") ||
+            k === "fin-projects-active" || k.startsWith("fin-projects") || k.startsWith("projects") ||
+            k.startsWith("production")
+          );
+        },
+      });
       onSaved?.();
       onOpenChange(false);
     } catch (e: any) {

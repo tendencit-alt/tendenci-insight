@@ -155,6 +155,17 @@ export function OpsProjectsTab() {
     return () => { cancelled = true; };
   }, [refreshKey]);
 
+  // Realtime: refetch quando orders/fin_projects/production_orders mudarem
+  useEffect(() => {
+    const channel = supabase
+      .channel("ops-projects-tab-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => setRefreshKey((k) => k + 1))
+      .on("postgres_changes", { event: "*", schema: "public", table: "fin_projects" }, () => setRefreshKey((k) => k + 1))
+      .on("postgres_changes", { event: "*", schema: "public", table: "production_orders" }, () => setRefreshKey((k) => k + 1))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   const aggregator = useMemo(
     () => buildAggregator(columnsBySlug, validSlugs, doneSlugs),
     [columnsBySlug, validSlugs, doneSlugs],
