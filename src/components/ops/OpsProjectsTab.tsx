@@ -411,17 +411,6 @@ export function OpsProjectsTab() {
         onSuccess={() => setRefreshKey((k) => k + 1)}
       />
 
-      {editing && (
-        <EditOrderDeadlineDialog
-          open={!!editing}
-          onOpenChange={(o) => { if (!o) setEditing(null); }}
-          orderId={editing.id}
-          orderLabel={`${editing.name ?? ""} — ${editing.client?.name ?? ""}`}
-          currentDeadline={editing.deadline}
-          tenantId={editing.tenant_id}
-          onSaved={() => { setEditing(null); setRefreshKey((k) => k + 1); }}
-        />
-      )}
 
       {selectedOrderId && (
         <OrderDetailSheet
