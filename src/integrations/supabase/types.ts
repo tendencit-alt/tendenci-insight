@@ -14,21 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      _e2e_final: {
-        Row: {
-          k: string | null
-          v: string | null
-        }
-        Insert: {
-          k?: string | null
-          v?: string | null
-        }
-        Update: {
-          k?: string | null
-          v?: string | null
-        }
-        Relationships: []
-      }
       activities: {
         Row: {
           deal_id: string | null
