@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { LayoutGrid, List, Search, RefreshCw, Loader2, AlertTriangle, Clock, CheckCircle2, Factory } from "lucide-react";
+import { LayoutGrid, List, Search, RefreshCw, Loader2, AlertTriangle, Clock, CheckCircle2, Factory, CalendarClock, Pencil } from "lucide-react";
 import { ProjectDetailSheet } from "@/components/projects/ProjectDetailSheet";
 import { useProductionStatusColumns, colorTone, slaState } from "@/hooks/useProductionStatusColumns";
 import { ManageProductionStatusDialog } from "./ManageProductionStatusDialog";
+import { EditOrderDeadlineDialog } from "./EditOrderDeadlineDialog";
 
 // Map legacy slugs that may still exist on production_orders rows.
 const SLUG_ALIASES: Record<string, string> = {
@@ -23,6 +24,7 @@ interface ProjectProductionRow {
   name: string | null;
   value: number;
   deadline: string | null;
+  tenant_id: string | null;
   client: { name: string | null } | null;
   architect: { name: string | null } | null;
   pos: { status: string; planned_end_date: string | null; status_changed_at: string | null }[];
@@ -102,6 +104,8 @@ export function OpsProjectsTab() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [detailProject, setDetailProject] = useState<any>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [editing, setEditing] = useState<AggregatedRow | null>(null);
+
 
   const { data: statusColumns = [] } = useProductionStatusColumns();
 
@@ -121,7 +125,7 @@ export function OpsProjectsTab() {
       const { data, error } = await supabase
         .from("orders")
         .select(`
-          id, order_number, valor_total, data_entrega_prevista, status,
+          id, order_number, valor_total, data_entrega_prevista, status, tenant_id,
           client:clients(name),
           architect:architects(name),
           pos:production_orders(status, planned_end_date, status_changed_at)
@@ -138,6 +142,7 @@ export function OpsProjectsTab() {
           name: `Pedido #${o.order_number}`,
           value: Number(o.valor_total ?? 0),
           deadline: o.data_entrega_prevista,
+          tenant_id: o.tenant_id ?? null,
           client: o.client,
           architect: o.architect,
           pos: o.pos ?? [],
@@ -250,6 +255,24 @@ export function OpsProjectsTab() {
                         <Card key={r.id} className={`p-3 cursor-pointer hover:shadow-md transition ${projectSlaTone}`} onClick={() => openDetail(r.id)}>
                           <div className="text-sm font-medium truncate">{r.name || "Sem nome"}</div>
                           <div className="text-xs text-muted-foreground truncate">{r.client?.name ?? "—"}</div>
+
+                          {/* Prazo de entrega + botão editar */}
+                          <div className="mt-2 flex items-center justify-between gap-2 text-[11px]">
+                            <div className={`flex items-center gap-1 ${r.isLate ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+                              <CalendarClock className="h-3 w-3" />
+                              <span>Prazo: {r.deadline ? new Date(r.deadline).toLocaleDateString("pt-BR") : "—"}</span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={(e) => { e.stopPropagation(); setEditing(r); }}
+                              title="Atualizar prazo"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          </div>
+
                           <div className="mt-2">
                             <Progress value={r.progressPct} className="h-1.5" />
                             <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground gap-1">
@@ -359,6 +382,18 @@ export function OpsProjectsTab() {
         onOpenChange={setDetailOpen}
         onSuccess={() => setRefreshKey((k) => k + 1)}
       />
+
+      {editing && (
+        <EditOrderDeadlineDialog
+          open={!!editing}
+          onOpenChange={(o) => { if (!o) setEditing(null); }}
+          orderId={editing.id}
+          orderLabel={`${editing.name ?? ""} — ${editing.client?.name ?? ""}`}
+          currentDeadline={editing.deadline}
+          tenantId={editing.tenant_id}
+          onSaved={() => { setEditing(null); setRefreshKey((k) => k + 1); }}
+        />
+      )}
     </div>
   );
 }
