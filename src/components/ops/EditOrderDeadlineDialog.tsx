@@ -29,6 +29,7 @@ interface HistoryRow {
 }
 
 export function EditOrderDeadlineDialog({ open, onOpenChange, orderId, orderLabel, currentDeadline, tenantId, onSaved }: Props) {
+  const queryClient = useQueryClient();
   const [newDate, setNewDate] = useState<string>(currentDeadline ? currentDeadline.slice(0, 10) : "");
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
