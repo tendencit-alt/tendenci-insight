@@ -285,7 +285,7 @@ export function OpsProjectsTab() {
                           <div className="mt-2 flex items-center justify-between gap-2 text-[11px]">
                             <div className={`flex items-center gap-1 ${r.isLate ? "text-destructive font-medium" : "text-muted-foreground"}`}>
                               <CalendarClock className="h-3 w-3" />
-                              <span>Prazo: {r.deadline ? new Date(r.deadline).toLocaleDateString("pt-BR") : "—"}</span>
+                              <span>Prazo: {fmtBR(r.deadline)}</span>
                             </div>
                             <Button
                               variant="ghost"
