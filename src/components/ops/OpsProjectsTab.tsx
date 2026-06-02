@@ -104,6 +104,8 @@ export function OpsProjectsTab() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [detailProject, setDetailProject] = useState<any>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [editing, setEditing] = useState<AggregatedRow | null>(null);
+
 
   const { data: statusColumns = [] } = useProductionStatusColumns();
 
