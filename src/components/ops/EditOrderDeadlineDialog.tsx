@@ -81,6 +81,17 @@ export function EditOrderDeadlineDialog({ open, onOpenChange, orderId, orderLabe
       if (histError) throw histError;
 
       toast.success("Prazo atualizado");
+      // Invalida caches relacionados para refletir nas demais telas
+      await queryClient.invalidateQueries({
+        predicate: (q) => {
+          const k = q.queryKey[0];
+          return typeof k === "string" && (
+            k === "orders" || k.startsWith("order-") ||
+            k === "fin-projects-active" || k.startsWith("fin-projects") || k.startsWith("projects") ||
+            k.startsWith("production")
+          );
+        },
+      });
       onSaved?.();
       onOpenChange(false);
     } catch (e: any) {
