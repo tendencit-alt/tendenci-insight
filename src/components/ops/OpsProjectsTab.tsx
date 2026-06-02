@@ -7,12 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { LayoutGrid, List, Search, RefreshCw, Loader2, AlertTriangle, Clock, CheckCircle2, Factory, CalendarClock, Pencil } from "lucide-react";
+import { LayoutGrid, List, Search, RefreshCw, Loader2, AlertTriangle, Clock, CheckCircle2, Factory, CalendarClock } from "lucide-react";
 import { ProjectDetailSheet } from "@/components/projects/ProjectDetailSheet";
 import { OrderDetailSheet } from "@/components/orders/OrderDetailSheet";
 import { useProductionStatusColumns, colorTone, slaState } from "@/hooks/useProductionStatusColumns";
 import { ManageProductionStatusDialog } from "./ManageProductionStatusDialog";
-import { EditOrderDeadlineDialog } from "./EditOrderDeadlineDialog";
 
 // Map legacy slugs that may still exist on production_orders rows.
 const SLUG_ALIASES: Record<string, string> = {
@@ -117,7 +116,7 @@ export function OpsProjectsTab() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [detailProject, setDetailProject] = useState<any>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [editing, setEditing] = useState<AggregatedRow | null>(null);
+  
 
 
   const { data: statusColumns = [] } = useProductionStatusColumns();
@@ -299,15 +298,6 @@ export function OpsProjectsTab() {
                               <CalendarClock className="h-3 w-3" />
                               <span>Prazo: {fmtBR(r.deadline)}</span>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0"
-                              onClick={(e) => { e.stopPropagation(); setEditing(r); }}
-                              title="Atualizar prazo"
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </Button>
                           </div>
 
                           <div className="mt-2">
@@ -420,17 +410,6 @@ export function OpsProjectsTab() {
         onSuccess={() => setRefreshKey((k) => k + 1)}
       />
 
-      {editing && (
-        <EditOrderDeadlineDialog
-          open={!!editing}
-          onOpenChange={(o) => { if (!o) setEditing(null); }}
-          orderId={editing.id}
-          orderLabel={`${editing.name ?? ""} — ${editing.client?.name ?? ""}`}
-          currentDeadline={editing.deadline}
-          tenantId={editing.tenant_id}
-          onSaved={() => { setEditing(null); setRefreshKey((k) => k + 1); }}
-        />
-      )}
 
       {selectedOrderId && (
         <OrderDetailSheet
