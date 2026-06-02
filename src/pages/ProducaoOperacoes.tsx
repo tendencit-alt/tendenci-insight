@@ -2,20 +2,20 @@ import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Factory, CalendarRange, LineChart } from "lucide-react";
+import { Factory, CalendarRange } from "lucide-react";
 import { OpsWorkTab } from "@/components/ops/OpsWorkTab";
 import { OpsCronogramaTab } from "@/components/ops/OpsCronogramaTab";
-import { OpsInsightsTab } from "@/components/ops/OpsInsightsTab";
 
-const VALID_TABS = ["producao", "cronograma", "insights"];
+const VALID_TABS = ["producao", "cronograma"];
 // legacy → new mapping for backward compatibility
 const LEGACY: Record<string, string> = {
   ordens: "producao",
   projetos: "producao",
   planejamento: "cronograma",
   execucao: "cronograma",
-  custos: "insights",
-  analytics: "insights",
+  custos: "producao",
+  analytics: "producao",
+  insights: "producao",
 };
 
 export default function ProducaoOperacoes() {
@@ -27,7 +27,8 @@ export default function ProducaoOperacoes() {
   useEffect(() => {
     if (raw && !VALID_TABS.includes(raw)) {
       const next = new URLSearchParams(params);
-      if (LEGACY[raw]) next.set("tab", LEGACY[raw]); else next.delete("tab");
+      if (LEGACY[raw] && VALID_TABS.includes(LEGACY[raw])) next.set("tab", LEGACY[raw]);
+      else next.delete("tab");
       setParams(next, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -45,7 +46,7 @@ export default function ProducaoOperacoes() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Produção e Operações</h1>
           <p className="text-muted-foreground text-sm">
-            Acompanhe ordens, cronograma e indicadores em uma visão única.
+            Acompanhe ordens e cronograma em uma visão única.
           </p>
         </div>
 
@@ -53,12 +54,10 @@ export default function ProducaoOperacoes() {
           <TabsList>
             <TabsTrigger value="producao" className="gap-1.5"><Factory className="h-4 w-4" />Produção</TabsTrigger>
             <TabsTrigger value="cronograma" className="gap-1.5"><CalendarRange className="h-4 w-4" />Cronograma</TabsTrigger>
-            <TabsTrigger value="insights" className="gap-1.5"><LineChart className="h-4 w-4" />Custos & Analytics</TabsTrigger>
           </TabsList>
 
           <TabsContent value="producao"><OpsWorkTab /></TabsContent>
           <TabsContent value="cronograma"><OpsCronogramaTab /></TabsContent>
-          <TabsContent value="insights"><OpsInsightsTab /></TabsContent>
         </Tabs>
       </div>
     </DashboardLayout>
