@@ -150,16 +150,28 @@ export function OpsProjectsTab() {
         console.error("OpsProjectsTab fetch error", error);
         setRawRows([]);
       } else {
-        const mapped = (data ?? []).map((o: any) => ({
-          id: o.id,
-          name: `Pedido #${o.order_number}`,
-          value: Number(o.valor_total ?? 0),
-          deadline: o.data_entrega_prevista,
-          tenant_id: o.tenant_id ?? null,
-          client: o.client,
-          architect: o.architect,
-          pos: o.pos ?? [],
-        }));
+        const mapped = (data ?? []).map((o: any) => {
+          const pos = o.pos ?? [];
+          // Prazo efetivo: maior planned_end_date entre as OPs (reflete reprogramações),
+          // caindo para a data do pedido quando não houver OPs.
+          const posDeadlines = pos
+            .map((p: any) => p?.planned_end_date)
+            .filter(Boolean)
+            .map((d: string) => String(d).slice(0, 10))
+            .sort();
+          const effectiveDeadline =
+            posDeadlines.length > 0 ? posDeadlines[posDeadlines.length - 1] : o.data_entrega_prevista;
+          return {
+            id: o.id,
+            name: `Pedido #${o.order_number}`,
+            value: Number(o.valor_total ?? 0),
+            deadline: effectiveDeadline,
+            tenant_id: o.tenant_id ?? null,
+            client: o.client,
+            architect: o.architect,
+            pos,
+          };
+        });
         setRawRows(mapped);
       }
       setLoading(false);
