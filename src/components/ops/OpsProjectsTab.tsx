@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LayoutGrid, List, Search, RefreshCw, Loader2, AlertTriangle, Clock, CheckCircle2, Factory, CalendarClock, Pencil } from "lucide-react";
 import { ProjectDetailSheet } from "@/components/projects/ProjectDetailSheet";
+import { OrderDetailSheet } from "@/components/orders/OrderDetailSheet";
 import { useProductionStatusColumns, colorTone, slaState } from "@/hooks/useProductionStatusColumns";
 import { ManageProductionStatusDialog } from "./ManageProductionStatusDialog";
 import { EditOrderDeadlineDialog } from "./EditOrderDeadlineDialog";
