@@ -77,7 +77,7 @@ function buildAggregator(
           aggStatus = sorted[0]?.status ?? pos[0].status;
         }
       }
-      const isLate = !!p.deadline && new Date(p.deadline) < today && !doneSlugs.has(aggStatus);
+      const isLate = !!p.deadline && parseLocalDate(p.deadline) < today && !doneSlugs.has(aggStatus);
       let slaAlerts = 0;
       let slaOverdue = 0;
       for (const x of pos) {
