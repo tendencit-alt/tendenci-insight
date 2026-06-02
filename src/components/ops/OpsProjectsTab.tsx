@@ -396,6 +396,15 @@ export function OpsProjectsTab() {
           onSaved={() => { setEditing(null); setRefreshKey((k) => k + 1); }}
         />
       )}
+
+      {selectedOrderId && (
+        <OrderDetailSheet
+          orderId={selectedOrderId}
+          open={!!selectedOrderId}
+          onOpenChange={(o) => { if (!o) setSelectedOrderId(null); }}
+          onUpdate={() => setRefreshKey((k) => k + 1)}
+        />
+      )}
     </div>
   );
 }
