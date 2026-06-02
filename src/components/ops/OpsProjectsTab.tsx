@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LayoutGrid, List, Search, RefreshCw, Loader2, AlertTriangle, Clock, CheckCircle2, Factory, CalendarClock, Pencil } from "lucide-react";
 import { ProjectDetailSheet } from "@/components/projects/ProjectDetailSheet";
+import { OrderDetailSheet } from "@/components/orders/OrderDetailSheet";
 import { useProductionStatusColumns, colorTone, slaState } from "@/hooks/useProductionStatusColumns";
 import { ManageProductionStatusDialog } from "./ManageProductionStatusDialog";
 import { EditOrderDeadlineDialog } from "./EditOrderDeadlineDialog";
@@ -183,8 +184,9 @@ export function OpsProjectsTab() {
     return { inProd, waiting, late, slaAlerts, doneMonth, onTimePct };
   }, [filtered, doneSlugs]);
 
-  const openDetail = async (_orderId: string) => {
-    // detail sheet temporarily disabled while migrating from projects→orders
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const openDetail = (orderId: string) => {
+    setSelectedOrderId(orderId);
   };
 
   // Kanban columns: "Sem OP" virtual column + every tenant-managed status, in sort_order.
@@ -392,6 +394,15 @@ export function OpsProjectsTab() {
           currentDeadline={editing.deadline}
           tenantId={editing.tenant_id}
           onSaved={() => { setEditing(null); setRefreshKey((k) => k + 1); }}
+        />
+      )}
+
+      {selectedOrderId && (
+        <OrderDetailSheet
+          orderId={selectedOrderId}
+          open={!!selectedOrderId}
+          onOpenChange={(o) => { if (!o) setSelectedOrderId(null); }}
+          onUpdate={() => setRefreshKey((k) => k + 1)}
         />
       )}
     </div>
