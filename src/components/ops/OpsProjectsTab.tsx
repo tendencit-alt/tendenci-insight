@@ -299,15 +299,6 @@ export function OpsProjectsTab() {
                               <CalendarClock className="h-3 w-3" />
                               <span>Prazo: {fmtBR(r.deadline)}</span>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0"
-                              onClick={(e) => { e.stopPropagation(); setEditing(r); }}
-                              title="Atualizar prazo"
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </Button>
                           </div>
 
                           <div className="mt-2">
