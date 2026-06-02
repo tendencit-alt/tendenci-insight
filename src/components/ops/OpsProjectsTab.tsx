@@ -366,7 +366,7 @@ export function OpsProjectsTab() {
                       <TableCell className="text-muted-foreground">{r.client?.name ?? "—"}</TableCell>
                       <TableCell className="text-right">R$ {Number(r.value ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
                       <TableCell className={r.isLate ? "text-destructive font-medium" : ""}>
-                        {r.deadline ? new Date(r.deadline).toLocaleDateString("pt-BR") : "—"}
+                        {fmtBR(r.deadline)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 min-w-[140px]">
