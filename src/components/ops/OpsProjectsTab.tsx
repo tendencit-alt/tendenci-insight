@@ -20,6 +20,18 @@ const SLUG_ALIASES: Record<string, string> = {
   pausado: "em_producao",
 };
 
+// Parses date-only strings (YYYY-MM-DD) as local dates to avoid UTC timezone shifts.
+function parseLocalDate(d: string | null | undefined): Date {
+  if (!d) return new Date(NaN);
+  const s = String(d).slice(0, 10);
+  const [y, m, day] = s.split("-").map(Number);
+  return new Date(y, (m ?? 1) - 1, day ?? 1);
+}
+function fmtBR(d: string | null | undefined): string {
+  if (!d) return "—";
+  return parseLocalDate(d).toLocaleDateString("pt-BR");
+}
+
 interface ProjectProductionRow {
   id: string;
   name: string | null;
