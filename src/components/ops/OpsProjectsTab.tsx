@@ -255,6 +255,24 @@ export function OpsProjectsTab() {
                         <Card key={r.id} className={`p-3 cursor-pointer hover:shadow-md transition ${projectSlaTone}`} onClick={() => openDetail(r.id)}>
                           <div className="text-sm font-medium truncate">{r.name || "Sem nome"}</div>
                           <div className="text-xs text-muted-foreground truncate">{r.client?.name ?? "—"}</div>
+
+                          {/* Prazo de entrega + botão editar */}
+                          <div className="mt-2 flex items-center justify-between gap-2 text-[11px]">
+                            <div className={`flex items-center gap-1 ${r.isLate ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+                              <CalendarClock className="h-3 w-3" />
+                              <span>Prazo: {r.deadline ? new Date(r.deadline).toLocaleDateString("pt-BR") : "—"}</span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={(e) => { e.stopPropagation(); setEditing(r); }}
+                              title="Atualizar prazo"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          </div>
+
                           <div className="mt-2">
                             <Progress value={r.progressPct} className="h-1.5" />
                             <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground gap-1">
