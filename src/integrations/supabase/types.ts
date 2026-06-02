@@ -13038,6 +13038,47 @@ export type Database = {
           },
         ]
       }
+      order_deadline_history: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          id: string
+          new_deadline: string | null
+          old_deadline: string | null
+          order_id: string
+          reason: string
+          tenant_id: string
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_deadline?: string | null
+          old_deadline?: string | null
+          order_id: string
+          reason: string
+          tenant_id: string
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_deadline?: string | null
+          old_deadline?: string | null
+          order_id?: string
+          reason?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_deadline_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_history: {
         Row: {
           action_type: string
