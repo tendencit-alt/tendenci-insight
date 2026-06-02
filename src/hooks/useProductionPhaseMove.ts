@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export type PhaseDirection = "forward" | "regress" | "initial";
+export type PhaseDirection = "forward" | "regress" | "initial" | "deadline";
 
 export interface PhaseHistoryRow {
   id: string;
