@@ -123,7 +123,7 @@ export function OpsProjectsTab() {
       const { data, error } = await supabase
         .from("orders")
         .select(`
-          id, order_number, valor_total, data_entrega_prevista, status,
+          id, order_number, valor_total, data_entrega_prevista, status, tenant_id,
           client:clients(name),
           architect:architects(name),
           pos:production_orders(status, planned_end_date, status_changed_at)
@@ -140,6 +140,7 @@ export function OpsProjectsTab() {
           name: `Pedido #${o.order_number}`,
           value: Number(o.valor_total ?? 0),
           deadline: o.data_entrega_prevista,
+          tenant_id: o.tenant_id ?? null,
           client: o.client,
           architect: o.architect,
           pos: o.pos ?? [],
