@@ -20,6 +20,18 @@ const SLUG_ALIASES: Record<string, string> = {
   pausado: "em_producao",
 };
 
+// Parses date-only strings (YYYY-MM-DD) as local dates to avoid UTC timezone shifts.
+function parseLocalDate(d: string | null | undefined): Date {
+  if (!d) return new Date(NaN);
+  const s = String(d).slice(0, 10);
+  const [y, m, day] = s.split("-").map(Number);
+  return new Date(y, (m ?? 1) - 1, day ?? 1);
+}
+function fmtBR(d: string | null | undefined): string {
+  if (!d) return "—";
+  return parseLocalDate(d).toLocaleDateString("pt-BR");
+}
+
 interface ProjectProductionRow {
   id: string;
   name: string | null;
@@ -77,7 +89,7 @@ function buildAggregator(
           aggStatus = sorted[0]?.status ?? pos[0].status;
         }
       }
-      const isLate = !!p.deadline && new Date(p.deadline) < today && !doneSlugs.has(aggStatus);
+      const isLate = !!p.deadline && parseLocalDate(p.deadline) < today && !doneSlugs.has(aggStatus);
       let slaAlerts = 0;
       let slaOverdue = 0;
       for (const x of pos) {
@@ -273,7 +285,7 @@ export function OpsProjectsTab() {
                           <div className="mt-2 flex items-center justify-between gap-2 text-[11px]">
                             <div className={`flex items-center gap-1 ${r.isLate ? "text-destructive font-medium" : "text-muted-foreground"}`}>
                               <CalendarClock className="h-3 w-3" />
-                              <span>Prazo: {r.deadline ? new Date(r.deadline).toLocaleDateString("pt-BR") : "—"}</span>
+                              <span>Prazo: {fmtBR(r.deadline)}</span>
                             </div>
                             <Button
                               variant="ghost"
@@ -354,7 +366,7 @@ export function OpsProjectsTab() {
                       <TableCell className="text-muted-foreground">{r.client?.name ?? "—"}</TableCell>
                       <TableCell className="text-right">R$ {Number(r.value ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
                       <TableCell className={r.isLate ? "text-destructive font-medium" : ""}>
-                        {r.deadline ? new Date(r.deadline).toLocaleDateString("pt-BR") : "—"}
+                        {fmtBR(r.deadline)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 min-w-[140px]">
