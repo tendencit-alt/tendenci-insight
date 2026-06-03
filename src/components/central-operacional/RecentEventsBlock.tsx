@@ -31,20 +31,25 @@ export function RecentEventsBlock({ events, loading }: Props) {
         ) : (
           <ScrollArea className="h-[220px]">
             <div className="space-y-1.5">
-              {events.map((ev) => (
-                <div key={ev.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent/30 transition-colors">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm truncate">{ev.description}</p>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-[10px] h-4">{ev.module}</Badge>
-                      <span className="text-[10px] text-muted-foreground">
-                        {formatDistanceToNow(new Date(ev.timestamp), { addSuffix: true, locale: ptBR })}
-                      </span>
+              {events.map((ev) => {
+                const moduleLabel = (ev.module || "sistema")
+                  .replace(/_/g, " ")
+                  .replace(/\b\w/g, (c) => c.toUpperCase());
+                return (
+                  <div key={ev.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-accent/30 transition-colors">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-2" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm leading-snug">{ev.description}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <Badge variant="outline" className="text-[10px] h-4">{moduleLabel}</Badge>
+                        <span className="text-[10px] text-muted-foreground">
+                          {formatDistanceToNow(new Date(ev.timestamp), { addSuffix: true, locale: ptBR })}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
         )}
