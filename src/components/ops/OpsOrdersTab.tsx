@@ -639,3 +639,20 @@ function KpiCard({ icon, label, value, tone }: { icon: React.ReactNode; label: s
     </Card>
   );
 }
+
+function KpiCardTip({ icon, label, value, tone, hint }: { icon: React.ReactNode; label: string; value: number | string; tone: string; hint: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Card className="p-3 cursor-help">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>{label}</span>
+            <span className={tone}>{icon}</span>
+          </div>
+          <div className={`text-2xl font-bold mt-1 ${tone}`}>{value}</div>
+        </Card>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" className="max-w-[260px] text-xs">{hint}</TooltipContent>
+    </Tooltip>
+  );
+}
