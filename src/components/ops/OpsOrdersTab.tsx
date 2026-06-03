@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DateBrInput } from "@/components/ui/date-br-input";
 import {
   LayoutGrid, List, Search, Loader2, AlertTriangle, Clock, CheckCircle2,
-  Factory, Plus, Trash2, GripVertical, Calendar, Undo2, Timer, History,
+  Factory, Plus, Trash2, GripVertical, Calendar, Undo2, Timer, History, ClipboardCheck,
 } from "lucide-react";
 import { useOpsOrders, useCreateOpsOrder, useDeleteOpsOrder, useProductionTypes } from "@/hooks/useOpsData";
 import {
@@ -21,6 +21,7 @@ import {
   useMoveProductionPhase, useProductionPhaseSummary, formatElapsed, dueDateUrgency,
 } from "@/hooks/useProductionPhaseMove";
 import { ManageProductionStatusDialog } from "./ManageProductionStatusDialog";
+import { ManageStatusChecklistsDialog } from "@/components/production/ManageStatusChecklistsDialog";
 import { RegressReasonDialog } from "./RegressReasonDialog";
 import { ReprogramOpDialog } from "./ReprogramOpDialog";
 import { PhaseHistoryDialog } from "./PhaseHistoryDialog";
@@ -86,6 +87,7 @@ export function OpsOrdersTab() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [checklistsOpen, setChecklistsOpen] = useState(false);
   const [form, setForm] = useState<any>({
     title: "", production_type_id: "", priority: "normal",
     planned_start_date: "", planned_end_date: "", notes: "",
@@ -242,6 +244,10 @@ export function OpsOrdersTab() {
             </SelectContent>
           </Select>
           <ManageProductionStatusDialog />
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setChecklistsOpen(true)}>
+            <ClipboardCheck className="h-4 w-4" />Checklists por status
+          </Button>
+          <ManageStatusChecklistsDialog open={checklistsOpen} onOpenChange={setChecklistsOpen} />
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" />Nova Ordem</Button>
