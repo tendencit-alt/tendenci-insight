@@ -44,6 +44,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { ProductionUpdates } from './ProductionUpdates';
 import { ProductionFichaTecnica } from './ProductionFichaTecnica';
 import { EditPhasesSLADialog } from './EditPhasesSLADialog';
+import { ProductionOrderChecklist } from './ProductionOrderChecklist';
 
 interface ProductionOrderDetailSheetProps {
   orderId: string | null;
@@ -518,6 +519,11 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
 
                   {/* Tab Informações */}
                   <TabsContent value="info" className="space-y-4 mt-4">
+                    {/* Checklist da fase atual */}
+                    {order.status && (
+                      <ProductionOrderChecklist productionOrderId={order.id} statusSlug={order.status} />
+                    )}
+
                     {/* Informações */}
                     <div className="grid gap-4">
                       {order.client && (

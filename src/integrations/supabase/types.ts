@@ -15721,6 +15721,63 @@ export type Database = {
           },
         ]
       }
+      production_order_checklist_progress: {
+        Row: {
+          checklist_item_id: string
+          completed: boolean
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          production_order_id: string
+          status_slug: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          checklist_item_id: string
+          completed?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          production_order_id: string
+          status_slug: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          checklist_item_id?: string
+          completed?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          production_order_id?: string
+          status_slug?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_order_checklist_progress_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "production_status_checklist_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_order_checklist_progress_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_order_groups: {
         Row: {
           client_id: string | null
@@ -16315,6 +16372,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      production_status_checklist_items: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          position: number
+          required: boolean
+          status_slug: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label: string
+          position?: number
+          required?: boolean
+          status_slug: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          position?: number
+          required?: boolean
+          status_slug?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       production_status_columns: {
         Row: {

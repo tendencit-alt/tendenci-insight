@@ -12,6 +12,8 @@ import { CreateProductionOrderDialog } from '@/components/production/CreateProdu
 import { ProductionFilters } from '@/components/production/ProductionFilters';
 import { ProductionOrderDetailSheet } from '@/components/production/ProductionOrderDetailSheet';
 import { ManageProductionStagesDialog } from '@/components/production/ManageProductionStagesDialog';
+import { ManageStatusChecklistsDialog } from '@/components/production/ManageStatusChecklistsDialog';
+import { ClipboardCheck } from 'lucide-react';
 import { ManageProductionAutomationsDialog } from '@/components/production/ManageProductionAutomationsDialog';
 import { UnifyOpsDialog } from '@/components/production/UnifyOpsDialog';
 import { ProductionListView } from '@/components/production/ProductionListView';
@@ -30,6 +32,7 @@ export default function Production() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [automationsDialogOpen, setAutomationsDialogOpen] = useState(false);
+  const [checklistsDialogOpen, setChecklistsDialogOpen] = useState(false);
   const [unifyDialogOpen, setUnifyDialogOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'kanban' | 'lista'>('kanban');
@@ -281,6 +284,10 @@ export default function Production() {
                 <Settings className="h-4 w-4" />
                 Etapas de produção
               </Button>
+              <Button variant="outline" onClick={() => setChecklistsDialogOpen(true)} className="gap-1.5">
+                <ClipboardCheck className="h-4 w-4" />
+                Checklists por status
+              </Button>
               <Button variant="outline" onClick={() => setAutomationsDialogOpen(true)} className="gap-1.5">
                 <Zap className="h-4 w-4" />
                 Automações
@@ -314,6 +321,12 @@ export default function Production() {
       <ManageProductionStagesDialog
         open={configDialogOpen}
         onOpenChange={setConfigDialogOpen}
+      />
+
+      {/* Dialog de checklists por status */}
+      <ManageStatusChecklistsDialog
+        open={checklistsDialogOpen}
+        onOpenChange={setChecklistsDialogOpen}
       />
 
       {/* Dialog de automações - apenas MASTER */}
