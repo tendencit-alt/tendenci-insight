@@ -279,7 +279,6 @@ const menuGroups: MenuGroup[] = [
       { title: "Painel Owner (legado)", url: "/super-admin", icon: Building2 },
       { title: "Smart Admin", url: "/owner/admin", icon: ShieldCheck },
       { title: "Permission Debug", url: "/owner/permission-debug", icon: Bug },
-      { title: "Base de Conhecimento", url: "/support-knowledge", icon: BookOpen },
     ],
   },
 ];

@@ -60,7 +60,6 @@ export const MODULE_ROUTE_MAP: Record<string, string> = {
   "governanca": "/governanca",
   
   "multi-company": "/empresas",
-  "support-knowledge": "/support-knowledge",
   "bi-dashboard": "/bi-dashboard",
   "paineis": "/paineis",
   "relatorios": "/relatorios",
