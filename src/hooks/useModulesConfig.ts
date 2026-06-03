@@ -35,7 +35,6 @@ export const MODULE_ROUTE_MAP: Record<string, string> = {
   "customer-success": "/customer-success",
   "orcamentos": "/propostas",
   "contratos": "/contratos",
-  "comissoes": "/comissoes",
   "producao": "/producao-operacoes",
   "producao-operacoes": "/producao-operacoes",
   "projetos": "/projetos",
