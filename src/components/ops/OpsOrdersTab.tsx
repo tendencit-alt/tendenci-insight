@@ -361,7 +361,11 @@ export function OpsOrdersTab() {
                           return (
                             <DragCard key={o.id} id={o.id}>
                               {(handle) => (
-                                <Card className={`p-3 space-y-1.5 transition-colors ${dueTone}`}>
+                                <Card
+                                  className={`p-3 space-y-1.5 transition-colors cursor-pointer hover:ring-1 hover:ring-primary/30 ${dueTone}`}
+                                  onClick={() => setDetailOpId(o.id)}
+                                >
+
                                   {/* Linha 1: # + título */}
                                   <div className="flex items-start gap-1.5">
                                     <button
