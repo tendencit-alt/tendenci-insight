@@ -147,7 +147,6 @@ export const MENU_PERMISSION_MAP: MenuRoot[] = [
     ownerOnly: true,
     leaves: [
       { key: '/owner/control-tower',       label: 'Owner Control Tower',  module: 'dashboard_executivo', ownerOnly: true },
-      { key: '/owner/execution-priority',  label: 'Execution Priority',   module: 'dashboard_executivo', ownerOnly: true },
     ],
   },
   {
@@ -168,7 +167,6 @@ export const MENU_PERMISSION_MAP: MenuRoot[] = [
     leaves: [
       { key: '/super-admin',           label: 'Painel Owner',       module: 'configuracoes', ownerOnly: true },
       { key: '/owner/admin',           label: 'Smart Admin',        module: 'configuracoes', ownerOnly: true },
-      { key: '/owner/permission-debug', label: 'Permission Debug',  module: 'configuracoes', ownerOnly: true },
     ],
   },
 ];
