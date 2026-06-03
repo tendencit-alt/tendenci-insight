@@ -67,17 +67,16 @@ export function usePermissionRecommendations() {
 }
 
 export function useAnalyzeFriction() {
-  const qc = useQueryClient();
+  // Edge function `analyze-permission-friction` and the underlying denial telemetry
+  // were removed when the /auditoria-permissoes module was retired (C2 cleanup).
+  // Keep the hook signature so callers don't break; it's a no-op now.
   return useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("analyze-permission-friction", { body: {} });
-      if (error) throw error;
-      return data as {
-        top_denials: { permission_key: string; module: string | null; n: number; distinct_users: number }[];
-        ai_insights: string | null;
+      return {
+        top_denials: [] as { permission_key: string; module: string | null; n: number; distinct_users: number }[],
+        ai_insights: null as string | null,
       };
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["permission-recommendations"] }),
   });
 }
 

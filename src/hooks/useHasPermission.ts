@@ -2,7 +2,6 @@ import { useCallback } from "react";
 import { useRBACPermissions } from "@/hooks/useRBACPermissions";
 import { usePermissions } from "@/hooks/usePermissions";
 import { usePermissionCatalog, getCatalogEntry } from "@/hooks/usePermissionCatalog";
-import { useDenialLogger } from "@/hooks/useDenialLogger";
 import { usePermissionSimulation } from "@/contexts/PermissionSimulationContext";
 
 export interface PermissionDecision {
@@ -19,7 +18,7 @@ export interface PermissionDecision {
  *  - real RBAC critical permissions
  *  - active Permission Simulation (Owner mode)
  *  - human-readable reason for blocked access
- *  - automatic analytics logging when denied (call .audit())
+ *  - audit() is a no-op (denial telemetry removed in C2 cleanup)
  */
 export function useHasPermission(permissionKey: string): PermissionDecision & {
   audit: (context?: Record<string, unknown>) => void;
@@ -28,7 +27,6 @@ export function useHasPermission(permissionKey: string): PermissionDecision & {
   const { isMaster } = usePermissions();
   const { data: catalog } = usePermissionCatalog();
   const sim = usePermissionSimulation();
-  const logDenial = useDenialLogger();
 
   const entry = getCatalogEntry(catalog, permissionKey);
 
@@ -46,13 +44,8 @@ export function useHasPermission(permissionKey: string): PermissionDecision & {
       "Você não possui permissão para executar esta ação. Solicite acesso ao administrador da empresa."
     : undefined;
 
-  const audit = useCallback(
-    (context: Record<string, unknown> = {}) => {
-      if (allowed) return;
-      logDenial(permissionKey, entry?.module, context);
-    },
-    [allowed, logDenial, permissionKey, entry?.module]
-  );
+  // No-op: denial telemetry was removed when /auditoria-permissoes was retired.
+  const audit = useCallback((_context: Record<string, unknown> = {}) => {}, []);
 
   return {
     allowed,

@@ -4,7 +4,7 @@ import { Activity, ShieldAlert } from 'lucide-react';
 import { ControlTowerFinancialStatus } from '@/components/control-tower/FinancialStatus';
 import { DiagnosticoTab } from '@/components/permission-debug/DiagnosticoTab';
 import { DiffTab } from '@/components/permission-debug/DiffTab';
-import { TimelineTab } from '@/components/permission-debug/TimelineTab';
+
 import { RecommendationsTab } from '@/components/permission-debug/RecommendationsTab';
 import { HerancaTab } from '@/components/permission-debug/HerancaTab';
 import { Tabs as InnerTabs, TabsContent as InnerTabsContent, TabsList as InnerTabsList, TabsTrigger as InnerTabsTrigger } from '@/components/ui/tabs';
@@ -42,16 +42,14 @@ const ControlTower = () => {
           {showDebug && (
             <TabsContent value="permission-debug" className="pt-6">
               <InnerTabs defaultValue="diagnostico">
-                <InnerTabsList className="grid grid-cols-2 md:grid-cols-5 w-full">
+                <InnerTabsList className="grid grid-cols-2 md:grid-cols-4 w-full">
                   <InnerTabsTrigger value="diagnostico">Diagnóstico</InnerTabsTrigger>
                   <InnerTabsTrigger value="heranca">Herança</InnerTabsTrigger>
-                  <InnerTabsTrigger value="timeline">Timeline</InnerTabsTrigger>
                   <InnerTabsTrigger value="diff">Diff de perfis</InnerTabsTrigger>
                   <InnerTabsTrigger value="recs">Recomendações</InnerTabsTrigger>
                 </InnerTabsList>
                 <InnerTabsContent value="diagnostico" className="pt-6"><DiagnosticoTab /></InnerTabsContent>
                 <InnerTabsContent value="heranca" className="pt-6"><HerancaTab /></InnerTabsContent>
-                <InnerTabsContent value="timeline" className="pt-6"><TimelineTab /></InnerTabsContent>
                 <InnerTabsContent value="diff" className="pt-6"><DiffTab /></InnerTabsContent>
                 <InnerTabsContent value="recs" className="pt-6"><RecommendationsTab /></InnerTabsContent>
               </InnerTabs>

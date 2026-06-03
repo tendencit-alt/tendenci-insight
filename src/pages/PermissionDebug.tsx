@@ -7,7 +7,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { usePermissions } from "@/hooks/usePermissions";
 import { DiagnosticoTab } from "@/components/permission-debug/DiagnosticoTab";
 import { DiffTab } from "@/components/permission-debug/DiffTab";
-import { TimelineTab } from "@/components/permission-debug/TimelineTab";
+
 import { RecommendationsTab } from "@/components/permission-debug/RecommendationsTab";
 import { HerancaTab } from "@/components/permission-debug/HerancaTab";
 import { useToast } from "@/hooks/use-toast";
@@ -50,16 +50,14 @@ export default function PermissionDebugPage() {
         </Card>
 
         <Tabs defaultValue="diagnostico">
-          <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full">
+          <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full">
             <TabsTrigger value="diagnostico">Diagnóstico</TabsTrigger>
             <TabsTrigger value="heranca">Herança</TabsTrigger>
-            <TabsTrigger value="timeline">Timeline</TabsTrigger>
             <TabsTrigger value="diff">Diff de perfis</TabsTrigger>
             <TabsTrigger value="recs">Recomendações</TabsTrigger>
           </TabsList>
           <TabsContent value="diagnostico" className="pt-6"><DiagnosticoTab /></TabsContent>
           <TabsContent value="heranca" className="pt-6"><HerancaTab /></TabsContent>
-          <TabsContent value="timeline" className="pt-6"><TimelineTab /></TabsContent>
           <TabsContent value="diff" className="pt-6"><DiffTab /></TabsContent>
           <TabsContent value="recs" className="pt-6"><RecommendationsTab /></TabsContent>
         </Tabs>

@@ -10,15 +10,6 @@ export interface PermissionCatalogEntry {
   is_critical: boolean;
 }
 
-export interface PermissionDenialRecord {
-  id: string;
-  user_id: string;
-  tenant_id: string | null;
-  permission_key: string;
-  module: string | null;
-  context: Record<string, unknown> | null;
-  attempted_at: string;
-}
 
 export interface SimulationState {
   active: boolean;

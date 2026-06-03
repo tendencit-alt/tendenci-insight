@@ -17175,44 +17175,6 @@ export type Database = {
         }
         Relationships: []
       }
-      rbac_permission_denials: {
-        Row: {
-          attempted_at: string
-          context: Json | null
-          id: string
-          module: string | null
-          permission_key: string
-          tenant_id: string | null
-          user_id: string | null
-        }
-        Insert: {
-          attempted_at?: string
-          context?: Json | null
-          id?: string
-          module?: string | null
-          permission_key: string
-          tenant_id?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          attempted_at?: string
-          context?: Json | null
-          id?: string
-          module?: string | null
-          permission_key?: string
-          tenant_id?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "rbac_permission_denials_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       rbac_permission_recommendations: {
         Row: {
           confidence: number | null
@@ -23873,10 +23835,6 @@ export type Database = {
           _order_id: string
         }
         Returns: undefined
-      }
-      log_permission_denial: {
-        Args: { _context?: Json; _module?: string; _permission_key: string }
-        Returns: string
       }
       low_stock_products: {
         Args: never
