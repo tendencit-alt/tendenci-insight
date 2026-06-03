@@ -13079,6 +13079,50 @@ export type Database = {
           },
         ]
       }
+      order_extra_info: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          observacao: string | null
+          order_id: string
+          position: number
+          tenant_id: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          observacao?: string | null
+          order_id: string
+          position?: number
+          tenant_id: string
+          titulo?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          observacao?: string | null
+          order_id?: string
+          position?: number
+          tenant_id?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_extra_info_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_history: {
         Row: {
           action_type: string
@@ -13137,6 +13181,70 @@ export type Database = {
           },
         ]
       }
+      order_item_attachments: {
+        Row: {
+          created_at: string
+          extra_info_id: string | null
+          file_name: string
+          id: string
+          mime_type: string | null
+          order_id: string
+          order_item_id: string | null
+          size_bytes: number | null
+          storage_path: string
+          tenant_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          extra_info_id?: string | null
+          file_name: string
+          id?: string
+          mime_type?: string | null
+          order_id: string
+          order_item_id?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          tenant_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          extra_info_id?: string | null
+          file_name?: string
+          id?: string
+          mime_type?: string | null
+          order_id?: string
+          order_item_id?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          tenant_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_item_attachments_extra_info_id_fkey"
+            columns: ["extra_info_id"]
+            isOneToOne: false
+            referencedRelation: "order_extra_info"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_item_attachments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_item_attachments_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           centro_custo: string | null
@@ -13149,6 +13257,7 @@ export type Database = {
           especificacoes: string | null
           id: string
           ncm: string | null
+          observacao: string | null
           observacoes: string | null
           order_id: string | null
           position: number | null
@@ -13171,6 +13280,7 @@ export type Database = {
           especificacoes?: string | null
           id?: string
           ncm?: string | null
+          observacao?: string | null
           observacoes?: string | null
           order_id?: string | null
           position?: number | null
@@ -13193,6 +13303,7 @@ export type Database = {
           especificacoes?: string | null
           id?: string
           ncm?: string | null
+          observacao?: string | null
           observacoes?: string | null
           order_id?: string | null
           position?: number | null
