@@ -2595,7 +2595,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                  </div>
               </div>
 
-              {totalPercentual !== 100 && (
+              {Math.abs(totalPercentual - 100) > 0.1 && (
                 <Alert variant="destructive" className="mt-2">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>
