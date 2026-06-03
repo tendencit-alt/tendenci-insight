@@ -45,6 +45,7 @@ import { ProductionUpdates } from './ProductionUpdates';
 import { ProductionFichaTecnica } from './ProductionFichaTecnica';
 import { EditPhasesSLADialog } from './EditPhasesSLADialog';
 import { ProductionOrderChecklist } from './ProductionOrderChecklist';
+import { useProductionStatusColumns } from '@/hooks/useProductionStatusColumns';
 
 interface ProductionOrderDetailSheetProps {
   orderId: string | null;
