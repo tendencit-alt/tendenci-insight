@@ -19,7 +19,7 @@ export const DEFAULT_FILTERS: TimelineFiltersValue = {
   phase: "all",
   late: "all",
   range: "month",
-  group: "none",
+  group: "client",
   density: "normal",
 };
 
