@@ -80,7 +80,7 @@ const ROLE_CONFIGS: Record<RoleKey, RoleConfig> = {
   },
   operacional: {
     autoExpandGroups: ["Operações"],
-    highlightItems: ["/producao-operacoes", "/producao-operacoes"],
+    highlightItems: ["/producao-operacoes"],
     dimGroups: ["Estratégia"],
   },
   admin: {
