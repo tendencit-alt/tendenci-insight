@@ -172,7 +172,7 @@ const App = () => (
               <Route path="/settings" element={<Navigate to="/configuracoes" replace />} />
               <Route path="/settings/users" element={<Navigate to="/configuracoes/usuarios" replace />} />
 
-              <Route path="/producao" element={<ProtectedRoute><FeatureGate feature="producao"><PermissionGuard module="producao"><Production /></PermissionGuard></FeatureGate></ProtectedRoute>} />
+              <Route path="/producao" element={<Navigate to="/producao-operacoes" replace />} />
               <Route path="/pedidos" element={<ProtectedRoute><PermissionGuard module="pedidos"><Orders /></PermissionGuard></ProtectedRoute>} />
               <Route path="/fornecedores" element={<ProtectedRoute><PermissionGuard module="fornecedores"><Suppliers /></PermissionGuard></ProtectedRoute>} />
               <Route path="/clientes" element={<ProtectedRoute><PermissionGuard module="comercial"><Clientes /></PermissionGuard></ProtectedRoute>} />
