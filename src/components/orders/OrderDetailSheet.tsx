@@ -59,7 +59,7 @@ function getNextAction(status: string): { label: string; nextStatus: string } | 
   return map[status] || null;
 }
 
-export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: OrderDetailSheetProps) {
+export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, productionStepper }: OrderDetailSheetProps) {
   const { isMaster } = usePermissions();
   const { defaults: resourceDefaults } = useStrategicResourceDefaults();
   const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
