@@ -203,7 +203,7 @@ export function useRecentEvents() {
       // Recent cross-module events
       const { data: crossEvents } = await supabase
         .from("cross_module_events")
-        .select("id, event_type, payload, created_at, source_module")
+        .select("id, event_type, payload, created_at, source_module, source_entity, source_entity_id")
         .order("created_at", { ascending: false })
         .limit(15);
 
@@ -219,6 +219,7 @@ export function useRecentEvents() {
           description,
           timestamp: e.created_at,
           module: e.source_module || "sistema",
+          link: buildEventLink(e.source_entity, e.source_entity_id, e.event_type, payload),
         });
       });
 
