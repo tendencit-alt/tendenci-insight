@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format, addDays, differenceInCalendarDays, max as dMax, min as dMin } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface Props {
   ops: TimelineOp[];
@@ -165,11 +166,83 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                 {/* due-date marker */}
                 {due && (
                   <div
-                    className="absolute top-0 bottom-0 border-l border-dashed border-red-500/80 z-10"
+                    className="absolute top-0 bottom-0 border-l border-dashed border-red-500/80 z-10 group/due"
                     style={{ left: `${(differenceInCalendarDays(due, rangeStart) / totalDays) * 100}%` }}
-                    title={`Prazo original: ${format(due, "dd/MM/yyyy")}`}
-                  />
+                  >
+                    <div className="absolute -top-1 -left-1.5 text-red-600 opacity-0 group-hover/due:opacity-100 transition-opacity">
+                      <ChevronDown className="h-3 w-3 fill-current" />
+                    </div>
+                    <div className="absolute -bottom-1 -left-1.5 text-red-600 opacity-0 group-hover/due:opacity-100 transition-opacity">
+                      <ChevronUp className="h-3 w-3 fill-current" />
+                    </div>
+                  </div>
                 )}
+                
+                {/* Onde deveríamos estar (Seta de Planejado) */}
+                {(() => {
+                  const today = new Date();
+                  const totalPlannedDur = op.segments.reduce((acc, s) => acc + (s.duration_days || 0), 0) || 1;
+                  const elapsedSinceStart = differenceInCalendarDays(today, opStart);
+                  
+                  if (elapsedSinceStart >= 0) {
+                    let accumulatedDur = 0;
+                    let targetSlug = op.segments[0]?.slug;
+                    for (const s of op.segments) {
+                      accumulatedDur += s.duration_days || 0;
+                      if (accumulatedDur >= elapsedSinceStart) {
+                        targetSlug = s.slug;
+                        break;
+                      }
+                      targetSlug = s.slug; // Case for end of project
+                    }
+                    
+                    // Encontrar o offset visual do segment ideal
+                    let accumulatedWidth = 0;
+                    const targetIdx = op.segments.findIndex(s => s.slug === targetSlug);
+                    if (targetIdx !== -1) {
+                      for (let i = 0; i < targetIdx; i++) {
+                        accumulatedWidth += ((op.segments[i].duration_days || 0) / totalPlannedDur) * 100;
+                      }
+                      // Adicionar a posição proporcional dentro da etapa alvo
+                      const prevAccumulated = accumulatedDur - (op.segments[targetIdx].duration_days || 0);
+                      const ratioInTarget = (elapsedSinceStart - prevAccumulated) / (op.segments[targetIdx].duration_days || 1);
+                      accumulatedWidth += ratioInTarget * ((op.segments[targetIdx].duration_days || 0) / totalPlannedDur) * 100;
+                    }
+
+                    return (
+                      <div 
+                        className="absolute top-0 -translate-y-1 z-20 text-blue-600 pointer-events-none transition-all duration-500"
+                        style={{ 
+                          left: `calc(${offsetPct}% + ${Math.min(100, Math.max(0, accumulatedWidth))}% * ${widthPct} / 100)`,
+                        }}
+                        title="Onde deveríamos estar hoje pelo cronograma original"
+                      >
+                        <ChevronDown className="h-4 w-4 -ml-2 fill-current drop-shadow-sm" />
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {/* Marcador de Onde Estamos (Seta de Status Atual) */}
+                {currentIdx !== -1 && (
+                  <div 
+                    className="absolute bottom-0 translate-y-1 z-20 text-foreground pointer-events-none transition-all duration-500"
+                    style={{ 
+                      left: `calc(${offsetPct}% + ${(() => {
+                        let acc = 0;
+                        for (let i = 0; i < currentIdx; i++) acc += ((op.segments[i].duration_days || 0) / totalDur) * 100;
+                        const ratio = Math.min(1, (op.days_in_current ?? 0) / (op.current_duration_days || 1));
+                        acc += ratio * ((op.segments[currentIdx].duration_days || 0) / totalDur) * 100;
+                        return acc;
+                      })()}% * ${widthPct} / 100)`,
+                    }}
+                    title={`Status Atual: ${op.current_phase_label}`}
+                  >
+                    <ChevronUp className="h-4 w-4 -ml-2 fill-current drop-shadow-sm" />
+                  </div>
+                )}
+
                 {/* bar */}
                 <div
                   className="absolute top-1/2 -translate-y-1/2 flex rounded overflow-hidden shadow-sm"
