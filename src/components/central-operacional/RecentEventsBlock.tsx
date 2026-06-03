@@ -32,7 +32,19 @@ export function RecentEventsBlock({ events, loading }: Props) {
           <ScrollArea className="h-[220px]">
             <div className="space-y-1.5">
               {events.map((ev) => {
-                const moduleLabel = (ev.module || "sistema")
+                const MODULE_LABELS: Record<string, string> = {
+                  producao: "Produção",
+                  comercial: "Comercial",
+                  operacional: "Operacional",
+                  financeiro: "Financeiro",
+                  compras: "Compras",
+                  estoque: "Estoque",
+                  rh: "RH",
+                  governanca: "Governança",
+                  sistema: "Sistema",
+                };
+                const rawModule = ev.module || "sistema";
+                const moduleLabel = MODULE_LABELS[rawModule] || rawModule
                   .replace(/_/g, " ")
                   .replace(/\b\w/g, (c) => c.toUpperCase());
                 return (
