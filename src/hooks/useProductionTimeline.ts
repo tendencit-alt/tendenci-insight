@@ -107,6 +107,8 @@ export function useProductionTimeline() {
           em_producao: 0,
           aguardando: 0,
           concluidas: 0,
+          vencidas: 0,
+          atraso_projetado: 0,
           atrasadas: 0,
           alerta_prazo: 0,
           pct_concluidas: 0,
