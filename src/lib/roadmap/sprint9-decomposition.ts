@@ -412,7 +412,7 @@ const BLOCK_10: DecompositionBlock = {
         "production_automations com tipo 'sla' para alertas automáticos",
       ],
       gaps: [
-        "Criar tabela genérica 'sla_configs' (id, tenant_id, entity_type [pedido/compra/aprovacao/producao], stage nullable, max_hours, warning_percent default 80, responsible_id, active)",
+        "Criar tabela genérica 'sla_configs' (id, tenant_id, entity_type [pedido/compra/aprovacao/producao-operacoes], stage nullable, max_hours, warning_percent default 80, responsible_id, active)",
         "RLS por tenant_id",
         "Unificar SLAs: CRM, produção, aprovações, financeiro em uma única configuração",
         "Dashboard centralizado: SLA compliance rate por módulo, tendência ao longo do tempo",

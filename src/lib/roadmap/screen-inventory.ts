@@ -240,13 +240,13 @@ const COMPRAS_SCREENS: ScreenDefinition[] = [
 
 const OPERACOES_SCREENS: ScreenDefinition[] = [
   {
-    id: "producao-list", name: "Produção", route: "/operacoes/producao", type: "list",
+    id: "producao-list", name: "Produção", route: "/operacoes/producao-operacoes", type: "list",
     module: "Operações", description: "Ordens de produção com etapas e status", mainEntity: "ordem_producao",
     components: ["ListView universal", "Filtros (status, pedido, responsável, período)", "Badge status", "Indicadores: aguardando, em produção, concluídas"],
     dataSource: ["production_orders", "production_phases"], actions: ["nova", "editar", "iniciar", "concluir"], permissions: ["view_production"],
   },
   {
-    id: "producao-form", name: "Ordem de Produção — Detalhe", route: "/operacoes/producao/:id", type: "detail",
+    id: "producao-form", name: "Ordem de Produção — Detalhe", route: "/operacoes/producao-operacoes/:id", type: "detail",
     module: "Operações", description: "Detalhe da OP com etapas, timeline e vínculos", mainEntity: "ordem_producao",
     components: ["FormView universal", "Seção pedido vinculado", "Lista etapas com status individual", "StatusTransitionSelect", "Timeline", "Checklist de conclusão"],
     dataSource: ["production_orders", "production_phases", "orders"], actions: ["iniciar", "concluir_etapa", "concluir_op", "registrar_ocorrencia"], permissions: ["edit_production"],

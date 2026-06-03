@@ -53,7 +53,7 @@ const WORKFLOW_MAP: Record<string, WorkflowSuggestion[]> = {
   "/fornecedores": [
     { id: "wf-register-payable", label: "Registrar conta a pagar", description: "Lançar despesa da compra", route: "/financeiro" },
   ],
-  "/producao": [
+  "/producao-operacoes": [
     { id: "wf-update-order", label: "Atualizar pedido vinculado", description: "Sincronizar status do pedido", route: "/pedidos" },
   ],
   "/controladoria": [

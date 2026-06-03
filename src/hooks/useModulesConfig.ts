@@ -36,7 +36,7 @@ export const MODULE_ROUTE_MAP: Record<string, string> = {
   "orcamentos": "/propostas",
   "contratos": "/contratos",
   "comissoes": "/comissoes",
-  "producao": "/producao",
+  "producao": "/producao-operacoes",
   "producao-operacoes": "/producao-operacoes",
   "projetos": "/projetos",
   "tarefas": "/tarefas",

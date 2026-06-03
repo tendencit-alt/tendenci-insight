@@ -74,7 +74,7 @@ export const MENU_PERMISSION_MAP: MenuRoot[] = [
       { key: '/compras',            label: 'Compras',               module: 'operacional' },
       { key: '/estoque',            label: 'Estoque',               module: 'estoque' },
       
-      { key: '/producao',           label: 'Produção (legado)',     module: 'producao' },
+      { key: '/producao-operacoes',           label: 'Produção (legado)',     module: 'producao' },
     ],
   },
   {

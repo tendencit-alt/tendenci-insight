@@ -92,7 +92,7 @@ const OPERATIONAL_ROUTE_ORDER = [
   "/compras",
   "/estoque",
   "/entregas-montagem",
-  "/producao",
+  "/producao-operacoes",
 ];
 
 const ERP_MODULES: ModuleGroup[] = [
@@ -121,7 +121,7 @@ const ERP_MODULES: ModuleGroup[] = [
       { label: "Estoque", route: "/estoque", icon: "Layers", module: "operacional", available: true },
       { label: "Entregas & Montagem", route: "/entregas-montagem", icon: "Truck", module: "operacional", available: true },
       
-      { label: "Produção (legado)", route: "/producao", icon: "Factory", module: "producao", available: true },
+      { label: "Produção (legado)", route: "/producao-operacoes", icon: "Factory", module: "producao", available: true },
       { label: "Ordens de Produção", route: "/ordens-producao", icon: "ListChecks", available: false },
       { label: "Execução / Obras", route: "/execucao-obras", icon: "HardHat", available: false },
     ],

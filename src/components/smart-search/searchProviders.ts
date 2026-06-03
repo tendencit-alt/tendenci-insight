@@ -87,7 +87,7 @@ export async function searchProjects(query: string, limit = 5): Promise<SearchRe
     title: p.project_name,
     subtitle: "Projeto",
     badge: p.status,
-    route: `/producao?project=${p.id}`,
+    route: `/producao-operacoes?project=${p.id}`,
     score: score(p.project_name || "", query),
   }));
 }
