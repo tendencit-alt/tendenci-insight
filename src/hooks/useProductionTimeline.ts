@@ -42,6 +42,9 @@ export interface TimelineOp {
   remaining_days: number | null;
   eta: string;
   is_late_planned: boolean;
+  is_vencida: boolean;
+  is_atraso_projetado: boolean;
+  is_alerta_prazo: boolean;
   segments: TimelineSegment[];
   history: TimelinePhaseHistory[];
 }
@@ -51,6 +54,9 @@ export interface TimelineKpis {
   em_producao: number;
   aguardando: number;
   concluidas: number;
+  vencidas: number;
+  atraso_projetado: number;
+  /** @deprecated use vencidas + atraso_projetado */
   atrasadas: number;
   alerta_prazo: number;
   pct_concluidas: number;
