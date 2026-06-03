@@ -583,6 +583,11 @@ export function OpsOrdersTab() {
         opId={historyOp?.id ?? null}
         orderNumber={historyOp?.orderNumber}
       />
+      <ProductionOrderDetailSheet
+        orderId={detailOpId}
+        open={!!detailOpId}
+        onOpenChange={(v) => !v && setDetailOpId(null)}
+      />
     </div>
   );
 }
