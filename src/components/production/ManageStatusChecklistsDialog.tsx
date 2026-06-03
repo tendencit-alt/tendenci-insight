@@ -74,7 +74,7 @@ export function ManageStatusChecklistsDialog({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-3xl w-[calc(100vw-2rem)] overflow-hidden">
         <DialogHeader>
           <DialogTitle>Checklists por Status</DialogTitle>
           <DialogDescription>
@@ -82,14 +82,15 @@ export function ManageStatusChecklistsDialog({ open, onOpenChange }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={currentSlug ?? ""} onValueChange={setActiveSlug}>
-          <ScrollArea className="w-full">
+        <Tabs value={currentSlug ?? ""} onValueChange={setActiveSlug} className="w-full min-w-0">
+          <div className="w-full overflow-x-auto">
             <TabsList className="w-max">
               {statuses.map((s) => (
-                <TabsTrigger key={s.slug} value={s.slug} className="text-xs">{s.label}</TabsTrigger>
+                <TabsTrigger key={s.slug} value={s.slug} className="text-xs whitespace-nowrap">{s.label}</TabsTrigger>
               ))}
             </TabsList>
-          </ScrollArea>
+          </div>
+
 
           {statuses.map((s) => (
             <TabsContent key={s.slug} value={s.slug} className="mt-3 space-y-3">
