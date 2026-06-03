@@ -33,9 +33,12 @@ import { toast } from "sonner";
 
 const PRIORITY_META: Record<string, { label: string; tone: string }> = {
   low: { label: "Baixa", tone: "bg-muted text-muted-foreground border-border" },
+  baixa: { label: "Baixa", tone: "bg-muted text-muted-foreground border-border" },
   normal: { label: "Normal", tone: "bg-blue-500/10 text-blue-700 border-blue-500/30" },
   high: { label: "Alta", tone: "bg-orange-500/10 text-orange-700 border-orange-500/30" },
+  alta: { label: "Alta", tone: "bg-orange-500/10 text-orange-700 border-orange-500/30" },
   urgent: { label: "Urgente", tone: "bg-destructive/10 text-destructive border-destructive/30" },
+  urgente: { label: "Urgente", tone: "bg-destructive/10 text-destructive border-destructive/30" },
 };
 
 const SLUG_ALIASES: Record<string, string> = { em_andamento: "em_producao" };
