@@ -323,6 +323,12 @@ export default function Production() {
         onOpenChange={setConfigDialogOpen}
       />
 
+      {/* Dialog de checklists por status */}
+      <ManageStatusChecklistsDialog
+        open={checklistsDialogOpen}
+        onOpenChange={setChecklistsDialogOpen}
+      />
+
       {/* Dialog de automações - apenas MASTER */}
       {isMaster && (
         <ManageProductionAutomationsDialog
