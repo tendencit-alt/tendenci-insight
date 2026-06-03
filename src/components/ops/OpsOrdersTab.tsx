@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DateBrInput } from "@/components/ui/date-br-input";
 import {
   LayoutGrid, List, Search, Loader2, AlertTriangle, Clock, CheckCircle2,
-  Factory, Plus, Trash2, GripVertical, Calendar, Undo2, Timer, History,
+  Factory, Plus, Trash2, GripVertical, Calendar, Undo2, Timer, History, ClipboardCheck,
 } from "lucide-react";
 import { useOpsOrders, useCreateOpsOrder, useDeleteOpsOrder, useProductionTypes } from "@/hooks/useOpsData";
 import {
