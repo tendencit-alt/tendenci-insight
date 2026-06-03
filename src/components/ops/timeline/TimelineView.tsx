@@ -100,13 +100,31 @@ export function TimelineView() {
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
-        <KpiCard icon={<Factory className="h-4 w-4" />} label="Em produção" value={kpis.em_producao} />
-        <KpiCard icon={<Clock className="h-4 w-4" />} label="Aguardando" value={kpis.aguardando} />
-        <KpiCard icon={<AlertTriangle className="h-4 w-4 text-destructive" />} label="Atrasadas" value={kpis.atrasadas} />
-        <KpiCard icon={<Timer className="h-4 w-4 text-amber-500" />} label="Alerta prazo" value={kpis.alerta_prazo} />
-        <KpiCard icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />} label="Concluídas" value={kpis.concluidas} />
-        <KpiCard icon={<Activity className="h-4 w-4" />} label="% Concluídas" value={`${kpis.pct_concluidas ?? 0}%`} />
+      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-2">
+        <KpiCard icon={<Factory className="h-4 w-4" />} label="Em produção" value={kpis.em_producao} hint="Ordens ativas com fase já iniciada (não 'Aguardando' nem concluídas)." />
+        <KpiCard icon={<Clock className="h-4 w-4" />} label="Aguardando" value={kpis.aguardando} hint="Ordens criadas que ainda não saíram da fase inicial 'Aguardando'." />
+        <KpiCard
+          icon={<AlertOctagon className="h-4 w-4 text-destructive" />}
+          label="Vencidas"
+          value={kpis.vencidas}
+          tone="text-destructive"
+          hint="Prazo final já passou de hoje e a OP ainda não foi concluída. Urgência real — exige ação agora."
+        />
+        <KpiCard
+          icon={<AlertTriangle className="h-4 w-4 text-amber-600" />}
+          label="Atraso projetado"
+          value={kpis.atraso_projetado}
+          tone="text-amber-600"
+          hint="Prazo ainda não venceu, mas a previsão calculada (ETA) já ultrapassa o prazo planejado. Alerta preditivo."
+        />
+        <KpiCard
+          icon={<Timer className="h-4 w-4 text-amber-500" />}
+          label="Alerta prazo"
+          value={kpis.alerta_prazo}
+          hint="Ainda dentro do prazo, mas a folga restante até o ETA está abaixo de 10% do tempo até o prazo final."
+        />
+        <KpiCard icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />} label="Concluídas" value={kpis.concluidas} hint="Ordens em fases finais (concluído ou entregue)." />
+        <KpiCard icon={<Activity className="h-4 w-4" />} label="% Concluídas" value={`${kpis.pct_concluidas ?? 0}%`} hint="Percentual de OPs concluídas sobre o total." />
       </div>
 
       <TimelineFilters value={filters} onChange={setFilters} phases={phases} />
@@ -130,16 +148,25 @@ export function TimelineView() {
   );
 }
 
-function KpiCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number | string }) {
-  return (
-    <Card>
+function KpiCard({ icon, label, value, tone, hint }: { icon: React.ReactNode; label: string; value: number | string; tone?: string; hint?: string }) {
+  const card = (
+    <Card className="cursor-help">
       <CardContent className="p-3 flex items-center gap-2">
         <div className="h-8 w-8 rounded-md bg-muted/50 flex items-center justify-center">{icon}</div>
         <div className="min-w-0">
           <div className="text-[11px] text-muted-foreground leading-tight">{label}</div>
-          <div className="text-lg font-semibold leading-tight truncate">{value}</div>
+          <div className={`text-lg font-semibold leading-tight truncate ${tone ?? ""}`}>{value}</div>
         </div>
       </CardContent>
     </Card>
+  );
+  if (!hint) return card;
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>{card}</TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-[260px] text-xs">{hint}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
