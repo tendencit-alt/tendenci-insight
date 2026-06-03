@@ -66,7 +66,7 @@ export function TimelineView() {
       const key =
         filters.group === "phase" ? (op.current_phase_label ?? op.status)
           : filters.group === "priority" ? op.priority
-            : (op.client_id ?? "Sem cliente");
+            : (op.client_name || "Sem cliente");
       const arr = map.get(key) ?? [];
       arr.push(op);
       map.set(key, arr);
