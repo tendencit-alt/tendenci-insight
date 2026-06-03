@@ -833,7 +833,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const allItemsHaveCentroCusto = items.length > 0 && items.every((item) => !!item.centro_custo);
   const allItemsHaveProject = items.length > 0 && items.every((item) => !!item.project_id);
   const isItensValid = items.length > 0 && allItemsHaveCentroCusto && allItemsHaveProject;
-  const totalPercentual = Math.round(parcelas.reduce((sum, p) => sum + p.percentual, 0) * 100) / 100;
+  const totalPercentual = Math.round(parcelas.reduce((sum, p) => sum + (Number(p.percentual) || 0), 0) * 100) / 100;
   const strategicResourceLabels = {
     rt: resourceDefaults.rt.label,
     vendedor: resourceDefaults.vendedor.label,
@@ -850,7 +850,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const hasAllStrategicResponsibles = allMissingStrategicResponsibles.length === 0;
 
   // Validação rigorosa: valor das formas de pagamento deve ser igual ao total
-  const valorTotalPagamento = parcelas.reduce((sum, p) => sum + (total * (p.percentual / 100)), 0);
+  const valorTotalPagamento = parcelas.reduce((sum, p) => sum + (total * ((Number(p.percentual) || 0) / 100)), 0);
   const diferencaPagamento = Math.abs(valorTotalPagamento - total);
   const isPagamentoValorCorreto = total > 0 ? diferencaPagamento < 0.1 : false;
   const isPagamentoValid = parcelas.length > 0 && parcelas.every((p) => p.forma_pagamento) && Math.abs(totalPercentual - 100) < 0.1 && isPagamentoValorCorreto && hasAllStrategicResponsibles;

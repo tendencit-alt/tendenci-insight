@@ -671,7 +671,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const allItemsHaveCentroCusto = items.length > 0 && items.every(item => !!item.centro_custo);
   const allItemsHaveProject = items.length > 0 && items.every(item => !!item.project_id);
   const isItensValid = items.length > 0 && allItemsHaveCentroCusto && allItemsHaveProject;
-  const totalPercentual = Math.round(parcelas.reduce((sum, p) => sum + p.percentual, 0) * 100) / 100;
+  const totalPercentual = Math.round(parcelas.reduce((sum, p) => sum + (Number(p.percentual) || 0), 0) * 100) / 100;
   const strategicResourceLabels = {
     rt: resourceDefaults.rt.label,
     vendedor: resourceDefaults.vendedor.label,
@@ -688,7 +688,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const hasAllStrategicResponsibles = allMissingStrategicResponsibles.length === 0;
   
   // Validação rigorosa: valor das formas de pagamento deve ser igual ao total
-  const valorTotalPagamento = parcelas.reduce((sum, p) => sum + (total * (p.percentual / 100)), 0);
+  const valorTotalPagamento = parcelas.reduce((sum, p) => sum + (total * ((Number(p.percentual) || 0) / 100)), 0);
   const diferencaPagamento = Math.abs(valorTotalPagamento - total);
   // Se total é 0 ou negativo, não permite validar como correto
   const isPagamentoValorCorreto = total > 0 ? diferencaPagamento < 0.1 : false;
