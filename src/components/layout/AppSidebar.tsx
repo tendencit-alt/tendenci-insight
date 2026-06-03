@@ -148,7 +148,7 @@ const menuGroups: MenuGroup[] = [
       { title: "Compras", url: "/compras", icon: Package, module: "operacional" },
       { title: "Estoque", url: "/estoque", icon: Layers, module: "operacional" },
       { title: "Entregas & Montagem", url: "/entregas-montagem", icon: Truck, module: "operacional" },
-      { title: "Automações", url: "/automacoes", icon: Zap, module: "operacional" },
+      
       { title: "KPI's", url: "/relatorios", icon: FileText, comingSoon: true, module: "operacional" },
     ],
   },
@@ -171,7 +171,6 @@ const menuGroups: MenuGroup[] = [
     separator: true,
     items: [
       { title: "Control Tower", url: "/control-tower", icon: Landmark },
-      { title: "Benchmarks", url: "/benchmarking", icon: PieChart },
       
       { title: "Educação & Trilhas", url: "/education", icon: GraduationCap },
       { title: "Indicadores Executivos", url: "/executive", icon: LineChart },
@@ -221,7 +220,7 @@ const menuGroups: MenuGroup[] = [
       { title: "Offer Center", url: "/owner/offer-center", icon: Star },
       { title: "Customer Lifecycle", url: "/customer-lifecycle", icon: Users },
       { title: "Customer Success", url: "/customer-success", icon: UserCheck },
-      { title: "Benchmarking", url: "/benchmarking", icon: PieChart },
+      
       { title: "Entitlements", url: "/owner/entitlements", icon: Tag },
     ],
   },

@@ -73,7 +73,7 @@ export const MENU_PERMISSION_MAP: MenuRoot[] = [
       { key: '/entregas-montagem',  label: 'Entregas & Montagem',   module: 'operacional' },
       { key: '/compras',            label: 'Compras',               module: 'operacional' },
       { key: '/estoque',            label: 'Estoque',               module: 'estoque' },
-      { key: '/automacoes',         label: 'Automações',            module: 'operacional' },
+      
       { key: '/producao',           label: 'Produção (legado)',     module: 'producao' },
     ],
   },
@@ -99,8 +99,6 @@ export const MENU_PERMISSION_MAP: MenuRoot[] = [
     leaves: [
       { key: '/dashboard',                   label: 'Dashboard Executivo',     module: 'dashboard_executivo' },
       { key: '/dashboards-personalizados',   label: 'Dashboards Personalizados', module: 'relatorios_bi' },
-      { key: '/benchmarking',                label: 'Benchmarking',            module: 'relatorios_bi' },
-      { key: '/owner/visao-consolidada',     label: 'Visão Consolidada (Owner)', module: 'relatorios_bi', ownerOnly: true },
     ],
   },
   {

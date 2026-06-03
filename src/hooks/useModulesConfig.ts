@@ -46,9 +46,6 @@ export const MODULE_ROUTE_MAP: Record<string, string> = {
   "cobranca": "/cobranca",
   "billing": "/billing",
   "cadastros-financeiros": "/cadastros-financeiros",
-  "automacoes": "/automacoes",
-  "automacoes-inteligentes": "/automacoes-inteligentes",
-  "automation-center": "/automation-center",
   
   "executive": "/executive",
   "control-tower": "/control-tower",
@@ -61,7 +58,7 @@ export const MODULE_ROUTE_MAP: Record<string, string> = {
   "onboarding": "/onboarding",
   "smart-onboarding": "/smart-onboarding",
   "governanca": "/governanca",
-  "benchmarking": "/benchmarking",
+  
   "multi-company": "/empresas",
   "support-knowledge": "/support-knowledge",
   "bi-dashboard": "/bi-dashboard",

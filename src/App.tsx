@@ -10,7 +10,7 @@ import { MinimizedDialogsBar } from "@/components/ui/MinimizedDialogsBar";
 import { PermissionsProvider } from "@/contexts/PermissionsContext";
 import { PermissionSimulationProvider } from "@/contexts/PermissionSimulationContext";
 import { SimulationBanner } from "@/components/smart-permissions/SimulationBanner";
-import RlsAudit from "./pages/RlsAudit";
+
 
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionGuard } from "@/components/auth/PermissionGuard";
@@ -51,12 +51,12 @@ import ResetPassword from "./pages/ResetPassword";
 import SuperAdmin from "./pages/SuperAdmin";
 import Onboarding from "./pages/Onboarding";
 import SmartOnboarding from "./pages/SmartOnboarding";
-import SmartAutomations from "./pages/SmartAutomations";
+
 
 
 import Documentos from "./pages/Documentos";
 import Tarefas from "./pages/Tarefas";
-import Automacoes from "./pages/Automacoes";
+
 import Relatorios from "./pages/Relatorios";
 import DataFlowMap from "./pages/DataFlowMap";
 import HomeLauncher from "./pages/HomeLauncher";
@@ -84,7 +84,7 @@ import PermissionDebug from "./pages/PermissionDebug";
 import SmartAdmin from "./pages/SmartAdmin";
 import BillingOps from "./pages/BillingOps";
 import TenantLifecycle from "./pages/TenantLifecycle";
-import Benchmarking from "./pages/Benchmarking";
+
 import Empresas from "./pages/Empresas";
 import OwnerControlTower from "./pages/OwnerControlTower";
 import AutomationCenter from "./pages/AutomationCenter";
@@ -122,7 +122,7 @@ const App = () => (
               <SimulationBanner />
               <CommandBar />
                <Routes>
-              <Route path="/auditoria-rls" element={<ProtectedRoute><RlsAudit /></ProtectedRoute>} />
+              
 
               {/* Autenticação (PT canônico + redirects EN) */}
               <Route path="/autenticacao" element={<Auth />} />
@@ -162,16 +162,16 @@ const App = () => (
 
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/smart-onboarding" element={<ProtectedRoute><SmartOnboarding /></ProtectedRoute>} />
-              <Route path="/automacoes-inteligentes" element={<ProtectedRoute><SmartAutomations /></ProtectedRoute>} />
+              
               
               
               <Route path="/documentos" element={<ProtectedRoute><Documentos /></ProtectedRoute>} />
               <Route path="/tarefas" element={<ProtectedRoute><Tarefas /></ProtectedRoute>} />
-              <Route path="/automacoes" element={<ProtectedRoute><Automacoes /></ProtectedRoute>} />
+              
               <Route path="/bi-dashboard" element={<ProtectedRoute><DashboardBI /></ProtectedRoute>} />
               <Route path="/bi-dashboard-completo" element={<ProtectedRoute><FeatureGate feature="bi_completo"><DashboardBI /></FeatureGate></ProtectedRoute>} />
               <Route path="/kpis-avancados" element={<ProtectedRoute><FeatureGate feature="kpis_avancados"><DashboardBI /></FeatureGate></ProtectedRoute>} />
-              <Route path="/visao-consolidada" element={<ProtectedRoute><FeatureGate feature="visao_consolidada"><ExecutiveCenter /></FeatureGate></ProtectedRoute>} />
+              
 
               {/* Configurações (PT canônico + redirects EN) */}
               <Route path="/configuracoes" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ProjectSettings /></PermissionGuard></ProtectedRoute>} />
@@ -244,7 +244,7 @@ const App = () => (
               <Route path="/owner/lifecycle" element={<ProtectedRoute><TenantLifecycle /></ProtectedRoute>} />
               <Route path="/owner/control-tower" element={<ProtectedRoute><OwnerControlTower /></ProtectedRoute>} />
               <Route path="/owner/automation-center" element={<ProtectedRoute><AutomationCenter /></ProtectedRoute>} />
-              <Route path="/automation-center" element={<ProtectedRoute><AutomationCenter /></ProtectedRoute>} />
+              
               <Route path="/owner/entitlements" element={<ProtectedRoute><OwnerEntitlementsCenter /></ProtectedRoute>} />
               <Route path="/owner/upgrade-center" element={<ProtectedRoute><OwnerUpgradeCenter /></ProtectedRoute>} />
               <Route path="/owner/offer-center" element={<ProtectedRoute><OwnerOfferCenter /></ProtectedRoute>} />
@@ -262,8 +262,8 @@ const App = () => (
               <Route path="/owner/capacity-risk" element={<ProtectedRoute><OwnerCapacityRisk /></ProtectedRoute>} />
               <Route path="/owner/capacity-load-risk" element={<Navigate to="/owner/capacity-risk" replace />} />
               <Route path="/owner" element={<Navigate to="/owner/control-tower" replace />} />
-              <Route path="/benchmarking" element={<ProtectedRoute><Benchmarking /></ProtectedRoute>} />
-              <Route path="/multi-company" element={<Navigate to="/benchmarking" replace />} />
+              <Route path="/benchmarking" element={<Navigate to="/" replace />} />
+              <Route path="/multi-company" element={<Navigate to="/" replace />} />
               <Route path="/empresas" element={<ProtectedRoute><Empresas /></ProtectedRoute>} />
 
               {/* Painéis (PT canônico + redirect EN) */}
