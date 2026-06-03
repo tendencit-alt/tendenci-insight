@@ -56,10 +56,13 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           ? new Date(o.planned_start_date)
           : new Date(o.status_changed_at)
     );
-    const ends = ops.map((o) => new Date(o.eta));
+    const endCandidates: Date[] = [];
+    for (const o of ops) {
+      endCandidates.push(new Date(o.eta));
+      if (o.planned_end_date) endCandidates.push(new Date(o.planned_end_date));
+    }
     const start = dMin(starts);
-    const end = dMax([...ends, ...ops.map((o) => (o.planned_end_date ? new Date(o.planned_end_date) : end_ ?? new Date()))]);
-    var end_ = end;
+    const end = dMax(endCandidates);
     const padded = addDays(end, 3);
     const total = Math.max(7, differenceInCalendarDays(padded, start) + 1);
     return { rangeStart: start, rangeEnd: padded, totalDays: total };
