@@ -57,7 +57,7 @@ export const MODULE_ROUTE_MAP: Record<string, string> = {
   "rh": "/rh",
   "education": "/educacao",
   "documentos": "/documentos",
-  "aprovacoes": "/aprovacoes",
+  
   "onboarding": "/onboarding",
   "smart-onboarding": "/smart-onboarding",
   "governanca": "/governanca",

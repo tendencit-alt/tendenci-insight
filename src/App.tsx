@@ -54,7 +54,7 @@ import Onboarding from "./pages/Onboarding";
 import SmartOnboarding from "./pages/SmartOnboarding";
 import SmartAutomations from "./pages/SmartAutomations";
 import Auditoria from "./pages/Auditoria";
-import Aprovacoes from "./pages/Aprovacoes";
+
 import Documentos from "./pages/Documentos";
 import Tarefas from "./pages/Tarefas";
 import Automacoes from "./pages/Automacoes";
@@ -166,7 +166,7 @@ const App = () => (
               <Route path="/smart-onboarding" element={<ProtectedRoute><SmartOnboarding /></ProtectedRoute>} />
               <Route path="/automacoes-inteligentes" element={<ProtectedRoute><SmartAutomations /></ProtectedRoute>} />
               <Route path="/auditoria" element={<ProtectedRoute><Auditoria /></ProtectedRoute>} />
-              <Route path="/aprovacoes" element={<ProtectedRoute><Aprovacoes /></ProtectedRoute>} />
+              
               <Route path="/documentos" element={<ProtectedRoute><Documentos /></ProtectedRoute>} />
               <Route path="/tarefas" element={<ProtectedRoute><Tarefas /></ProtectedRoute>} />
               <Route path="/automacoes" element={<ProtectedRoute><Automacoes /></ProtectedRoute>} />

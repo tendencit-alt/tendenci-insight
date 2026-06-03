@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Shield, ChevronDown, ChevronUp, Lock, Unlock,
   History, CheckCircle2, AlertTriangle, UserCheck,
-  FileText, ShieldCheck, Clock,
+  FileText, ShieldCheck,
 } from "lucide-react";
 import {
   useGovernanceLayer,
@@ -38,7 +38,7 @@ const TABLE_LABELS: Record<string, string> = {
   quotes: "Propostas",
 };
 
-type Tab = "auditoria" | "permissoes" | "bloqueios" | "aprovacoes";
+type Tab = "auditoria" | "permissoes" | "bloqueios";
 
 export function GovernanceWidget() {
   const [expanded, setExpanded] = useState(false);
@@ -50,7 +50,7 @@ export function GovernanceWidget() {
       <Card className="border-border/60">
         <CardContent className="p-4 space-y-3">
           <Skeleton className="h-5 w-48" />
-          <div className="grid grid-cols-4 gap-2">{[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-14" />)}</div>
+          <div className="grid grid-cols-3 gap-2">{[1, 2, 3].map(i => <Skeleton key={i} className="h-14" />)}</div>
         </CardContent>
       </Card>
     );
@@ -77,10 +77,9 @@ export function GovernanceWidget() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-2 mb-2">
+        <div className="grid grid-cols-3 gap-2 mb-2">
           <StatCard icon={<History className="h-3.5 w-3.5 text-primary" />} label="Audit 7d" value={stats.totalAuditEntries7d} />
           <StatCard icon={<AlertTriangle className="h-3.5 w-3.5 text-amber-500" />} label="Críticas" value={stats.criticalChanges7d} isAlert={stats.criticalChanges7d > 0} />
-          <StatCard icon={<Clock className="h-3.5 w-3.5 text-primary" />} label="Aprovações" value={stats.pendingApprovals} isAlert={stats.pendingApprovals > 0} />
           <StatCard icon={<Lock className="h-3.5 w-3.5 text-muted-foreground" />} label="Bloqueios" value={stats.activeStructuralLocks} />
         </div>
 
@@ -91,7 +90,6 @@ export function GovernanceWidget() {
                 { key: "auditoria" as Tab, label: "Auditoria", icon: History, count: data.recentAudit.length },
                 { key: "permissoes" as Tab, label: "Permissões", icon: UserCheck },
                 { key: "bloqueios" as Tab, label: "Bloqueios", icon: Lock, count: data.structuralLocks.length },
-                { key: "aprovacoes" as Tab, label: "Aprovações", icon: CheckCircle2, count: data.pendingApprovals.length },
               ]).map(t => (
                 <Button key={t.key} variant={tab === t.key ? "default" : "ghost"} size="sm" className="h-7 text-[11px] gap-1" onClick={() => setTab(t.key)}>
                   <t.icon className="h-3 w-3" />{t.label}
@@ -103,7 +101,6 @@ export function GovernanceWidget() {
             {tab === "auditoria" && <AuditPanel entries={data.recentAudit} />}
             {tab === "permissoes" && <PermissionsPanel currentLevel={userLevel} />}
             {tab === "bloqueios" && <LocksPanel locks={data.structuralLocks} />}
-            {tab === "aprovacoes" && <ApprovalsPanel items={data.pendingApprovals} />}
           </div>
         )}
       </CardContent>
@@ -203,37 +200,6 @@ function LocksPanel({ locks }: { locks: { id: string; entity: string; reason: st
             )}
           </div>
           <p className="text-[10px] text-muted-foreground mt-1 ml-5">{lock.reason}</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ApprovalsPanel({ items }: { items: { id: string; description: string | null; source_table: string; status: string; amount: number | null; created_at: string | null }[] }) {
-  if (items.length === 0) return <p className="text-xs text-muted-foreground text-center py-4">Nenhuma aprovação pendente.</p>;
-  return (
-    <div className="space-y-1.5">
-      {items.map(item => (
-        <div key={item.id} className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5 text-amber-600" />
-              <span className="text-xs font-medium">{item.description || TABLE_LABELS[item.source_table] || item.source_table}</span>
-            </div>
-            <Badge variant="outline" className="text-[9px] h-3.5 px-1 text-amber-600 border-amber-500/30">{item.status}</Badge>
-          </div>
-          <div className="flex items-center gap-3 mt-1 ml-5">
-            {item.amount != null && (
-              <span className="text-[10px] font-mono font-medium">
-                {item.amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-              </span>
-            )}
-            {item.created_at && (
-              <span className="text-[9px] text-muted-foreground">
-                {formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: ptBR })}
-              </span>
-            )}
-          </div>
         </div>
       ))}
     </div>

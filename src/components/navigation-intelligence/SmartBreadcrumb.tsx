@@ -21,7 +21,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "relatorios": "KPI's",
   "settings": "Configurações",
   "cadastros-financeiros": "Cadastros Financeiros",
-  "aprovacoes": "Aprovações",
+  
   "tarefas": "Tarefas",
   "users": "Usuários",
   "control-tower": "Control Tower",

@@ -2,12 +2,11 @@ import { CriticalAlert } from "@/hooks/useCentralOperacional";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertTriangle, Ban, Clock, CreditCard, FileWarning, Target } from "lucide-react";
+import { AlertTriangle, Ban, CreditCard, FileWarning, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const ICON_MAP: Record<string, any> = {
   overdue_payment: CreditCard,
-  urgent_approval: Clock,
   stalled_order: Ban,
   late_production: AlertTriangle,
   goal_risk: Target,

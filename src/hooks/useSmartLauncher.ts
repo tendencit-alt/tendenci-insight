@@ -83,22 +83,8 @@ export function useActionItems() {
         });
       }
 
-      // 3. Pending approvals
-      const { count: approvalCount } = await supabase
-        .from("approval_instances")
-        .select("id", { count: "exact", head: true })
-        .in("status", ["solicitado", "em_revisao"]);
 
-      if (approvalCount && approvalCount > 0) {
-        items.push({
-          id: "pending-approvals",
-          label: `${approvalCount} aprovação(ões) pendente(s)`,
-          detail: "Pedidos aguardando decisão",
-          severity: approvalCount > 5 ? "red" : "yellow",
-          route: "/aprovacoes",
-          count: approvalCount,
-        });
-      }
+
 
       // 4. Overdue receivables
       const { count: overdueRecCount } = await supabase

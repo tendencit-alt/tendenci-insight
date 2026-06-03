@@ -37,12 +37,6 @@ export function DailyDigest({ className }: { className?: string }) {
             onClick={() => navigate("/contas-pagar")}
           />
           <DigestMetric
-            label="Aprovações"
-            value={dailySummary.aprovacoesPendentes}
-            critical={dailySummary.aprovacoesPendentes > 0}
-            onClick={() => navigate("/aprovacoes")}
-          />
-          <DigestMetric
             label="Pedidos"
             value={dailySummary.pedidosAguardando}
             onClick={() => navigate("/pedidos")}

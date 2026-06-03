@@ -5,7 +5,7 @@ import { differenceInDays, format } from "date-fns";
 
 export interface CriticalAlert {
   id: string;
-  type: "overdue_payment" | "urgent_approval" | "stalled_order" | "late_production" | "goal_risk" | "missing_doc";
+  type: "overdue_payment" | "stalled_order" | "late_production" | "goal_risk" | "missing_doc";
   title: string;
   description: string;
   severity: "critical" | "high";
@@ -92,28 +92,8 @@ export function useCriticalAlerts() {
         });
       });
 
-      // 3. Pending approvals
-      const { data: pendingApprovals } = await supabase
-        .from("approval_instances")
-        .select("id, description, status, created_at, urgency")
-        .in("status", ["solicitado", "em_revisao"])
-        .order("created_at")
-        .limit(5);
 
-      pendingApprovals?.forEach((a) => {
-        const days = differenceInDays(new Date(), new Date(a.created_at!));
-        if (days >= 2 || a.urgency === "critica" || a.urgency === "alta") {
-          alerts.push({
-            id: `appr-${a.id}`,
-            type: "urgent_approval",
-            title: `Aprovação pendente há ${days} dia(s)`,
-            description: a.description || "Aguardando aprovação",
-            severity: a.urgency === "critica" ? "critical" : "high",
-            link: "/aprovacoes",
-            days,
-          });
-        }
-      });
+
 
       // 4. Stalled orders
       const { data: stalledOrders } = await supabase
@@ -261,17 +241,8 @@ export function useQuickIndicators() {
         color: (pendingTasks || 0) > 10 ? "text-destructive" : "text-foreground",
       });
 
-      // Pending approvals
-      const { count: pendingAppr } = await supabase
-        .from("approval_instances")
-        .select("id", { count: "exact", head: true })
-        .in("status", ["solicitado", "em_revisao"]);
 
-      indicators.push({
-        label: "Aprovações",
-        value: pendingAppr || 0,
-        color: (pendingAppr || 0) > 5 ? "text-orange-600" : "text-foreground",
-      });
+
 
       // Overdue financial
       const { count: overdueCount } = await supabase
@@ -310,8 +281,6 @@ function formatEventType(type: string, _payload?: any): string {
     "payment.completed": "Pagamento realizado",
     "receivable.completed": "Recebimento registrado",
     "production.completed": "Produção concluída",
-    "approval.approved": "Aprovação concedida",
-    "approval.rejected": "Aprovação rejeitada",
   };
   return map[type] || type.replace(/[._]/g, " ");
 }

@@ -99,7 +99,7 @@ function DailySummaryBlock({ summary }: { summary: NonNullable<ReturnType<typeof
   const navigate = useNavigate();
   const items = [
     { label: "Contas vencidas", count: summary.contasVencidas, route: "/contas-pagar", critical: true },
-    { label: "Aprovações pendentes", count: summary.aprovacoesPendentes, route: "/aprovacoes", critical: true },
+    
     { label: "Pedidos aguardando", count: summary.pedidosAguardando, route: "/pedidos", critical: false },
     { label: "Ordens atrasadas", count: summary.ordensAtrasadas, route: "/producao", critical: false },
   ].filter(i => i.count > 0);

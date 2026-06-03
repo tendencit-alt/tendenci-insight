@@ -133,7 +133,7 @@ const SCOPE_TYPES = [
 const VALUE_MODULES = [
   { key: 'pagamentos', label: 'Pagamentos' },
   { key: 'descontos', label: 'Descontos' },
-  { key: 'aprovacoes', label: 'Aprovações' },
+  
   { key: 'compras', label: 'Compras' },
   { key: 'reembolsos', label: 'Reembolsos' },
 ];
