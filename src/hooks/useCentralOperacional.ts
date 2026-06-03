@@ -29,6 +29,7 @@ export interface RecentEvent {
   description: string;
   timestamp: string;
   module: string;
+  link?: string;
 }
 
 export interface QuickIndicator {
@@ -202,7 +203,7 @@ export function useRecentEvents() {
       // Recent cross-module events
       const { data: crossEvents } = await supabase
         .from("cross_module_events")
-        .select("id, event_type, payload, created_at, source_module")
+        .select("id, event_type, payload, created_at, source_module, source_entity, source_entity_id")
         .order("created_at", { ascending: false })
         .limit(15);
 
@@ -218,6 +219,7 @@ export function useRecentEvents() {
           description,
           timestamp: e.created_at,
           module: e.source_module || "sistema",
+          link: buildEventLink(e.source_entity, e.source_entity_id, e.event_type, payload),
         });
       });
 
@@ -297,6 +299,17 @@ const PHASE_LABELS: Record<string, string> = {
 function phaseLabel(slug?: string): string {
   if (!slug) return "";
   return PHASE_LABELS[slug] || slug.replace(/_/g, " ");
+}
+
+function buildEventLink(entity?: string | null, entityId?: string | null, type?: string, payload?: any): string | undefined {
+  const p = payload || {};
+  if (entity === "production_orders" && entityId) return `/producao-operacoes?op=${entityId}`;
+  if (entity === "orders" && entityId) return `/pedidos/${entityId}`;
+  if (entity === "payables" && entityId) return `/financeiro/contas-pagar?id=${entityId}`;
+  if (entity === "receivables" && entityId) return `/financeiro/contas-receber?id=${entityId}`;
+  if (type?.startsWith("production.") && p.production_order_id) return `/producao-operacoes?op=${p.production_order_id}`;
+  if (type?.startsWith("pedido_") && p.order_id) return `/pedidos/${p.order_id}`;
+  return undefined;
 }
 
 function formatEventType(type: string, payload?: any): string {
