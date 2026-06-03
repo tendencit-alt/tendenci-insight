@@ -697,7 +697,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const valorTotalPagamento = parcelas.reduce((sum, p) => sum + (total * (p.percentual / 100)), 0);
   const diferencaPagamento = Math.abs(valorTotalPagamento - total);
   // Se total é 0 ou negativo, não permite validar como correto
-  const isPagamentoValorCorreto = total > 0 ? diferencaPagamento < 0.01 : false;
+  const isPagamentoValorCorreto = total > 0 ? diferencaPagamento < 0.1 : false;
   
   const isPagamentoValid = parcelas.length > 0 && parcelas.every(p => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto && hasAllStrategicResponsibles;
   const isEntregaValid = !!formData.tipo_entrega;
