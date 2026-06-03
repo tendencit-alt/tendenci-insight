@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { auditStub } from "@/lib/audit-stub";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 // Activity feed types and queries
@@ -117,8 +118,7 @@ export function useActivityFeed(options?: {
     queryFn: async () => {
       if (!user) return [];
 
-      let query = supabase
-        .from("audit_log")
+      let query =auditStub()
         .select("*")
         .order("created_at", { ascending: false })
         .limit(limit);

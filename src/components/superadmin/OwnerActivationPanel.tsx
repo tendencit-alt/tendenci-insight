@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { auditStub } from "@/lib/audit-stub";
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -63,8 +64,7 @@ export function OwnerActivationPanel() {
           supabase.from('fin_ledger_entries' as any).select('id', { count: 'exact', head: true }).eq('tenant_id', tenant.id),
           supabase.from('fin_ledger_entries' as any).select('id', { count: 'exact', head: true }).eq('tenant_id', tenant.id).not('chart_account_id', 'is', null),
           supabase.from('fin_ledger_entries' as any).select('id', { count: 'exact', head: true }).eq('tenant_id', tenant.id).eq('status', 'CONCILIADO'),
-          supabase.from('fin_goals' as any).select('id', { count: 'exact', head: true }).eq('tenant_id', tenant.id),
-          supabase.from('audit_import_logs').select('id', { count: 'exact', head: true }).eq('tenant_id', tenant.id),
+          supabase.from('fin_goals' as any).select('id', { count: 'exact', head: true }).eq('tenant_id', tenant.id),auditStub().select('id', { count: 'exact', head: true }).eq('tenant_id', tenant.id),
           supabase.from('fin_receivables' as any).select('id', { count: 'exact', head: true }).eq('tenant_id', tenant.id),
           supabase.from('fin_payables' as any).select('id', { count: 'exact', head: true }).eq('tenant_id', tenant.id),
           supabase.from('fin_bank_accounts' as any).select('id', { count: 'exact', head: true }).eq('tenant_id', tenant.id).eq('active', true),

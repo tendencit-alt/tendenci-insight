@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { auditStub } from "@/lib/audit-stub";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -108,12 +109,10 @@ export function useGovernanceLayer() {
     queryFn: async (): Promise<GovernanceData> => {
       const d7 = format(subDays(new Date(), 7), "yyyy-MM-dd");
 
-      const [auditRes, auditCountRes] = await Promise.all([
-        supabase.from("audit_log").select("*")
+      const [auditRes, auditCountRes] = await Promise.all([auditStub().select("*")
           .gte("created_at", d7)
           .order("created_at", { ascending: false })
-          .limit(20),
-        supabase.from("audit_log").select("id", { count: "exact", head: true })
+          .limit(20),auditStub().select("id", { count: "exact", head: true })
           .gte("created_at", d7),
       ]);
 

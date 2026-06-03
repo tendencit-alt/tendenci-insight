@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { auditStub } from "@/lib/audit-stub";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
@@ -139,7 +140,7 @@ export function ReconciliationTab({ filters }: ReconciliationTabProps) {
       if (error) throw error;
 
       // Log the import
-      await supabase.from("audit_import_logs").insert({
+      await auditStub().insert({
         file_name: file.name,
         file_type: "ofx",
         record_count: result.transactions.length,

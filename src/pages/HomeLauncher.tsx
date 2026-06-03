@@ -94,7 +94,7 @@ const SEARCHABLE_ITEMS = [
   { label: "Configurações", route: "/settings", module: "Sistema" },
   { label: "Usuários", route: "/settings/users", module: "Sistema" },
   { label: "Automações", route: "/automacoes", module: "Sistema" },
-  { label: "Auditoria", route: "/auditoria", module: "Sistema" },
+  
   { label: "RH", route: "/rh", module: "Pessoas" },
   { label: "Suprimentos", route: "/suprimentos", module: "Operações" },
   { label: "CRM", route: "/crm-comercial", module: "Vendas" },

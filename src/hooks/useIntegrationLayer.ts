@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { auditStub } from "@/lib/audit-stub";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -71,8 +72,7 @@ export function useIntegrationLayer() {
       // Parallel queries for integration status
       const [bankTxRes, ledgerRes, importLogsRes] = await Promise.all([
         supabase.from("fin_bank_transactions" as any).select("id, status, created_at", { count: "exact", head: false }).order("created_at", { ascending: false }).limit(5),
-        supabase.from("fin_ledger_entries").select("id, classification_status, created_at").not("classification_status", "is", null).limit(100),
-        supabase.from("audit_import_logs").select("*").order("created_at", { ascending: false }).limit(10),
+        supabase.from("fin_ledger_entries").select("id, classification_status, created_at").not("classification_status", "is", null).limit(100),auditStub().select("*").order("created_at", { ascending: false }).limit(10),
       ]);
 
       const bankTxCount = bankTxRes.count || 0;

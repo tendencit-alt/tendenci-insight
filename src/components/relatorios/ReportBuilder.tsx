@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { auditStub } from "@/lib/audit-stub";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,7 +75,7 @@ const REPORT_SOURCES: ReportDataSource[] = [
     buildQuery: (f) => (supabase as any).from("orders").select("id, order_number, total_amount, status, created_at, client_id").eq("status", "cancelado").gte("created_at", f.dateFrom).lte("created_at", f.dateTo) },
   // Auditoria
   { key: "audit_critical", label: "Alterações Críticas", group: "auditoria", table: "audit_log", defaultMetrics: ["count"], availableGroupings: ["month", "table", "user"],
-    buildQuery: (f) => (supabase as any).from("audit_log").select("id, event_type, table_name, field_name, old_value, new_value, user_id, created_at").gte("created_at", f.dateFrom).lte("created_at", f.dateTo).order("created_at", { ascending: false }).limit(500) },
+    buildQuery: (f) => auditStub().select("id, event_type, table_name, field_name, old_value, new_value, user_id, created_at").gte("created_at", f.dateFrom).lte("created_at", f.dateTo).order("created_at", { ascending: false }).limit(500) },
   { key: "manual_entries", label: "Lançamentos Manuais", group: "auditoria", table: "fin_ledger_entries", defaultMetrics: ["amount", "count"], availableGroupings: ["month", "category"],
     buildQuery: (f) => (supabase as any).from("fin_ledger_entries").select("id, description, amount, competence_date, type, created_at").neq("status", "CANCELADO").is("source_id", null).gte("created_at", f.dateFrom).lte("created_at", f.dateTo) },
   { key: "unreconciled", label: "Movimentos Sem Conciliação", group: "auditoria", table: "fin_ledger_entries", defaultMetrics: ["amount", "count"], availableGroupings: ["month"],

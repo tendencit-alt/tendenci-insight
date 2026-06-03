@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { auditStub } from "@/lib/audit-stub";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -53,7 +54,7 @@ export default function BoasVindas() {
         // Empresa: save additional info if any — soft (best effort)
         if (tenantId && (empresa.phone || empresa.address || empresa.segment)) {
           // store in tenants.metadata-style is unknown; skip if no column. Save via audit_log as metadata.
-          await supabase.from("audit_log").insert({
+          await auditStub().insert({
             tenant_id: tenantId,
             user_id: user?.id ?? null,
             table_name: "tenants",
@@ -78,7 +79,7 @@ export default function BoasVindas() {
       } else if (step === 2) {
         const valid = invites.map((e) => e.trim()).filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
         if (valid.length && tenantId) {
-          await supabase.from("audit_log").insert(
+          await auditStub().insert(
             valid.map((email) => ({
               tenant_id: tenantId,
               user_id: user?.id ?? null,

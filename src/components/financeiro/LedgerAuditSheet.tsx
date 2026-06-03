@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { auditStub } from "@/lib/audit-stub";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -57,8 +58,7 @@ export function LedgerAuditSheet({ open, onOpenChange, entry }: LedgerAuditSheet
     queryKey: ["fin-audit-logs", entry?.id],
     enabled: !!entry?.id,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("fin_audit_logs")
+      const { data } = await auditStub()
         .select(`
           *,
           user:profiles(full_name)

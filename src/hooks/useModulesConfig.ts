@@ -61,7 +61,7 @@ export const MODULE_ROUTE_MAP: Record<string, string> = {
   "onboarding": "/onboarding",
   "smart-onboarding": "/smart-onboarding",
   "governanca": "/governanca",
-  "auditoria": "/auditoria",
+  
   "auditoria-permissoes": "/auditoria-permissoes",
   "benchmarking": "/benchmarking",
   "multi-company": "/empresas",

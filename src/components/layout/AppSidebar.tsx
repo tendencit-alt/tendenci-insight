@@ -176,7 +176,7 @@ const menuGroups: MenuGroup[] = [
       { title: "Educação & Trilhas", url: "/education", icon: GraduationCap },
       { title: "Indicadores Executivos", url: "/executive", icon: LineChart },
       { title: "Simulações", url: "/planning", icon: Wrench },
-      { title: "Auditoria", url: "/auditoria", icon: History },
+      
     ],
   },
   // ── SISTEMA ──
