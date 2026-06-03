@@ -176,16 +176,9 @@ export function OpsOrdersTab() {
     );
   }, [enriched, search]);
 
-  const kpis = useMemo(() => {
-    const inProd = filtered.filter((o) => o._slug === "em_producao").length;
-    const waiting = filtered.filter((o) => o._slug === "aguardando").length;
-    const late = filtered.filter((o) => o._due.level === "late").length;
-    const warn = filtered.filter((o) => o._due.level === "warn").length;
-    const done = filtered.filter((o) => o._slug === "concluido" || o._slug === "entregue").length;
-    const total = filtered.length;
-    const donePct = total === 0 ? 0 : Math.round((done / total) * 100);
-    return { inProd, waiting, late, warn, done, donePct };
-  }, [filtered]);
+  // KPIs unificados — mesma fonte do Cronograma (RPC get_production_timeline).
+  // Garante 100% de paridade entre as abas Produção e Cronograma.
+  const { kpis: timelineKpis } = useProductionKPIs();
 
   const fmt = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
