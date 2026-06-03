@@ -243,6 +243,10 @@ export function OpsOrdersTab() {
             </SelectContent>
           </Select>
           <ManageProductionStatusDialog />
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setChecklistsOpen(true)}>
+            <ClipboardCheck className="h-4 w-4" />Checklists por status
+          </Button>
+          <ManageStatusChecklistsDialog open={checklistsOpen} onOpenChange={setChecklistsOpen} />
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" />Nova Ordem</Button>
