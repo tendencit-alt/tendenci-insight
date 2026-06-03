@@ -833,7 +833,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const allItemsHaveCentroCusto = items.length > 0 && items.every((item) => !!item.centro_custo);
   const allItemsHaveProject = items.length > 0 && items.every((item) => !!item.project_id);
   const isItensValid = items.length > 0 && allItemsHaveCentroCusto && allItemsHaveProject;
-  const totalPercentual = Math.round(parcelas.reduce((sum, p) => sum + p.percentual, 0) * 100) / 100;
+  const totalPercentual = Math.round(parcelas.reduce((sum, p) => sum + (Number(p.percentual) || 0), 0) * 100) / 100;
   const strategicResourceLabels = {
     rt: resourceDefaults.rt.label,
     vendedor: resourceDefaults.vendedor.label,
@@ -850,10 +850,10 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const hasAllStrategicResponsibles = allMissingStrategicResponsibles.length === 0;
 
   // Validação rigorosa: valor das formas de pagamento deve ser igual ao total
-  const valorTotalPagamento = parcelas.reduce((sum, p) => sum + (total * (p.percentual / 100)), 0);
+  const valorTotalPagamento = parcelas.reduce((sum, p) => sum + (total * ((Number(p.percentual) || 0) / 100)), 0);
   const diferencaPagamento = Math.abs(valorTotalPagamento - total);
-  const isPagamentoValorCorreto = total > 0 ? diferencaPagamento < 0.1 : false;
-  const isPagamentoValid = parcelas.length > 0 && parcelas.every((p) => p.forma_pagamento) && Math.abs(totalPercentual - 100) < 0.1 && isPagamentoValorCorreto && hasAllStrategicResponsibles;
+  const isPagamentoValorCorreto = total > 0 ? diferencaPagamento < 0.5 : false;
+  const isPagamentoValid = parcelas.length > 0 && parcelas.every((p) => p.forma_pagamento) && Math.abs(totalPercentual - 100) < 0.5 && isPagamentoValorCorreto && hasAllStrategicResponsibles;
   const isEntregaValid = !!formData.tipo_entrega;
   const isFormValid = isClienteValid && isItensValid && isPagamentoValid && isEntregaValid;
   const isEditable = isMaster || order?.status === 'rascunho' || order?.status === 'em_negociacao';
@@ -2590,7 +2590,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                  </div>
               </div>
 
-              {Math.abs(totalPercentual - 100) > 0.1 && (
+              {Math.abs(totalPercentual - 100) > 0.5 && (
                 <Alert variant="destructive" className="mt-2">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>
@@ -2601,7 +2601,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                 </Alert>
               )}
 
-              {Math.abs(totalPercentual - 100) < 0.1 && !isPagamentoValorCorreto && (
+              {Math.abs(totalPercentual - 100) < 0.5 && !isPagamentoValorCorreto && (
                 <Alert variant="destructive" className="mt-2">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>
