@@ -176,8 +176,8 @@ export function CreatePayableDialog({ open, onOpenChange, onSuccess, initialData
       newErrors.cost_center_id = "Centro de Custo é obrigatório";
     }
     if (isRateio) {
-      const totalPct = apportionmentItems.reduce((s, i) => s + i.percentage, 0);
-      if (Math.abs(totalPct - 100) > 0.05) {
+      const totalPct = Math.round(apportionmentItems.reduce((s, i) => s + i.percentage, 0) * 100) / 100;
+      if (Math.abs(totalPct - 100) > 0.1) {
         newErrors.cost_center_id = "O rateio deve totalizar 100%";
       }
     }
