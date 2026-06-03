@@ -2,9 +2,10 @@ import { RecentEvent } from "@/hooks/useCentralOperacional";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Activity } from "lucide-react";
+import { Activity, ExternalLink } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   events: RecentEvent[];
