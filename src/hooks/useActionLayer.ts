@@ -98,16 +98,8 @@ export function useActionLayer() {
             pushUndo({ id: action.targetId, label: action.label, table: action.targetTable, field: "due_date", oldValue: "", newValue: dateStr });
             break;
           }
-          case "approve": {
-            if (!action.targetId) return false;
-            const { error } = await supabase
-              .from("approval_instances")
-              .update({ status: "aprovado", approved_at: new Date().toISOString() })
-              .eq("id", action.targetId);
-            if (error) throw error;
-            pushUndo({ id: action.targetId, label: action.label, table: "approval_instances", field: "status", oldValue: "solicitado", newValue: "aprovado" });
-            break;
-          }
+
+
           case "reconcile": {
             if (!action.targetId) return false;
             const { error } = await supabase
@@ -204,11 +196,8 @@ export function useActionLayer() {
         { id: "reconcile-pending", label: "Conciliar", description: "Marcar como conciliado", icon: "reconcile" },
       );
     }
-    if (alertId === "pending-approvals") {
-      actions.push(
-        { id: "approve-pending", label: "Aprovar", description: "Aprovar pedido", icon: "approve" },
-      );
-    }
+
+
     return actions;
   }, []);
 

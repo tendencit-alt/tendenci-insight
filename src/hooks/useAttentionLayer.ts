@@ -101,23 +101,8 @@ export function useAttentionLayer(): AttentionData {
         });
       }
 
-      // 4. Aprovações pendentes
-      const { count: pendingApprovals } = await supabase
-        .from("approval_instances")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "pending");
 
-      if (pendingApprovals && pendingApprovals > 0) {
-        alerts.push({
-          id: "approvals-pending",
-          label: "Aprovações pendentes",
-          count: pendingApprovals,
-          level: pendingApprovals > 3 ? "urgente" : "atencao",
-          route: "/aprovacoes",
-          group: "Comercial",
-          itemUrl: "/pedidos",
-        });
-      }
+
 
       // 5. Pedidos em aberto (não finalizados nem cancelados)
       const { count: openOrders } = await supabase

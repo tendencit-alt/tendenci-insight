@@ -149,13 +149,11 @@ export function useNotificationIntelligence() {
     queryFn: async (): Promise<DailySummary> => {
       const today = new Date().toISOString().split("T")[0];
 
-      const [payables, receivables, approvals, orders, production] = await Promise.all([
+      const [payables, receivables, orders, production] = await Promise.all([
         supabase.from("fin_payables").select("id", { count: "exact", head: true })
           .lt("due_date", today).not("status", "in", '("pago","cancelado")'),
         supabase.from("fin_receivables").select("id", { count: "exact", head: true })
           .lt("due_date", today).not("status", "in", '("recebido","cancelado")'),
-        supabase.from("approval_instances").select("id", { count: "exact", head: true })
-          .eq("status", "pending"),
         supabase.from("orders").select("id", { count: "exact", head: true })
           .in("status", ["rascunho", "negociacao"]),
         supabase.from("production_orders").select("id", { count: "exact", head: true })
@@ -164,7 +162,7 @@ export function useNotificationIntelligence() {
 
       const cv = payables.count || 0;
       const cp = 0; // conciliações from attention layer
-      const pa = approvals.count || 0;
+      const pa = 0;
       const po = orders.count || 0;
       const oa = production.count || 0;
       const rv = receivables.count || 0;
@@ -175,7 +173,7 @@ export function useNotificationIntelligence() {
         pedidosAguardando: po,
         aprovacoesPendentes: pa,
         ordensAtrasadas: oa,
-        totalCritico: cv + rv + pa,
+        totalCritico: cv + rv,
       };
     },
     enabled: !!user?.id,

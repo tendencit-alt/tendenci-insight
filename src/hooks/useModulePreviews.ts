@@ -49,17 +49,7 @@ export function useModulePreviews() {
         stats: [],
       };
 
-      // ── Controladoria ──
-      const { count: pendingAppr } = await supabase
-        .from("approval_instances")
-        .select("id", { count: "exact", head: true })
-        .in("status", ["solicitado", "em_revisao"]);
-      previews.controladoria = {
-        alerts: [
-          ...(pendingAppr ? [{ label: `${pendingAppr} aprovação(ões) pendente(s)`, severity: pendingAppr > 5 ? "red" as const : "yellow" as const }] : []),
-        ],
-        stats: [],
-      };
+      previews.controladoria = { alerts: [], stats: [] };
 
       // Defaults for others
       previews.relatorios = { alerts: [], stats: [{ label: "KPI's disponíveis", value: "13+" }] };

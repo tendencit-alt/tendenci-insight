@@ -121,7 +121,6 @@ export function useObservabilityLayer() {
         importLogsRes,
         auditLogsRes,
         tenantsRes,
-        approvalRes,
         bankTxRes,
         errorLogsRes,
       ] = await Promise.all([
@@ -130,7 +129,6 @@ export function useObservabilityLayer() {
         supabase.from("audit_import_logs").select("*").order("created_at", { ascending: false }).limit(20),
         supabase.from("audit_log").select("id, event_type, table_name, created_at, tenant_id, metadata").gte("created_at", h24).order("created_at", { ascending: false }).limit(50),
         supabase.from("tenants" as any).select("id, name").limit(100),
-        supabase.from("approval_instances").select("id, status").eq("status", "pending").limit(50),
         supabase.from("fin_bank_transactions" as any).select("id, status, created_at", { count: "exact", head: true }),
         // System error logs from audit
         supabase.from("audit_log").select("id").eq("event_type", "ERROR").gte("created_at", h24),
@@ -141,7 +139,7 @@ export function useObservabilityLayer() {
       const importLogs: any[] = importLogsRes.data || [];
       const auditLogs: any[] = auditLogsRes.data || [];
       const tenants: any[] = tenantsRes.data || [];
-      const pendingApprovals = approvalRes.data?.length || 0;
+      const pendingApprovals = 0;
       const errorCount = errorLogsRes.data?.length || 0;
 
       const tenantMap = new Map<string, string>();
@@ -261,7 +259,7 @@ export function useObservabilityLayer() {
       if (automErrors > 3) alerts.push({ id: "alert-autom", severity: "critical", message: `${automErrors} automações falharam nas últimas 24h`, service: "Motor Automações", tenantId: null, createdAt: now.toISOString(), resolved: false });
       if (importErrors > 0) alerts.push({ id: "alert-import", severity: "warning", message: `${importErrors} importações com erro recente`, service: "Integrações", tenantId: null, createdAt: now.toISOString(), resolved: false });
       if (stuckJobs > 0) alerts.push({ id: "alert-stuck", severity: "warning", message: `${stuckJobs} jobs travados (>3 erros)`, service: "Motor Automações", tenantId: null, createdAt: now.toISOString(), resolved: false });
-      if (pendingApprovals > 5) alerts.push({ id: "alert-approvals", severity: "info", message: `${pendingApprovals} aprovações pendentes acumuladas`, service: "Governança", tenantId: null, createdAt: now.toISOString(), resolved: false });
+      
 
       // ── Incidents ──
       const incidents: Incident[] = criticalEvents.slice(0, 5).map((e, i) => ({

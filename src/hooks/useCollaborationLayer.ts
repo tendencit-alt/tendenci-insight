@@ -29,7 +29,7 @@ export interface CollabEvent {
 }
 
 export interface BottleneckAlert {
-  type: "unassigned" | "overdue" | "awaiting_approval";
+  type: "unassigned" | "overdue";
   count: number;
   label: string;
 }
@@ -139,14 +139,8 @@ export function useCollaborationLayer(filter: CollabFilter = "mine") {
         bottlenecks.push({ type: "overdue", count: overdue.length, label: `${overdue.length} tarefa(s) atrasada(s)` });
       }
 
-      const { count: approvalCount } = await supabase
-        .from("approval_instances")
-        .select("id", { count: "exact", head: true })
-        .in("status", ["solicitado", "em_revisao"]);
 
-      if (approvalCount && approvalCount > 0) {
-        bottlenecks.push({ type: "awaiting_approval", count: approvalCount, label: `${approvalCount} aprovação(ões) pendente(s)` });
-      }
+
 
       return {
         assignedToMe,

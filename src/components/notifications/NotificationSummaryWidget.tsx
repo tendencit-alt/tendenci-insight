@@ -38,9 +38,6 @@ export function NotificationSummaryWidget({ className }: { className?: string })
             {summary.contasVencidas > 0 && (
               <SummaryItem label="Contas vencidas" count={summary.contasVencidas} critical onClick={() => navigate("/contas-pagar")} />
             )}
-            {summary.aprovacoesPendentes > 0 && (
-              <SummaryItem label="Aprovações" count={summary.aprovacoesPendentes} critical onClick={() => navigate("/aprovacoes")} />
-            )}
             {summary.pedidosAguardando > 0 && (
               <SummaryItem label="Pedidos aguardando" count={summary.pedidosAguardando} onClick={() => navigate("/pedidos")} />
             )}

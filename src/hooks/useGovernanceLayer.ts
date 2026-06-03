@@ -27,20 +27,9 @@ export interface StructuralLock {
   canOverride: boolean;
 }
 
-export interface PendingApproval {
-  id: string;
-  description: string | null;
-  source_table: string;
-  status: string;
-  amount: number | null;
-  requested_by: string;
-  created_at: string | null;
-}
-
 export interface GovernanceStats {
   totalAuditEntries7d: number;
   criticalChanges7d: number;
-  pendingApprovals: number;
   activeStructuralLocks: number;
 }
 
@@ -48,7 +37,6 @@ export interface GovernanceData {
   stats: GovernanceStats;
   recentAudit: AuditEntry[];
   structuralLocks: StructuralLock[];
-  pendingApprovals: PendingApproval[];
   userLevel: PermissionLevel;
 }
 
@@ -120,15 +108,11 @@ export function useGovernanceLayer() {
     queryFn: async (): Promise<GovernanceData> => {
       const d7 = format(subDays(new Date(), 7), "yyyy-MM-dd");
 
-      const [auditRes, approvalRes, auditCountRes] = await Promise.all([
+      const [auditRes, auditCountRes] = await Promise.all([
         supabase.from("audit_log").select("*")
           .gte("created_at", d7)
           .order("created_at", { ascending: false })
           .limit(20),
-        supabase.from("approval_instances").select("id, description, source_table, status, amount, requested_by, created_at")
-          .in("status", ["pending", "review", "Solicitado", "Em revisão"])
-          .order("created_at", { ascending: false })
-          .limit(10),
         supabase.from("audit_log").select("id", { count: "exact", head: true })
           .gte("created_at", d7),
       ]);
@@ -143,12 +127,6 @@ export function useGovernanceLayer() {
       const criticalTables = new Set(["fin_ledger_entries", "fin_chart_accounts", "fin_cost_centers", "company_settings", "orders"]);
       const criticalChanges7d = recentAudit.filter(a => criticalTables.has(a.table_name)).length;
 
-      const pendingApprovals: PendingApproval[] = (approvalRes.data || []).map((r: any) => ({
-        id: r.id, description: r.description, source_table: r.source_table,
-        status: r.status, amount: r.amount, requested_by: r.requested_by,
-        created_at: r.created_at,
-      }));
-
       // Structural locks (derived from system state)
       const structuralLocks: StructuralLock[] = [
         { id: "lock-conciliados", entity: "Lançamentos Conciliados", reason: "Lançamentos conciliados não podem ser alterados", locked: true, canOverride: level === "owner" },
@@ -160,12 +138,10 @@ export function useGovernanceLayer() {
         stats: {
           totalAuditEntries7d: auditCountRes.count || 0,
           criticalChanges7d,
-          pendingApprovals: pendingApprovals.length,
           activeStructuralLocks: structuralLocks.filter(l => l.locked).length,
         },
         recentAudit,
         structuralLocks,
-        pendingApprovals,
         userLevel: level,
       };
     },

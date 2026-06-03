@@ -44,13 +44,13 @@ const TABLE_SECTOR: Record<string, ActivitySector> = {
   profiles: "sistema",
   company_settings: "sistema",
   automation_rules: "sistema",
-  approval_instances: "sistema",
+  
 };
 
 // ── Critical event detection ──
 const CRITICAL_TABLES = new Set([
   "fin_chart_accounts", "fin_financial_goals", "profiles",
-  "company_settings", "automation_rules", "approval_rules",
+  "company_settings", "automation_rules",
 ]);
 const CRITICAL_FIELDS = new Set([
   "status", "role", "is_owner", "active", "amount", "total_value",
@@ -71,7 +71,7 @@ function buildLabel(event: { event_type: string; table_name: string; field_name:
     company_settings: "Configuração",
     automation_rules: "Automação",
     contracts: "Contrato",
-    approval_instances: "Aprovação",
+    
   };
   const eventLabels: Record<string, string> = {
     CREATE: "criado",
