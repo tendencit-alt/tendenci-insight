@@ -46,7 +46,7 @@ const FEATURE_LABELS: Record<string, string> = {
   automacoes_avancadas: "Automações avançadas",
   bi_completo: "BI completo",
   executive: "Centro executivo",
-  ai_decision: "Assistente de decisão IA",
+  
 };
 
 export default function Assinatura() {
