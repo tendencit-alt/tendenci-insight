@@ -364,13 +364,14 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
             <StatusBanner
               module="orders"
               status={order.status}
+              statusLabel={productionStepperData?.label}
               steps={steps}
-              primaryAction={nextAction ? {
+              primaryAction={!productionStepper && nextAction ? {
                 label: nextAction.label,
                 onClick: () => handleStatusChange(nextAction.nextStatus),
                 loading,
               } : undefined}
-              secondaryAction={order.status === 'aprovado' ? {
+              secondaryAction={!productionStepper && order.status === 'aprovado' ? {
                 label: 'Criar OPs',
                 onClick: handleCreateProductionOrders,
                 variant: 'outline',
