@@ -693,7 +693,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <p className="text-[10px] text-muted-foreground">Tipo</p>
-                            <p className="font-medium">{order.tipo_entrega === 'entrega' ? 'Entrega' : order.tipo_entrega === 'retirada' ? 'Retirada' : 'Transportadora'}</p>
+                            <p className="font-medium">{getDeliveryLabel(order.tipo_entrega)}</p>
                           </div>
                           <div>
                             <p className="text-[10px] text-muted-foreground">Previsão</p>
