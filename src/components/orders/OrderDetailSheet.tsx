@@ -133,6 +133,38 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
     enabled: !!orderId,
   });
 
+  // Fetch production order data to show status and dates
+  const { data: productionOrders } = useQuery({
+    queryKey: ['order-production-data', orderId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('production_orders')
+        .select('id, status, planned_end_date, actual_end_date, created_at')
+        .eq('order_id', orderId);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!orderId,
+  });
+
+  const productionInfo = useMemo(() => {
+    if (!productionOrders || productionOrders.length === 0) return null;
+    
+    // If there are multiple OPs for one order, we might need a strategy.
+    // Usually one order = one OP or we show the "worst" case.
+    // For now, let's take the first one or the one with the most recent status change.
+    const op = productionOrders[0];
+    const eta = op.planned_end_date;
+    const initialEta = op.created_at; // Or some other column if available for "original" ETA
+
+    return {
+      status: op.status,
+      eta: eta,
+      initialEta: initialEta,
+      opId: op.id
+    };
+  }, [productionOrders]);
+
   const responsibleIds = order ? [
     (order as any).rt_responsavel_id,
     (order as any).comissao_vendedor_responsible_id || (order as any).comissao_vendedor_responsavel_id,
@@ -396,7 +428,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
             <StatusBanner
               module="orders"
               status={order.status}
-              statusLabel={productionStepperData?.label}
+              statusLabel={productionInfo?.status ? getStatusDef('production_orders', productionInfo.status)?.label : productionStepperData?.label}
               steps={steps}
               primaryAction={!productionStepper && nextAction ? {
                 label: nextAction.label,
@@ -419,10 +451,25 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
                   Pedido #{order.order_number}
                   <OrderFulfillmentBadges orderId={order.id} />
                 </SheetTitle>
-                <p className="text-xs text-muted-foreground">
-                  {order.client?.name || 'Sem cliente'} • {order.vendedor?.full_name || 'Sem vendedor'}
-                  {order.created_at && ` • ${format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ptBR })}`}
-                </p>
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-xs text-muted-foreground">
+                    {order.client?.name || 'Sem cliente'} • {order.vendedor?.full_name || 'Sem vendedor'}
+                    {order.created_at && ` • ${format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ptBR })}`}
+                  </p>
+                  {productionInfo?.eta && (
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <Badge variant="outline" className="text-[10px] h-4 py-0 flex items-center gap-1 font-normal border-blue-200 bg-blue-50 text-blue-700">
+                        <Calendar className="h-2.5 w-2.5" />
+                        Previsão: {format(new Date(productionInfo.eta), 'dd/MM/yyyy')}
+                        {order.data_entrega && order.data_entrega !== productionInfo.eta && (
+                          <span className="opacity-60 line-through ml-1">
+                            ({format(new Date(order.data_entrega), 'dd/MM/yyyy')})
+                          </span>
+                        )}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
               </SheetHeader>
               <div className="flex items-center gap-1.5">
                 <MinimizeButton onClick={handleMinimize} />
