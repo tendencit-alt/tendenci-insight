@@ -24525,6 +24525,17 @@ export type Database = {
         }
         Returns: string
       }
+      log_order_event: {
+        Args: {
+          _action: string
+          _description: string
+          _field?: string
+          _new?: string
+          _old?: string
+          _order_id: string
+        }
+        Returns: undefined
+      }
       log_permission_denial: {
         Args: { _context?: Json; _module?: string; _permission_key: string }
         Returns: string
