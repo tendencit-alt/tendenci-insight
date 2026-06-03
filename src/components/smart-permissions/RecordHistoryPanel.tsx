@@ -28,7 +28,7 @@ export function RecordHistoryPanel({ tableName, recordId, limit = 50 }: Props) {
     queryKey: ["record-history", tableName, recordId],
     enabled: !!recordId,
     queryFn: async () => {
-      const { data, error } = awaitauditStub()
+      const { data, error } = await auditStub()
         .select("id, event_type, field_name, old_value, new_value, user_id, created_at, metadata")
         .eq("table_name", tableName)
         .eq("record_id", recordId)

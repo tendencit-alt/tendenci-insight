@@ -57,7 +57,7 @@ export function useStatusMachine({
           if (error) throw error;
 
           // Log transition to audit
-          awaitauditStub().insert({
+          await auditStub().insert({
             table_name: tableName,
             record_id: recordId,
             event_type: "STATUS_CHANGE",

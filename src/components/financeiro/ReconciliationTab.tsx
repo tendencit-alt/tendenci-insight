@@ -140,7 +140,7 @@ export function ReconciliationTab({ filters }: ReconciliationTabProps) {
       if (error) throw error;
 
       // Log the import
-      awaitauditStub().insert({
+      await auditStub().insert({
         file_name: file.name,
         file_type: "ofx",
         record_count: result.transactions.length,

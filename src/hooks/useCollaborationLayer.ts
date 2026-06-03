@@ -92,7 +92,7 @@ export function useCollaborationLayer(filter: CollabFilter = "mine") {
       const overdue = collabTasks.filter((t) => t.isOverdue);
 
       // ── Recent collaborative events (audit_log) ──
-      const { data: rawEvents } = awaitauditStub()
+      const { data: rawEvents } = await auditStub()
         .select("id, event_type, table_name, record_id, user_id, created_at, metadata")
         .in("event_type", ["APPROVE", "UPDATE", "CREATE"])
         .order("created_at", { ascending: false })

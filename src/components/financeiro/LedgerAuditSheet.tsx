@@ -58,7 +58,7 @@ export function LedgerAuditSheet({ open, onOpenChange, entry }: LedgerAuditSheet
     queryKey: ["fin-audit-logs", entry?.id],
     enabled: !!entry?.id,
     queryFn: async () => {
-      const { data } = awaitauditStub()
+      const { data } = await auditStub()
         .select(`
           *,
           user:profiles(full_name)

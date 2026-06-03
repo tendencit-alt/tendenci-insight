@@ -83,7 +83,7 @@ export function useSupportLayer() {
   const { data: recentErrors } = useQuery({
     queryKey: ['support-recent-errors'],
     queryFn: async () => {
-      const { data, error } = awaitauditStub()
+      const { data, error } = await auditStub()
         .select('*, tenant:tenants(name)')
         .in('event_type', ['ERROR', 'AUTOMATION_ERROR', 'INTEGRATION_FAILURE'])
         .order('created_at', { ascending: false })
@@ -110,7 +110,7 @@ export function useSupportLayer() {
   const { data: importErrors } = useQuery({
     queryKey: ['support-import-errors'],
     queryFn: async () => {
-      const { data, error } = awaitauditStub()
+      const { data, error } = await auditStub()
         .select('*, tenant:tenants(name)')
         .eq('status', 'error')
         .order('created_at', { ascending: false })

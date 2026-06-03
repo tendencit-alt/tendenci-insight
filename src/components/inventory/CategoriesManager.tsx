@@ -90,7 +90,7 @@ export default function CategoriesManager() {
     queryKey: ["category-audit-log"],
     enabled: historyOpen,
     queryFn: async () => {
-      const { data, error } = awaitauditStub()
+      const { data, error } = await auditStub()
         .select("*")
         .or(
           "table_name.eq.product_categories,and(table_name.eq.products,field_name.eq.category_id)"
