@@ -29,6 +29,7 @@ export interface TimelineOp {
   status: string;
   priority: string;
   client_id: string | null;
+  client_name: string | null;
   order_id: string | null;
   planned_start_date: string | null;
   planned_end_date: string | null;
