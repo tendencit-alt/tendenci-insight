@@ -99,6 +99,33 @@ export function OpsOrdersTab() {
   const [reprogramOp, setReprogramOp] = useState<{ id: string; orderNumber: any; dueDate: string | null } | null>(null);
   const [historyOp, setHistoryOp] = useState<{ id: string; orderNumber: any } | null>(null);
   const [detailOpId, setDetailOpId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Sincronia entre abas: ?op=<id> abre o detalhe e dá scroll/highlight
+  useEffect(() => {
+    const opParam = searchParams.get("op");
+    if (opParam && opParam !== detailOpId) {
+      setDetailOpId(opParam);
+      setTimeout(() => {
+        const el = document.querySelector(`[data-op-id="${opParam}"]`) as HTMLElement | null;
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.classList.add("ring-2", "ring-primary");
+          setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 2500);
+        }
+      }, 300);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const handleCloseDetail = (v: boolean) => {
+    if (!v) {
+      setDetailOpId(null);
+      const next = new URLSearchParams(searchParams);
+      next.delete("op");
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   const { data: orders = [], isLoading } = useOpsOrders({
     type: typeFilter || undefined,
