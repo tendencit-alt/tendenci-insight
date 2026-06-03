@@ -79,7 +79,7 @@ import CustomerLifecycle from "./pages/CustomerLifecycle";
 import CustomerSuccessOps from "./pages/CustomerSuccessOps";
 import SupportKnowledge from "./pages/SupportKnowledge";
 import InProductEducation from "./pages/InProductEducation";
-import AIDecisionAssistant from "./pages/AIDecisionAssistant";
+
 import ControlTower from "./pages/ControlTower";
 import PermissionDebug from "./pages/PermissionDebug";
 import SmartAdmin from "./pages/SmartAdmin";
