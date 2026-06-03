@@ -157,13 +157,6 @@ export default function Perfil() {
               </div>
             </div>
 
-            <Separator />
-
-            <div className="flex gap-4 text-sm">
-              <Link to="/privacidade" className="inline-flex items-center gap-1 text-primary hover:underline">
-                <FileText className="h-4 w-4" /> Política de Privacidade
-              </Link>
-            </div>
           </CardContent>
         </Card>
       </div>
