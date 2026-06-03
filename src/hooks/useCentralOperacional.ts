@@ -207,10 +207,15 @@ export function useRecentEvents() {
         .limit(15);
 
       crossEvents?.forEach((e) => {
+        const payload = (e.payload as any) || {};
+        let description = formatEventType(e.event_type, payload);
+        if (payload.reason && typeof payload.reason === "string") {
+          description += ` — ${payload.reason}`;
+        }
         events.push({
           id: e.id,
           type: e.event_type,
-          description: formatEventType(e.event_type, e.payload as any),
+          description,
           timestamp: e.created_at,
           module: e.source_module || "sistema",
         });
