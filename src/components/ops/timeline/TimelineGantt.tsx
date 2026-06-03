@@ -169,11 +169,8 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                     className="absolute top-0 bottom-0 border-l border-dashed border-red-500/80 z-10 group/due"
                     style={{ left: `${(differenceInCalendarDays(due, rangeStart) / totalDays) * 100}%` }}
                   >
-                    <div className="absolute -top-1 -left-1.5 text-red-600 opacity-0 group-hover/due:opacity-100 transition-opacity">
-                      <ChevronDown className="h-3 w-3 fill-current" />
-                    </div>
-                    <div className="absolute -bottom-1 -left-1.5 text-red-600 opacity-0 group-hover/due:opacity-100 transition-opacity">
-                      <ChevronUp className="h-3 w-3 fill-current" />
+                    <div className="absolute -top-3 -left-1 text-[9px] font-bold text-red-600 whitespace-nowrap opacity-0 group-hover/due:opacity-100 transition-opacity bg-white px-1 rounded shadow-sm border border-red-100">
+                      PRAZO: {format(due, "dd/MM")}
                     </div>
                   </div>
                 )}
@@ -193,17 +190,15 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                         targetSlug = s.slug;
                         break;
                       }
-                      targetSlug = s.slug; // Case for end of project
+                      targetSlug = s.slug;
                     }
                     
-                    // Encontrar o offset visual do segment ideal
                     let accumulatedWidth = 0;
                     const targetIdx = op.segments.findIndex(s => s.slug === targetSlug);
                     if (targetIdx !== -1) {
                       for (let i = 0; i < targetIdx; i++) {
                         accumulatedWidth += ((op.segments[i].duration_days || 0) / totalPlannedDur) * 100;
                       }
-                      // Adicionar a posição proporcional dentro da etapa alvo
                       const prevAccumulated = accumulatedDur - (op.segments[targetIdx].duration_days || 0);
                       const ratioInTarget = (elapsedSinceStart - prevAccumulated) / (op.segments[targetIdx].duration_days || 1);
                       accumulatedWidth += ratioInTarget * ((op.segments[targetIdx].duration_days || 0) / totalPlannedDur) * 100;
@@ -211,13 +206,13 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
                     return (
                       <div 
-                        className="absolute top-0 -translate-y-1 z-20 text-blue-600 pointer-events-none transition-all duration-500"
+                        className="absolute top-0 -translate-y-2 z-30 text-blue-600 pointer-events-none transition-all duration-500 flex flex-col items-center"
                         style={{ 
                           left: `calc(${offsetPct}% + ${Math.min(100, Math.max(0, accumulatedWidth))}% * ${widthPct} / 100)`,
                         }}
-                        title="Onde deveríamos estar hoje pelo cronograma original"
                       >
-                        <ChevronDown className="h-4 w-4 -ml-2 fill-current drop-shadow-sm" />
+                        <span className="text-[8px] font-bold bg-blue-600 text-white px-1 rounded-sm leading-tight shadow-sm">IDEAL</span>
+                        <ChevronDown className="h-3 w-3 -mt-1 fill-current drop-shadow-sm" />
                       </div>
                     );
                   }
@@ -225,9 +220,9 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                 })()}
 
                 {/* Marcador de Onde Estamos (Seta de Status Atual) */}
-                {currentIdx !== -1 && (
+                {currentIdx !== -1 && op.status !== 'concluido' && op.status !== 'entregue' && (
                   <div 
-                    className="absolute bottom-0 translate-y-1 z-20 text-foreground pointer-events-none transition-all duration-500"
+                    className="absolute bottom-0 translate-y-2 z-30 text-foreground pointer-events-none transition-all duration-500 flex flex-col items-center"
                     style={{ 
                       left: `calc(${offsetPct}% + ${(() => {
                         let acc = 0;
@@ -237,19 +232,19 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                         return acc;
                       })()}% * ${widthPct} / 100)`,
                     }}
-                    title={`Status Atual: ${op.current_phase_label}`}
                   >
-                    <ChevronUp className="h-4 w-4 -ml-2 fill-current drop-shadow-sm" />
+                    <ChevronUp className="h-3 w-3 -mb-1 fill-current drop-shadow-sm" />
+                    <span className="text-[8px] font-bold bg-foreground text-background px-1 rounded-sm leading-tight uppercase shadow-sm">HOJE</span>
                   </div>
                 )}
 
                 {/* bar */}
                 <div
-                  className="absolute top-1/2 -translate-y-1/2 flex rounded overflow-hidden shadow-sm"
+                  className="absolute top-1/2 -translate-y-1/2 flex rounded-md overflow-hidden shadow-sm border border-black/5"
                   style={{
                     left: `${Math.max(0, offsetPct)}%`,
                     width: `${Math.max(1, widthPct)}%`,
-                    height: rowHeight - 14,
+                    height: rowHeight - 16,
                   }}
                 >
                   {op.segments.map((s, idx) => {
@@ -278,11 +273,11 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                 </div>
                 {/* ETA tip (Projeção de Entrega) */}
                 <div
-                  className={`absolute top-1/2 -translate-y-1/2 ${etaClass} rounded px-1.5 text-[10px] text-white whitespace-nowrap font-medium shadow-sm z-10 flex items-center gap-1`}
+                  className={`absolute top-1/2 -translate-y-1/2 ${etaClass} rounded-full px-2 text-[10px] text-white whitespace-nowrap font-bold shadow-md z-20 flex items-center gap-1 border-2 border-white`}
                   style={{
                     left: `${offsetPct + widthPct}%`,
-                    marginLeft: '4px',
-                    height: rowHeight - 20,
+                    marginLeft: '8px',
+                    height: rowHeight - 18,
                   }}
                 >
                   <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
