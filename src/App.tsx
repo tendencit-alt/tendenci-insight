@@ -183,7 +183,7 @@ const App = () => (
               <Route path="/crm-comercial" element={<Navigate to="/crm?view=gestor&tab=pipeline" replace />} />
               <Route path="/propostas" element={<Navigate to="/crm?view=consultor&tab=propostas" replace />} />
               <Route path="/contratos" element={<Navigate to="/crm?view=consultor&tab=clientes" replace />} />
-              <Route path="/comissoes" element={<ProtectedRoute><PermissionGuard module="comercial"><Comissoes /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/comissoes" element={<Navigate to="/" replace />} />
               <Route path="/notificacoes" element={<ProtectedRoute><Notificacoes /></ProtectedRoute>} />
               <Route path="/estoque" element={<ProtectedRoute><PermissionGuard module="estoque"><Inventory /></PermissionGuard></ProtectedRoute>} />
               <Route path="/produtos" element={<ProtectedRoute><Produtos /></ProtectedRoute>} />
