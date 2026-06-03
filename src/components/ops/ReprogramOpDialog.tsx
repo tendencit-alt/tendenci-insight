@@ -23,7 +23,8 @@ export function ReprogramOpDialog({ open, onOpenChange, opId, orderNumber, curre
 
   useEffect(() => {
     if (open) {
-      setDate(currentDueDate ? new Date(currentDueDate).toISOString().slice(0, 10) : "");
+      // Extrai YYYY-MM-DD do timestamp sem aplicar timezone (evita shift de ±1 dia).
+      setDate(currentDueDate ? String(currentDueDate).slice(0, 10) : "");
       setReason("");
     }
   }, [open, currentDueDate]);
@@ -34,7 +35,9 @@ export function ReprogramOpDialog({ open, onOpenChange, opId, orderNumber, curre
     try {
       await reprogram.mutateAsync({
         op_id: opId,
-        new_due_date: new Date(date + "T23:59:59").toISOString(),
+        // Fixa o instante ao meio-dia UTC para que slice(0,10) retorne o mesmo
+        // dia em qualquer fuso (evita aparecer +1 dia no Kanban de Projetos).
+        new_due_date: new Date(date + "T12:00:00Z").toISOString(),
         reason: reason.trim(),
       });
       onOpenChange(false);
