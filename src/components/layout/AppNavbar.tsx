@@ -92,7 +92,6 @@ const OPERATIONAL_ROUTE_ORDER = [
   "/compras",
   "/estoque",
   "/entregas-montagem",
-  "/producao-operacoes",
 ];
 
 const ERP_MODULES: ModuleGroup[] = [
