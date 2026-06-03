@@ -24,6 +24,7 @@ import { ManageProductionStatusDialog } from "./ManageProductionStatusDialog";
 import { RegressReasonDialog } from "./RegressReasonDialog";
 import { ReprogramOpDialog } from "./ReprogramOpDialog";
 import { PhaseHistoryDialog } from "./PhaseHistoryDialog";
+import { ProductionOrderDetailSheet } from "@/components/production/ProductionOrderDetailSheet";
 import {
   DndContext, DragEndEvent, PointerSensor, useDroppable, useDraggable, useSensor, useSensors,
 } from "@dnd-kit/core";
