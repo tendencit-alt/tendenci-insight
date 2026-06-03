@@ -172,7 +172,7 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
     }
     if (isRateio) {
       const totalPct = apportionmentItems.reduce((s, i) => s + i.percentage, 0);
-      if (Math.abs(totalPct - 100) >= 0.01) {
+      if (Math.abs(totalPct - 100) > 0.05) {
         newErrors.cost_center_id = "O rateio deve totalizar 100%";
       }
     }
