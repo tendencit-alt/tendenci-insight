@@ -94,7 +94,7 @@ export function useAutomationEngine() {
                   event_source: "automation_engine",
                   user_id: event.triggeredBy,
                   metadata: { rule_id: rule.id, rule_name: rule.name, event_type: event.type },
-                } as any) as any);
+                } as any);
               }
             }
 
