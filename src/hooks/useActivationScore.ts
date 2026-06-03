@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { auditStub } from "@/lib/audit-stub";
 import { supabase } from '@/integrations/supabase/client';
 
 // ── Types ──
@@ -128,8 +129,7 @@ export function useActivationScore() {
         supabase.from('fin_chart_accounts' as any).select('id').limit(1),
         supabase.from('fin_cost_centers' as any).select('id').eq('active', true).limit(1),
         supabase.from('fin_ledger_entries' as any).select('id').limit(1),
-        supabase.from('fin_goals' as any).select('id').limit(1),
-        supabase.from('audit_import_logs').select('id').limit(1),
+        supabase.from('fin_goals' as any).select('id').limit(1),auditStub().select('id').limit(1),
         supabase.from('onboarding_progress').select('step_key, completed, data'),
         // For reliability: classified entries (have chart_account_id)
         supabase.from('fin_ledger_entries' as any).select('id', { count: 'exact', head: true }).not('chart_account_id', 'is', null),

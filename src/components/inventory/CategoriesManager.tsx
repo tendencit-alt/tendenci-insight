@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { auditStub } from "@/lib/audit-stub";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -89,8 +90,7 @@ export default function CategoriesManager() {
     queryKey: ["category-audit-log"],
     enabled: historyOpen,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("audit_log")
+      const { data, error } = awaitauditStub()
         .select("*")
         .or(
           "table_name.eq.product_categories,and(table_name.eq.products,field_name.eq.category_id)"

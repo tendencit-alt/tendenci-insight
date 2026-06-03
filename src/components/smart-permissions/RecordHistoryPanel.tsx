@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { auditStub } from "@/lib/audit-stub";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -27,8 +28,7 @@ export function RecordHistoryPanel({ tableName, recordId, limit = 50 }: Props) {
     queryKey: ["record-history", tableName, recordId],
     enabled: !!recordId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("audit_log")
+      const { data, error } = awaitauditStub()
         .select("id, event_type, field_name, old_value, new_value, user_id, created_at, metadata")
         .eq("table_name", tableName)
         .eq("record_id", recordId)

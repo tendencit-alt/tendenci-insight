@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { auditStub } from "@/lib/audit-stub";
 import { StatusMachine } from "@/lib/status-machine/engine";
 import { getConfigForEntity } from "@/lib/status-machine/config";
 import type { StatusKey, StatusTransition, StatusMachineConfig } from "@/lib/status-machine/types";
@@ -56,7 +57,7 @@ export function useStatusMachine({
           if (error) throw error;
 
           // Log transition to audit
-          await supabase.from("audit_log" as any).insert({
+          awaitauditStub().insert({
             table_name: tableName,
             record_id: recordId,
             event_type: "STATUS_CHANGE",

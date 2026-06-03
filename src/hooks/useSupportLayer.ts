@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { auditStub } from "@/lib/audit-stub";
 import { supabase } from '@/integrations/supabase/client';
 
 interface SupportTicket {
@@ -82,8 +83,7 @@ export function useSupportLayer() {
   const { data: recentErrors } = useQuery({
     queryKey: ['support-recent-errors'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('audit_log')
+      const { data, error } = awaitauditStub()
         .select('*, tenant:tenants(name)')
         .in('event_type', ['ERROR', 'AUTOMATION_ERROR', 'INTEGRATION_FAILURE'])
         .order('created_at', { ascending: false })
@@ -110,8 +110,7 @@ export function useSupportLayer() {
   const { data: importErrors } = useQuery({
     queryKey: ['support-import-errors'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('audit_import_logs')
+      const { data, error } = awaitauditStub()
         .select('*, tenant:tenants(name)')
         .eq('status', 'error')
         .order('created_at', { ascending: false })

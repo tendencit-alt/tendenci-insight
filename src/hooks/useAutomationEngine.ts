@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { auditStub } from "@/lib/audit-stub";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { AutomationEvent, AutomationCondition, AutomationAction } from "@/lib/automation-engine/types";
@@ -86,7 +87,7 @@ export function useAutomationEngine() {
               }
 
               if (action.type === "registrar_auditoria") {
-                await (supabase.from("audit_log" as any).insert({
+                await auditStub().insert({
                   table_name: event.sourceTable,
                   record_id: event.sourceId,
                   event_type: "AUTOMATION",

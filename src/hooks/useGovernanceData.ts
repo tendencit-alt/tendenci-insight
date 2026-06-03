@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { auditStub } from "@/lib/audit-stub";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -76,7 +77,7 @@ export function useAccessLogs() {
   return useQuery({
     queryKey: ["access-audit-log"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from("audit_log").select("*").order("created_at", { ascending: false }).limit(200);
+      const { data, error } = await auditStub().select("*").order("created_at", { ascending: false }).limit(200);
       if (error) throw error;
       return data ?? [];
     },
