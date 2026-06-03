@@ -49,7 +49,7 @@ export const MODULE_ROUTE_MAP: Record<string, string> = {
   "automacoes": "/automacoes",
   "automacoes-inteligentes": "/automacoes-inteligentes",
   "automation-center": "/automation-center",
-  "ai-decision": "/ai-decision",
+  
   "executive": "/executive",
   "control-tower": "/control-tower",
   "planning": "/planejamento",
