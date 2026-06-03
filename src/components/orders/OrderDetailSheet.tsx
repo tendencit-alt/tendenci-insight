@@ -65,6 +65,34 @@ function getNextAction(status: string): { label: string; nextStatus: string } | 
 export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, productionStepper }: OrderDetailSheetProps) {
   const { isMaster } = usePermissions();
   const { defaults: resourceDefaults } = useStrategicResourceDefaults();
+  const companyName = useCompanyName();
+
+  const getDeliveryLabel = (tipo: string) => {
+    const map: Record<string, string> = {
+      'a_combinar': 'A combinar',
+      'entrega_tendenci': `Entrega ${companyName}`,
+      'transportadora': 'Transportadora',
+      'retirada': 'Retirada',
+      'terceirizada': 'Terceirizada',
+      'entrega': 'Entrega',
+    };
+    return map[tipo] || (tipo ? tipo.charAt(0).toUpperCase() + tipo.slice(1).replace('_', ' ') : '—');
+  };
+
+  const getPaymentFormLabel = (forma: string) => {
+    const map: Record<string, string> = {
+      'pix': 'PIX',
+      'cartao_credito': 'Cartão de Crédito',
+      'cartao_debito': 'Cartão de Débito',
+      'link_pagamento': 'Link de Pagamento',
+      'boleto': 'Boleto',
+      'transferencia': 'Transferência',
+      'permuta': 'Permuta',
+      'dinheiro': 'Dinheiro',
+    };
+    return map[forma] || (forma ? forma.charAt(0).toUpperCase() + forma.slice(1).replace('_', ' ') : '—');
+  };
+
   const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
   const [isMinimized, setIsMinimized] = useState(false);
   const [loading, setLoading] = useState(false);
