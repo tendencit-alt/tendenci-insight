@@ -677,7 +677,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const allItemsHaveCentroCusto = items.length > 0 && items.every(item => !!item.centro_custo);
   const allItemsHaveProject = items.length > 0 && items.every(item => !!item.project_id);
   const isItensValid = items.length > 0 && allItemsHaveCentroCusto && allItemsHaveProject;
-  const totalPercentual = parcelas.reduce((sum, p) => sum + p.percentual, 0);
+  const totalPercentual = Math.round(parcelas.reduce((sum, p) => sum + p.percentual, 0) * 100) / 100;
   const strategicResourceLabels = {
     rt: resourceDefaults.rt.label,
     vendedor: resourceDefaults.vendedor.label,
@@ -697,9 +697,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const valorTotalPagamento = parcelas.reduce((sum, p) => sum + (total * (p.percentual / 100)), 0);
   const diferencaPagamento = Math.abs(valorTotalPagamento - total);
   // Se total é 0 ou negativo, não permite validar como correto
-  const isPagamentoValorCorreto = total > 0 ? diferencaPagamento < 0.01 : false;
+  const isPagamentoValorCorreto = total > 0 ? diferencaPagamento < 0.1 : false;
   
-  const isPagamentoValid = parcelas.length > 0 && parcelas.every(p => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto && hasAllStrategicResponsibles;
+  const isPagamentoValid = parcelas.length > 0 && parcelas.every(p => p.forma_pagamento) && Math.abs(totalPercentual - 100) < 0.1 && isPagamentoValorCorreto && hasAllStrategicResponsibles;
   const isEntregaValid = !!formData.tipo_entrega;
   const isFormValid = isClienteValid && isItensValid && isPagamentoValid && isEntregaValid;
 
@@ -737,8 +737,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         toast.error('Selecione a forma de pagamento em todas as parcelas');
         return;
       }
-      if (totalPercentual !== 100) {
-        toast.error(`O percentual total das parcelas deve ser 100%. Atual: ${totalPercentual.toFixed(1)}%`);
+      if (Math.abs(totalPercentual - 100) > 0.1) {
+        toast.error(`O percentual total das parcelas deve ser 100%. Atual: ${totalPercentual.toFixed(2)}%`);
         return;
       }
       if (!isPagamentoValorCorreto) {
@@ -2126,7 +2126,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                    </div>
                 </div>
 
-                {totalPercentual !== 100 && (
+                {Math.abs(totalPercentual - 100) > 0.1 && (
                   <Alert variant="destructive" className="mt-2">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
@@ -2137,7 +2137,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   </Alert>
                 )}
 
-                {totalPercentual === 100 && !isPagamentoValorCorreto && (
+                {Math.abs(totalPercentual - 100) < 0.1 && !isPagamentoValorCorreto && (
                   <Alert variant="destructive" className="mt-2">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
