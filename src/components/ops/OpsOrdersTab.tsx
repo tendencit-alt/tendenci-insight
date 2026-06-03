@@ -11,10 +11,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DateBrInput } from "@/components/ui/date-br-input";
 import {
-  LayoutGrid, List, Search, Loader2, AlertTriangle, Clock, CheckCircle2,
-  Factory, Plus, Trash2, GripVertical, Calendar, Undo2, Timer, History, ClipboardCheck,
+  LayoutGrid, List, Search, Loader2, AlertTriangle, AlertOctagon, Clock, CheckCircle2,
+  Factory, Plus, Trash2, GripVertical, Calendar, Undo2, Timer, History, ClipboardCheck, Activity,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useOpsOrders, useCreateOpsOrder, useDeleteOpsOrder, useProductionTypes } from "@/hooks/useOpsData";
+import { useProductionKPIs } from "@/hooks/useProductionTimeline";
 import {
   useProductionStatusColumns, colorTone,
 } from "@/hooks/useProductionStatusColumns";
