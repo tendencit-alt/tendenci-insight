@@ -115,7 +115,7 @@ export const MENU_PERMISSION_MAP: MenuRoot[] = [
     key: 'estrategia',
     label: 'Estratégia',
     leaves: [
-      { key: '/ai-decision',        label: 'Decision Assistant',  module: 'dashboard_executivo' },
+      
       { key: '/education',          label: 'Educação & Trilhas',  module: 'configuracoes' },
       { key: '/auditoria',          label: 'Auditoria',           module: 'controladoria' },
     ],
