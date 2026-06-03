@@ -105,7 +105,7 @@ export function AnalisarBlock() {
         { label: "DRE Gerencial", icon: LineChart, route: "/bi-dashboard", color: "text-violet-600 dark:text-violet-400" },
         { label: "Forecast Financeiro", icon: Calculator, route: "/bi-dashboard", color: "text-blue-600 dark:text-blue-400" },
         { label: "Indicadores Executivos", icon: BarChart3, route: "/executive", color: "text-emerald-600 dark:text-emerald-400" },
-        { label: "Comparativos", icon: PieChart, route: "/benchmarking", color: "text-sky-600 dark:text-sky-400" },
+        
         { label: "KPI's Executivos", icon: FileBarChart, route: "/relatorios", color: "text-amber-600 dark:text-amber-400" },
       ]}
     />
@@ -146,7 +146,7 @@ export function ResolverBlock() {
         { label: "Pendências Financeiras", icon: CreditCard, route: "/financeiro", color: "text-amber-600 dark:text-amber-400" },
         { label: "Pendências Operacionais", icon: Factory, route: "/producao-operacoes", color: "text-orange-600 dark:text-orange-400" },
         { label: "Integrações com Erro", icon: Zap, route: "/settings", color: "text-violet-600 dark:text-violet-400" },
-        { label: "Automações Paradas", icon: Zap, route: "/automacoes", color: "text-muted-foreground" },
+        
       ]}
     />
   );
@@ -164,7 +164,7 @@ export function EstrategiaBlock() {
       actions={[
         { label: "Control Tower", icon: Landmark, route: "/control-tower", color: "text-indigo-600 dark:text-indigo-400" },
         
-        { label: "Benchmarks", icon: PieChart, route: "/benchmarking", color: "text-sky-600 dark:text-sky-400" },
+        
         { label: "Prioridades Semana", icon: ListChecks, route: "/control-tower", color: "text-amber-600 dark:text-amber-400" },
         { label: "Simulações Estratégicas", icon: Calculator, route: "/planning", color: "text-emerald-600 dark:text-emerald-400" },
       ]}

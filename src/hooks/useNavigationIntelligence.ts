@@ -36,10 +36,7 @@ const CONTEXTUAL_ACTIONS: Record<string, { label: string; route: string; reason:
     { label: "DRE Gerencial", route: "/bi-dashboard", reason: "Analisar resultado do mês" },
     { label: "Forecast", route: "/bi-dashboard", reason: "Ver projeções financeiras" },
   ],
-  "/control-tower": [
-    
-    { label: "Benchmarks", route: "/benchmarking", reason: "Comparar com empresas similares" },
-  ],
+  "/control-tower": [],
   "/cadastros-financeiros": [
     { label: "Ver DRE", route: "/bi-dashboard", reason: "Conferir impacto no resultado" },
     { label: "Ver Financeiro", route: "/financeiro", reason: "Verificar lançamentos" },

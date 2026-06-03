@@ -76,7 +76,7 @@ const SEARCHABLE_ITEMS = [
   { label: "Forecast Financeiro", route: "/bi-dashboard", module: "Analisar" },
   { label: "Indicadores Executivos", route: "/executive", module: "Analisar" },
   { label: "KPI's", route: "/relatorios", module: "Analisar" },
-  { label: "Benchmarks", route: "/benchmarking", module: "Analisar" },
+  
   { label: "Criar Metas", route: "/planning", module: "Planejar" },
   { label: "Simular Cenários", route: "/planning", module: "Planejar" },
   { label: "Orçamento", route: "/planning", module: "Planejar" },
@@ -93,7 +93,7 @@ const SEARCHABLE_ITEMS = [
   { label: "Conciliação", route: "/financeiro", module: "Financeiro" },
   { label: "Configurações", route: "/settings", module: "Sistema" },
   { label: "Usuários", route: "/settings/users", module: "Sistema" },
-  { label: "Automações", route: "/automacoes", module: "Sistema" },
+  
   
   { label: "RH", route: "/rh", module: "Pessoas" },
   { label: "Suprimentos", route: "/suprimentos", module: "Operações" },
