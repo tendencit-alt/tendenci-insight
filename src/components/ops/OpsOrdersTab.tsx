@@ -399,7 +399,8 @@ export function OpsOrdersTab() {
                             <DragCard key={o.id} id={o.id}>
                               {(handle) => (
                                 <Card
-                                  className={`p-3 space-y-1.5 transition-colors cursor-pointer hover:ring-1 hover:ring-primary/30 ${dueTone}`}
+                                  data-op-id={o.id}
+                                  className={`p-3 space-y-1.5 transition-all cursor-pointer hover:ring-1 hover:ring-primary/30 ${dueTone}`}
                                   onClick={() => setDetailOpId(o.id)}
                                 >
 
