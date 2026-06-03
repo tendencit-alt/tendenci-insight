@@ -81,7 +81,7 @@ const SEARCHABLE_ITEMS = [
   { label: "Simular Cenários", route: "/planning", module: "Planejar" },
   { label: "Orçamento", route: "/planning", module: "Planejar" },
   { label: "Control Tower", route: "/control-tower", module: "Estratégia" },
-  { label: "Decision Assistant", route: "/ai-decision", module: "Estratégia" },
+  
   { label: "Pedidos", route: "/pedidos", module: "Operações" },
   { label: "Produção", route: "/producao-operacoes", module: "Operações" },
   { label: "Projetos", route: "/projetos", module: "Operações" },
