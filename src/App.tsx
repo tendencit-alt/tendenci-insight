@@ -23,7 +23,7 @@ import UserManagement from "./pages/UserManagement";
 import ConfiguracoesCatalogo from "./pages/ConfiguracoesCatalogo";
 import ConfiguracoesModulos from "./pages/ConfiguracoesModulos";
 import Perfil from "./pages/Perfil";
-import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
+
 
 import Auth from "./pages/Auth";
 import Cadastro from "./pages/Cadastro";
