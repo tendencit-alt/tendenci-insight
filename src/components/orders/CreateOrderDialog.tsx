@@ -691,9 +691,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const valorTotalPagamento = parcelas.reduce((sum, p) => sum + (total * ((Number(p.percentual) || 0) / 100)), 0);
   const diferencaPagamento = Math.abs(valorTotalPagamento - total);
   // Se total é 0 ou negativo, não permite validar como correto
-  const isPagamentoValorCorreto = total > 0 ? diferencaPagamento < 0.1 : false;
+  const isPagamentoValorCorreto = total > 0 ? diferencaPagamento < 0.5 : false;
   
-  const isPagamentoValid = parcelas.length > 0 && parcelas.every(p => p.forma_pagamento) && Math.abs(totalPercentual - 100) < 0.1 && isPagamentoValorCorreto && hasAllStrategicResponsibles;
+  const isPagamentoValid = parcelas.length > 0 && parcelas.every(p => p.forma_pagamento) && Math.abs(totalPercentual - 100) < 0.5 && isPagamentoValorCorreto && hasAllStrategicResponsibles;
   const isEntregaValid = !!formData.tipo_entrega;
   const isFormValid = isClienteValid && isItensValid && isPagamentoValid && isEntregaValid;
 
@@ -731,7 +731,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         toast.error('Selecione a forma de pagamento em todas as parcelas');
         return;
       }
-      if (Math.abs(totalPercentual - 100) > 0.1) {
+      if (Math.abs(totalPercentual - 100) > 0.5) {
         toast.error(`O percentual total das parcelas deve ser 100%. Atual: ${totalPercentual.toFixed(2)}%`);
         return;
       }
@@ -2120,7 +2120,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                    </div>
                 </div>
 
-                {Math.abs(totalPercentual - 100) > 0.1 && (
+                {Math.abs(totalPercentual - 100) > 0.5 && (
                   <Alert variant="destructive" className="mt-2">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
@@ -2131,7 +2131,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   </Alert>
                 )}
 
-                {Math.abs(totalPercentual - 100) < 0.1 && !isPagamentoValorCorreto && (
+                {Math.abs(totalPercentual - 100) < 0.5 && !isPagamentoValorCorreto && (
                   <Alert variant="destructive" className="mt-2">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
