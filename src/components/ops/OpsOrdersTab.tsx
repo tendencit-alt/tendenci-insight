@@ -24,6 +24,7 @@ import { ManageProductionStatusDialog } from "./ManageProductionStatusDialog";
 import { RegressReasonDialog } from "./RegressReasonDialog";
 import { ReprogramOpDialog } from "./ReprogramOpDialog";
 import { PhaseHistoryDialog } from "./PhaseHistoryDialog";
+import { ProductionOrderDetailSheet } from "@/components/production/ProductionOrderDetailSheet";
 import {
   DndContext, DragEndEvent, PointerSensor, useDroppable, useDraggable, useSensor, useSensors,
 } from "@dnd-kit/core";
@@ -91,6 +92,7 @@ export function OpsOrdersTab() {
   const [pendingMove, setPendingMove] = useState<{ opId: string; fromSlug: string; toSlug: string } | null>(null);
   const [reprogramOp, setReprogramOp] = useState<{ id: string; orderNumber: any; dueDate: string | null } | null>(null);
   const [historyOp, setHistoryOp] = useState<{ id: string; orderNumber: any } | null>(null);
+  const [detailOpId, setDetailOpId] = useState<string | null>(null);
 
   const { data: orders = [], isLoading } = useOpsOrders({
     type: typeFilter || undefined,
@@ -359,7 +361,11 @@ export function OpsOrdersTab() {
                           return (
                             <DragCard key={o.id} id={o.id}>
                               {(handle) => (
-                                <Card className={`p-3 space-y-1.5 transition-colors ${dueTone}`}>
+                                <Card
+                                  className={`p-3 space-y-1.5 transition-colors cursor-pointer hover:ring-1 hover:ring-primary/30 ${dueTone}`}
+                                  onClick={() => setDetailOpId(o.id)}
+                                >
+
                                   {/* Linha 1: # + título */}
                                   <div className="flex items-start gap-1.5">
                                     <button
@@ -576,6 +582,11 @@ export function OpsOrdersTab() {
         onOpenChange={(v) => !v && setHistoryOp(null)}
         opId={historyOp?.id ?? null}
         orderNumber={historyOp?.orderNumber}
+      />
+      <ProductionOrderDetailSheet
+        orderId={detailOpId}
+        open={!!detailOpId}
+        onOpenChange={(v) => !v && setDetailOpId(null)}
       />
     </div>
   );
