@@ -203,7 +203,6 @@ const menuGroups: MenuGroup[] = [
     items: [
       { title: "Owner Control Tower", url: "/owner/control-tower", icon: Landmark },
       { title: "Global Control Tower", url: "/control-tower", icon: Telescope },
-      { title: "Execution Priority", url: "/owner/execution-priority", icon: Target },
     ],
   },
 
@@ -217,7 +216,6 @@ const menuGroups: MenuGroup[] = [
       { title: "Billing Ops", url: "/owner/billing-ops", icon: CreditCard },
       { title: "Billing & Subscriptions", url: "/billing", icon: DollarSign },
       { title: "Upgrade Center", url: "/owner/upgrade-center", icon: Rocket },
-      { title: "Offer Center", url: "/owner/offer-center", icon: Star },
       { title: "Customer Lifecycle", url: "/customer-lifecycle", icon: Users },
       { title: "Customer Success", url: "/customer-success", icon: UserCheck },
       
@@ -233,8 +231,6 @@ const menuGroups: MenuGroup[] = [
     profiles: ["system_owner", "tenant_owner"],
     items: [
       { title: "Automation Center", url: "/owner/automation-center", icon: Sparkles },
-      
-      { title: "Lifecycle (tenants)", url: "/owner/lifecycle", icon: Users },
     ],
   },
 
@@ -245,12 +241,9 @@ const menuGroups: MenuGroup[] = [
     icon: Shield,
     profiles: ["system_owner", "tenant_owner"],
     items: [
-      { title: "Incident Timeline", url: "/owner/incident-timeline", icon: Clock },
-      { title: "Recovery Actions", url: "/owner/recovery-actions", icon: LifeBuoy },
       { title: "Runbooks", url: "/owner/runbooks", icon: ListChecks },
       { title: "Self-Healing Policies", url: "/owner/self-healing", icon: Shield },
       { title: "Autonomous Recovery", url: "/owner/autonomous-recovery", icon: Wrench },
-      { title: "Predictive Failures", url: "/owner/predictive-failures", icon: Brain },
       { title: "Capacity & Load Risk", url: "/owner/capacity-risk", icon: Gauge },
       { title: "Stability Gates", url: "/owner/stability-gates", icon: ShieldCheck },
       { title: "Dependency Impact", url: "/owner/dependency-impact", icon: GitBranch },
@@ -265,7 +258,6 @@ const menuGroups: MenuGroup[] = [
     profiles: ["system_owner", "tenant_owner"],
     items: [
       { title: "Architecture Board", url: "/owner/architecture-board", icon: LayoutGrid },
-      { title: "Integration Map", url: "/owner/integration-map", icon: Network },
     ],
   },
 
@@ -278,7 +270,6 @@ const menuGroups: MenuGroup[] = [
     items: [
       { title: "Painel Owner (legado)", url: "/super-admin", icon: Building2 },
       { title: "Smart Admin", url: "/owner/admin", icon: ShieldCheck },
-      { title: "Permission Debug", url: "/owner/permission-debug", icon: Bug },
     ],
   },
 ];

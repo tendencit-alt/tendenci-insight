@@ -80,28 +80,20 @@ import CustomerSuccessOps from "./pages/CustomerSuccessOps";
 import InProductEducation from "./pages/InProductEducation";
 
 import ControlTower from "./pages/ControlTower";
-import PermissionDebug from "./pages/PermissionDebug";
 import SmartAdmin from "./pages/SmartAdmin";
 import BillingOps from "./pages/BillingOps";
-import TenantLifecycle from "./pages/TenantLifecycle";
 
 import Empresas from "./pages/Empresas";
 import OwnerControlTower from "./pages/OwnerControlTower";
 import AutomationCenter from "./pages/AutomationCenter";
 import OwnerEntitlementsCenter from "./pages/OwnerEntitlementsCenter";
 import OwnerUpgradeCenter from "./pages/OwnerUpgradeCenter";
-import OwnerOfferCenter from "./pages/OwnerOfferCenter";
-import OwnerIntegrationMap from "./pages/OwnerIntegrationMap";
 import OwnerDependencyImpact from "./pages/OwnerDependencyImpact";
-import OwnerRecoveryActions from "./pages/OwnerRecoveryActions";
-import OwnerIncidentTimeline from "./pages/OwnerIncidentTimeline";
 import OwnerRunbooks from "./pages/OwnerRunbooks";
 import OwnerSelfHealing from "./pages/OwnerSelfHealing";
 import OwnerArchitectureBoard from "./pages/OwnerArchitectureBoard";
-import OwnerExecutionPriority from "./pages/OwnerExecutionPriority";
 import OwnerStabilityGates from "./pages/OwnerStabilityGates";
 import OwnerAutonomousRecovery from "./pages/OwnerAutonomousRecovery";
-import OwnerPredictiveFailures from "./pages/OwnerPredictiveFailures";
 import OwnerCapacityRisk from "./pages/OwnerCapacityRisk";
 
 const queryClient = new QueryClient();
@@ -237,27 +229,27 @@ const App = () => (
               <Route path="/education" element={<Navigate to="/educacao" replace />} />
               
               <Route path="/control-tower" element={<ProtectedRoute><ControlTower /></ProtectedRoute>} />
-              <Route path="/owner/permission-debug" element={<ProtectedRoute><PermissionDebug /></ProtectedRoute>} />
+              <Route path="/owner/permission-debug" element={<Navigate to="/" replace />} />
               <Route path="/owner/admin" element={<ProtectedRoute><SmartAdmin /></ProtectedRoute>} />
               <Route path="/owner/billing-ops" element={<ProtectedRoute><BillingOps /></ProtectedRoute>} />
-              <Route path="/owner/lifecycle" element={<ProtectedRoute><TenantLifecycle /></ProtectedRoute>} />
+              <Route path="/owner/lifecycle" element={<Navigate to="/" replace />} />
               <Route path="/owner/control-tower" element={<ProtectedRoute><OwnerControlTower /></ProtectedRoute>} />
               <Route path="/owner/automation-center" element={<ProtectedRoute><AutomationCenter /></ProtectedRoute>} />
               
               <Route path="/owner/entitlements" element={<ProtectedRoute><OwnerEntitlementsCenter /></ProtectedRoute>} />
               <Route path="/owner/upgrade-center" element={<ProtectedRoute><OwnerUpgradeCenter /></ProtectedRoute>} />
-              <Route path="/owner/offer-center" element={<ProtectedRoute><OwnerOfferCenter /></ProtectedRoute>} />
-              <Route path="/owner/integration-map" element={<ProtectedRoute><OwnerIntegrationMap /></ProtectedRoute>} />
+              <Route path="/owner/offer-center" element={<Navigate to="/" replace />} />
+              <Route path="/owner/integration-map" element={<Navigate to="/" replace />} />
               <Route path="/owner/dependency-impact" element={<ProtectedRoute><OwnerDependencyImpact /></ProtectedRoute>} />
-              <Route path="/owner/recovery-actions" element={<ProtectedRoute><OwnerRecoveryActions /></ProtectedRoute>} />
-              <Route path="/owner/incident-timeline" element={<ProtectedRoute><OwnerIncidentTimeline /></ProtectedRoute>} />
+              <Route path="/owner/recovery-actions" element={<Navigate to="/" replace />} />
+              <Route path="/owner/incident-timeline" element={<Navigate to="/" replace />} />
               <Route path="/owner/runbooks" element={<ProtectedRoute><OwnerRunbooks /></ProtectedRoute>} />
               <Route path="/owner/self-healing" element={<ProtectedRoute><OwnerSelfHealing /></ProtectedRoute>} />
               <Route path="/owner/architecture-board" element={<ProtectedRoute><OwnerArchitectureBoard /></ProtectedRoute>} />
-              <Route path="/owner/execution-priority" element={<ProtectedRoute><OwnerExecutionPriority /></ProtectedRoute>} />
+              <Route path="/owner/execution-priority" element={<Navigate to="/" replace />} />
               <Route path="/owner/stability-gates" element={<ProtectedRoute><OwnerStabilityGates /></ProtectedRoute>} />
               <Route path="/owner/autonomous-recovery" element={<ProtectedRoute><OwnerAutonomousRecovery /></ProtectedRoute>} />
-              <Route path="/owner/predictive-failures" element={<ProtectedRoute><OwnerPredictiveFailures /></ProtectedRoute>} />
+              <Route path="/owner/predictive-failures" element={<Navigate to="/" replace />} />
               <Route path="/owner/capacity-risk" element={<ProtectedRoute><OwnerCapacityRisk /></ProtectedRoute>} />
               <Route path="/owner/capacity-load-risk" element={<Navigate to="/owner/capacity-risk" replace />} />
               <Route path="/owner" element={<Navigate to="/owner/control-tower" replace />} />
