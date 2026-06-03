@@ -297,10 +297,10 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
 
   const totalCompromissos = compromissos.reduce((s, c) => s + Number(c.valor || 0), 0);
 
-  // Stepper
+  // Stepper (default: ciclo de vida do pedido)
   const currentStepIdx = STATUS_ORDER.indexOf(order?.status || 'rascunho');
   const stepperStatuses = ORDERS_STATUS.stepperKeys || [];
-  const steps = stepperStatuses.map(key => {
+  const orderSteps = stepperStatuses.map(key => {
     const def = getStatusDef('orders', key);
     const stepIdx = STATUS_ORDER.indexOf(key);
     return {
@@ -310,6 +310,47 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
       active: order?.status === key || (key === 'em_producao' && ['liberado_producao', 'em_producao', 'producao_concluida'].includes(order?.status || '')),
     };
   });
+
+  // Stepper alternativo: estágios de Produção/Operações (Kanban configurável por tenant)
+  const { data: prodStatusColumns = [] } = useProductionStatusColumns();
+  const { data: orderPos = [] } = useQuery({
+    queryKey: ['order-detail-pos', orderId],
+    enabled: !!orderId && !!productionStepper,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('production_orders')
+        .select('status')
+        .eq('order_id', orderId);
+      if (error) throw error;
+      return (data ?? []) as { status: string }[];
+    },
+  });
+  const productionStepperData = useMemo(() => {
+    if (!productionStepper || prodStatusColumns.length === 0) return null;
+    const sorted = [...prodStatusColumns].sort((a, b) => a.sort_order - b.sort_order);
+    const doneKeys = new Set(['concluido', 'entregue']);
+    const orderBySlug: Record<string, number> = {};
+    sorted.forEach((c, i) => { orderBySlug[c.slug] = i; });
+    const posIdx = (orderPos as { status: string }[])
+      .map(p => orderBySlug[p.status])
+      .filter((v) => typeof v === 'number');
+    const pendingIdx = (orderPos as { status: string }[])
+      .filter(p => !doneKeys.has(p.status))
+      .map(p => orderBySlug[p.status])
+      .filter((v) => typeof v === 'number');
+    const activeIdx = pendingIdx.length > 0
+      ? Math.min(...pendingIdx)
+      : (posIdx.length > 0 ? Math.max(...posIdx) : 0);
+    const steps = sorted.map((c, i) => ({
+      key: c.slug,
+      label: c.label,
+      completed: i < activeIdx,
+      active: i === activeIdx,
+    }));
+    return { steps, label: sorted[activeIdx]?.label ?? 'Sem OP' };
+  }, [productionStepper, prodStatusColumns, orderPos]);
+
+  const steps = productionStepperData ? productionStepperData.steps : orderSteps;
 
   if (!order) return null;
 
