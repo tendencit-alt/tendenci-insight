@@ -17,6 +17,7 @@ import { CancelOrderDialog } from './CancelOrderDialog';
 import { DeleteOrderDialog } from './DeleteOrderDialog';
 import { StatusBanner } from '@/components/ui/StatusBanner';
 import { ORDERS_STATUS, getStatusDef } from '@/lib/status-registry';
+import { useProductionStatusColumns } from '@/hooks/useProductionStatusColumns';
 import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -35,6 +36,9 @@ interface OrderDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
+  /** When true, the top stepper shows the production stages (Kanban de Produção/Operações)
+   *  instead of the order lifecycle (Rascunho → Encerrado). */
+  productionStepper?: boolean;
 }
 
 const STATUS_ORDER = ORDERS_STATUS.statuses.map(s => s.key).filter(k => k !== 'cancelado');
@@ -56,7 +60,7 @@ function getNextAction(status: string): { label: string; nextStatus: string } | 
   return map[status] || null;
 }
 
-export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: OrderDetailSheetProps) {
+export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, productionStepper }: OrderDetailSheetProps) {
   const { isMaster } = usePermissions();
   const { defaults: resourceDefaults } = useStrategicResourceDefaults();
   const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
@@ -294,10 +298,10 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
 
   const totalCompromissos = compromissos.reduce((s, c) => s + Number(c.valor || 0), 0);
 
-  // Stepper
+  // Stepper (default: ciclo de vida do pedido)
   const currentStepIdx = STATUS_ORDER.indexOf(order?.status || 'rascunho');
   const stepperStatuses = ORDERS_STATUS.stepperKeys || [];
-  const steps = stepperStatuses.map(key => {
+  const orderSteps = stepperStatuses.map(key => {
     const def = getStatusDef('orders', key);
     const stepIdx = STATUS_ORDER.indexOf(key);
     return {
@@ -307,6 +311,47 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
       active: order?.status === key || (key === 'em_producao' && ['liberado_producao', 'em_producao', 'producao_concluida'].includes(order?.status || '')),
     };
   });
+
+  // Stepper alternativo: estágios de Produção/Operações (Kanban configurável por tenant)
+  const { data: prodStatusColumns = [] } = useProductionStatusColumns();
+  const { data: orderPos = [] } = useQuery({
+    queryKey: ['order-detail-pos', orderId],
+    enabled: !!orderId && !!productionStepper,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('production_orders')
+        .select('status')
+        .eq('order_id', orderId);
+      if (error) throw error;
+      return (data ?? []) as { status: string }[];
+    },
+  });
+  const productionStepperData = useMemo(() => {
+    if (!productionStepper || prodStatusColumns.length === 0) return null;
+    const sorted = [...prodStatusColumns].sort((a, b) => a.sort_order - b.sort_order);
+    const doneKeys = new Set(['concluido', 'entregue']);
+    const orderBySlug: Record<string, number> = {};
+    sorted.forEach((c, i) => { orderBySlug[c.slug] = i; });
+    const posIdx = (orderPos as { status: string }[])
+      .map(p => orderBySlug[p.status])
+      .filter((v) => typeof v === 'number');
+    const pendingIdx = (orderPos as { status: string }[])
+      .filter(p => !doneKeys.has(p.status))
+      .map(p => orderBySlug[p.status])
+      .filter((v) => typeof v === 'number');
+    const activeIdx = pendingIdx.length > 0
+      ? Math.min(...pendingIdx)
+      : (posIdx.length > 0 ? Math.max(...posIdx) : 0);
+    const steps = sorted.map((c, i) => ({
+      key: c.slug,
+      label: c.label,
+      completed: i < activeIdx,
+      active: i === activeIdx,
+    }));
+    return { steps, label: sorted[activeIdx]?.label ?? 'Sem OP' };
+  }, [productionStepper, prodStatusColumns, orderPos]);
+
+  const steps = productionStepperData ? productionStepperData.steps : orderSteps;
 
   if (!order) return null;
 
@@ -319,13 +364,14 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
             <StatusBanner
               module="orders"
               status={order.status}
+              statusLabel={productionStepperData?.label}
               steps={steps}
-              primaryAction={nextAction ? {
+              primaryAction={!productionStepper && nextAction ? {
                 label: nextAction.label,
                 onClick: () => handleStatusChange(nextAction.nextStatus),
                 loading,
               } : undefined}
-              secondaryAction={order.status === 'aprovado' ? {
+              secondaryAction={!productionStepper && order.status === 'aprovado' ? {
                 label: 'Criar OPs',
                 onClick: handleCreateProductionOrders,
                 variant: 'outline',
