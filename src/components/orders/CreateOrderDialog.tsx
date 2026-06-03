@@ -677,7 +677,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const allItemsHaveCentroCusto = items.length > 0 && items.every(item => !!item.centro_custo);
   const allItemsHaveProject = items.length > 0 && items.every(item => !!item.project_id);
   const isItensValid = items.length > 0 && allItemsHaveCentroCusto && allItemsHaveProject;
-  const totalPercentual = parcelas.reduce((sum, p) => sum + p.percentual, 0);
+  const totalPercentual = Math.round(parcelas.reduce((sum, p) => sum + p.percentual, 0) * 100) / 100;
   const strategicResourceLabels = {
     rt: resourceDefaults.rt.label,
     vendedor: resourceDefaults.vendedor.label,
