@@ -310,7 +310,9 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
       key,
       label: def?.label || key,
       completed: currentStepIdx > stepIdx,
-      active: order?.status === key || (key === 'em_producao' && ['liberado_producao', 'em_producao', 'producao_concluida'].includes(order?.status || '')),
+      active: order?.status === key || 
+              (key === 'aprovado' && order?.status === 'ativo') ||
+              (key === 'em_producao' && ['liberado_producao', 'em_producao', 'producao_concluida'].includes(order?.status || '')),
     };
   });
 
