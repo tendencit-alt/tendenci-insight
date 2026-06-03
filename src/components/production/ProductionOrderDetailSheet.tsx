@@ -45,6 +45,7 @@ import { ProductionUpdates } from './ProductionUpdates';
 import { ProductionFichaTecnica } from './ProductionFichaTecnica';
 import { EditPhasesSLADialog } from './EditPhasesSLADialog';
 import { ProductionOrderChecklist } from './ProductionOrderChecklist';
+import { useProductionStatusColumns } from '@/hooks/useProductionStatusColumns';
 
 interface ProductionOrderDetailSheetProps {
   orderId: string | null;
@@ -203,89 +204,86 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
     enabled: !!orderId
   });
 
+  const { data: statusColumns = [] } = useProductionStatusColumns();
+
   // Mutation para avançar fase
   const advancePhaseMutation = useMutation({
     mutationFn: async () => {
-      if (!order) return;
-      
+      if (!order) throw new Error('Ordem não carregada');
+
       const phasesArr = Array.isArray(order.phases) ? order.phases : [];
-      // Ordenar por position da própria fase, depois do template
       const sortedPhasesInner = [...phasesArr].sort((a, b) => {
         const posA = a.position ?? a.phase_template?.position ?? 999;
         const posB = b.position ?? b.phase_template?.position ?? 999;
         return posA - posB;
       });
-      
-      // Encontrar fase atual (em_andamento)
+
       const currentPhaseIndex = sortedPhasesInner.findIndex(p => p.status === 'em_andamento');
-      
-      // Se nenhuma fase em andamento, encontrar a primeira pendente
       let phaseToComplete: typeof sortedPhasesInner[0] | null = null;
       let nextPhaseToStart: typeof sortedPhasesInner[0] | null = null;
-      
+
       if (currentPhaseIndex >= 0) {
         phaseToComplete = sortedPhasesInner[currentPhaseIndex];
         nextPhaseToStart = sortedPhasesInner[currentPhaseIndex + 1] || null;
       } else {
-        // Nenhuma fase em andamento - iniciar a primeira pendente
         nextPhaseToStart = sortedPhasesInner.find(p => p.status === 'pendente') || null;
       }
-      
-      if (!nextPhaseToStart && !phaseToComplete) {
-        // Nenhuma fase para avançar
-        toast.error('Nenhuma fase disponível para avançar');
-        return;
-      }
-      
-      if (!nextPhaseToStart && phaseToComplete) {
-        // Última fase - concluir fase atual e OP
-        await supabase
-          .from('production_phases')
-          .update({ status: 'concluido', completed_at: new Date().toISOString() })
-          .eq('id', phaseToComplete.id);
-          
-        await supabase
-          .from('production_orders')
-          .update({ status: 'concluido', actual_end_date: new Date().toISOString() })
-          .eq('id', orderId);
-        return;
-      }
 
-      // Concluir fase atual se existir
+      // Atualizar production_phases (se houver)
       if (phaseToComplete) {
         await supabase
           .from('production_phases')
           .update({ status: 'concluido', completed_at: new Date().toISOString() })
           .eq('id', phaseToComplete.id);
       }
-
-      // Iniciar próxima fase
       if (nextPhaseToStart) {
         await supabase
           .from('production_phases')
           .update({ status: 'em_andamento', started_at: new Date().toISOString() })
           .eq('id', nextPhaseToStart.id);
-
-        // Atualizar OP
         await supabase
           .from('production_orders')
-          .update({ 
+          .update({
             current_phase_id: nextPhaseToStart.id,
-            status: 'em_producao',
-            actual_start_date: order.actual_start_date || new Date().toISOString()
+            actual_start_date: order.actual_start_date || new Date().toISOString(),
           })
           .eq('id', orderId);
       }
+
+      // Avançar a coluna do Kanban via RPC (fonte de verdade do status do card)
+      const sortedCols = [...statusColumns].sort((a, b) => a.sort_order - b.sort_order);
+      const currentIdx = sortedCols.findIndex(c => c.slug === order.status);
+      const nextCol = currentIdx >= 0 ? sortedCols[currentIdx + 1] : sortedCols[0];
+
+      if (nextCol) {
+        const { error: rpcError } = await supabase.rpc('move_production_phase' as any, {
+          _op_id: orderId,
+          _target_slug: nextCol.slug,
+          _reason: null,
+        } as any);
+        if (rpcError) throw rpcError;
+        return { advanced: true, last: false };
+      }
+
+      // Já está na última coluna — concluir OP
+      await supabase
+        .from('production_orders')
+        .update({ status: 'concluido', actual_end_date: new Date().toISOString() })
+        .eq('id', orderId);
+      return { advanced: true, last: true };
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['production-order-detail', orderId] });
       queryClient.invalidateQueries({ queryKey: ['production-orders'] });
-      toast.success('Fase avançada com sucesso');
+      queryClient.invalidateQueries({ queryKey: ['ops-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['production_order_phase_history'] });
+      toast.success(res?.last ? 'Produção concluída' : 'Fase avançada com sucesso');
     },
-    onError: () => {
-      toast.error('Erro ao avançar fase');
+    onError: (e: any) => {
+      toast.error(e?.message || 'Erro ao avançar fase');
     }
   });
+
 
   // Mutation para toggle de urgência
   const toggleUrgentMutation = useMutation({
