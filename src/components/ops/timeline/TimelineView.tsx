@@ -6,7 +6,8 @@ import { TimelineGantt } from "./TimelineGantt";
 import { OpTimelineDrawer } from "./OpTimelineDrawer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Activity, AlertTriangle, CheckCircle2, Clock, Factory, Timer } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Activity, AlertOctagon, AlertTriangle, CheckCircle2, Clock, Factory, Timer } from "lucide-react";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, isWithinInterval } from "date-fns";
 
 export function TimelineView() {
@@ -17,7 +18,7 @@ export function TimelineView() {
   const focusOp = searchParams.get("op");
 
   const ops = data?.ops ?? [];
-  const kpis = data?.kpis ?? { total: 0, em_producao: 0, aguardando: 0, concluidas: 0, atrasadas: 0, alerta_prazo: 0, pct_concluidas: 0 };
+  const kpis = data?.kpis ?? { total: 0, em_producao: 0, aguardando: 0, concluidas: 0, vencidas: 0, atraso_projetado: 0, atrasadas: 0, alerta_prazo: 0, pct_concluidas: 0 };
 
   const phases = useMemo(() => {
     const map = new Map<string, string>();
