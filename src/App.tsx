@@ -40,7 +40,7 @@ import Notificacoes from "./pages/Notificacoes";
 import Inventory from "./pages/Inventory";
 import Produtos from "./pages/Produtos";
 
-import ActivityCenter from "./pages/ActivityCenter";
+
 import Catalogo from "./pages/Catalogo";
 import CatalogoPublico from "./pages/CatalogoPublico";
 import CatalogoPublicoProduto from "./pages/CatalogoPublicoProduto";
@@ -212,7 +212,7 @@ const App = () => (
               <Route path="/suprimentos" element={<Navigate to="/compras" replace />} />
               <Route path="/entregas-montagem" element={<ProtectedRoute><FeatureGate feature="entregas"><EntregasMontagem /></FeatureGate></ProtectedRoute>} />
               <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
-              <Route path="/atividades" element={<ProtectedRoute><ActivityCenter /></ProtectedRoute>} />
+              
               <Route path="/data-flow" element={<ProtectedRoute><DataFlowMap /></ProtectedRoute>} />
               <Route path="/system-errors" element={<Navigate to="/" replace />} />
               <Route path="/excluidos" element={<Navigate to="/" replace />} />
