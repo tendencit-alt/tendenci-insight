@@ -16,7 +16,7 @@ const CONTEXTUAL_ACTIONS: Record<string, { label: string; route: string; reason:
   ],
   "/pedidos": [
     { label: "Verificar Financeiro", route: "/financeiro", reason: "Conferir contas geradas do pedido" },
-    { label: "Ver Produção", route: "/producao", reason: "Acompanhar status produtivo" },
+    { label: "Ver Produção", route: "/producao-operacoes", reason: "Acompanhar status produtivo" },
     { label: "Novo Cliente", route: "/crm-comercial", reason: "Cadastrar cliente do pedido" },
   ],
   "/crm-comercial": [
@@ -24,7 +24,7 @@ const CONTEXTUAL_ACTIONS: Record<string, { label: string; route: string; reason:
     { label: "Atualizar Pipeline", route: "/crm-comercial", reason: "Revisar estágio dos deals" },
     { label: "Forecast Vendas", route: "/bi-dashboard", reason: "Ver projeção comercial" },
   ],
-  "/producao": [
+  "/producao-operacoes": [
     { label: "Atualizar Pedido", route: "/pedidos", reason: "Sincronizar status do pedido vinculado" },
     { label: "Ver Estoque", route: "/estoque", reason: "Verificar materiais disponíveis" },
   ],
@@ -69,11 +69,11 @@ const CONTEXTUAL_SHORTCUTS: Record<string, { label: string; route: string; icon:
   "/pedidos": [
     { label: "Novo Pedido", route: "/pedidos", icon: "Plus" },
     { label: "Ver Financeiro", route: "/financeiro", icon: "Wallet" },
-    { label: "Ver Produção", route: "/producao", icon: "Factory" },
+    { label: "Ver Produção", route: "/producao-operacoes", icon: "Factory" },
   ],
-  "/producao": [
-    { label: "Nova OP", route: "/producao", icon: "Plus" },
-    { label: "Kanban", route: "/producao", icon: "Kanban" },
+  "/producao-operacoes": [
+    { label: "Nova OP", route: "/producao-operacoes", icon: "Plus" },
+    { label: "Kanban", route: "/producao-operacoes", icon: "Kanban" },
     { label: "Pedidos", route: "/pedidos", icon: "ClipboardList" },
   ],
 };

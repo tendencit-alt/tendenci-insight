@@ -42,7 +42,7 @@ export function NotificationSummaryWidget({ className }: { className?: string })
               <SummaryItem label="Pedidos aguardando" count={summary.pedidosAguardando} onClick={() => navigate("/pedidos")} />
             )}
             {summary.ordensAtrasadas > 0 && (
-              <SummaryItem label="OPs atrasadas" count={summary.ordensAtrasadas} onClick={() => navigate("/producao")} />
+              <SummaryItem label="OPs atrasadas" count={summary.ordensAtrasadas} onClick={() => navigate("/producao-operacoes")} />
             )}
           </div>
         )}

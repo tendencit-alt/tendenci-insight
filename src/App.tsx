@@ -23,18 +23,18 @@ import UserManagement from "./pages/UserManagement";
 import ConfiguracoesCatalogo from "./pages/ConfiguracoesCatalogo";
 import ConfiguracoesModulos from "./pages/ConfiguracoesModulos";
 import Perfil from "./pages/Perfil";
-import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
+
 
 import Auth from "./pages/Auth";
 import Cadastro from "./pages/Cadastro";
 import BoasVindas from "./pages/BoasVindas";
-import Production from "./pages/Production";
+
 import Orders from "./pages/Orders";
 import Suppliers from "./pages/Suppliers";
 import Clientes from "./pages/Clientes";
 import Contatos from "./pages/Contatos";
 import Leads from "./pages/Leads";
-import Comissoes from "./pages/Comissoes";
+
 import Notificacoes from "./pages/Notificacoes";
 import Inventory from "./pages/Inventory";
 import Produtos from "./pages/Produtos";
@@ -130,8 +130,8 @@ const App = () => (
               <Route path="/c/:tenant_slug" element={<CatalogoPublico />} />
               <Route path="/c/:tenant_slug/p/:product_id" element={<CatalogoPublicoProduto />} />
 
-              {/* LGPD: páginas legais públicas */}
-              <Route path="/privacidade" element={<PoliticaPrivacidade />} />
+              {/* LGPD: páginas legais públicas (removidas) */}
+              <Route path="/privacidade" element={<Navigate to="/" replace />} />
 
               {/* Perfil do usuário (autenticado) */}
               <Route path="/configuracoes/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
@@ -172,7 +172,7 @@ const App = () => (
               <Route path="/settings" element={<Navigate to="/configuracoes" replace />} />
               <Route path="/settings/users" element={<Navigate to="/configuracoes/usuarios" replace />} />
 
-              <Route path="/producao" element={<ProtectedRoute><FeatureGate feature="producao"><PermissionGuard module="producao"><Production /></PermissionGuard></FeatureGate></ProtectedRoute>} />
+              <Route path="/producao" element={<Navigate to="/producao-operacoes" replace />} />
               <Route path="/pedidos" element={<ProtectedRoute><PermissionGuard module="pedidos"><Orders /></PermissionGuard></ProtectedRoute>} />
               <Route path="/fornecedores" element={<ProtectedRoute><PermissionGuard module="fornecedores"><Suppliers /></PermissionGuard></ProtectedRoute>} />
               <Route path="/clientes" element={<ProtectedRoute><PermissionGuard module="comercial"><Clientes /></PermissionGuard></ProtectedRoute>} />
@@ -183,7 +183,7 @@ const App = () => (
               <Route path="/crm-comercial" element={<Navigate to="/crm?view=gestor&tab=pipeline" replace />} />
               <Route path="/propostas" element={<Navigate to="/crm?view=consultor&tab=propostas" replace />} />
               <Route path="/contratos" element={<Navigate to="/crm?view=consultor&tab=clientes" replace />} />
-              <Route path="/comissoes" element={<ProtectedRoute><PermissionGuard module="comercial"><Comissoes /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/comissoes" element={<Navigate to="/" replace />} />
               <Route path="/notificacoes" element={<ProtectedRoute><Notificacoes /></ProtectedRoute>} />
               <Route path="/estoque" element={<ProtectedRoute><PermissionGuard module="estoque"><Inventory /></PermissionGuard></ProtectedRoute>} />
               <Route path="/produtos" element={<ProtectedRoute><Produtos /></ProtectedRoute>} />

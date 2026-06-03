@@ -190,7 +190,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     defaultSize: "sm",
     profiles: ["operacional", "owner"],
     icon: AlertTriangle,
-    drillPath: "/producao",
+    drillPath: "/producao-operacoes",
   },
   "producao-andamento": {
     id: "producao-andamento",
@@ -200,7 +200,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     defaultSize: "lg",
     profiles: ["operacional"],
     icon: Factory,
-    drillPath: "/producao",
+    drillPath: "/producao-operacoes",
   },
   "tarefas-criticas": {
     id: "tarefas-criticas",

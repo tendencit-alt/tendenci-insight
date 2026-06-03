@@ -88,7 +88,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
       id: dialogId,
       label: `Ordem Produção`,
       icon: '🏭',
-      route: '/producao',
+      route: '/producao-operacoes',
       restore: () => { setIsMinimized(false); onOpenChange(true); },
     });
   }, [minimizeDialog, onOpenChange, orderId, dialogId]);

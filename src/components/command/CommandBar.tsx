@@ -157,7 +157,7 @@ export function CommandBar() {
         action: () => go("mod-crm", "/crm-comercial", "CRM", "Módulos") },
       { id: "mod-producao", label: "Produção", group: "Módulos", icon: Factory,
         keywords: ["producao", "fabrica", "kanban", "op", "ordens de producao"],
-        action: () => go("mod-producao", "/producao", "Produção", "Módulos") },
+        action: () => go("mod-producao", "/producao-operacoes", "Produção", "Módulos") },
       { id: "mod-projetos", label: "Projetos", group: "Módulos", icon: Briefcase,
         keywords: ["projetos", "obras", "execucao"],
         action: () => go("mod-projetos", "/projetos", "Projetos", "Módulos") },
@@ -283,7 +283,7 @@ export function CommandBar() {
       const path = location.pathname;
       if (path.startsWith("/financeiro") && (item.group === "KPI's" || item.id.startsWith("act-nova-"))) boost += 30;
       if (path.startsWith("/pedidos") && item.id.includes("pedido")) boost += 30;
-      if (path.startsWith("/producao") && item.id.includes("producao")) boost += 30;
+      if (path.startsWith("/producao-operacoes") && item.id.includes("producao")) boost += 30;
       // Role boost
       if (userLevel === "system_owner" || userLevel === "tenant_owner") {
         if (["rep-dre", "rep-fluxo", "mod-bi"].includes(item.id)) boost += 20;

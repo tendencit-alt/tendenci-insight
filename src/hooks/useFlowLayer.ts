@@ -52,7 +52,7 @@ const FLOW_TEMPLATES: FlowDefinition[] = [
       { id: "orcamento", label: "Orçamento", owner: "Comercial", expectedHours: 48, route: "/orcamentos" },
       { id: "pedido", label: "Pedido", owner: "Comercial", expectedHours: 8, route: "/pedidos" },
       { id: "contrato", label: "Contrato", owner: "Comercial", expectedHours: 24, route: "/pedidos" },
-      { id: "liberacao", label: "Liberação Produção", owner: "Operacional", expectedHours: 4, route: "/producao" },
+      { id: "liberacao", label: "Liberação Produção", owner: "Operacional", expectedHours: 4, route: "/producao-operacoes" },
     ],
   },
   {
@@ -62,7 +62,7 @@ const FLOW_TEMPLATES: FlowDefinition[] = [
     category: "producao",
     steps: [
       { id: "pedido-liberado", label: "Pedido Liberado", owner: "Comercial", expectedHours: 4 },
-      { id: "medicao", label: "Medição Obra", owner: "Operacional", expectedHours: 48, route: "/producao" },
+      { id: "medicao", label: "Medição Obra", owner: "Operacional", expectedHours: 48, route: "/producao-operacoes" },
       { id: "projeto-exec", label: "Projeto Executivo", owner: "Operacional", expectedHours: 72 },
       { id: "compra-material", label: "Compra Material", owner: "Operacional", expectedHours: 48, route: "/fornecedores" },
       { id: "corte", label: "Corte", owner: "Operacional", expectedHours: 24 },

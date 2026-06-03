@@ -45,7 +45,7 @@ export function DailyDigest({ className }: { className?: string }) {
             label="OPs atrasadas"
             value={dailySummary.ordensAtrasadas}
             critical={dailySummary.ordensAtrasadas > 0}
-            onClick={() => navigate("/producao")}
+            onClick={() => navigate("/producao-operacoes")}
           />
         </div>
       )}

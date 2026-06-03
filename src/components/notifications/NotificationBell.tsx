@@ -101,7 +101,7 @@ function DailySummaryBlock({ summary }: { summary: NonNullable<ReturnType<typeof
     { label: "Contas vencidas", count: summary.contasVencidas, route: "/contas-pagar", critical: true },
     
     { label: "Pedidos aguardando", count: summary.pedidosAguardando, route: "/pedidos", critical: false },
-    { label: "Ordens atrasadas", count: summary.ordensAtrasadas, route: "/producao", critical: false },
+    { label: "Ordens atrasadas", count: summary.ordensAtrasadas, route: "/producao-operacoes", critical: false },
   ].filter(i => i.count > 0);
 
   if (items.length === 0) return null;

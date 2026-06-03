@@ -159,7 +159,7 @@ export default function Notificacoes() {
           description: `Vencimento: ${o.due_date}`,
           severity: "urgente",
           createdAt: o.due_date,
-          route: "/producao",
+          route: "/producao-operacoes",
         });
       });
 

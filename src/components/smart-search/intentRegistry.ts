@@ -30,7 +30,7 @@ export const INTENT_REGISTRY: IntentDefinition[] = [
     patterns: [/projetos?\s+atrasad/i, /projetos?\s+em\s+risco/i, /obras?\s+atrasad/i],
     label: "Projetos atrasados",
     description: "Projetos com prazo vencido ou em risco",
-    route: "/producao?filter=delayed",
+    route: "/producao-operacoes?filter=delayed",
     type: "intent",
   },
   {
@@ -95,7 +95,7 @@ export const CONTEXT_PRIORITIES: Record<SearchContext, SearchEntityType[]> = {
 export function detectContext(pathname: string): SearchContext {
   if (pathname.startsWith("/financeiro") || pathname.startsWith("/cadastros-financeiros")) return "financeiro";
   if (pathname.startsWith("/crm") || pathname.startsWith("/pedidos")) return "crm";
-  if (pathname.startsWith("/producao") || pathname.startsWith("/fornecedores")) return "operacional";
+  if (pathname.startsWith("/producao-operacoes") || pathname.startsWith("/fornecedores")) return "operacional";
   if (pathname.startsWith("/bi-dashboard") || pathname.startsWith("/relatorios")) return "relatorios";
   return "global";
 }

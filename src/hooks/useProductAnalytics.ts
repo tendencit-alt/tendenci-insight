@@ -19,7 +19,7 @@ const ROUTE_MODULE_MAP: Record<string, string> = {
   "/dashboards": "Dashboards",
   "/crm": "CRM",
   "/leads": "Leads",
-  "/producao": "Produção",
+  "/producao-operacoes": "Produção",
   "/projects": "Projetos",
   "/prospeccao": "Prospecção",
   "/fornecedores": "Fornecedores",

@@ -170,9 +170,9 @@ export function useAttentionLayer(): AttentionData {
           label: "OPs em andamento",
           count: pendingProduction,
           level: "normal",
-          route: "/producao",
+          route: "/producao-operacoes",
           group: "Operações",
-          itemUrl: "/producao",
+          itemUrl: "/producao-operacoes",
         });
       }
 

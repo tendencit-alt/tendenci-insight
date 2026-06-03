@@ -80,7 +80,7 @@ const ROLE_CONFIGS: Record<RoleKey, RoleConfig> = {
   },
   operacional: {
     autoExpandGroups: ["Operações"],
-    highlightItems: ["/producao", "/producao-operacoes"],
+    highlightItems: ["/producao-operacoes"],
     dimGroups: ["Estratégia"],
   },
   admin: {
@@ -134,7 +134,7 @@ const menuGroups: MenuGroup[] = [
       { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, module: "pedidos" },
       { title: "Contatos", url: "/contatos", icon: Users, module: "comercial" },
       { title: "Catálogo de Produtos", url: "/catalogo", icon: BookOpen, module: "comercial" },
-      { title: "Comissões", url: "/comissoes", icon: DollarSign, comingSoon: true, module: "comercial" },
+      
     ],
   },
   // ── OPERAÇÕES ──
@@ -144,7 +144,7 @@ const menuGroups: MenuGroup[] = [
     separator: true,
     items: [
       { title: "Produção", url: "/producao-operacoes", icon: Factory, module: "operacional" },
-      { title: "Produção (legado)", url: "/producao", icon: Factory, module: "producao" },
+      
       { title: "Compras", url: "/compras", icon: Package, module: "operacional" },
       { title: "Estoque", url: "/estoque", icon: Layers, module: "operacional" },
       { title: "Entregas & Montagem", url: "/entregas-montagem", icon: Truck, module: "operacional" },

@@ -4,7 +4,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 export const routeMap: Record<string, string> = {
   'dashboard': '/bi-dashboard',
   'pedidos': '/pedidos',
-  'producao': '/producao',
+  'producao': '/producao-operacoes',
   'financeiro': '/financeiro',
   'fornecedores': '/fornecedores',
   'estoque': '/estoque',

@@ -62,7 +62,7 @@ export const MENU_PERMISSION_MAP: MenuRoot[] = [
       { key: '/contatos',           label: 'Clientes / Fornecedores (Contatos)', module: 'comercial' },
       { key: '/crm',                label: 'CRM',                              module: 'comercial' },
       { key: '/catalogo',           label: 'Catálogo de Produtos',             module: 'comercial' },
-      { key: '/comissoes',          label: 'Compromissos sobre Venda',         module: 'comercial' },
+      
     ],
   },
   {
@@ -73,8 +73,6 @@ export const MENU_PERMISSION_MAP: MenuRoot[] = [
       { key: '/entregas-montagem',  label: 'Entregas & Montagem',   module: 'operacional' },
       { key: '/compras',            label: 'Compras',               module: 'operacional' },
       { key: '/estoque',            label: 'Estoque',               module: 'estoque' },
-      
-      { key: '/producao',           label: 'Produção (legado)',     module: 'producao' },
     ],
   },
   {

@@ -104,12 +104,12 @@ export const EMPTY_STATE_CONFIGS: Record<string, SmartEmptyStateConfig> = {
     actions: [
       { label: "Criar Primeiro Projeto", description: "Inicie seu primeiro projeto operacional", route: "/projetos", icon: "FolderKanban", primary: true },
       { label: "Criar Primeira Tarefa", description: "Registre uma tarefa de acompanhamento", route: "/tarefas", icon: "ListChecks" },
-      { label: "Criar Checklist Padrão", description: "Defina um processo operacional padrão", route: "/producao", icon: "ClipboardCheck" },
+      { label: "Criar Checklist Padrão", description: "Defina um processo operacional padrão", route: "/producao-operacoes", icon: "ClipboardCheck" },
     ],
     checklist: [
       { id: "project", label: "Criar primeiro projeto", completed: false, route: "/projetos" },
       { id: "task", label: "Criar primeira tarefa", completed: false, route: "/tarefas" },
-      { id: "production", label: "Configurar produção", completed: false, route: "/producao" },
+      { id: "production", label: "Configurar produção", completed: false, route: "/producao-operacoes" },
     ],
     tutorialLabel: "Como organizar operações",
   },
