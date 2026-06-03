@@ -44,6 +44,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { ProductionUpdates } from './ProductionUpdates';
 import { ProductionFichaTecnica } from './ProductionFichaTecnica';
 import { EditPhasesSLADialog } from './EditPhasesSLADialog';
+import { ProductionOrderChecklist } from './ProductionOrderChecklist';
 
 interface ProductionOrderDetailSheetProps {
   orderId: string | null;
