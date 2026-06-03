@@ -225,7 +225,7 @@ export function SplitEntryDialog({
     if (!entry) return;
 
     if (!isBalanced) {
-      toast.error("A soma dos valores deve ser igual ao valor original");
+      toast.error(`A soma dos valores (${formatCurrency(splitTotal)}) deve ser igual ao valor original (${formatCurrency(totalAmount)})`);
       return;
     }
 
