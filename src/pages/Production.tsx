@@ -32,6 +32,7 @@ export default function Production() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [automationsDialogOpen, setAutomationsDialogOpen] = useState(false);
+  const [checklistsDialogOpen, setChecklistsDialogOpen] = useState(false);
   const [unifyDialogOpen, setUnifyDialogOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'kanban' | 'lista'>('kanban');
