@@ -89,7 +89,7 @@ export function useSupportLayer() {
         .order('created_at', { ascending: false })
         .limit(100);
       if (error) throw error;
-      return (data || []) as (typeof data extends (infer T)[] ? T & { event_message?: string } : never)[];
+      return (data || []) as any[];
     },
   });
 
@@ -149,12 +149,12 @@ export function useSupportLayer() {
     });
   });
 
-  recentErrors?.forEach(e => {
+  recentErrors?.forEach((e: any) => {
     diagnostics.push({
       type: 'system_error',
-      message: (e as any).event_message || `Erro em ${e.table_name}`,
+      message: e.event_message || `Erro em ${e.table_name}`,
       module: e.table_name || 'Sistema',
-      tenant_name: (e as any).tenant?.name || 'Desconhecido',
+      tenant_name: e.tenant?.name || 'Desconhecido',
       tenant_id: e.tenant_id || '',
       severity: 'warning',
       timestamp: e.created_at || '',

@@ -108,7 +108,7 @@ export default function CategoriesManager() {
         const { data: profs } = await supabase
           .from("profiles")
           .select("id, full_name, email")
-          .in("id", userIds);
+          .in("id", userIds as string[]);
         profiles = Object.fromEntries(
           (profs ?? []).map((p: any) => [p.id, p.full_name || p.email || "—"])
         );
