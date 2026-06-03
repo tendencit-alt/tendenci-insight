@@ -13,6 +13,7 @@ interface Props {
 }
 
 export function RecentEventsBlock({ events, loading }: Props) {
+  const navigate = useNavigate();
   return (
     <Card>
       <CardHeader className="pb-2">
