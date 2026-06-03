@@ -34,7 +34,7 @@ import Suppliers from "./pages/Suppliers";
 import Clientes from "./pages/Clientes";
 import Contatos from "./pages/Contatos";
 import Leads from "./pages/Leads";
-import Comissoes from "./pages/Comissoes";
+
 import Notificacoes from "./pages/Notificacoes";
 import Inventory from "./pages/Inventory";
 import Produtos from "./pages/Produtos";
