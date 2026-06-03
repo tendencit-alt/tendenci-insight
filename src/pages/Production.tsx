@@ -12,8 +12,6 @@ import { CreateProductionOrderDialog } from '@/components/production/CreateProdu
 import { ProductionFilters } from '@/components/production/ProductionFilters';
 import { ProductionOrderDetailSheet } from '@/components/production/ProductionOrderDetailSheet';
 import { ManageProductionStagesDialog } from '@/components/production/ManageProductionStagesDialog';
-import { ManageStatusChecklistsDialog } from '@/components/production/ManageStatusChecklistsDialog';
-import { ClipboardCheck } from 'lucide-react';
 import { ManageProductionAutomationsDialog } from '@/components/production/ManageProductionAutomationsDialog';
 import { UnifyOpsDialog } from '@/components/production/UnifyOpsDialog';
 import { ProductionListView } from '@/components/production/ProductionListView';
