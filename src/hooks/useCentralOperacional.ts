@@ -274,7 +274,50 @@ export function useQuickIndicators() {
   });
 }
 
-function formatEventType(type: string, _payload?: any): string {
+const PHASE_LABELS: Record<string, string> = {
+  aguardando: "Aguardando",
+  em_producao: "Em Produção",
+  pausado: "Pausado",
+  concluido: "Concluído",
+  cancelado: "Cancelado",
+  caderno_executivo: "Caderno Executivo",
+  compras: "Compras",
+  corte: "Corte",
+  separacao: "Separação",
+  montagem_interna: "Montagem Interna",
+  montagem_externa: "Montagem Externa",
+  ajustes: "Ajustes",
+};
+
+function phaseLabel(slug?: string): string {
+  if (!slug) return "";
+  return PHASE_LABELS[slug] || slug.replace(/_/g, " ");
+}
+
+function formatEventType(type: string, payload?: any): string {
+  const p = payload || {};
+
+  // Eventos com contexto rico no payload
+  switch (type) {
+    case "production.phase_regress":
+      return `Produção retornou para "${phaseLabel(p.to)}" (vinda de "${phaseLabel(p.from)}")`;
+    case "production.phase_advance":
+      return `Produção avançou para "${phaseLabel(p.to)}"`;
+    case "production.phase_changed":
+      return `Fase de produção alterada: ${phaseLabel(p.from)} → ${phaseLabel(p.to)}`;
+    case "producao_concluida":
+      return "Ordem de produção concluída";
+    case "op_pronta_para_entrega":
+      return "OP pronta para entrega";
+    case "pedido_liberado_producao":
+      return p.order_number ? `Pedido #${p.order_number} liberado para produção` : "Pedido liberado para produção";
+    case "pedido_ativo":
+      return p.order_number ? `Pedido #${p.order_number} ativado` : "Pedido ativado";
+    case "pedido_cancelado":
+      return p.order_number ? `Pedido #${p.order_number} cancelado` : "Pedido cancelado";
+  }
+
+  // Fallback: mapa estático
   const map: Record<string, string> = {
     "order.approved": "Pedido aprovado",
     "order.cancelled": "Pedido cancelado",
@@ -282,5 +325,12 @@ function formatEventType(type: string, _payload?: any): string {
     "receivable.completed": "Recebimento registrado",
     "production.completed": "Produção concluída",
   };
-  return map[type] || type.replace(/[._]/g, " ");
+  if (map[type]) return map[type];
+
+  // Última tentativa: humanizar o tipo bruto
+  const friendly = type
+    .replace(/[._]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return friendly;
 }
+
