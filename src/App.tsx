@@ -130,8 +130,8 @@ const App = () => (
               <Route path="/c/:tenant_slug" element={<CatalogoPublico />} />
               <Route path="/c/:tenant_slug/p/:product_id" element={<CatalogoPublicoProduto />} />
 
-              {/* LGPD: páginas legais públicas */}
-              <Route path="/privacidade" element={<PoliticaPrivacidade />} />
+              {/* LGPD: páginas legais públicas (removidas) */}
+              <Route path="/privacidade" element={<Navigate to="/" replace />} />
 
               {/* Perfil do usuário (autenticado) */}
               <Route path="/configuracoes/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
