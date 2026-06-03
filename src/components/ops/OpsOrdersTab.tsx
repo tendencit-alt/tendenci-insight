@@ -92,6 +92,7 @@ export function OpsOrdersTab() {
   const [pendingMove, setPendingMove] = useState<{ opId: string; fromSlug: string; toSlug: string } | null>(null);
   const [reprogramOp, setReprogramOp] = useState<{ id: string; orderNumber: any; dueDate: string | null } | null>(null);
   const [historyOp, setHistoryOp] = useState<{ id: string; orderNumber: any } | null>(null);
+  const [detailOpId, setDetailOpId] = useState<string | null>(null);
 
   const { data: orders = [], isLoading } = useOpsOrders({
     type: typeFilter || undefined,
