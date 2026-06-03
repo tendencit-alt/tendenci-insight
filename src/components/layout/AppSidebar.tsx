@@ -234,7 +234,7 @@ const menuGroups: MenuGroup[] = [
     profiles: ["system_owner", "tenant_owner"],
     items: [
       { title: "Automation Center", url: "/owner/automation-center", icon: Sparkles },
-      { title: "AI Decision", url: "/ai-decision", icon: Brain },
+      
       { title: "Lifecycle (tenants)", url: "/owner/lifecycle", icon: Users },
     ],
   },
