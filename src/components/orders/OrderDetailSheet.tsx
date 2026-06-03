@@ -513,7 +513,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
                       <CardContent className="px-3 pb-3 grid grid-cols-3 gap-3 text-sm">
                         <div>
                           <p className="text-[10px] text-muted-foreground">Forma Pagamento</p>
-                          <p className="font-medium">{order.forma_pagamento || '—'}</p>
+                          <p className="font-medium">{getPaymentFormLabel(order.forma_pagamento)}</p>
                         </div>
                         <div>
                           <p className="text-[10px] text-muted-foreground">Condição</p>
@@ -521,7 +521,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
                         </div>
                         <div>
                           <p className="text-[10px] text-muted-foreground">Entrega</p>
-                          <p className="font-medium">{order.tipo_entrega === 'entrega' ? 'Entrega' : order.tipo_entrega === 'retirada' ? 'Retirada' : order.tipo_entrega || '—'}</p>
+                          <p className="font-medium">{getDeliveryLabel(order.tipo_entrega)}</p>
                         </div>
                       </CardContent>
                     </Card>
