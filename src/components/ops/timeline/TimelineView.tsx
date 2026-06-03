@@ -35,7 +35,8 @@ export function TimelineView() {
       list = list.filter(
         (o) =>
           o.title.toLowerCase().includes(q) ||
-          String(o.order_number).includes(q)
+          String(o.order_number).includes(q) ||
+          (o.client_name || "").toLowerCase().includes(q)
       );
     }
     if (filters.priority !== "all") list = list.filter((o) => o.priority === filters.priority);
