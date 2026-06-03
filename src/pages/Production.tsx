@@ -284,10 +284,6 @@ export default function Production() {
                 <Settings className="h-4 w-4" />
                 Etapas de produção
               </Button>
-              <Button variant="outline" onClick={() => setChecklistsDialogOpen(true)} className="gap-1.5">
-                <ClipboardCheck className="h-4 w-4" />
-                Checklists por status
-              </Button>
               <Button variant="outline" onClick={() => setAutomationsDialogOpen(true)} className="gap-1.5">
                 <Zap className="h-4 w-4" />
                 Automações
