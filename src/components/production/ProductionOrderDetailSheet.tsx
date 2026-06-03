@@ -80,6 +80,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [prazoDialogOpen, setPrazoDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
+  const navigate = useNavigate();
   const { isMaster } = usePermissions();
 
   const dialogId = `production-detail-${orderId}`;
