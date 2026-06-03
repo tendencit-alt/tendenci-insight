@@ -80,28 +80,20 @@ import CustomerSuccessOps from "./pages/CustomerSuccessOps";
 import InProductEducation from "./pages/InProductEducation";
 
 import ControlTower from "./pages/ControlTower";
-import PermissionDebug from "./pages/PermissionDebug";
 import SmartAdmin from "./pages/SmartAdmin";
 import BillingOps from "./pages/BillingOps";
-import TenantLifecycle from "./pages/TenantLifecycle";
 
 import Empresas from "./pages/Empresas";
 import OwnerControlTower from "./pages/OwnerControlTower";
 import AutomationCenter from "./pages/AutomationCenter";
 import OwnerEntitlementsCenter from "./pages/OwnerEntitlementsCenter";
 import OwnerUpgradeCenter from "./pages/OwnerUpgradeCenter";
-import OwnerOfferCenter from "./pages/OwnerOfferCenter";
-import OwnerIntegrationMap from "./pages/OwnerIntegrationMap";
 import OwnerDependencyImpact from "./pages/OwnerDependencyImpact";
-import OwnerRecoveryActions from "./pages/OwnerRecoveryActions";
-import OwnerIncidentTimeline from "./pages/OwnerIncidentTimeline";
 import OwnerRunbooks from "./pages/OwnerRunbooks";
 import OwnerSelfHealing from "./pages/OwnerSelfHealing";
 import OwnerArchitectureBoard from "./pages/OwnerArchitectureBoard";
-import OwnerExecutionPriority from "./pages/OwnerExecutionPriority";
 import OwnerStabilityGates from "./pages/OwnerStabilityGates";
 import OwnerAutonomousRecovery from "./pages/OwnerAutonomousRecovery";
-import OwnerPredictiveFailures from "./pages/OwnerPredictiveFailures";
 import OwnerCapacityRisk from "./pages/OwnerCapacityRisk";
 
 const queryClient = new QueryClient();
