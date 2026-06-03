@@ -33,8 +33,11 @@ import {
   Zap,
   FileSpreadsheet,
   Info,
-  Timer
+  Timer,
+  CalendarRange
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { OpTimelineMini } from '@/components/ops/timeline/OpTimelineMini';
 import { useMinimizedDialogs } from '@/contexts/MinimizedDialogsContext';
 import { MinimizeButton } from '@/components/ui/MinimizeButton';
 import { format } from 'date-fns';
