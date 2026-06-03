@@ -134,7 +134,7 @@ const menuGroups: MenuGroup[] = [
       { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, module: "pedidos" },
       { title: "Contatos", url: "/contatos", icon: Users, module: "comercial" },
       { title: "Catálogo de Produtos", url: "/catalogo", icon: BookOpen, module: "comercial" },
-      { title: "Comissões", url: "/comissoes", icon: DollarSign, comingSoon: true, module: "comercial" },
+      
     ],
   },
   // ── OPERAÇÕES ──
