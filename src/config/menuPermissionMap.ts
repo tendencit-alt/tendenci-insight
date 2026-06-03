@@ -73,8 +73,6 @@ export const MENU_PERMISSION_MAP: MenuRoot[] = [
       { key: '/entregas-montagem',  label: 'Entregas & Montagem',   module: 'operacional' },
       { key: '/compras',            label: 'Compras',               module: 'operacional' },
       { key: '/estoque',            label: 'Estoque',               module: 'estoque' },
-      
-      { key: '/producao-operacoes',           label: 'Produção (legado)',     module: 'producao' },
     ],
   },
   {
