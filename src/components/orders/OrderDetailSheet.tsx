@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { OrderItemsTable } from './OrderItemsTable';
+import { OrderItemsAndExtras } from './OrderItemsAndExtras';
 import { EditOrderDialog } from './EditOrderDialog';
 import { OrderExportDialog } from './OrderExportDialog';
 import { CancelOrderDialog } from './CancelOrderDialog';
