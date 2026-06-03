@@ -17,6 +17,7 @@ import { CancelOrderDialog } from './CancelOrderDialog';
 import { DeleteOrderDialog } from './DeleteOrderDialog';
 import { StatusBanner } from '@/components/ui/StatusBanner';
 import { ORDERS_STATUS, getStatusDef } from '@/lib/status-registry';
+import { useProductionStatusColumns } from '@/hooks/useProductionStatusColumns';
 import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
