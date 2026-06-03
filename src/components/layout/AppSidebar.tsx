@@ -144,7 +144,7 @@ const menuGroups: MenuGroup[] = [
     separator: true,
     items: [
       { title: "Produção", url: "/producao-operacoes", icon: Factory, module: "operacional" },
-      { title: "Produção (legado)", url: "/producao-operacoes", icon: Factory, module: "producao" },
+      
       { title: "Compras", url: "/compras", icon: Package, module: "operacional" },
       { title: "Estoque", url: "/estoque", icon: Layers, module: "operacional" },
       { title: "Entregas & Montagem", url: "/entregas-montagem", icon: Truck, module: "operacional" },
