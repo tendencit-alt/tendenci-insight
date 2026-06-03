@@ -9,9 +9,6 @@ export function AppFooter() {
           <Link to="/privacidade" className="hover:text-foreground transition-colors">
             Política de Privacidade
           </Link>
-          <Link to="/termos" className="hover:text-foreground transition-colors">
-            Termos de Uso
-          </Link>
         </nav>
       </div>
     </footer>

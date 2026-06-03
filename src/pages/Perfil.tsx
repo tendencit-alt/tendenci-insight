@@ -163,9 +163,6 @@ export default function Perfil() {
               <Link to="/privacidade" className="inline-flex items-center gap-1 text-primary hover:underline">
                 <FileText className="h-4 w-4" /> Política de Privacidade
               </Link>
-              <Link to="/termos" className="inline-flex items-center gap-1 text-primary hover:underline">
-                <FileText className="h-4 w-4" /> Termos de Uso
-              </Link>
             </div>
           </CardContent>
         </Card>

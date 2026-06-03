@@ -24,7 +24,7 @@ import ConfiguracoesCatalogo from "./pages/ConfiguracoesCatalogo";
 import ConfiguracoesModulos from "./pages/ConfiguracoesModulos";
 import Perfil from "./pages/Perfil";
 import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
-import TermosUso from "./pages/TermosUso";
+
 import Auth from "./pages/Auth";
 import Cadastro from "./pages/Cadastro";
 import BoasVindas from "./pages/BoasVindas";
@@ -76,7 +76,7 @@ import AccessGovernance from "./pages/AccessGovernance";
 import Billing from "./pages/Billing";
 import CustomerLifecycle from "./pages/CustomerLifecycle";
 import CustomerSuccessOps from "./pages/CustomerSuccessOps";
-import SupportKnowledge from "./pages/SupportKnowledge";
+
 import InProductEducation from "./pages/InProductEducation";
 
 import ControlTower from "./pages/ControlTower";
@@ -140,7 +140,6 @@ const App = () => (
 
               {/* LGPD: páginas legais públicas */}
               <Route path="/privacidade" element={<PoliticaPrivacidade />} />
-              <Route path="/termos" element={<TermosUso />} />
 
               {/* Perfil do usuário (autenticado) */}
               <Route path="/configuracoes/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
@@ -233,7 +232,7 @@ const App = () => (
 
               <Route path="/customer-lifecycle" element={<ProtectedRoute><CustomerLifecycle /></ProtectedRoute>} />
               <Route path="/customer-success" element={<ProtectedRoute><CustomerSuccessOps /></ProtectedRoute>} />
-              <Route path="/support-knowledge" element={<ProtectedRoute><SupportKnowledge /></ProtectedRoute>} />
+              
               <Route path="/educacao" element={<ProtectedRoute><InProductEducation /></ProtectedRoute>} />
               <Route path="/education" element={<Navigate to="/educacao" replace />} />
               

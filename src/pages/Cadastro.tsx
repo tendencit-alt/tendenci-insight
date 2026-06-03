@@ -202,8 +202,7 @@ export default function Cadastro() {
                   disabled={loading}
                 />
                 <label htmlFor="terms" className="text-sm text-muted-foreground leading-snug">
-                  Li e aceito os{" "}
-                  <Link to="/termos" className="underline" target="_blank">Termos</Link> e a{" "}
+                  Li e aceito os Termos de Uso e a{" "}
                   <Link to="/privacidade" className="underline" target="_blank">Política de Privacidade</Link>.
                 </label>
               </div>
