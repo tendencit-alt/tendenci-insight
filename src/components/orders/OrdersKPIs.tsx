@@ -5,10 +5,13 @@ interface Order {
   id: string;
   status: string;
   valor_total: number;
+  data_aprovacao?: string | null;
+  data_emissao?: string;
+  desconto_valor?: number;
 }
 
 interface OrdersKPIsProps {
-  orders: Order[];
+  orders: any[];
   isLoading: boolean;
   selectedIds?: string[];
 }
@@ -35,40 +38,56 @@ export function OrdersKPIs({ orders, isLoading, selectedIds = [] }: OrdersKPIsPr
     : orders;
 
   const totalPedidos = activeOrders.length;
-  const valorTotal = activeOrders.reduce((sum, o) => sum + (o.valor_total || 0), 0);
-  const emProducao = activeOrders.filter((o) => o.status === 'em_producao');
-  const valorEmProducao = emProducao.reduce((sum, o) => sum + (o.valor_total || 0), 0);
-  const ticketMedio = totalPedidos > 0 ? valorTotal / totalPedidos : 0;
+  const valorTotal = activeOrders.reduce((sum, o) => sum + (Number(o.valor_total) || 0), 0);
+  
+  // 1. Taxa de Conversão (Aprovados / Total)
+  const aprovados = activeOrders.filter(o => 
+    o.data_aprovacao || ['aprovado', 'ativo', 'em_producao', 'entregue'].includes(o.status)
+  );
+  const taxaConversao = totalPedidos > 0 ? (aprovados.length / totalPedidos) * 100 : 0;
+
+  // 2. Faturamento Estimado (Apenas pedidos aprovados/ativos)
+  const faturamentoAprovado = aprovados.reduce((sum, o) => sum + (Number(o.valor_total) || 0), 0);
+
+  // 3. Ticket Médio (Baseado no faturamento aprovado)
+  const ticketMedio = aprovados.length > 0 ? faturamentoAprovado / aprovados.length : 0;
+
+  // 4. Cancelamentos
+  const cancelados = activeOrders.filter(o => o.status === 'cancelado');
+  const valorCancelado = cancelados.reduce((sum, o) => sum + (Number(o.valor_total) || 0), 0);
 
   const kpis = [
     {
-      label: 'Pedidos',
-      value: String(totalPedidos),
-      icon: ShoppingCart,
-      color: 'text-primary',
-      bg: 'bg-primary/10',
-    },
-    {
-      label: 'Valor Total',
-      value: formatCurrency(valorTotal),
+      label: 'Faturamento Aprovado',
+      value: formatCurrency(faturamentoAprovado),
+      sub: `${aprovados.length} pedidos confirmados`,
       icon: DollarSign,
       color: 'text-emerald-600',
       bg: 'bg-emerald-500/10',
     },
     {
-      label: 'Em Produção',
-      value: formatCurrency(valorEmProducao),
-      sub: `${emProducao.length} pedidos`,
-      icon: Factory,
-      color: 'text-amber-600',
-      bg: 'bg-amber-500/10',
+      label: 'Taxa de Conversão',
+      value: `${taxaConversao.toFixed(1)}%`,
+      sub: 'De emitidos para aprovados',
+      icon: TrendingUp,
+      color: 'text-blue-700',
+      bg: 'bg-blue-500/10',
     },
     {
       label: 'Ticket Médio',
       value: formatCurrency(ticketMedio),
-      icon: TrendingUp,
-      color: 'text-blue-700',
-      bg: 'bg-blue-500/10',
+      sub: 'Média por pedido aprovado',
+      icon: ShoppingCart,
+      color: 'text-primary',
+      bg: 'bg-primary/10',
+    },
+    {
+      label: 'Cancelamentos',
+      value: formatCurrency(valorCancelado),
+      sub: `${cancelados.length} pedidos perdidos`,
+      icon: Factory,
+      color: 'text-rose-600',
+      bg: 'bg-rose-500/10',
     },
   ];
 
