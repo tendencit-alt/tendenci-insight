@@ -332,10 +332,41 @@ function formatEventType(type: string, payload?: any): string {
   };
   if (map[type]) return map[type];
 
-  // Última tentativa: humanizar o tipo bruto
+  // Última tentativa: humanizar o tipo bruto traduzindo termos comuns para PT
+  const TRANSLATIONS: Record<string, string> = {
+    production: "Produção",
+    phase: "Fase",
+    regress: "Retrocesso",
+    advance: "Avanço",
+    changed: "Alterada",
+    order: "Pedido",
+    approved: "Aprovado",
+    cancelled: "Cancelado",
+    canceled: "Cancelado",
+    completed: "Concluído",
+    created: "Criado",
+    updated: "Atualizado",
+    deleted: "Removido",
+    payment: "Pagamento",
+    receivable: "Recebimento",
+    invoice: "Nota Fiscal",
+    customer: "Cliente",
+    supplier: "Fornecedor",
+    product: "Produto",
+    stock: "Estoque",
+    user: "Usuário",
+    role: "Perfil",
+    delivery: "Entrega",
+    shipped: "Enviado",
+    started: "Iniciado",
+    finished: "Finalizado",
+    paused: "Pausado",
+    resumed: "Retomado",
+  };
   const friendly = type
-    .replace(/[._]/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+    .split(/[._\s]+/)
+    .map((w) => TRANSLATIONS[w.toLowerCase()] || w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
   return friendly;
 }
 
