@@ -15,9 +15,10 @@ export const ORDERS_STATUS: ModuleStatusConfig = {
   label: "Pedidos",
   stepperKeys: ["rascunho", "aprovado", "em_producao", "faturado", "entregue", "encerrado"],
   statuses: [
-    { key: "rascunho",              label: "Rascunho",              color: "gray",   icon: FileEdit,     transitions: ["em_negociacao", "aprovado", "cancelado"] },
-    { key: "em_negociacao",         label: "Em Negociação",         color: "yellow", icon: Clock,        transitions: ["aprovado", "rascunho", "cancelado"] },
+    { key: "rascunho",              label: "Rascunho",              color: "gray",   icon: FileEdit,     transitions: ["em_negociacao", "aprovado", "cancelado", "ativo"] },
+    { key: "em_negociacao",         label: "Em Negociação",         color: "yellow", icon: Clock,        transitions: ["aprovado", "rascunho", "cancelado", "ativo"] },
     { key: "aprovado",              label: "Aprovado",              color: "green",  icon: CheckCircle2, transitions: ["liberado_producao", "em_producao", "cancelado"] },
+    { key: "ativo",                 label: "Ativo",                 color: "green",  icon: CheckCircle2, transitions: ["liberado_producao", "em_producao", "cancelado"] },
     { key: "liberado_producao",     label: "Lib. Produção",         color: "cyan",   icon: Factory,      transitions: ["em_producao", "cancelado"] },
     { key: "em_producao",           label: "Em Produção",           color: "blue",   icon: Factory,      transitions: ["producao_concluida"] },
     { key: "producao_concluida",    label: "Prod. Concluída",       color: "indigo", icon: CheckCircle2, transitions: ["liberado_faturamento", "faturado"] },

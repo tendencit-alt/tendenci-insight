@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useStrategicResourceDefaults } from '@/hooks/useStrategicResourceDefaults';
+import { useCompanyName } from '@/hooks/useCompanySettings';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -64,6 +65,34 @@ function getNextAction(status: string): { label: string; nextStatus: string } | 
 export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, productionStepper }: OrderDetailSheetProps) {
   const { isMaster } = usePermissions();
   const { defaults: resourceDefaults } = useStrategicResourceDefaults();
+  const companyName = useCompanyName();
+
+  const getDeliveryLabel = (tipo: string) => {
+    const map: Record<string, string> = {
+      'a_combinar': 'A combinar',
+      'entrega_tendenci': `Entrega ${companyName}`,
+      'transportadora': 'Transportadora',
+      'retirada': 'Retirada',
+      'terceirizada': 'Terceirizada',
+      'entrega': 'Entrega',
+    };
+    return map[tipo] || (tipo ? tipo.charAt(0).toUpperCase() + tipo.slice(1).replace('_', ' ') : '—');
+  };
+
+  const getPaymentFormLabel = (forma: string) => {
+    const map: Record<string, string> = {
+      'pix': 'PIX',
+      'cartao_credito': 'Cartão de Crédito',
+      'cartao_debito': 'Cartão de Débito',
+      'link_pagamento': 'Link de Pagamento',
+      'boleto': 'Boleto',
+      'transferencia': 'Transferência',
+      'permuta': 'Permuta',
+      'dinheiro': 'Dinheiro',
+    };
+    return map[forma] || (forma ? forma.charAt(0).toUpperCase() + forma.slice(1).replace('_', ' ') : '—');
+  };
+
   const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
   const [isMinimized, setIsMinimized] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -309,7 +338,9 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
       key,
       label: def?.label || key,
       completed: currentStepIdx > stepIdx,
-      active: order?.status === key || (key === 'em_producao' && ['liberado_producao', 'em_producao', 'producao_concluida'].includes(order?.status || '')),
+      active: order?.status === key || 
+              (key === 'aprovado' && order?.status === 'ativo') ||
+              (key === 'em_producao' && ['liberado_producao', 'em_producao', 'producao_concluida'].includes(order?.status || '')),
     };
   });
 
@@ -482,7 +513,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
                       <CardContent className="px-3 pb-3 grid grid-cols-3 gap-3 text-sm">
                         <div>
                           <p className="text-[10px] text-muted-foreground">Forma Pagamento</p>
-                          <p className="font-medium">{order.forma_pagamento || '—'}</p>
+                          <p className="font-medium">{getPaymentFormLabel(order.forma_pagamento)}</p>
                         </div>
                         <div>
                           <p className="text-[10px] text-muted-foreground">Condição</p>
@@ -490,7 +521,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
                         </div>
                         <div>
                           <p className="text-[10px] text-muted-foreground">Entrega</p>
-                          <p className="font-medium">{order.tipo_entrega === 'entrega' ? 'Entrega' : order.tipo_entrega === 'retirada' ? 'Retirada' : order.tipo_entrega || '—'}</p>
+                          <p className="font-medium">{getDeliveryLabel(order.tipo_entrega)}</p>
                         </div>
                       </CardContent>
                     </Card>
@@ -662,7 +693,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <p className="text-[10px] text-muted-foreground">Tipo</p>
-                            <p className="font-medium">{order.tipo_entrega === 'entrega' ? 'Entrega' : order.tipo_entrega === 'retirada' ? 'Retirada' : 'Transportadora'}</p>
+                            <p className="font-medium">{getDeliveryLabel(order.tipo_entrega)}</p>
                           </div>
                           <div>
                             <p className="text-[10px] text-muted-foreground">Previsão</p>
