@@ -35,6 +35,9 @@ interface OrderDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
+  /** When true, the top stepper shows the production stages (Kanban de Produção/Operações)
+   *  instead of the order lifecycle (Rascunho → Encerrado). */
+  productionStepper?: boolean;
 }
 
 const STATUS_ORDER = ORDERS_STATUS.statuses.map(s => s.key).filter(k => k !== 'cancelado');
