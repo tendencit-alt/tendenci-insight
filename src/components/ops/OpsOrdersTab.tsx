@@ -87,6 +87,7 @@ export function OpsOrdersTab() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [checklistsOpen, setChecklistsOpen] = useState(false);
   const [form, setForm] = useState<any>({
     title: "", production_type_id: "", priority: "normal",
     planned_start_date: "", planned_end_date: "", notes: "",
