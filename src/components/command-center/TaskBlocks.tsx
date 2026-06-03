@@ -163,7 +163,7 @@ export function EstrategiaBlock() {
       bgColor="bg-indigo-50/50 dark:bg-indigo-950/20"
       actions={[
         { label: "Control Tower", icon: Landmark, route: "/control-tower", color: "text-indigo-600 dark:text-indigo-400" },
-        { label: "Decision Assistant", icon: Brain, route: "/ai-decision", color: "text-purple-600 dark:text-purple-400" },
+        
         { label: "Benchmarks", icon: PieChart, route: "/benchmarking", color: "text-sky-600 dark:text-sky-400" },
         { label: "Prioridades Semana", icon: ListChecks, route: "/control-tower", color: "text-amber-600 dark:text-amber-400" },
         { label: "Simulações Estratégicas", icon: Calculator, route: "/planning", color: "text-emerald-600 dark:text-emerald-400" },

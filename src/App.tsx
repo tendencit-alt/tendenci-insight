@@ -79,7 +79,7 @@ import CustomerLifecycle from "./pages/CustomerLifecycle";
 import CustomerSuccessOps from "./pages/CustomerSuccessOps";
 import SupportKnowledge from "./pages/SupportKnowledge";
 import InProductEducation from "./pages/InProductEducation";
-import AIDecisionAssistant from "./pages/AIDecisionAssistant";
+
 import ControlTower from "./pages/ControlTower";
 import PermissionDebug from "./pages/PermissionDebug";
 import SmartAdmin from "./pages/SmartAdmin";
@@ -238,7 +238,7 @@ const App = () => (
               <Route path="/support-knowledge" element={<ProtectedRoute><SupportKnowledge /></ProtectedRoute>} />
               <Route path="/educacao" element={<ProtectedRoute><InProductEducation /></ProtectedRoute>} />
               <Route path="/education" element={<Navigate to="/educacao" replace />} />
-              <Route path="/ai-decision" element={<ProtectedRoute><AIDecisionAssistant /></ProtectedRoute>} />
+              
               <Route path="/control-tower" element={<ProtectedRoute><ControlTower /></ProtectedRoute>} />
               <Route path="/owner/permission-debug" element={<ProtectedRoute><PermissionDebug /></ProtectedRoute>} />
               <Route path="/owner/admin" element={<ProtectedRoute><SmartAdmin /></ProtectedRoute>} />

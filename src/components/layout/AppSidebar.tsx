@@ -172,7 +172,7 @@ const menuGroups: MenuGroup[] = [
     items: [
       { title: "Control Tower", url: "/control-tower", icon: Landmark },
       { title: "Benchmarks", url: "/benchmarking", icon: PieChart },
-      { title: "Decision Assistant", url: "/ai-decision", icon: Brain },
+      
       { title: "Educação & Trilhas", url: "/education", icon: GraduationCap },
       { title: "Indicadores Executivos", url: "/executive", icon: LineChart },
       { title: "Simulações", url: "/planning", icon: Wrench },
@@ -234,7 +234,7 @@ const menuGroups: MenuGroup[] = [
     profiles: ["system_owner", "tenant_owner"],
     items: [
       { title: "Automation Center", url: "/owner/automation-center", icon: Sparkles },
-      { title: "AI Decision", url: "/ai-decision", icon: Brain },
+      
       { title: "Lifecycle (tenants)", url: "/owner/lifecycle", icon: Users },
     ],
   },
