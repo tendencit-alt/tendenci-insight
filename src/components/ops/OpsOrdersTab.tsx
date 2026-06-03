@@ -623,7 +623,7 @@ export function OpsOrdersTab() {
       <ProductionOrderDetailSheet
         orderId={detailOpId}
         open={!!detailOpId}
-        onOpenChange={(v) => !v && setDetailOpId(null)}
+        onOpenChange={handleCloseDetail}
       />
     </div>
   );
