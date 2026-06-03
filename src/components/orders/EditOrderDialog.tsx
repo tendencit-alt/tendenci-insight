@@ -857,8 +857,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   // Validação rigorosa: valor das formas de pagamento deve ser igual ao total
   const valorTotalPagamento = parcelas.reduce((sum, p) => sum + (total * (p.percentual / 100)), 0);
   const diferencaPagamento = Math.abs(valorTotalPagamento - total);
-  const isPagamentoValorCorreto = total > 0 ? diferencaPagamento < 0.01 : false;
-  const isPagamentoValid = parcelas.length > 0 && parcelas.every((p) => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto && hasAllStrategicResponsibles;
+  const isPagamentoValorCorreto = total > 0 ? diferencaPagamento < 0.1 : false;
+  const isPagamentoValid = parcelas.length > 0 && parcelas.every((p) => p.forma_pagamento) && Math.abs(totalPercentual - 100) < 0.1 && isPagamentoValorCorreto && hasAllStrategicResponsibles;
   const isEntregaValid = !!formData.tipo_entrega;
   const isFormValid = isClienteValid && isItensValid && isPagamentoValid && isEntregaValid;
   const isEditable = isMaster || order?.status === 'rascunho' || order?.status === 'em_negociacao';
