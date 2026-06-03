@@ -21,6 +21,7 @@ import {
   useMoveProductionPhase, useProductionPhaseSummary, formatElapsed, dueDateUrgency,
 } from "@/hooks/useProductionPhaseMove";
 import { ManageProductionStatusDialog } from "./ManageProductionStatusDialog";
+import { ManageStatusChecklistsDialog } from "@/components/production/ManageStatusChecklistsDialog";
 import { RegressReasonDialog } from "./RegressReasonDialog";
 import { ReprogramOpDialog } from "./ReprogramOpDialog";
 import { PhaseHistoryDialog } from "./PhaseHistoryDialog";
