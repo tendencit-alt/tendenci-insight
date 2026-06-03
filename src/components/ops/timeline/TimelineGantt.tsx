@@ -276,16 +276,16 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                     );
                   })}
                 </div>
-                {/* ETA tip */}
+                {/* ETA tip (Projeção de Entrega) */}
                 <div
-                  className={`absolute top-1/2 -translate-y-1/2 ${etaClass} rounded-r px-1 text-[10px] text-white whitespace-nowrap`}
+                  className={`absolute top-1/2 -translate-y-1/2 ${etaClass} rounded px-1.5 text-[10px] text-white whitespace-nowrap font-medium shadow-sm z-10 flex items-center gap-1`}
                   style={{
-                    left: `calc(${offsetPct + widthPct}% - 36px)`,
-                    height: rowHeight - 14,
-                    display: "flex",
-                    alignItems: "center",
+                    left: `${offsetPct + widthPct}%`,
+                    marginLeft: '4px',
+                    height: rowHeight - 20,
                   }}
                 >
+                  <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                   {format(opEta, "dd/MM")}
                 </div>
               </div>
