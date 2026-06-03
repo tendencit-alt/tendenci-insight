@@ -117,7 +117,7 @@ export const MENU_PERMISSION_MAP: MenuRoot[] = [
     leaves: [
       
       { key: '/education',          label: 'Educação & Trilhas',  module: 'configuracoes' },
-      { key: '/auditoria',          label: 'Auditoria',           module: 'controladoria' },
+      
     ],
   },
   {

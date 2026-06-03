@@ -33,7 +33,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "executive": "Executivo",
   "projetos": "Projetos",
   "automacoes": "Automações",
-  "auditoria": "Auditoria",
+  
   "super-admin": "Owner Panel",
   "rh": "RH",
 };
