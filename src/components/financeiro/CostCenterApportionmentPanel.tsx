@@ -69,8 +69,8 @@ export function CostCenterApportionmentPanel({
     }
   }, [totalAmount]);
 
-  const totalPercentage = items.reduce((sum, item) => sum + item.percentage, 0);
-  const isValid = Math.abs(totalPercentage - 100) < 0.05;
+  const totalPercentage = Math.round(items.reduce((sum, item) => sum + item.percentage, 0) * 100) / 100;
+  const isValid = Math.abs(totalPercentage - 100) < 0.1;
 
   const handlePercentageChange = (index: number, value: string) => {
     const pct = parseFloat(value) || 0;

@@ -147,9 +147,9 @@ export function SplitEntryDialog({
 
   // Calculate totals
   const splitTotal = splits.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
-  const splitPercentage = splits.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0);
+  const splitPercentage = Math.round(splits.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0) * 100) / 100;
   const difference = totalAmount - splitTotal;
-  const isBalanced = Math.abs(difference) < 0.05;
+  const isBalanced = Math.abs(difference) < 0.1;
 
   // Add new split line
   const addSplitLine = () => {
