@@ -737,8 +737,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         toast.error('Selecione a forma de pagamento em todas as parcelas');
         return;
       }
-      if (totalPercentual !== 100) {
-        toast.error(`O percentual total das parcelas deve ser 100%. Atual: ${totalPercentual.toFixed(1)}%`);
+      if (Math.abs(totalPercentual - 100) > 0.1) {
+        toast.error(`O percentual total das parcelas deve ser 100%. Atual: ${totalPercentual.toFixed(2)}%`);
         return;
       }
       if (!isPagamentoValorCorreto) {
