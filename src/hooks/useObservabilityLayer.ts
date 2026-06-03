@@ -126,10 +126,12 @@ export function useObservabilityLayer() {
         errorLogsRes,
       ] = await Promise.all([
         supabase.from("automation_execution_logs").select("*").gte("created_at", h24).order("created_at", { ascending: false }).limit(100),
-        supabase.from("automation_rules").select("id, name, active, error_count, execution_count, last_executed_at").limit(50),auditStub().select("*").order("created_at", { ascending: false }).limit(20),auditStub().select("id, event_type, table_name, created_at, tenant_id, metadata").gte("created_at", h24).order("created_at", { ascending: false }).limit(50),
+        supabase.from("automation_rules").select("id, name, active, error_count, execution_count, last_executed_at").limit(50),
+        auditStub().select("*").order("created_at", { ascending: false }).limit(20),
+        auditStub().select("id, event_type, table_name, created_at, tenant_id, metadata").gte("created_at", h24).order("created_at", { ascending: false }).limit(50),
         supabase.from("tenants" as any).select("id, name").limit(100),
         supabase.from("fin_bank_transactions" as any).select("id, status, created_at", { count: "exact", head: true }),
-        // System error logs from auditauditStub().select("id").eq("event_type", "ERROR").gte("created_at", h24),
+        auditStub().select("id").eq("event_type", "ERROR").gte("created_at", h24),
       ]);
 
       const automExecs: any[] = automExecRes.data || [];
