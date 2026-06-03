@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { OrderItemsTable } from './OrderItemsTable';
+import { OrderItemsAndExtras } from './OrderItemsAndExtras';
 import { EditOrderDialog } from './EditOrderDialog';
 import { OrderExportDialog } from './OrderExportDialog';
 import { CancelOrderDialog } from './CancelOrderDialog';
@@ -594,18 +595,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
 
                   {/* ── Tab: Itens ── */}
                   <TabsContent value="itens" className="mt-0">
-                    <OrderItemsTable
-                      items={items?.map(i => ({
-                        id: i.id, descricao: i.descricao,
-                        quantidade: Number(i.quantidade), valor_unitario: Number(i.valor_unitario),
-                        valor_total: Number(i.valor_total), especificacoes: i.especificacoes || undefined,
-                        codigo_produto: i.codigo_produto || undefined, ncm: i.ncm || undefined,
-                        cfop: i.cfop || undefined, unidade: i.unidade || undefined,
-                      })) || []}
-                      onItemsChange={() => {}}
-                      readOnly
-                      showFiscalFields
-                    />
+                    <OrderItemsAndExtras orderId={orderId} tenantId={order.tenant_id} />
                   </TabsContent>
 
                   {/* ── Tab: Financeiro ── */}
