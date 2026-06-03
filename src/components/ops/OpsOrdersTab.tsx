@@ -235,15 +235,18 @@ export function OpsOrdersTab() {
 
   return (
     <div className="space-y-4">
-      {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-        <KpiCard icon={<Factory className="h-4 w-4" />} label="Em produção" value={kpis.inProd} tone="text-amber-600" />
-        <KpiCard icon={<Clock className="h-4 w-4" />} label="Aguardando" value={kpis.waiting} tone="text-blue-600" />
-        <KpiCard icon={<AlertTriangle className="h-4 w-4" />} label="Atrasadas" value={kpis.late} tone="text-destructive" />
-        <KpiCard icon={<Timer className="h-4 w-4" />} label="Alerta prazo" value={kpis.warn} tone="text-amber-600" />
-        <KpiCard icon={<CheckCircle2 className="h-4 w-4" />} label="Concluídas" value={kpis.done} tone="text-emerald-600" />
-        <KpiCard icon={<CheckCircle2 className="h-4 w-4" />} label="% Concluídas" value={`${kpis.donePct}%`} tone="text-primary" />
-      </div>
+      {/* KPIs — fonte única (get_production_timeline), idênticos ao Cronograma */}
+      <TooltipProvider delayDuration={150}>
+        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
+          <KpiCardTip icon={<Factory className="h-4 w-4" />} label="Em produção" value={timelineKpis.em_producao} tone="text-amber-600" hint="Ordens ativas com fase já iniciada (não 'Aguardando' nem concluídas)." />
+          <KpiCardTip icon={<Clock className="h-4 w-4" />} label="Aguardando" value={timelineKpis.aguardando} tone="text-blue-600" hint="Ordens criadas que ainda não saíram da fase inicial." />
+          <KpiCardTip icon={<AlertOctagon className="h-4 w-4" />} label="Vencidas" value={timelineKpis.vencidas} tone="text-destructive" hint="Prazo final já passou de hoje e a OP ainda não foi concluída. Urgência real — exige ação agora." />
+          <KpiCardTip icon={<AlertTriangle className="h-4 w-4" />} label="Atraso projetado" value={timelineKpis.atraso_projetado} tone="text-amber-600" hint="Prazo ainda não venceu, mas a previsão calculada (ETA) já ultrapassa o prazo planejado. Alerta preditivo." />
+          <KpiCardTip icon={<Timer className="h-4 w-4" />} label="Alerta prazo" value={timelineKpis.alerta_prazo} tone="text-amber-600" hint="Ainda dentro do prazo, mas a folga até o ETA está abaixo de 10% do tempo restante." />
+          <KpiCardTip icon={<CheckCircle2 className="h-4 w-4" />} label="Concluídas" value={timelineKpis.concluidas} tone="text-emerald-600" hint="Ordens em fases finais (concluído ou entregue)." />
+          <KpiCardTip icon={<Activity className="h-4 w-4" />} label="% Concluídas" value={`${timelineKpis.pct_concluidas ?? 0}%`} tone="text-primary" hint="Percentual de OPs concluídas sobre o total." />
+        </div>
+      </TooltipProvider>
 
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
