@@ -15184,6 +15184,50 @@ export type Database = {
           },
         ]
       }
+      production_order_phase_plan: {
+        Row: {
+          created_at: string
+          id: string
+          phase_slug: string
+          planned_duration_days: number | null
+          planned_end: string | null
+          planned_start: string | null
+          production_order_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          phase_slug: string
+          planned_duration_days?: number | null
+          planned_end?: string | null
+          planned_start?: string | null
+          production_order_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          phase_slug?: string
+          planned_duration_days?: number | null
+          planned_end?: string | null
+          planned_start?: string | null
+          production_order_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_order_phase_plan_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_orders: {
         Row: {
           actual_end_date: string | null
@@ -15717,6 +15761,7 @@ export type Database = {
         Row: {
           color: string
           created_at: string
+          duration_days: number | null
           id: string
           is_system: boolean
           label: string
@@ -15730,6 +15775,7 @@ export type Database = {
         Insert: {
           color?: string
           created_at?: string
+          duration_days?: number | null
           id?: string
           is_system?: boolean
           label: string
@@ -15743,6 +15789,7 @@ export type Database = {
         Update: {
           color?: string
           created_at?: string
+          duration_days?: number | null
           id?: string
           is_system?: boolean
           label?: string
@@ -23553,6 +23600,7 @@ export type Database = {
         }[]
       }
       get_phase_business_days: { Args: { p_phase_id: string }; Returns: number }
+      get_production_timeline: { Args: { _tenant_id?: string }; Returns: Json }
       get_project_stats_by_type: {
         Args: never
         Returns: {

@@ -33,8 +33,11 @@ import {
   Zap,
   FileSpreadsheet,
   Info,
-  Timer
+  Timer,
+  CalendarRange
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { OpTimelineMini } from '@/components/ops/timeline/OpTimelineMini';
 import { useMinimizedDialogs } from '@/contexts/MinimizedDialogsContext';
 import { MinimizeButton } from '@/components/ui/MinimizeButton';
 import { format } from 'date-fns';
@@ -77,6 +80,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [prazoDialogOpen, setPrazoDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
+  const navigate = useNavigate();
   const { isMaster } = usePermissions();
 
   const dialogId = `production-detail-${orderId}`;
@@ -500,10 +504,14 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
 
                 {/* Tabs para Informações, Ficha Técnica e Atualizações */}
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="w-full">
+                  <TabsList className="w-full flex-wrap h-auto">
                     <TabsTrigger value="info" className="flex-1 gap-1.5">
                       <Info className="h-4 w-4" />
                       Informações
+                    </TabsTrigger>
+                    <TabsTrigger value="cronograma" className="flex-1 gap-1.5">
+                      <CalendarRange className="h-4 w-4" />
+                      Cronograma
                     </TabsTrigger>
                     <TabsTrigger value="ficha" className="flex-1 gap-1.5">
                       <FileSpreadsheet className="h-4 w-4" />
@@ -514,6 +522,19 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
                       Atualizações
                     </TabsTrigger>
                   </TabsList>
+
+                  <TabsContent value="cronograma" className="mt-4 space-y-3">
+                    <OpTimelineMini opId={order.id} />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-2"
+                      onClick={() => navigate(`/producao-operacoes?tab=cronograma&op=${order.id}`)}
+                    >
+                      <CalendarRange className="h-4 w-4" />
+                      Ver no Cronograma completo
+                    </Button>
+                  </TabsContent>
 
                   {/* Tab Informações */}
                   <TabsContent value="info" className="space-y-4 mt-4">

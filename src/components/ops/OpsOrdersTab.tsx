@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -98,6 +99,33 @@ export function OpsOrdersTab() {
   const [reprogramOp, setReprogramOp] = useState<{ id: string; orderNumber: any; dueDate: string | null } | null>(null);
   const [historyOp, setHistoryOp] = useState<{ id: string; orderNumber: any } | null>(null);
   const [detailOpId, setDetailOpId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Sincronia entre abas: ?op=<id> abre o detalhe e dá scroll/highlight
+  useEffect(() => {
+    const opParam = searchParams.get("op");
+    if (opParam && opParam !== detailOpId) {
+      setDetailOpId(opParam);
+      setTimeout(() => {
+        const el = document.querySelector(`[data-op-id="${opParam}"]`) as HTMLElement | null;
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.classList.add("ring-2", "ring-primary");
+          setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 2500);
+        }
+      }, 300);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const handleCloseDetail = (v: boolean) => {
+    if (!v) {
+      setDetailOpId(null);
+      const next = new URLSearchParams(searchParams);
+      next.delete("op");
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   const { data: orders = [], isLoading } = useOpsOrders({
     type: typeFilter || undefined,
@@ -371,7 +399,8 @@ export function OpsOrdersTab() {
                             <DragCard key={o.id} id={o.id}>
                               {(handle) => (
                                 <Card
-                                  className={`p-3 space-y-1.5 transition-colors cursor-pointer hover:ring-1 hover:ring-primary/30 ${dueTone}`}
+                                  data-op-id={o.id}
+                                  className={`p-3 space-y-1.5 transition-all cursor-pointer hover:ring-1 hover:ring-primary/30 ${dueTone}`}
                                   onClick={() => setDetailOpId(o.id)}
                                 >
 
@@ -595,7 +624,7 @@ export function OpsOrdersTab() {
       <ProductionOrderDetailSheet
         orderId={detailOpId}
         open={!!detailOpId}
-        onOpenChange={(v) => !v && setDetailOpId(null)}
+        onOpenChange={handleCloseDetail}
       />
     </div>
   );
