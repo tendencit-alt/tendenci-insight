@@ -461,9 +461,9 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
                       <Badge variant="outline" className="text-[10px] h-4 py-0 flex items-center gap-1 font-normal border-blue-200 bg-blue-50 text-blue-700">
                         <Calendar className="h-2.5 w-2.5" />
                         Previsão: {format(new Date(productionInfo.eta), 'dd/MM/yyyy')}
-                        {order.data_entrega && order.data_entrega !== productionInfo.eta && (
+                        {(order as any).data_entrega && (order as any).data_entrega !== productionInfo.eta && (
                           <span className="opacity-60 line-through ml-1">
-                            ({format(new Date(order.data_entrega), 'dd/MM/yyyy')})
+                            ({format(new Date((order as any).data_entrega), 'dd/MM/yyyy')})
                           </span>
                         )}
                       </Badge>
