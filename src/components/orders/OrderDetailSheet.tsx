@@ -428,8 +428,8 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
             <StatusBanner
               module="orders"
               status={order.status}
-              statusLabel={productionInfo?.status ? getStatusDef('production_orders', productionInfo.status)?.label : productionStepperData?.label}
-              steps={steps}
+              statusLabel={productionInfo?.status ? getStatusDef('production_orders', productionInfo.status)?.label : undefined}
+              steps={productionStepperData?.steps || steps}
               primaryAction={!productionStepper && nextAction ? {
                 label: nextAction.label,
                 onClick: () => handleStatusChange(nextAction.nextStatus),
