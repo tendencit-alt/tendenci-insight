@@ -357,12 +357,6 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const removerFormaPagamento = (id: string) => {
     if (parcelas.length <= 1) return;
     const novasParcelas = parcelas.filter(p => p.id !== id);
-    // Redistribuir percentual se a removida tinha valor
-    const totalAtual = novasParcelas.reduce((sum, p) => sum + p.percentual, 0);
-    if (totalAtual < 100 && novasParcelas.length > 0) {
-      const diff = 100 - totalAtual;
-      novasParcelas[0].percentual += diff;
-    }
     setParcelas(novasParcelas);
   };
 
