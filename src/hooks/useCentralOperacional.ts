@@ -29,6 +29,7 @@ export interface RecentEvent {
   description: string;
   timestamp: string;
   module: string;
+  link?: string;
 }
 
 export interface QuickIndicator {
