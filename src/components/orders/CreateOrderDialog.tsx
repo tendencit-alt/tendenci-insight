@@ -2137,7 +2137,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   </Alert>
                 )}
 
-                {totalPercentual === 100 && !isPagamentoValorCorreto && (
+                {Math.abs(totalPercentual - 100) < 0.1 && !isPagamentoValorCorreto && (
                   <Alert variant="destructive" className="mt-2">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
