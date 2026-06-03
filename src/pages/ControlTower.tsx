@@ -1,12 +1,7 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Activity, AlertTriangle, Lightbulb, Target, FlaskConical, BarChart3, ShieldAlert } from 'lucide-react';
+import { Activity, ShieldAlert } from 'lucide-react';
 import { ControlTowerFinancialStatus } from '@/components/control-tower/FinancialStatus';
-import { ControlTowerOperationalStatus } from '@/components/control-tower/OperationalStatus';
-import { ControlTowerRisks } from '@/components/control-tower/Risks';
-import { ControlTowerOpportunities } from '@/components/control-tower/Opportunities';
-import { ControlTowerPriorities } from '@/components/control-tower/Priorities';
-import { ControlTowerSimulations } from '@/components/control-tower/Simulations';
 import { DiagnosticoTab } from '@/components/permission-debug/DiagnosticoTab';
 import { DiffTab } from '@/components/permission-debug/DiffTab';
 import { TimelineTab } from '@/components/permission-debug/TimelineTab';
