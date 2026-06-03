@@ -19856,65 +19856,6 @@ export type Database = {
           },
         ]
       }
-      system_activities: {
-        Row: {
-          action_type: string
-          created_at: string | null
-          description: string
-          entity_id: string
-          entity_name: string | null
-          entity_type: string
-          id: string
-          metadata: Json | null
-          module: string
-          new_value: string | null
-          old_value: string | null
-          tenant_id: string | null
-          user_id: string | null
-          user_name: string | null
-        }
-        Insert: {
-          action_type: string
-          created_at?: string | null
-          description: string
-          entity_id: string
-          entity_name?: string | null
-          entity_type: string
-          id?: string
-          metadata?: Json | null
-          module: string
-          new_value?: string | null
-          old_value?: string | null
-          tenant_id?: string | null
-          user_id?: string | null
-          user_name?: string | null
-        }
-        Update: {
-          action_type?: string
-          created_at?: string | null
-          description?: string
-          entity_id?: string
-          entity_name?: string | null
-          entity_type?: string
-          id?: string
-          metadata?: Json | null
-          module?: string
-          new_value?: string | null
-          old_value?: string | null
-          tenant_id?: string | null
-          user_id?: string | null
-          user_name?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "system_activities_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       system_changelog: {
         Row: {
           change_type: string
