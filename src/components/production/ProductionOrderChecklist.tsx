@@ -80,7 +80,21 @@ export function ProductionOrderChecklist({ productionOrderId, statusSlug }: Prop
   });
 
   if (isLoading) return null;
-  if (rows.length === 0) return null;
+  if (rows.length === 0) {
+    return (
+      <div className="border border-dashed rounded-md p-3 text-xs text-muted-foreground bg-muted/10">
+        <div className="flex items-center gap-2">
+          <AlertCircle className="h-3.5 w-3.5" />
+          <span>
+            Nenhum item de checklist configurado para o status <strong>{statusSlug}</strong>.
+          </span>
+        </div>
+        <div className="mt-1 pl-5">
+          Configure em <strong>Produção → Checklists por status</strong>.
+        </div>
+      </div>
+    );
+  }
 
   const pendingRequired = rows.filter((r) => r.required && !r.completed).length;
   const doneCount = rows.filter((r) => r.completed).length;
