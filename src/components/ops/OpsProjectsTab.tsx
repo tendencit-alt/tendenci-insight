@@ -325,12 +325,12 @@ export function OpsProjectsTab() {
                         return (
                           <div 
                             key={r.id} 
-                            className={`p-3 rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer hover:border-primary hover:shadow-md transition-all active:scale-[0.98] relative z-[50] ${projectSlaTone}`} 
+                            className={`p-4 rounded-lg border bg-card text-card-foreground shadow-md cursor-pointer hover:border-primary hover:shadow-lg transition-all active:scale-[0.98] relative z-[100] ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${projectSlaTone}`} 
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
                               const orderId = (r as any).order_id || r.id;
-                              console.log('OpsProjectsTab: Opening order details for:', orderId);
+                              console.log('CRITICAL: OpsProjectsTab card clicked, attempting to open orderId:', orderId);
                               setSelectedOrderId(orderId);
                             }}
                           >
