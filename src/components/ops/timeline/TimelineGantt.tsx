@@ -205,10 +205,10 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                 {/* due-date marker */}
                 {due && (
                   <div
-                    className="absolute top-0 bottom-0 border-l-2 border-dashed border-destructive/40 z-10 group/due"
+                    className="absolute top-0 bottom-0 border-l-2 border-dashed border-destructive/60 z-10 group/due"
                     style={{ left: `${(differenceInCalendarDays(due, rangeStart) / totalDays) * 100}%` }}
                   >
-                    <div className="absolute top-0 -left-1.5 translate-y-[-50%] text-[8px] font-black bg-destructive text-white px-1 rounded-full shadow-sm z-20">
+                    <div className="absolute top-0 -left-1.5 translate-y-[-50%] text-[8px] font-black bg-destructive text-white px-1 rounded-sm shadow-md z-20">
                       FIM
                     </div>
                   </div>
