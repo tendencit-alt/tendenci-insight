@@ -177,9 +177,9 @@ export function FinProjectsManager() {
       totalRealized += realizedDespesas;
       totalRecebido += realizedReceitas;
       
-      if (budget > 0 && realized > budget) {
+      if (budget > 0 && realizedDespesas > budget) {
         projectsOverBudget++;
-      } else if (budget > 0 && realized <= budget) {
+      } else if (budget > 0 && realizedDespesas <= budget) {
         projectsUnderBudget++;
       }
     });
