@@ -59,7 +59,7 @@ export function ProjectKPIsDialog({ open, onOpenChange, project, projectData }: 
   const saldoOrcamento = budget - despesas;
   const percentUsed = budget > 0 ? (despesas / budget) * 100 : 0;
   const entryCount = projectData.entries.length;
-  const reconciledCount = projectData.entries.filter((e) => e.reconciled).length;
+  const reconciledCount = projectData.entries.filter((e) => e.status === "PAGO_RECEBIDO").length;
   const pendingCount = entryCount - reconciledCount;
 
   return (
