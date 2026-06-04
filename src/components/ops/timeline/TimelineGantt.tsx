@@ -77,7 +77,9 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
   return (
     <Card className="overflow-hidden">
-      {/* Header with time scale */}
+      <div className="overflow-x-auto">
+        <div className="min-w-[1200px]">
+          {/* Header with time scale */}
       <div className="flex border-b bg-muted/40 text-xs select-none">
         <div className="flex-shrink-0 px-4 py-3 font-black text-[10px] uppercase tracking-wider border-r border-border/80 bg-muted/30" style={{ width: labelWidth }}>
           ORDEM DE PRODUÇÃO
@@ -370,6 +372,8 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           </div>
         </div>
       </div>
-    </Card>
+    </div>
+  </div>
+</Card>
   );
 }
