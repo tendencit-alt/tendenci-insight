@@ -133,6 +133,7 @@ function buildAggregator(
 }
 
 export function OpsProjectsTab() {
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [rawRows, setRawRows] = useState<ProjectProductionRow[]>([]);
   const [search, setSearch] = useState("");
@@ -241,7 +242,6 @@ export function OpsProjectsTab() {
     return { inProd, waiting, late, slaAlerts, doneMonth, onTimePct };
   }, [filtered, doneSlugs]);
 
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const openDetail = (orderId: string) => {
     setSelectedOrderId(orderId);
   };
@@ -311,7 +311,7 @@ export function OpsProjectsTab() {
                             ? "bg-amber-500/10 border-amber-500/40 dark:bg-amber-500/15"
                             : "";
                         return (
-                        <Card key={r.id} className={`p-3 cursor-pointer hover:shadow-md transition ${projectSlaTone}`} onClick={() => openDetail(r.id)}>
+                        <Card key={r.id} className={`p-3 cursor-pointer hover:shadow-md transition ${projectSlaTone}`} onClick={() => openDetail(r.id.split('-')[0])}>
                           <div className="text-sm font-medium truncate">{r.name || "Sem nome"}</div>
                           <div className="text-xs text-muted-foreground truncate">{r.client?.name ?? "—"}</div>
 
@@ -325,9 +325,6 @@ export function OpsProjectsTab() {
 
                           <div className="mt-2">
                             <Progress value={r.progressPct} className="h-1.5" title={`Progresso total do projeto: ${r.progressPct}%`} />
-                            <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground gap-1">
-                              <span>{r.done}/{r.total} OPs</span>
-                              <div className="flex items-center gap-1">
                             <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground gap-1">
                               <span className="font-medium text-primary">{(r as any)._opsCountInStatus} de {r.total} OPs</span>
                               <div className="flex items-center gap-1">
@@ -345,8 +342,6 @@ export function OpsProjectsTab() {
                                   </Badge>
                                 )}
                                 {r.isLate && <span className="text-destructive font-medium">Atrasado</span>}
-                              </div>
-                            </div>
                               </div>
                             </div>
                           </div>
@@ -391,7 +386,7 @@ export function OpsProjectsTab() {
                     ? SEM_OP_META
                     : { label: columnsBySlug[r.aggStatus]?.label ?? r.aggStatus, tone: colorTone(columnsBySlug[r.aggStatus]?.color ?? "slate") };
                   return (
-                    <TableRow key={r.id} className="cursor-pointer" onClick={() => openDetail(r.id)}>
+                    <TableRow key={r.id} className="cursor-pointer" onClick={() => openDetail(r.id.split('-')[0])}>
                       <TableCell className="font-medium">{r.name || "—"}</TableCell>
                       <TableCell className="text-muted-foreground">{r.client?.name ?? "—"}</TableCell>
                       <TableCell className="text-right">R$ {Number(r.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>

@@ -351,9 +351,11 @@ export function OpsOrdersTab() {
                 const activeId = String(e.active?.id ?? "");
                 if (!overId.startsWith("col-") || !activeId) return;
                 const newSlug = overId.slice(4);
-                const ord = filtered.find((o) => o.id === activeId);
+                // Usando orders original para evitar problemas com IDs virtuais ou duplicados no move
+                const ord = (orders as any[]).find((o) => o.id === activeId);
                 if (!ord) return;
-                handleMove(activeId, ord._slug, newSlug);
+                const currentSlug = resolveSlug(ord.status, validSlugs);
+                handleMove(activeId, currentSlug, newSlug);
               }}
             >
               <div
