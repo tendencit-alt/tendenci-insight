@@ -122,6 +122,7 @@ function buildAggregator(
         result.push({
           ...p,
           id: `${p.id}-${status}`,
+          order_id: p.id,
           total,
           done,
           inProgress,
