@@ -189,14 +189,14 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
               style={{ height: rowHeight }}
             >
               <div
-                className="flex-shrink-0 flex items-center gap-3 px-4 py-1 overflow-hidden border-r border-border/50 bg-muted/5"
+                className="flex-shrink-0 flex items-center gap-3 px-4 py-1 overflow-hidden border-r border-border/80 bg-muted/20"
                 style={{ width: labelWidth }}
               >
-                <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border/40">#{op.order_number}</span>
+                <span className="text-[10px] font-black text-foreground bg-white border border-border shadow-sm px-1.5 py-0.5 rounded">#{op.order_number}</span>
                 <div className="flex-1 min-w-0 flex flex-col">
-                  <span className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{op.title}</span>
+                  <span className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">{op.title}</span>
                   {op.is_late_planned && (
-                    <span className="text-[9px] font-bold text-destructive uppercase tracking-wider">OP Atrasada</span>
+                    <span className="text-[9px] font-black text-destructive uppercase tracking-tighter">OP ATRASADA</span>
                   )}
                 </div>
               </div>
