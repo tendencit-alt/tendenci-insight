@@ -442,7 +442,7 @@ export function OpsProjectsTab() {
       {selectedOrderId && (
         <OrderDetailSheet
           orderId={selectedOrderId}
-          open={!!selectedOrderId}
+          open={true}
           onOpenChange={(o) => { if (!o) setSelectedOrderId(null); }}
           onUpdate={() => setRefreshKey((k) => k + 1)}
           productionStepper
