@@ -61,8 +61,10 @@ export function TimelineView() {
     list.sort((a, b) => {
       if (filters.sort === "eta") {
         const today = new Date();
-        const daysLeftA = differenceInCalendarDays(new Date(a.eta), today);
-        const daysLeftB = differenceInCalendarDays(new Date(b.eta), today);
+        const dueA = a.planned_end_date ? new Date(a.planned_end_date) : new Date(a.eta);
+        const dueB = b.planned_end_date ? new Date(b.planned_end_date) : new Date(b.eta);
+        const daysLeftA = differenceInCalendarDays(dueA, today);
+        const daysLeftB = differenceInCalendarDays(dueB, today);
         return daysLeftA - daysLeftB;
       }
       if (filters.sort === "order") {
