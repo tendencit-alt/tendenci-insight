@@ -352,24 +352,25 @@ export function OpsProjectsTab() {
                           </div>
 
                           <div className="mt-3">
-                            <Progress value={r.progressPct} className="h-1.5" title={`Progresso total do projeto: ${r.progressPct}%`} />
-                            <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground gap-1">
-                              <span className="font-medium text-primary">{(r as any)._opsCountInStatus} de {r.total} OPs</span>
+                            <Progress value={r.progressPct} className="h-1.5" title={`Progresso total: ${r.progressPct}%`} />
+                            <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground gap-1">
+                              <span className="font-semibold text-primary/80 uppercase tracking-tighter">
+                                {(r as any)._opsCountInStatus} de {r.total} OPs
+                              </span>
                               <div className="flex items-center gap-1">
                                 {r.slaAlerts > 0 && (
                                   <Badge
                                     variant="secondary"
-                                    className={`text-[10px] gap-0.5 px-1.5 py-0 ${
+                                    className={`text-[9px] h-4 gap-0.5 px-1 py-0 font-bold ${
                                       r.slaOverdue > 0
-                                        ? "bg-destructive/10 text-destructive border-destructive/30"
-                                        : "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300"
+                                        ? "bg-destructive/10 text-destructive border-destructive/20"
+                                        : "bg-amber-500/10 text-amber-700 border-amber-500/20 dark:text-amber-300"
                                     }`}
-                                    title={`${r.slaAlerts} OP(s) com alerta de prazo nesta fase${r.slaOverdue ? ` — ${r.slaOverdue} vencida(s)` : ""}`}
                                   >
-                                    <Clock className="h-2.5 w-2.5" />SLA {r.slaAlerts}
+                                    <Clock className="h-2 w-2" />SLA {r.slaAlerts}
                                   </Badge>
-                                )}
-                                {r.isLate && <span className="text-destructive font-medium">Atrasado</span>}
+                                )? null : null}
+                                {r.isLate && <span className="text-destructive font-bold uppercase text-[9px] tracking-tight">Atrasado</span>}
                               </div>
                             </div>
                           </div>
