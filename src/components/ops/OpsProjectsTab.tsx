@@ -369,7 +369,7 @@ export function OpsProjectsTab() {
                                   >
                                     <Clock className="h-2 w-2" />SLA {r.slaAlerts}
                                   </Badge>
-                                )? null : null}
+                                )}
                                 {r.isLate && <span className="text-destructive font-bold uppercase text-[9px] tracking-tight">Atrasado</span>}
                               </div>
                             </div>
