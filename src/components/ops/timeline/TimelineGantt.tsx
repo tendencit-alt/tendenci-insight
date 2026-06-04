@@ -166,7 +166,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           );
 
           // ETA status color
-          let etaClass = "bg-emerald-500 text-white";
+          let etaClass = "bg-blue-600 text-white";
           let etaStatusLabel = "Dentro do prazo";
           if (due) {
             const desvioDays = differenceInCalendarDays(opEta, due);
