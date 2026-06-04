@@ -371,7 +371,6 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
             <span className="text-[9px]">EXECUTADO está atrás da META.</span>
           </div>
         </div>
-        </div>
       </div>
     </Card>
   );
