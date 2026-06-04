@@ -66,46 +66,63 @@ function buildAggregator(
 
   return (rows: ProjectProductionRow[]): AggregatedRow[] => {
     const today = new Date();
-    return rows.map((p) => {
+    const result: AggregatedRow[] = [];
+
+    rows.forEach((p) => {
       const pos = (p.pos ?? []).map((x) => ({ ...x, status: resolve(x.status) }));
       const total = pos.length;
-      const done = pos.filter((x) => doneSlugs.has(x.status)).length;
-      const inProgress = pos.filter((x) => x.status === "em_producao").length;
-      const waiting = pos.filter((x) => x.status === "aguardando").length;
+      
+      if (total === 0) {
+        result.push({
+          ...p, total, done: 0, inProgress: 0, waiting: 0,
+          progressPct: 0, aggStatus: "sem_op", isLate: false, slaAlerts: 0, slaOverdue: 0,
+        });
+        return;
+      }
 
-      let aggStatus: string = "sem_op";
-      if (total > 0) {
-        if (done === total) {
-          // pick the slug that the OPs actually share (or the first done slug)
-          aggStatus = pos[0].status;
-        } else {
-          // Show the LOWEST (least-progressed) sort_order among the OPs not yet done.
-          const open = pos.filter((x) => !doneSlugs.has(x.status));
-          const sorted = [...open].sort((a, b) =>
-            (columnsBySlug[a.status]?.sort_order ?? 9999) -
-            (columnsBySlug[b.status]?.sort_order ?? 9999)
-          );
-          aggStatus = sorted[0]?.status ?? pos[0].status;
+      const done = pos.filter((x) => doneSlugs.has(x.status)).length;
+      const progressPct = Math.round((done / total) * 100);
+      
+      // Get unique statuses present in this project's OPs
+      const uniqueStatuses = Array.from(new Set(pos.map(x => x.status)));
+      
+      uniqueStatuses.forEach(status => {
+        const opsInStatus = pos.filter(x => x.status === status);
+        const inProgress = opsInStatus.filter(x => x.status === "em_producao").length;
+        const waiting = opsInStatus.filter(x => x.status === "aguardando").length;
+        
+        let slaAlerts = 0;
+        let slaOverdue = 0;
+        for (const x of opsInStatus) {
+          if (doneSlugs.has(x.status)) continue;
+          const target = columnsBySlug[x.status]?.sla_days;
+          if (!target) continue;
+          const s = slaState(target, x.status_changed_at, columnsBySlug[x.status]?.sla_unit ?? "days");
+          if (s.level === "overdue") { slaOverdue++; slaAlerts++; }
+          else if (s.level === "warning") slaAlerts++;
         }
-      }
-      const isLate = !!p.deadline && parseLocalDate(p.deadline) < today && !doneSlugs.has(aggStatus);
-      let slaAlerts = 0;
-      let slaOverdue = 0;
-      for (const x of pos) {
-        if (doneSlugs.has(x.status)) continue;
-        const target = columnsBySlug[x.status]?.sla_days;
-        if (!target) continue;
-        const s = slaState(target, x.status_changed_at, columnsBySlug[x.status]?.sla_unit ?? "days");
-        if (s.level === "overdue") { slaOverdue++; slaAlerts++; }
-        else if (s.level === "warning") slaAlerts++;
-      }
-      return {
-        ...p,
-        total, done, inProgress, waiting,
-        progressPct: total === 0 ? 0 : Math.round((done / total) * 100),
-        aggStatus, isLate, slaAlerts, slaOverdue,
-      };
+
+        const isLate = !!p.deadline && parseLocalDate(p.deadline) < today && !doneSlugs.has(status);
+
+        result.push({
+          ...p,
+          id: `${p.id}-${status}`, // Unique ID for the card in this column
+          total,
+          done,
+          inProgress,
+          waiting,
+          progressPct,
+          aggStatus: status,
+          isLate,
+          slaAlerts,
+          slaOverdue,
+          // Custom field to show which OPs are here
+          _opsCountInStatus: opsInStatus.length
+        } as any);
+      });
     });
+
+    return result;
   };
 }
 
