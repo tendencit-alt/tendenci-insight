@@ -265,7 +265,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                   return null;
                 })()}
 
-                {/* Marcador de Onde Estamos (Seta de Status Atual) */}
+                {/* Marcador de Onde Estamos (Seta de Status Atual) - Preto */}
                 {currentIdx !== -1 && op.status !== 'concluido' && op.status !== 'entregue' && (
                   <div 
                     className="absolute bottom-0 translate-y-1 z-30 pointer-events-none transition-all duration-300 flex flex-col items-center group-hover:scale-110"
@@ -279,9 +279,8 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                       })()}% * ${widthPct} / 100)`,
                     }}
                   >
-                    <span className="text-[8px] font-black bg-foreground text-background px-1.5 py-0.5 rounded shadow-sm mb-0.5 uppercase">EXECUTADO</span>
-                    <div className="w-2 h-2 rounded-full bg-foreground border-2 border-white shadow-md" />
-
+                    <span className="text-[8px] font-black bg-black text-white px-1.5 py-0.5 rounded shadow-sm mb-0.5 uppercase">EXECUTADO</span>
+                    <div className="w-2 h-2 rounded-full bg-black border-2 border-white shadow-md" />
                   </div>
                 )}
 
