@@ -133,7 +133,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
             return (
               <div
                 key={i}
-                className={`absolute top-0 bottom-0 border-l border-border/30 ${isWeekend ? "bg-muted/10" : ""}`}
+                className={`absolute top-0 bottom-0 border-l border-border/40 ${isWeekend ? "bg-muted/10" : ""}`}
                 style={{ left: `${left}%`, width: `${(1 / totalDays) * 100}%` }}
               />
             );
