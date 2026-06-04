@@ -323,8 +323,8 @@ export function OpsProjectsTab() {
                           className={`p-3 rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer hover:border-primary hover:shadow-md transition-all active:bg-accent ${projectSlaTone}`} 
                           onClick={() => openDetail(r.id.split('-')[0])}
                         >
-                          <div className="text-sm font-medium truncate pointer-events-none">{r.name || "Sem nome"}</div>
-                          <div className="text-xs text-muted-foreground truncate pointer-events-none mb-2">{r.client?.name ?? "—"}</div>
+                          <div className="text-sm font-bold truncate pointer-events-none text-primary">{r.name || "Sem nome"}</div>
+                          <div className="text-xs text-muted-foreground truncate pointer-events-none mb-3">{r.client?.name ?? "—"}</div>
 
                           {/* Prazo de entrega + botão editar */}
                           <div className="mt-2 flex items-center justify-between gap-2 text-[11px]">
