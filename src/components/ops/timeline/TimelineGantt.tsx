@@ -85,8 +85,6 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
         <div className="flex-1 relative h-12 overflow-hidden bg-white/50">
           {(() => {
             const days = [];
-            // Determine dynamic step based on density and total range
-            const dayWidth = 100 / totalDays;
             const finalStep = totalDays < 20 ? 1 : (totalDays < 45 ? 2 : (totalDays < 90 ? 5 : 10));
 
             for (let i = 0; i < totalDays; i += finalStep) {
@@ -111,6 +109,16 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
             }
             return days;
           })()}
+
+          {/* Marcador "Hoje" no Header */}
+          <div 
+            className="absolute top-0 bottom-0 border-l-2 border-dashed border-black z-50 pointer-events-none"
+            style={{ left: `${todayOffsetPct}%` }}
+          >
+            <div className="absolute top-1/2 -translate-y-1/2 -left-3 text-[7px] font-black bg-black text-white px-1 py-0.5 rounded shadow-sm">
+              HOJE
+            </div>
+          </div>
         </div>
       </div>
 
