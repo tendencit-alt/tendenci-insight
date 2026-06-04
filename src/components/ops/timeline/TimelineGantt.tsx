@@ -297,13 +297,13 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                     return (
                       <div
                         key={s.slug}
-                        className={`relative h-full ${cls} ${isPast ? "opacity-40 grayscale-[20%]" : isCurrent ? "ring-inset ring-1 ring-black/10" : "opacity-30"}`}
+                        className={`relative h-full ${cls} ${isPast ? "opacity-90" : isCurrent ? "ring-inset ring-1 ring-black/20" : "opacity-30"}`}
                         style={{ width: `${w}%` }}
                         title={`${s.label}: ${s.duration_days} dias`}
                       >
                         {isCurrent && op.current_duration_days ? (
                           <div
-                            className="absolute inset-y-0 left-0 bg-white/40 animate-pulse"
+                            className="absolute inset-y-0 left-0 bg-white/30 animate-[pulse_2s_infinite]"
                             style={{
                               width: `${Math.min(100, ((op.days_in_current ?? 0) / (op.current_duration_days || 1)) * 100)}%`,
                             }}
