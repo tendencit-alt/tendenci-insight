@@ -340,7 +340,7 @@ export function OpsProjectsTab() {
                               <div className="flex items-center gap-1">
                                 {r.slaAlerts > 0 && (
                                   <Badge
-                                    variant="outline"
+                                    variant="secondary"
                                     className={`text-[10px] gap-0.5 px-1.5 py-0 ${
                                       r.slaOverdue > 0
                                         ? "bg-destructive/10 text-destructive border-destructive/30"
