@@ -153,11 +153,10 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
             sla_dias_uteis_custom
           `)
           .eq('production_order_id', orderId),
-        // Related OPs
-        (orderData as any).project_id
-          ? supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', (orderData as any).project_id).neq('id', orderId)
-          : Promise.resolve({ data: [] })
-      ]);
+      // Related OPs
+      const relatedOpsRes = (orderData as any).project_id
+        ? await supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', (orderData as any).project_id).neq('id', orderId)
+        : { data: [] };
 
       // Buscar templates das phases
       const phaseTemplateIds = (phasesRes.data || [])
