@@ -130,22 +130,25 @@ export function FinProjectsManager() {
 
   // Calculate realized amounts per project
   const realizedByProject = useMemo(() => {
-    const result: Record<string, { total: number; receitas: number; despesas: number; entries: LedgerEntry[] }> = {};
+    const result: Record<string, { total: number; receitas: number; despesas: number; receitasPagas: number; despesasPagas: number; entries: LedgerEntry[] }> = {};
     
     projectEntries?.forEach((entry: any) => {
       if (!entry.project_id) return;
       
       if (!result[entry.project_id]) {
-        result[entry.project_id] = { total: 0, receitas: 0, despesas: 0, entries: [] };
+        result[entry.project_id] = { total: 0, receitas: 0, despesas: 0, receitasPagas: 0, despesasPagas: 0, entries: [] };
       }
       
       const amount = Math.abs(Number(entry.amount));
+      const isPaid = entry.status === "PAGO_RECEBIDO";
       
       if (entry.type === "RECEITA") {
         result[entry.project_id].receitas += amount;
+        if (isPaid) result[entry.project_id].receitasPagas += amount;
         result[entry.project_id].total += amount;
       } else {
         result[entry.project_id].despesas += amount;
+        if (isPaid) result[entry.project_id].despesasPagas += amount;
         result[entry.project_id].total -= amount;
       }
       
@@ -160,20 +163,23 @@ export function FinProjectsManager() {
     const activeProjects = projects?.filter(p => p.status === "ativo") || [];
     
     let totalBudget = 0;
-    let totalRealized = 0;
+    let totalRealized = 0; // Despesas Pagas
+    let totalRecebido = 0; // Receitas Pagas
     let projectsOverBudget = 0;
     let projectsUnderBudget = 0;
     
     activeProjects.forEach(project => {
       const budget = Number(project.budget) || 0;
-      const realized = realizedByProject[project.id]?.despesas || 0;
+      const realizedDespesas = realizedByProject[project.id]?.despesasPagas || 0;
+      const realizedReceitas = realizedByProject[project.id]?.receitasPagas || 0;
       
       totalBudget += budget;
-      totalRealized += realized;
+      totalRealized += realizedDespesas;
+      totalRecebido += realizedReceitas;
       
-      if (budget > 0 && realized > budget) {
+      if (budget > 0 && realizedDespesas > budget) {
         projectsOverBudget++;
-      } else if (budget > 0 && realized <= budget) {
+      } else if (budget > 0 && realizedDespesas <= budget) {
         projectsUnderBudget++;
       }
     });
@@ -510,7 +516,8 @@ export function FinProjectsManager() {
               <TableBody>
                 {filteredProjects.map((project) => {
                   const budget = Number(project.budget) || 0;
-                  const realized = realizedByProject[project.id]?.despesas || 0;
+                  const realized = realizedByProject[project.id]?.despesasPagas || 0;
+                  const totalDespesas = realizedByProject[project.id]?.despesas || 0;
                   const saldo = budget - realized;
                   const percent = budget > 0 ? (realized / budget) * 100 : 0;
                   const budgetStatus = getBudgetStatus(budget, realized);
@@ -568,9 +575,16 @@ export function FinProjectsManager() {
                         {budget > 0 ? formatCurrency(budget) : "-"}
                       </TableCell>
                       <TableCell className="text-right">
-                        <span className={realized > 0 ? "text-orange-600 font-medium" : ""}>
-                          {realized > 0 ? formatCurrency(realized) : "-"}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className={realized > 0 ? "text-orange-600 font-bold" : ""}>
+                            {realized > 0 ? formatCurrency(realized) : "-"}
+                          </span>
+                          {totalDespesas > realized && (
+                            <span className="text-[10px] text-muted-foreground" title="Total incluindo não pagos">
+                              Previsto: {formatCurrency(totalDespesas)}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         {budget > 0 ? (

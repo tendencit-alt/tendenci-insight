@@ -52,12 +52,16 @@ export function ProjectKPIsDialog({ open, onOpenChange, project, projectData }: 
 
   if (!project) return null;
 
+  const despesasPagas = projectData.entries.filter(e => e.type === "DESPESA" && e.status === "PAGO_RECEBIDO").reduce((s, e) => s + Math.abs(Number(e.amount)), 0);
+  const totalDespesas = projectData.entries.filter(e => e.type === "DESPESA").reduce((s, e) => s + Math.abs(Number(e.amount)), 0);
+  const receitasPagas = projectData.entries.filter(e => e.type === "RECEITA" && e.status === "PAGO_RECEBIDO").reduce((s, e) => s + Math.abs(Number(e.amount)), 0);
+  
   const budget = Number(project.budget) || 0;
-  const despesas = projectData.despesas;
-  const receitas = projectData.receitas;
-  const saldo = projectData.total;
-  const saldoOrcamento = budget - despesas;
-  const percentUsed = budget > 0 ? (despesas / budget) * 100 : 0;
+  const despesas = despesasPagas; 
+  const receitas = receitasPagas;
+  const saldo = receitasPagas - despesasPagas;
+  const saldoOrcamento = budget - despesasPagas;
+  const percentUsed = budget > 0 ? (despesasPagas / budget) * 100 : 0;
   const entryCount = projectData.entries.length;
   const reconciledCount = projectData.entries.filter((e) => e.status === "PAGO_RECEBIDO").length;
   const pendingCount = entryCount - reconciledCount;
@@ -98,7 +102,10 @@ export function ProjectKPIsDialog({ open, onOpenChange, project, projectData }: 
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Despesas</p>
-                    <p className="text-xl font-bold text-orange-600">{formatCurrency(despesas)}</p>
+                    <p className="text-xl font-bold text-orange-600">{formatCurrency(despesasPagas)}</p>
+                    {totalDespesas > despesasPagas && (
+                      <p className="text-[10px] text-muted-foreground">Total (inc. abertos): {formatCurrency(totalDespesas)}</p>
+                    )}
                     {budget > 0 && (
                       <p className="text-xs text-muted-foreground">{percentUsed.toFixed(1)}% do orçamento</p>
                     )}
@@ -152,7 +159,7 @@ export function ProjectKPIsDialog({ open, onOpenChange, project, projectData }: 
                     <p className={`text-lg font-bold ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {formatCurrency(saldo)}
                     </p>
-                    <p className="text-xs text-muted-foreground">Receitas - Despesas</p>
+                    <p className="text-xs text-muted-foreground">Recebido - Pago</p>
                   </div>
                   <DollarSign className="h-5 w-5 text-muted-foreground" />
                 </div>
