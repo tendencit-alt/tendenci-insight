@@ -130,22 +130,25 @@ export function FinProjectsManager() {
 
   // Calculate realized amounts per project
   const realizedByProject = useMemo(() => {
-    const result: Record<string, { total: number; receitas: number; despesas: number; entries: LedgerEntry[] }> = {};
+    const result: Record<string, { total: number; receitas: number; despesas: number; receitasPagas: number; despesasPagas: number; entries: LedgerEntry[] }> = {};
     
     projectEntries?.forEach((entry: any) => {
       if (!entry.project_id) return;
       
       if (!result[entry.project_id]) {
-        result[entry.project_id] = { total: 0, receitas: 0, despesas: 0, entries: [] };
+        result[entry.project_id] = { total: 0, receitas: 0, despesas: 0, receitasPagas: 0, despesasPagas: 0, entries: [] };
       }
       
       const amount = Math.abs(Number(entry.amount));
+      const isPaid = entry.status === "PAGO_RECEBIDO";
       
       if (entry.type === "RECEITA") {
         result[entry.project_id].receitas += amount;
+        if (isPaid) result[entry.project_id].receitasPagas += amount;
         result[entry.project_id].total += amount;
       } else {
         result[entry.project_id].despesas += amount;
+        if (isPaid) result[entry.project_id].despesasPagas += amount;
         result[entry.project_id].total -= amount;
       }
       
