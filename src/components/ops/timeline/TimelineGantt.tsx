@@ -265,19 +265,19 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                 {/* Marcador de Onde Estamos (Seta de Status Atual) */}
                 {currentIdx !== -1 && op.status !== 'concluido' && op.status !== 'entregue' && (
                   <div 
-                    className="absolute bottom-0 translate-y-1 z-30 text-foreground pointer-events-none transition-all duration-300 flex flex-col items-center group-hover:scale-110"
+                    className="absolute bottom-0 translate-y-1 z-30 pointer-events-none transition-all duration-300 flex flex-col items-center group-hover:scale-110"
                     style={{ 
                       left: `calc(${offsetPct}% + ${(() => {
                         let acc = 0;
                         for (let i = 0; i < currentIdx; i++) acc += ((op.segments[i].duration_days || 0) / totalDur) * 100;
                         const ratio = Math.min(1, (op.days_in_current ?? 0) / (op.current_duration_days || 1));
                         acc += ratio * ((op.segments[currentIdx].duration_days || 0) / totalDur) * 100;
-                        return acc;
+                        return Math.min(100, Math.max(0, acc));
                       })()}% * ${widthPct} / 100)`,
                     }}
                   >
-                    <span className="text-[7px] font-black bg-foreground text-background px-1 rounded-sm mb-0.5 uppercase shadow-sm">HOJE</span>
-                    <div className="w-1.5 h-1.5 rounded-full bg-foreground border border-white shadow-sm" />
+                    <span className="text-[8px] font-black bg-foreground text-background px-1.5 py-0.5 rounded shadow-sm mb-0.5 uppercase">HOJE</span>
+                    <div className="w-2 h-2 rounded-full bg-foreground border-2 border-white shadow-md" />
                   </div>
                 )}
 
