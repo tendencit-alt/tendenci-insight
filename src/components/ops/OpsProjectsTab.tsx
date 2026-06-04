@@ -248,6 +248,7 @@ export function OpsProjectsTab() {
   }, [filtered, doneSlugs]);
 
   const openDetail = (orderId: string) => {
+    console.log("Opening detail for order:", orderId);
     setSelectedOrderId(orderId);
   };
 
