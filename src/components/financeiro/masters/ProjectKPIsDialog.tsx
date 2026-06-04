@@ -167,7 +167,7 @@ export function ProjectKPIsDialog({ open, onOpenChange, project, projectData }: 
                     <p className="text-xs text-muted-foreground">Total Lançamentos</p>
                     <p className="text-lg font-bold">{entryCount}</p>
                     <p className="text-xs text-muted-foreground">
-                      {reconciledCount} conciliados
+                      {reconciledCount} realizados
                     </p>
                   </div>
                   <FolderKanban className="h-5 w-5 text-muted-foreground" />
@@ -175,12 +175,12 @@ export function ProjectKPIsDialog({ open, onOpenChange, project, projectData }: 
               </CardContent>
             </Card>
 
-            {/* Pendentes */}
+            {/* A Receber / A Pagar */}
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-muted-foreground">Pendentes</p>
+                    <p className="text-xs text-muted-foreground">Em Aberto</p>
                     <p className={`text-lg font-bold ${pendingCount > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
                       {pendingCount}
                     </p>
