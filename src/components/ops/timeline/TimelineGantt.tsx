@@ -15,26 +15,26 @@ interface Props {
 
 // Map "color" tokens (slate/blue/...) coming from production_status_columns to tailwind bg classes.
 const COLOR_MAP: Record<string, string> = {
-  slate: "bg-slate-400",
-  gray: "bg-gray-400",
-  zinc: "bg-zinc-400",
-  red: "bg-red-500",
-  orange: "bg-orange-500",
-  amber: "bg-amber-500",
+  slate: "bg-slate-500",
+  gray: "bg-gray-500",
+  zinc: "bg-zinc-500",
+  red: "bg-red-600",
+  orange: "bg-orange-600",
+  amber: "bg-amber-600",
   yellow: "bg-yellow-500",
   lime: "bg-lime-500",
-  green: "bg-green-500",
-  emerald: "bg-emerald-500",
-  teal: "bg-teal-500",
-  cyan: "bg-cyan-500",
-  sky: "bg-sky-500",
-  blue: "bg-blue-500",
-  indigo: "bg-indigo-500",
-  violet: "bg-violet-500",
-  purple: "bg-purple-500",
-  fuchsia: "bg-fuchsia-500",
-  pink: "bg-pink-500",
-  rose: "bg-rose-500",
+  green: "bg-green-600",
+  emerald: "bg-emerald-600",
+  teal: "bg-teal-600",
+  cyan: "bg-cyan-600",
+  sky: "bg-sky-600",
+  blue: "bg-blue-600",
+  indigo: "bg-indigo-600",
+  violet: "bg-violet-600",
+  purple: "bg-purple-600",
+  fuchsia: "bg-fuchsia-600",
+  pink: "bg-pink-600",
+  rose: "bg-rose-600",
 };
 
 function segColor(token?: string | null) {
@@ -79,15 +79,14 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
     <Card className="overflow-hidden">
       {/* Header with time scale */}
       <div className="flex border-b bg-muted/40 text-xs select-none">
-        <div className="flex-shrink-0 px-4 py-3 font-semibold border-r border-border/50 bg-muted/20" style={{ width: labelWidth }}>
-          Ordem de Produção
+        <div className="flex-shrink-0 px-4 py-3 font-black text-[10px] uppercase tracking-wider border-r border-border/80 bg-muted/30" style={{ width: labelWidth }}>
+          ORDEM DE PRODUÇÃO
         </div>
-        <div className="flex-1 relative h-10 overflow-hidden">
+        <div className="flex-1 relative h-12 overflow-hidden bg-white/50">
           {(() => {
             const days = [];
             // Determine dynamic step based on density and total range
             const dayWidth = 100 / totalDays;
-            // Balance visibility: show daily if enough space, else every 2 days, 5 days, etc.
             const finalStep = totalDays < 20 ? 1 : (totalDays < 45 ? 2 : (totalDays < 90 ? 5 : 10));
 
             for (let i = 0; i < totalDays; i += finalStep) {
@@ -98,13 +97,13 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
               days.push(
                 <div
                   key={i}
-                  className={`absolute top-0 bottom-0 border-l border-border/60 flex flex-col justify-center pl-1.5 transition-all ${
+                  className={`absolute top-0 bottom-0 border-l border-border/80 flex flex-col justify-center pl-2 transition-all ${
                     isWeekend ? "bg-muted/10" : ""
                   }`}
                   style={{ left: `${left}%`, width: `${(finalStep / totalDays) * 100}%` }}
                 >
-                  <span className="text-[10px] font-bold text-foreground/80">{format(date, "dd/MM")}</span>
-                  <span className="text-[8px] text-muted-foreground uppercase opacity-70">
+                  <span className="text-[11px] font-black text-foreground">{format(date, "dd/MM")}</span>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase opacity-80">
                     {format(date, "EEE", { locale: ptBR }).replace(".", "")}
                   </span>
                 </div>
@@ -118,7 +117,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
       {/* Body */}
       <div className="relative">
         {/* Vertical Grid Lines */}
-        <div className="absolute inset-0 flex-1 ml-[240px] pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 flex-1 ml-[240px] pointer-events-none overflow-hidden bg-white/20">
           {Array.from({ length: totalDays }).map((_, i) => {
             const left = (i / totalDays) * 100;
             const date = addDays(rangeStart, i);
@@ -126,7 +125,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
             return (
               <div
                 key={i}
-                className={`absolute top-0 bottom-0 border-l border-border/20 ${isWeekend ? "bg-muted/5" : ""}`}
+                className={`absolute top-0 bottom-0 border-l border-border/30 ${isWeekend ? "bg-muted/10" : ""}`}
                 style={{ left: `${left}%`, width: `${(1 / totalDays) * 100}%` }}
               />
             );
@@ -135,7 +134,12 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
         {/* "Hoje" guide line */}
         <div
-          className="absolute top-0 bottom-0 border-l-2 border-primary/40 z-10 pointer-events-none shadow-[0_0_8px_rgba(var(--primary),0.2)] after:content-['HOJE'] after:absolute after:-top-4 after:-left-4 after:text-[8px] after:font-black after:bg-primary after:text-white after:px-1.5 after:py-0.5 after:rounded-sm after:shadow-sm after:tracking-tighter"
+          className="absolute top-0 bottom-0 border-l-2 border-primary z-10 pointer-events-none after:content-['HOJE'] after:absolute after:-top-4 after:-left-4 after:text-[8px] after:font-black after:bg-primary after:text-white after:px-1.5 after:py-0.5 after:rounded-sm after:shadow-sm after:tracking-tighter"
+          style={{ left: `calc(${labelWidth}px + ${todayOffsetPct}% * (100% - ${labelWidth}px) / 100)` }}
+        />
+        {/* Adiciona linha vertical pontilhada para o dia atual para melhorar alinhamento visual */}
+        <div
+          className="absolute top-0 bottom-0 border-l border-dashed border-primary/20 z-0 pointer-events-none"
           style={{ left: `calc(${labelWidth}px + ${todayOffsetPct}% * (100% - ${labelWidth}px) / 100)` }}
         />
 
@@ -150,6 +154,9 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           const opStart = new Date(startSource);
           const opEta = new Date(op.eta);
           const due = op.planned_end_date ? new Date(op.planned_end_date) : null;
+          
+          // Ajuste para evitar que os marcadores HOJE/META fiquem "presos" no início/fim de forma confusa
+          const today = new Date();
 
           const offsetPct = (differenceInCalendarDays(opStart, rangeStart) / totalDays) * 100;
           const widthPct = Math.max(
@@ -185,14 +192,14 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
               style={{ height: rowHeight }}
             >
               <div
-                className="flex-shrink-0 flex items-center gap-3 px-4 py-1 overflow-hidden border-r border-border/50 bg-muted/5"
+                className="flex-shrink-0 flex items-center gap-3 px-4 py-1 overflow-hidden border-r border-border/80 bg-muted/20"
                 style={{ width: labelWidth }}
               >
-                <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border/40">#{op.order_number}</span>
+                <span className="text-[10px] font-black text-foreground bg-white border border-border shadow-sm px-1.5 py-0.5 rounded">#{op.order_number}</span>
                 <div className="flex-1 min-w-0 flex flex-col">
-                  <span className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{op.title}</span>
+                  <span className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">{op.title}</span>
                   {op.is_late_planned && (
-                    <span className="text-[9px] font-bold text-destructive uppercase tracking-wider">OP Atrasada</span>
+                    <span className="text-[9px] font-black text-destructive uppercase tracking-tighter">OP ATRASADA</span>
                   )}
                 </div>
               </div>
@@ -201,21 +208,21 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                 {/* due-date marker */}
                 {due && (
                   <div
-                    className="absolute top-0 bottom-0 border-l-2 border-dashed border-destructive/40 z-10 group/due"
+                    className="absolute top-0 bottom-0 border-l-2 border-dashed border-destructive/60 z-10 group/due"
                     style={{ left: `${(differenceInCalendarDays(due, rangeStart) / totalDays) * 100}%` }}
                   >
-                    <div className="absolute top-0 -left-1.5 translate-y-[-50%] text-[8px] font-black bg-destructive text-white px-1 rounded-full shadow-sm z-20">
+                    <div className="absolute top-0 -left-1.5 translate-y-[-50%] text-[8px] font-black bg-destructive text-white px-1 rounded-sm shadow-md z-20">
                       FIM
                     </div>
                   </div>
                 )}
                 
-                {/* Onde deveríamos estar (Seta de Planejado) */}
+                {/* Onde deveríamos estar (Seta de Planejado - Meta) */}
                 {(() => {
-                  const today = new Date();
                   const totalPlannedDur = op.segments.reduce((acc, s) => acc + (s.duration_days || 0), 0) || 1;
                   const elapsedSinceStart = differenceInCalendarDays(today, opStart);
                   
+                  // Só mostra a META se o projeto já começou e não passou muito do fim planejado
                   if (elapsedSinceStart >= 0) {
                     let accumulatedDur = 0;
                     let targetSlug = op.segments[0]?.slug;
@@ -239,15 +246,18 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                       accumulatedWidth += ratioInTarget * ((op.segments[targetIdx].duration_days || 0) / totalPlannedDur) * 100;
                     }
 
+                    // IDEAL: Se a meta está após a data de fim ou em um ponto irreal, não desenha ou ajusta para o fim.
+                    const idealLeftPct = Math.min(100, Math.max(0, accumulatedWidth));
+                    
                     return (
                       <div 
-                        className="absolute top-0 -translate-y-1 z-30 text-blue-600 pointer-events-none transition-all duration-300 flex flex-col items-center group-hover:scale-110"
+                        className="absolute top-0 -translate-y-1 z-30 pointer-events-none transition-all duration-300 flex flex-col items-center group-hover:scale-110"
                         style={{ 
-                          left: `calc(${offsetPct}% + ${Math.min(100, Math.max(0, accumulatedWidth))}% * ${widthPct} / 100)`,
+                          left: `calc(${offsetPct}% + ${idealLeftPct}% * ${widthPct} / 100)`,
                         }}
                       >
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-600 border border-white shadow-sm" />
-                        <span className="text-[7px] font-black bg-blue-600 text-white px-1 rounded-sm mt-0.5 shadow-sm">IDEAL</span>
+                        <div className="w-2 h-2 rounded-full bg-blue-600 border-2 border-white shadow-md" />
+                        <span className="text-[8px] font-black bg-blue-600 text-white px-1.5 py-0.5 rounded shadow-sm mt-0.5">META</span>
                       </div>
                     );
                   }
@@ -257,23 +267,23 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                 {/* Marcador de Onde Estamos (Seta de Status Atual) */}
                 {currentIdx !== -1 && op.status !== 'concluido' && op.status !== 'entregue' && (
                   <div 
-                    className="absolute bottom-0 translate-y-1 z-30 text-foreground pointer-events-none transition-all duration-300 flex flex-col items-center group-hover:scale-110"
+                    className="absolute bottom-0 translate-y-1 z-30 pointer-events-none transition-all duration-300 flex flex-col items-center group-hover:scale-110"
                     style={{ 
                       left: `calc(${offsetPct}% + ${(() => {
                         let acc = 0;
                         for (let i = 0; i < currentIdx; i++) acc += ((op.segments[i].duration_days || 0) / totalDur) * 100;
                         const ratio = Math.min(1, (op.days_in_current ?? 0) / (op.current_duration_days || 1));
                         acc += ratio * ((op.segments[currentIdx].duration_days || 0) / totalDur) * 100;
-                        return acc;
+                        return Math.min(100, Math.max(0, acc));
                       })()}% * ${widthPct} / 100)`,
                     }}
                   >
-                    <span className="text-[7px] font-black bg-foreground text-background px-1 rounded-sm mb-0.5 uppercase shadow-sm">HOJE</span>
-                    <div className="w-1.5 h-1.5 rounded-full bg-foreground border border-white shadow-sm" />
+                    <span className="text-[8px] font-black bg-foreground text-background px-1.5 py-0.5 rounded shadow-sm mb-0.5 uppercase">HOJE</span>
+                    <div className="w-2 h-2 rounded-full bg-foreground border-2 border-white shadow-md" />
                   </div>
                 )}
 
-                {/* bar */}
+                {/* Indicador de Status (Barra colorida) */}
                 <div
                   className="absolute top-1/2 -translate-y-1/2 flex rounded overflow-hidden shadow-sm border border-black/5 ring-1 ring-black/5"
                   style={{
@@ -290,13 +300,13 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                     return (
                       <div
                         key={s.slug}
-                        className={`relative h-full ${cls} ${isPast ? "opacity-40 grayscale-[20%]" : isCurrent ? "ring-inset ring-1 ring-black/10" : "opacity-30"}`}
+                        className={`relative h-full ${cls} ${isPast ? "opacity-90" : isCurrent ? "ring-inset ring-1 ring-black/20" : "opacity-30"}`}
                         style={{ width: `${w}%` }}
                         title={`${s.label}: ${s.duration_days} dias`}
                       >
                         {isCurrent && op.current_duration_days ? (
                           <div
-                            className="absolute inset-y-0 left-0 bg-white/40 animate-pulse"
+                            className="absolute inset-y-0 left-0 bg-white/30 animate-[pulse_2s_infinite]"
                             style={{
                               width: `${Math.min(100, ((op.days_in_current ?? 0) / (op.current_duration_days || 1)) * 100)}%`,
                             }}
@@ -325,26 +335,26 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
       
       {/* Legend and Analysis Helper */}
       <div className="bg-muted/30 px-4 py-3 flex flex-wrap items-center gap-x-8 gap-y-3 text-[10px] font-medium border-t">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-8">
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />
-            <span className="text-muted-foreground uppercase tracking-tight">Onde deveria estar (Meta)</span>
+            <div className="w-2.5 h-2.5 rounded-full bg-blue-600 border border-white shadow-sm" />
+            <span className="text-muted-foreground uppercase font-bold text-[9px]">Onde a OP DEVE estar (Meta)</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-foreground" />
-            <span className="text-muted-foreground uppercase tracking-tight">Onde realmente está (Hoje)</span>
+            <div className="w-2.5 h-2.5 rounded-full bg-foreground border border-white shadow-sm" />
+            <span className="text-muted-foreground uppercase font-bold text-[9px]">Onde a OP REALMENTE está (Hoje)</span>
           </div>
         </div>
         
         <div className="flex items-center gap-4 border-l border-border/50 pl-6">
-          <span className="text-muted-foreground italic">Dica de avaliação:</span>
-          <div className="flex items-center gap-2 text-blue-600">
-            <span className="font-bold">✓ No Prazo:</span>
-            <span>HOJE está à frente ou igual ao IDEAL.</span>
+          <span className="text-muted-foreground italic font-semibold">Dica de avaliação:</span>
+          <div className="flex items-center gap-1.5 text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+            <span className="font-bold text-[9px]">✓ NO PRAZO:</span>
+            <span className="text-[9px]">HOJE está à frente ou igual à META.</span>
           </div>
-          <div className="flex items-center gap-2 text-destructive">
-            <span className="font-bold">⚠ Atrasado:</span>
-            <span>HOJE está atrás do IDEAL.</span>
+          <div className="flex items-center gap-1.5 text-destructive bg-destructive/5 px-2 py-0.5 rounded border border-destructive/10">
+            <span className="font-bold text-[9px]">⚠ ATRASADO:</span>
+            <span className="text-[9px]">HOJE está atrás da META.</span>
           </div>
         </div>
       </div>
