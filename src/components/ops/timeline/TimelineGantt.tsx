@@ -112,13 +112,9 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
           {/* Marcador "Hoje" no Header */}
           <div 
-            className="absolute top-0 bottom-0 border-l-2 border-dashed border-black z-50 pointer-events-none"
+            className="absolute top-0 bottom-0 border-l-2 border-dashed border-black/80 z-50 pointer-events-none"
             style={{ left: `${todayOffsetPct}%` }}
-          >
-            <div className="absolute top-1/2 -translate-y-1/2 -left-3 text-[7px] font-black bg-black text-white px-1.5 py-0.5 rounded shadow-sm">
-              HOJE
-            </div>
-          </div>
+          />
         </div>
       </div>
 
