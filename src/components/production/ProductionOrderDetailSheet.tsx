@@ -148,7 +148,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         ? await supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', (orderData as any).project_id).neq('id', orderId)
         : { data: [] };
 
-      const finalPhases = (phasesRes.data || []).map(phase => {
+      const finalPhases: any[] = (phasesRes.data || []).map(phase => {
         const t = (templates as any[] | null)?.find(t => t.id === phase.phase_template_id);
         return { ...phase, phase_template: t || null };
       });
