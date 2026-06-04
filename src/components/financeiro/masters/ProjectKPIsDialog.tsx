@@ -180,7 +180,7 @@ export function ProjectKPIsDialog({ open, onOpenChange, project, projectData }: 
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-muted-foreground">Em Aberto</p>
+                    <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Vendas Pendentes de Recebimento</p>
                     <p className={`text-lg font-bold ${pendingCount > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
                       {pendingCount}
                     </p>
