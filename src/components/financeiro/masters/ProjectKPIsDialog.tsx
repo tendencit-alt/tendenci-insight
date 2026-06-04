@@ -52,12 +52,16 @@ export function ProjectKPIsDialog({ open, onOpenChange, project, projectData }: 
 
   if (!project) return null;
 
+  const despesasPagas = projectData.entries.filter(e => e.type === "DESPESA" && e.status === "PAGO_RECEBIDO").reduce((s, e) => s + Math.abs(Number(e.amount)), 0);
+  const totalDespesas = projectData.entries.filter(e => e.type === "DESPESA").reduce((s, e) => s + Math.abs(Number(e.amount)), 0);
+  const receitasPagas = projectData.entries.filter(e => e.type === "RECEITA" && e.status === "PAGO_RECEBIDO").reduce((s, e) => s + Math.abs(Number(e.amount)), 0);
+  
   const budget = Number(project.budget) || 0;
-  const despesas = projectData.despesas;
-  const receitas = projectData.receitas;
-  const saldo = projectData.total;
-  const saldoOrcamento = budget - despesas;
-  const percentUsed = budget > 0 ? (despesas / budget) * 100 : 0;
+  const despesas = despesasPagas; 
+  const receitas = receitasPagas;
+  const saldo = receitasPagas - despesasPagas;
+  const saldoOrcamento = budget - despesasPagas;
+  const percentUsed = budget > 0 ? (despesasPagas / budget) * 100 : 0;
   const entryCount = projectData.entries.length;
   const reconciledCount = projectData.entries.filter((e) => e.status === "PAGO_RECEBIDO").length;
   const pendingCount = entryCount - reconciledCount;
