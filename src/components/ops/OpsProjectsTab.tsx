@@ -338,9 +338,14 @@ export function OpsProjectsTab() {
                           <div className={`mt-2 flex items-center justify-between pointer-events-none p-2 rounded-md bg-muted/40 border border-border/50 text-[11px] ${r.isLate ? "text-destructive font-bold" : "text-muted-foreground"}`}>
                             <div className="flex items-center gap-2">
                               <CalendarClock className="h-3.5 w-3.5" />
-                              <span>Prazo: {fmtBR(r.deadline)}</span>
+                              <span>{fmtBR(r.deadline)}</span>
+                              {r._due?.hasDue && (
+                                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-background/50 border border-border/50">
+                                  {r._due.elapsedDays}d / {r._due.totalDays}d
+                                </span>
+                              )}
                             </div>
-                            <span className="font-mono font-bold text-foreground">R$ {Number(r.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                            <span className="font-mono font-bold text-foreground text-[10px]">R$ {Number(r.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                           </div>
 
                           <div className="mt-3 pointer-events-none">
