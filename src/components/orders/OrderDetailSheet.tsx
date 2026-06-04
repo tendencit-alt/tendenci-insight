@@ -380,7 +380,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
   const { data: prodStatusColumns = [] } = useProductionStatusColumns();
   const { data: orderPos = [] } = useQuery({
     queryKey: ['order-detail-pos', orderId],
-    enabled: !!orderId && !!productionStepper,
+    enabled: !!orderId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('production_orders')
