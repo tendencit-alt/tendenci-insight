@@ -33,7 +33,7 @@ export function ManageProductionStatusDialog() {
   }, [columns]);
 
   const [newLabel, setNewLabel] = useState("");
-  const [newColor, setNewColor] = useState("slate");
+  const [newColor, setNewColor] = useState("blue");
   const [newSla, setNewSla] = useState<string>("");
 
   const handleAdd = () => {
@@ -48,7 +48,7 @@ export function ManageProductionStatusDialog() {
         sla_days: Number.isFinite(slaParsed as number) ? slaParsed : null,
         sla_unit: tenantUnit,
       },
-      { onSuccess: () => { setNewLabel(""); setNewColor("slate"); setNewSla(""); } }
+      { onSuccess: () => { setNewLabel(""); setNewColor("blue"); setNewSla(""); } }
     );
   };
 
@@ -134,20 +134,6 @@ export function ManageProductionStatusDialog() {
                 <Button onClick={handleAdd} disabled={!newLabel.trim() || createMut.isPending} className="gap-1.5">
                   <Plus className="h-4 w-4" />Adicionar
                 </Button>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground mb-1.5 block">Cor</Label>
-                <div className="flex gap-1.5 flex-wrap">
-                  {STATUS_COLOR_PALETTE.map((p) => (
-                    <button
-                      key={p.key}
-                      type="button"
-                      onClick={() => setNewColor(p.key)}
-                      className={`h-7 w-7 rounded-full border-2 ${p.tone} ${newColor === p.key ? "ring-2 ring-offset-1 ring-foreground" : ""}`}
-                      title={p.key}
-                    />
-                  ))}
-                </div>
               </div>
             </div>
             <p className="text-xs text-muted-foreground flex items-start gap-1.5">
@@ -280,21 +266,6 @@ function StatusRow({ column, unit, onUpdate, onDelete }: StatusRowProps) {
         )}
       </div>
 
-      {/* Linha 2: paleta de cores */}
-      <div className="flex items-center gap-2 pl-1">
-        <span className="text-[11px] uppercase tracking-wide text-muted-foreground shrink-0">Cor</span>
-        <div className="flex gap-1.5 flex-wrap">
-          {STATUS_COLOR_PALETTE.map((p) => (
-            <button
-              key={p.key}
-              type="button"
-              onClick={() => onUpdate({ color: p.key })}
-              className={`h-6 w-6 rounded-full border-2 ${p.tone} ${column.color === p.key ? "ring-2 ring-offset-1 ring-foreground" : ""}`}
-              title={p.key}
-            />
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

@@ -59,7 +59,8 @@ export const STATUS_COLOR_PALETTE = [
 ];
 
 export function colorTone(color: string): string {
-  return STATUS_COLOR_PALETTE.find((c) => c.key === color)?.tone ?? STATUS_COLOR_PALETTE[0].tone;
+  // Padronizado para azul conforme solicitação do usuário
+  return STATUS_COLOR_PALETTE.find((c) => c.key === "blue")?.tone ?? STATUS_COLOR_PALETTE[0].tone;
 }
 
 export function useProductionStatusColumns() {
@@ -97,7 +98,7 @@ export function useCreateProductionStatusColumn() {
   const qc = useQueryClient();
   const { activeTenantId } = useActiveTenant();
   return useMutation({
-    mutationFn: async (input: { label: string; color: string; sort_order?: number; sla_days?: number | null; sla_unit?: SlaUnit }) => {
+    mutationFn: async (input: { label: string; color?: string; sort_order?: number; sla_days?: number | null; sla_unit?: SlaUnit }) => {
       if (!activeTenantId) throw new Error("Sem empresa ativa");
       const baseSlug = slugify(input.label);
       const { data: existing } = await supabase
@@ -114,7 +115,7 @@ export function useCreateProductionStatusColumn() {
           tenant_id: activeTenantId,
           slug,
           label: input.label,
-          color: input.color,
+          color: "blue", // Padronizado para azul conforme solicitação do usuário
           sort_order: input.sort_order ?? 100,
           sla_days: input.sla_days ?? null,
           sla_unit: input.sla_unit ?? "days",
