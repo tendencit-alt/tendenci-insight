@@ -194,6 +194,7 @@ export function OpsProjectsTab() {
             id: o.id,
             name: `Pedido #${o.order_number}`,
             order_valor_total: Number(o.valor_total ?? 0),
+            data_emissao: o.data_emissao,
             deadline: effectiveDeadline,
             tenant_id: o.tenant_id ?? null,
             client: o.client,
