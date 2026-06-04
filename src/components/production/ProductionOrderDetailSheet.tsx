@@ -107,7 +107,6 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
     queryKey: ['production-order-detail', orderId],
     queryFn: async () => {
       if (!orderId) return null;
-      
       const { data: orderData } = await (supabase.from('production_orders').select('*').eq('id', orderId).maybeSingle() as any);
       if (!orderData) return null;
 
@@ -126,7 +125,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         ? await (supabase.from('production_phase_templates').select('*').in('id', tmplIds) as any)
         : { data: [] };
 
-      const res: any = {
+      return {
         ...orderData,
         production_type: pTypeRes.data,
         responsible: respRes.data,
@@ -137,8 +136,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
           phase_template: (tmplsRes.data || []).find((t: any) => t.id === p.phase_template_id) || null
         })),
         related_ops: relRes.data || []
-      };
-      return res;
+      } as any;
     },
     enabled: !!orderId
   });
