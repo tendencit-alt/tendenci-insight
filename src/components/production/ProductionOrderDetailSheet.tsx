@@ -108,16 +108,16 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
       if (!orderId) return null;
       
       // Query principal - dados básicos da OP
-      const { data: orderData, error: orderError } = await supabase
+      const { data: orderData, error: orderError } = await (supabase
         .from('production_orders')
         .select('*')
         .eq('id', orderId)
-        .maybeSingle();
+        .maybeSingle() as any);
       
       if (orderError) throw orderError;
       if (!orderData) return null;
 
-      const results = await Promise.all([
+      const results: any[] = await Promise.all([
         orderData.production_type_id 
           ? supabase.from('production_types').select('name, color').eq('id', orderData.production_type_id).maybeSingle()
           : Promise.resolve({ data: null }),
@@ -129,23 +129,23 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
           : Promise.resolve({ data: null }),
         orderData.deal_id
           ? supabase.from('crm_deals').select('title, value').eq('id', orderData.deal_id).maybeSingle()
-          : Promise.resolve({ data: null })
+          : Promise.resolve({ data: null }),
+        supabase.from('production_phases').select('*').eq('production_order_id', orderId)
       ]);
 
       const productionTypeRes = results[0];
       const responsibleRes = results[1];
       const clientRes = results[2];
       const dealRes = results[3];
-
-      const phasesRes = await supabase.from('production_phases').select('*').eq('production_order_id', orderId);
+      const phasesRes = results[4];
 
       const phaseTemplateIds = ((phasesRes.data || []) as any[]).map(p => p.phase_template_id).filter(Boolean);
       const { data: templates } = phaseTemplateIds.length > 0
-        ? await supabase.from('production_phase_templates').select('*').in('id', phaseTemplateIds)
+        ? await (supabase.from('production_phase_templates').select('*').in('id', phaseTemplateIds) as any)
         : { data: [] };
 
       const relatedOpsRes = (orderData as any).project_id
-        ? await supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', (orderData as any).project_id).neq('id', orderId)
+        ? await (supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', (orderData as any).project_id).neq('id', orderId) as any)
         : { data: [] };
 
       const finalPhases: any[] = ((phasesRes.data || []) as any[]).map(phase => {
