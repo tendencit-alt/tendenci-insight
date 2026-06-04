@@ -116,6 +116,15 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   private handleReload = () => {
+    // Clear potentially corrupted state in localStorage for this view
+    const currentPath = window.location.pathname;
+    const module = this.detectModule(currentPath);
+    if (module !== 'outro') {
+      try {
+        localStorage.removeItem(`erp_module_section_${module}`);
+        console.log(`[ErrorBoundary] Cleared storage for module: ${module}`);
+      } catch (e) {}
+    }
     window.location.reload();
   };
 

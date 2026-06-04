@@ -57,8 +57,8 @@ export function useGlobalRealtime() {
         }
       )
       .subscribe((status) => {
-        if (status === 'SUBSCRIPTION_ERROR') {
-          console.error("[GlobalRT] Erro na subscrição Realtime");
+        if (status === 'TIMED_OUT' || status === 'CHANNEL_ERROR') {
+          console.error("[GlobalRT] Erro na subscrição Realtime:", status);
         }
       });
 
