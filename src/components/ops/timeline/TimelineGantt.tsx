@@ -274,8 +274,9 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                       })()}% * ${widthPct} / 100)`,
                     }}
                   >
-                    <span className="text-[8px] font-black bg-foreground text-background px-1.5 py-0.5 rounded shadow-sm mb-0.5 uppercase">HOJE</span>
+                    <span className="text-[8px] font-black bg-foreground text-background px-1.5 py-0.5 rounded shadow-sm mb-0.5 uppercase">EXECUTADO</span>
                     <div className="w-2 h-2 rounded-full bg-foreground border-2 border-white shadow-md" />
+
                   </div>
                 )}
 
