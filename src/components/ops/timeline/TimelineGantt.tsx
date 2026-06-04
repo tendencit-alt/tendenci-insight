@@ -87,7 +87,6 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
             const days = [];
             // Determine dynamic step based on density and total range
             const dayWidth = 100 / totalDays;
-            // Balance visibility: show daily if enough space, else every 2 days, 5 days, etc.
             const finalStep = totalDays < 20 ? 1 : (totalDays < 45 ? 2 : (totalDays < 90 ? 5 : 10));
 
             for (let i = 0; i < totalDays; i += finalStep) {
@@ -98,13 +97,13 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
               days.push(
                 <div
                   key={i}
-                  className={`absolute top-0 bottom-0 border-l border-border/60 flex flex-col justify-center pl-1.5 transition-all ${
+                  className={`absolute top-0 bottom-0 border-l border-border/80 flex flex-col justify-center pl-2 transition-all ${
                     isWeekend ? "bg-muted/10" : ""
                   }`}
                   style={{ left: `${left}%`, width: `${(finalStep / totalDays) * 100}%` }}
                 >
-                  <span className="text-[10px] font-bold text-foreground/80">{format(date, "dd/MM")}</span>
-                  <span className="text-[8px] text-muted-foreground uppercase opacity-70">
+                  <span className="text-[11px] font-black text-foreground">{format(date, "dd/MM")}</span>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase opacity-80">
                     {format(date, "EEE", { locale: ptBR }).replace(".", "")}
                   </span>
                 </div>
@@ -126,7 +125,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
             return (
               <div
                 key={i}
-                className={`absolute top-0 bottom-0 border-l border-border/20 ${isWeekend ? "bg-muted/5" : ""}`}
+                className={`absolute top-0 bottom-0 border-l border-border/30 ${isWeekend ? "bg-muted/10" : ""}`}
                 style={{ left: `${left}%`, width: `${(1 / totalDays) * 100}%` }}
               />
             );
