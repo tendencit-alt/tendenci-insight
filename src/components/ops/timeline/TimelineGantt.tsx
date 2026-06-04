@@ -132,16 +132,12 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           })}
         </div>
 
-        {/* "Hoje" guide line */}
+        {/* "Hoje" guide line (Dia Vigente) */}
         <div
-          className="absolute top-0 bottom-0 border-l-2 border-primary z-10 pointer-events-none after:content-['HOJE'] after:absolute after:-top-4 after:-left-4 after:text-[8px] after:font-black after:bg-primary after:text-white after:px-1.5 after:py-0.5 after:rounded-sm after:shadow-sm after:tracking-tighter"
+          className="absolute top-0 bottom-0 border-l-2 border-dashed border-primary/60 z-10 pointer-events-none after:content-['HOJE'] after:absolute after:-top-4 after:-left-4 after:text-[8px] after:font-black after:bg-primary after:text-white after:px-1.5 after:py-0.5 after:rounded-sm after:shadow-sm after:tracking-tighter"
           style={{ left: `calc(${labelWidth}px + ${todayOffsetPct}% * (100% - ${labelWidth}px) / 100)` }}
         />
-        {/* Adiciona linha vertical pontilhada para o dia atual para melhorar alinhamento visual */}
-        <div
-          className="absolute top-0 bottom-0 border-l border-dashed border-primary/20 z-0 pointer-events-none"
-          style={{ left: `calc(${labelWidth}px + ${todayOffsetPct}% * (100% - ${labelWidth}px) / 100)` }}
-        />
+
 
         {ops.length === 0 && (
           <div className="p-12 text-center text-sm text-muted-foreground bg-muted/5">
@@ -278,8 +274,9 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                       })()}% * ${widthPct} / 100)`,
                     }}
                   >
-                    <span className="text-[8px] font-black bg-foreground text-background px-1.5 py-0.5 rounded shadow-sm mb-0.5 uppercase">HOJE</span>
+                    <span className="text-[8px] font-black bg-foreground text-background px-1.5 py-0.5 rounded shadow-sm mb-0.5 uppercase">EXECUTADO</span>
                     <div className="w-2 h-2 rounded-full bg-foreground border-2 border-white shadow-md" />
+
                   </div>
                 )}
 
@@ -342,7 +339,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full bg-foreground border border-white shadow-sm" />
-            <span className="text-muted-foreground uppercase font-bold text-[9px]">Onde a OP REALMENTE está (Hoje)</span>
+            <span className="text-muted-foreground uppercase font-bold text-[9px]">Onde a OP REALMENTE está (Executado)</span>
           </div>
         </div>
         
@@ -350,11 +347,11 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           <span className="text-muted-foreground italic font-semibold">Dica de avaliação:</span>
           <div className="flex items-center gap-1.5 text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
             <span className="font-bold text-[9px]">✓ NO PRAZO:</span>
-            <span className="text-[9px]">HOJE está à frente ou igual à META.</span>
+            <span className="text-[9px]">EXECUTADO está à frente ou igual à META.</span>
           </div>
           <div className="flex items-center gap-1.5 text-destructive bg-destructive/5 px-2 py-0.5 rounded border border-destructive/10">
             <span className="font-bold text-[9px]">⚠ ATRASADO:</span>
-            <span className="text-[9px]">HOJE está atrás da META.</span>
+            <span className="text-[9px]">EXECUTADO está atrás da META.</span>
           </div>
         </div>
       </div>
