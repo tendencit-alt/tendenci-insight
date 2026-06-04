@@ -142,13 +142,15 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
           splits?.forEach(split => {
             addToCC(split.cost_center_id, split.type, split.amount, isRealizado);
           });
-        } else if (entry.cost_center_id) {
-          addToCC(entry.cost_center_id, entry.type, Number(entry.amount), isRealizado);
+        } else {
+          // Se não tiver CC, usamos uma chave especial
+          const ccId = entry.cost_center_id || "_sem_centro";
+          addToCC(ccId, entry.type, Number(entry.amount), isRealizado);
         }
       });
 
       // Build cost center data with goals
-      const result: CostCenterData[] = (costCenters || []).map(cc => {
+      const mappedCCs: CostCenterData[] = (costCenters || []).map(cc => {
         const values = costCenterMap.get(cc.id) || { receitas: 0, despesas: 0, receitasRealizadas: 0, despesasRealizadas: 0 };
         const goal = goals?.find(g => g.cost_center_id === cc.id);
         const meta = goal?.target_amount || 0;
@@ -169,18 +171,36 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
         };
       });
 
+      // Add "Não Classificados" if entries exist without CC
+      const unclassifiedValues = costCenterMap.get("_sem_centro");
+      if (unclassifiedValues && (unclassifiedValues.receitas > 0 || unclassifiedValues.despesas > 0)) {
+        mappedCCs.push({
+          id: "_sem_centro",
+          code: "N/A",
+          name: "Não Classificados",
+          receitas: unclassifiedValues.receitas,
+          despesas: unclassifiedValues.despesas,
+          resultado: unclassifiedValues.receitas - unclassifiedValues.despesas,
+          receitasRealizadas: unclassifiedValues.receitasRealizadas,
+          despesasRealizadas: unclassifiedValues.despesasRealizadas,
+          meta_receitas: 0,
+          meta_id: null,
+          percentual_atingido: 0,
+        });
+      }
+
       // Sort by receitas descending
-      result.sort((a, b) => b.receitas - a.receitas);
+      mappedCCs.sort((a, b) => b.receitas - a.receitas);
 
       // Calculate totals
-      const totalReceitas = result.reduce((sum, cc) => sum + cc.receitas, 0);
-      const totalDespesas = result.reduce((sum, cc) => sum + cc.despesas, 0);
-      const totalReceitasRealizadas = result.reduce((sum, cc) => sum + cc.receitasRealizadas, 0);
-      const totalDespesasRealizadas = result.reduce((sum, cc) => sum + cc.despesasRealizadas, 0);
-      const totalMeta = result.reduce((sum, cc) => sum + cc.meta_receitas, 0);
+      const totalReceitas = mappedCCs.reduce((sum, cc) => sum + cc.receitas, 0);
+      const totalDespesas = mappedCCs.reduce((sum, cc) => sum + cc.despesas, 0);
+      const totalReceitasRealizadas = mappedCCs.reduce((sum, cc) => sum + cc.receitasRealizadas, 0);
+      const totalDespesasRealizadas = mappedCCs.reduce((sum, cc) => sum + cc.despesasRealizadas, 0);
+      const totalMeta = mappedCCs.reduce((sum, cc) => sum + cc.meta_receitas, 0);
 
       return {
-        costCenters: result,
+        costCenters: mappedCCs,
         totals: {
           receitas: totalReceitas,
           despesas: totalDespesas,
