@@ -326,9 +326,6 @@ export function OpsProjectsTab() {
                           <div className="mt-2">
                             <Progress value={r.progressPct} className="h-1.5" title={`Progresso total do projeto: ${r.progressPct}%`} />
                             <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground gap-1">
-                              <span>{r.done}/{r.total} OPs</span>
-                              <div className="flex items-center gap-1">
-                            <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground gap-1">
                               <span className="font-medium text-primary">{(r as any)._opsCountInStatus} de {r.total} OPs</span>
                               <div className="flex items-center gap-1">
                                 {r.slaAlerts > 0 && (
@@ -345,8 +342,6 @@ export function OpsProjectsTab() {
                                   </Badge>
                                 )}
                                 {r.isLate && <span className="text-destructive font-medium">Atrasado</span>}
-                              </div>
-                            </div>
                               </div>
                             </div>
                           </div>
