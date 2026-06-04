@@ -326,15 +326,12 @@ export function OpsProjectsTab() {
                           <div className="text-sm font-bold truncate pointer-events-none text-primary">{r.name || "Sem nome"}</div>
                           <div className="text-xs text-muted-foreground truncate pointer-events-none mb-3">{r.client?.name ?? "—"}</div>
 
-                          {/* Prazo de entrega + botão editar */}
-                          <div className="mt-2 flex items-center justify-between gap-2 text-[11px]">
-                          <div className={`mt-2 flex items-center justify-between pointer-events-none p-2 rounded-md bg-muted/40 border border-border/50 ${r.isLate ? "text-destructive font-bold" : "text-muted-foreground"}`}>
+                          <div className={`mt-2 flex items-center justify-between pointer-events-none p-2 rounded-md bg-muted/40 border border-border/50 text-[11px] ${r.isLate ? "text-destructive font-bold" : "text-muted-foreground"}`}>
                             <div className="flex items-center gap-2">
                               <CalendarClock className="h-3.5 w-3.5" />
                               <span>Prazo: {fmtBR(r.deadline)}</span>
                             </div>
                             <span className="font-mono font-bold text-foreground">R$ {Number(r.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                          </div>
                           </div>
 
                           <div className="mt-3 pointer-events-none">
