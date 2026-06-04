@@ -108,13 +108,14 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
     queryFn: async () => {
       if (!orderId) return null;
       
-      const { data: orderData } = await supabase
+      const { data: orderDataRaw } = await supabase
         .from('production_orders' as any)
         .select('*')
         .eq('id', orderId)
         .maybeSingle();
 
-      if (!orderData) return null;
+      if (!orderDataRaw) return null;
+      const orderData = orderDataRaw as any;
 
       const [pTypeRes, respRes, cliRes, dlRes, phsRes, relRes] = await Promise.all([
         orderData.production_type_id 
@@ -142,7 +143,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         : { data: [] };
 
       return {
-        ...(orderData as any),
+        ...orderData,
         production_type: pTypeRes.data,
         responsible: respRes.data,
         client: cliRes.data,
