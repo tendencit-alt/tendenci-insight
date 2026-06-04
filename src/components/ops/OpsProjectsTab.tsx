@@ -11,6 +11,7 @@ import { LayoutGrid, List, Search, RefreshCw, Loader2, AlertTriangle, Clock, Che
 import { ProjectDetailSheet } from "@/components/projects/ProjectDetailSheet";
 import { OrderDetailSheet } from "@/components/orders/OrderDetailSheet";
 import { useProductionStatusColumns, colorTone, slaState } from "@/hooks/useProductionStatusColumns";
+import { dueDateUrgency } from "@/hooks/useProductionPhaseMove";
 import { ManageProductionStatusDialog } from "./ManageProductionStatusDialog";
 
 // Map legacy slugs that may still exist on production_orders rows.
