@@ -85,8 +85,6 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
         <div className="flex-1 relative h-12 overflow-hidden bg-white/50">
           {(() => {
             const days = [];
-            // Determine dynamic step based on density and total range
-            const dayWidth = 100 / totalDays;
             const finalStep = totalDays < 20 ? 1 : (totalDays < 45 ? 2 : (totalDays < 90 ? 5 : 10));
 
             for (let i = 0; i < totalDays; i += finalStep) {
@@ -111,6 +109,16 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
             }
             return days;
           })()}
+
+          {/* Marcador "Hoje" no Header */}
+          <div 
+            className="absolute top-0 bottom-0 border-l-2 border-dashed border-black z-50 pointer-events-none"
+            style={{ left: `${todayOffsetPct}%` }}
+          >
+            <div className="absolute top-1/2 -translate-y-1/2 -left-3 text-[7px] font-black bg-black text-white px-1 py-0.5 rounded shadow-sm">
+              HOJE
+            </div>
+          </div>
         </div>
       </div>
 
@@ -125,7 +133,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
             return (
               <div
                 key={i}
-                className={`absolute top-0 bottom-0 border-l border-border/30 ${isWeekend ? "bg-muted/10" : ""}`}
+                className={`absolute top-0 bottom-0 border-l border-border/40 ${isWeekend ? "bg-muted/10" : ""}`}
                 style={{ left: `${left}%`, width: `${(1 / totalDays) * 100}%` }}
               />
             );
@@ -134,13 +142,9 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
         {/* "Hoje" guide line (Dia Vigente) - Preto */}
         <div
-          className="absolute top-0 bottom-0 border-l-2 border-dashed border-black/80 z-50 pointer-events-none"
+          className="absolute top-0 bottom-0 border-l-2 border-dashed border-black/60 z-40 pointer-events-none"
           style={{ left: `calc(${labelWidth}px + ${todayOffsetPct}% * (100% - ${labelWidth}px) / 100)` }}
-        >
-          <div className="absolute top-0 -left-4 text-[8px] font-black bg-black text-white px-1.5 py-0.5 rounded-sm shadow-sm tracking-tighter">
-            HOJE
-          </div>
-        </div>
+        />
 
 
 
