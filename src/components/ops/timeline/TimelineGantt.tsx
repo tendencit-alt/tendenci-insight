@@ -132,12 +132,12 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           })}
         </div>
 
-        {/* "Hoje" guide line (Dia Vigente) */}
+        {/* "Hoje" guide line (Dia Vigente) - Preto */}
         <div
-          className="absolute top-0 bottom-0 border-l-2 border-dashed border-primary z-50 pointer-events-none"
+          className="absolute top-0 bottom-0 border-l-2 border-dashed border-black/80 z-50 pointer-events-none"
           style={{ left: `calc(${labelWidth}px + ${todayOffsetPct}% * (100% - ${labelWidth}px) / 100)` }}
         >
-          <div className="absolute -top-4 -left-4 text-[8px] font-black bg-primary text-white px-1.5 py-0.5 rounded-sm shadow-sm tracking-tighter">
+          <div className="absolute -top-4 -left-4 text-[8px] font-black bg-black text-white px-1.5 py-0.5 rounded-sm shadow-sm tracking-tighter">
             HOJE
           </div>
         </div>
@@ -166,7 +166,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           );
 
           // ETA status color
-          let etaClass = "bg-emerald-500 text-white";
+          let etaClass = "bg-blue-600 text-white";
           let etaStatusLabel = "Dentro do prazo";
           if (due) {
             const desvioDays = differenceInCalendarDays(opEta, due);
@@ -206,13 +206,13 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
               </div>
               
               <div className="flex-1 relative py-2.5">
-                {/* due-date marker */}
+                {/* due-date marker - Azul */}
                 {due && (
                   <div
-                    className="absolute top-0 bottom-0 border-l-2 border-dashed border-destructive/60 z-10 group/due"
+                    className="absolute top-0 bottom-0 border-l-2 border-dashed border-blue-600 z-10 group/due"
                     style={{ left: `${(differenceInCalendarDays(due, rangeStart) / totalDays) * 100}%` }}
                   >
-                    <div className="absolute top-0 -left-1.5 translate-y-[-50%] text-[8px] font-black bg-destructive text-white px-1 rounded-sm shadow-md z-20">
+                    <div className="absolute top-0 -left-1.5 translate-y-[-50%] text-[8px] font-black bg-blue-600 text-white px-1 rounded-sm shadow-md z-20">
                       FIM
                     </div>
                   </div>
@@ -265,7 +265,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                   return null;
                 })()}
 
-                {/* Marcador de Onde Estamos (Seta de Status Atual) */}
+                {/* Marcador de Onde Estamos (Seta de Status Atual) - Preto */}
                 {currentIdx !== -1 && op.status !== 'concluido' && op.status !== 'entregue' && (
                   <div 
                     className="absolute bottom-0 translate-y-1 z-30 pointer-events-none transition-all duration-300 flex flex-col items-center group-hover:scale-110"
@@ -279,9 +279,8 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                       })()}% * ${widthPct} / 100)`,
                     }}
                   >
-                    <span className="text-[8px] font-black bg-foreground text-background px-1.5 py-0.5 rounded shadow-sm mb-0.5 uppercase">EXECUTADO</span>
-                    <div className="w-2 h-2 rounded-full bg-foreground border-2 border-white shadow-md" />
-
+                    <span className="text-[8px] font-black bg-black text-white px-1.5 py-0.5 rounded shadow-sm mb-0.5 uppercase">EXECUTADO</span>
+                    <div className="w-2 h-2 rounded-full bg-black border-2 border-white shadow-md" />
                   </div>
                 )}
 
@@ -343,7 +342,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
             <span className="text-muted-foreground uppercase font-bold text-[9px]">Onde a OP DEVE estar (Meta)</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-foreground border border-white shadow-sm" />
+            <div className="w-2.5 h-2.5 rounded-full bg-black border border-white shadow-sm" />
             <span className="text-muted-foreground uppercase font-bold text-[9px]">Onde a OP REALMENTE está (Executado)</span>
           </div>
         </div>
