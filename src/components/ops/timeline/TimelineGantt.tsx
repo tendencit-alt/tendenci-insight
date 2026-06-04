@@ -137,7 +137,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
         {/* "Hoje" guide line */}
         <div
-          className="absolute top-0 bottom-0 border-l-2 border-primary/50 z-10 pointer-events-none after:content-['HOJE'] after:absolute after:-top-4 after:-left-4 after:text-[8px] after:font-bold after:bg-primary after:text-white after:px-1 after:rounded-sm"
+          className="absolute top-0 bottom-0 border-l-2 border-primary/40 z-10 pointer-events-none shadow-[0_0_8px_rgba(var(--primary),0.2)] after:content-['HOJE'] after:absolute after:-top-4 after:-left-4 after:text-[8px] after:font-black after:bg-primary after:text-white after:px-1.5 after:py-0.5 after:rounded-sm after:shadow-sm after:tracking-tighter"
           style={{ left: `calc(${labelWidth}px + ${todayOffsetPct}% * (100% - ${labelWidth}px) / 100)` }}
         />
 
