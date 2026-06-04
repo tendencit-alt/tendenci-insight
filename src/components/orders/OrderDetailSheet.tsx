@@ -391,7 +391,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
     },
   });
   const productionStepperData = useMemo(() => {
-    if (!productionStepper || prodStatusColumns.length === 0) return null;
+    if (prodStatusColumns.length === 0) return null;
     const sorted = [...prodStatusColumns].sort((a, b) => a.sort_order - b.sort_order);
     const doneKeys = new Set(['concluido', 'entregue']);
     const orderBySlug: Record<string, number> = {};
