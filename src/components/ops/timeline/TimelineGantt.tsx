@@ -132,16 +132,12 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           })}
         </div>
 
-        {/* "Hoje" guide line */}
+        {/* "Hoje" guide line (Dia Vigente) */}
         <div
-          className="absolute top-0 bottom-0 border-l-2 border-primary z-10 pointer-events-none after:content-['HOJE'] after:absolute after:-top-4 after:-left-4 after:text-[8px] after:font-black after:bg-primary after:text-white after:px-1.5 after:py-0.5 after:rounded-sm after:shadow-sm after:tracking-tighter"
+          className="absolute top-0 bottom-0 border-l-2 border-dashed border-primary/60 z-10 pointer-events-none after:content-['HOJE'] after:absolute after:-top-4 after:-left-4 after:text-[8px] after:font-black after:bg-primary after:text-white after:px-1.5 after:py-0.5 after:rounded-sm after:shadow-sm after:tracking-tighter"
           style={{ left: `calc(${labelWidth}px + ${todayOffsetPct}% * (100% - ${labelWidth}px) / 100)` }}
         />
-        {/* Adiciona linha vertical pontilhada para o dia atual para melhorar alinhamento visual */}
-        <div
-          className="absolute top-0 bottom-0 border-l border-dashed border-primary/20 z-0 pointer-events-none"
-          style={{ left: `calc(${labelWidth}px + ${todayOffsetPct}% * (100% - ${labelWidth}px) / 100)` }}
-        />
+
 
         {ops.length === 0 && (
           <div className="p-12 text-center text-sm text-muted-foreground bg-muted/5">
