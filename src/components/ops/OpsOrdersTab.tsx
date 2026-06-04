@@ -352,7 +352,7 @@ export function OpsOrdersTab() {
                 if (!overId.startsWith("col-") || !activeId) return;
                 const newSlug = overId.slice(4);
                 // Usando o array enriched original para encontrar os dados corretos sem duplicatas virtuais
-                const ord = enriched.find((o) => o.id === activeId);
+                const ord = enriched.find((o: any) => o.id === activeId);
                 if (!ord) return;
                 handleMove(activeId, ord._slug, newSlug);
               }}
