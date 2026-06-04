@@ -153,7 +153,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         return { ...phase, phase_template: t || null };
       });
 
-      return {
+      const res: any = {
         ...orderData,
         production_type: productionTypeRes.data,
         responsible: responsibleRes.data,
@@ -161,7 +161,8 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         deal: dealRes.data,
         phases: finalPhases,
         related_ops: (relatedOpsRes.data as any[] | null) || []
-      } as any;
+      };
+      return res;
     },
     enabled: !!orderId
   });
