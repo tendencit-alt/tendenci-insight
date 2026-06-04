@@ -454,7 +454,11 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
                 <div className="flex flex-col gap-0.5">
                   <p className="text-xs text-muted-foreground">
                     {order.client?.name || 'Sem cliente'} • {order.vendedor?.full_name || 'Sem vendedor'}
-                    {order.created_at && ` • ${format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ptBR })}`}
+                    {order.updated_at ? (
+                      ` • Atualizado em ${format(new Date(order.updated_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`
+                    ) : order.created_at && (
+                      ` • Criado em ${format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ptBR })}`
+                    )}
                   </p>
                   {productionInfo?.eta && (
                     <div className="flex items-center gap-2 mt-0.5">
