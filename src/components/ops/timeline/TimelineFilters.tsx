@@ -11,6 +11,7 @@ export interface TimelineFiltersValue {
   range: "week" | "month" | "quarter" | "all";
   group: "none" | "client" | "phase" | "priority";
   density: "compact" | "normal" | "expanded";
+  sort: "order" | "date" | "priority" | "client";
 }
 
 export const DEFAULT_FILTERS: TimelineFiltersValue = {
@@ -21,6 +22,7 @@ export const DEFAULT_FILTERS: TimelineFiltersValue = {
   range: "month",
   group: "client",
   density: "normal",
+  sort: "order",
 };
 
 interface Props {
