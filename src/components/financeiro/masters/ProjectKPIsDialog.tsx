@@ -164,7 +164,7 @@ export function ProjectKPIsDialog({ open, onOpenChange, project, projectData }: 
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-muted-foreground">Total Lançamentos</p>
+                    <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Pagamentos Confirmados</p>
                     <p className="text-lg font-bold">{entryCount}</p>
                     <p className="text-xs text-muted-foreground">
                       {reconciledCount} realizados
