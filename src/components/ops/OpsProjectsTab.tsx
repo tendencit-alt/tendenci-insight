@@ -321,7 +321,10 @@ export function OpsProjectsTab() {
                         <div 
                           key={r.id} 
                           className={`p-3 rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer hover:border-primary hover:shadow-md transition-all active:bg-accent ${projectSlaTone}`} 
-                          onClick={() => openDetail(r.id.split('-')[0])}
+                          onClick={() => {
+                            const orderId = r.id.includes('-') ? r.id.split('-')[0] : r.id;
+                            openDetail(orderId);
+                          }}
                         >
                           <div className="text-sm font-bold truncate pointer-events-none text-primary">{r.name || "Sem nome"}</div>
                           <div className="text-xs text-muted-foreground truncate pointer-events-none mb-3">{r.client?.name ?? "—"}</div>
