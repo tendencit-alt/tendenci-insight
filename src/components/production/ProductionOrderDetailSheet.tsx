@@ -180,8 +180,8 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         client: clientRes.data,
         deal: dealRes.data,
         phases: phasesWithTemplates,
-        related_ops: orderData.project_id 
-          ? (await supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', orderData.project_id).neq('id', orderId)).data || []
+        related_ops: (orderData as any).project_id 
+          ? (await supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', (orderData as any).project_id).neq('id', orderId)).data || []
           : []
       };
     },
