@@ -76,7 +76,8 @@ function buildAggregator(
         result.push({
           ...p, total, done: 0, inProgress: 0, waiting: 0,
           progressPct: 0, aggStatus: "sem_op", isLate: false, slaAlerts: 0, slaOverdue: 0,
-        });
+          value: p.order_valor_total // Se não tem OP, mostra valor total do pedido
+        } as any);
         return;
       }
 
@@ -90,6 +91,9 @@ function buildAggregator(
         const opsInStatus = pos.filter(x => x.status === status);
         const inProgress = opsInStatus.filter(x => x.status === "em_producao").length;
         const waiting = opsInStatus.filter(x => x.status === "aguardando").length;
+        
+        // SOMAR VALOR DAS OPs DESTE STATUS
+        const statusValue = opsInStatus.reduce((sum, op) => sum + (Number(op.value) || 0), 0);
         
         let slaAlerts = 0;
         let slaOverdue = 0;
@@ -116,6 +120,7 @@ function buildAggregator(
           isLate,
           slaAlerts,
           slaOverdue,
+          value: statusValue,
           // Custom field to show which OPs are here
           _opsCountInStatus: opsInStatus.length
         } as any);
