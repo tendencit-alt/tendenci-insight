@@ -380,7 +380,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
   const { data: prodStatusColumns = [] } = useProductionStatusColumns();
   const { data: orderPos = [] } = useQuery({
     queryKey: ['order-detail-pos', orderId],
-    enabled: !!orderId && !!productionStepper,
+    enabled: !!orderId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('production_orders')
@@ -391,7 +391,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
     },
   });
   const productionStepperData = useMemo(() => {
-    if (!productionStepper || prodStatusColumns.length === 0) return null;
+    if (prodStatusColumns.length === 0) return null;
     const sorted = [...prodStatusColumns].sort((a, b) => a.sort_order - b.sort_order);
     const doneKeys = new Set(['concluido', 'entregue']);
     const orderBySlug: Record<string, number> = {};
@@ -430,12 +430,12 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
               status={order.status}
               statusLabel={productionInfo?.status ? getStatusDef('production_orders', productionInfo.status)?.label : undefined}
               steps={productionStepperData?.steps || steps}
-              primaryAction={!productionStepper && nextAction ? {
+              primaryAction={nextAction ? {
                 label: nextAction.label,
                 onClick: () => handleStatusChange(nextAction.nextStatus),
                 loading,
               } : undefined}
-              secondaryAction={!productionStepper && order.status === 'aprovado' ? {
+              secondaryAction={order.status === 'aprovado' ? {
                 label: 'Criar OPs',
                 onClick: handleCreateProductionOrders,
                 variant: 'outline',
