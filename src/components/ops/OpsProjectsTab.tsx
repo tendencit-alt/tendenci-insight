@@ -323,7 +323,7 @@ export function OpsProjectsTab() {
                           onClick={() => openDetail(r.id.split('-')[0])}
                         >
                           <div className="text-sm font-medium truncate pointer-events-none">{r.name || "Sem nome"}</div>
-                          <div className="text-xs text-muted-foreground truncate pointer-events-none">{r.client?.name ?? "—"}</div>
+                          <div className="text-xs text-muted-foreground truncate pointer-events-none mb-2">{r.client?.name ?? "—"}</div>
 
                           {/* Prazo de entrega + botão editar */}
                           <div className="mt-2 flex items-center justify-between gap-2 text-[11px]">
