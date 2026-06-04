@@ -342,7 +342,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
             <span className="text-muted-foreground uppercase font-bold text-[9px]">Onde a OP DEVE estar (Meta)</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-foreground border border-white shadow-sm" />
+            <div className="w-2.5 h-2.5 rounded-full bg-black border border-white shadow-sm" />
             <span className="text-muted-foreground uppercase font-bold text-[9px]">Onde a OP REALMENTE está (Executado)</span>
           </div>
         </div>
