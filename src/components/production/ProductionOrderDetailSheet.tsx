@@ -110,36 +110,44 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
       const { data: orderData } = await (supabase.from('production_orders').select('*').eq('id', orderId).maybeSingle() as any);
       if (!orderData) return null;
 
-      const results = await Promise.all([
-        (supabase.from('production_types').select('name').eq('id', orderData.production_type_id || '').maybeSingle() as any),
-        (supabase.from('profiles').select('full_name').eq('id', orderData.responsible_id || '').maybeSingle() as any),
-        (supabase.from('clients').select('name').eq('id', orderData.client_id || '').maybeSingle() as any),
-        (supabase.from('crm_deals').select('title').eq('id', orderData.deal_id || '').maybeSingle() as any),
-        (supabase.from('production_phases').select('*').eq('production_order_id', orderId) as any),
-        orderData.project_id
-          ? (supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', orderData.project_id).neq('id', orderId) as any)
-          : Promise.resolve({ data: [] })
-      ]);
+      const pType = orderData.production_type_id 
+        ? (await (supabase.from('production_types').select('name').eq('id', orderData.production_type_id).maybeSingle() as any)).data
+        : null;
+      
+      const resp = orderData.responsible_id
+        ? (await (supabase.from('profiles').select('full_name').eq('id', orderData.responsible_id).maybeSingle() as any)).data
+        : null;
 
-      const phsArr = results[4].data || [];
-      const tmplIds = phsArr.map((p: any) => p.phase_template_id).filter(Boolean);
-      const tmplsRes = tmplIds.length > 0
-        ? await (supabase.from('production_phase_templates').select('*').in('id', tmplIds) as any)
-        : { data: [] };
+      const cli = orderData.client_id
+        ? (await (supabase.from('clients').select('name').eq('id', orderData.client_id).maybeSingle() as any)).data
+        : null;
 
-      const finalRes: any = {
+      const dl = orderData.deal_id
+        ? (await (supabase.from('crm_deals').select('title').eq('id', orderData.deal_id).maybeSingle() as any)).data
+        : null;
+
+      const phs = (await (supabase.from('production_phases').select('*').eq('production_order_id', orderId) as any)).data || [];
+      const relOps = orderData.project_id
+        ? (await (supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', orderData.project_id).neq('id', orderId) as any)).data || []
+        : [];
+
+      const tIds = phs.map((p: any) => p.phase_template_id).filter(Boolean);
+      const tmpls = tIds.length > 0
+        ? (await (supabase.from('production_phase_templates').select('*').in('id', tIds) as any)).data || []
+        : [];
+
+      return {
         ...orderData,
-        production_type: results[0].data,
-        responsible: results[1].data,
-        client: results[2].data,
-        deal: results[3].data,
-        phases: phsArr.map((p: any) => ({
+        production_type: pType,
+        responsible: resp,
+        client: cli,
+        deal: dl,
+        phases: phs.map((p: any) => ({
           ...p,
-          phase_template: (tmplsRes.data || []).find((t: any) => t.id === p.phase_template_id) || null
+          phase_template: tmpls.find((t: any) => t.id === p.phase_template_id) || null
         })),
-        related_ops: results[5].data || []
-      };
-      return finalRes;
+        related_ops: relOps
+      } as any;
     },
     enabled: !!orderId
   });
