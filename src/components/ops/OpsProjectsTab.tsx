@@ -328,7 +328,7 @@ export function OpsProjectsTab() {
 
                           {/* Prazo de entrega + botão editar */}
                           <div className="mt-2 flex items-center justify-between gap-2 text-[11px]">
-                            <div className={`mt-2 flex items-center gap-1.5 pointer-events-none p-2 rounded-md bg-secondary/30 ${r.isLate ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+                            <div className={`mt-2 flex items-center gap-1.5 pointer-events-none p-2 rounded-md bg-muted/40 border border-border/50 ${r.isLate ? "text-destructive font-bold" : "text-muted-foreground"}`}>
                               <CalendarClock className="h-3 w-3" />
                               <span>Prazo: {fmtBR(r.deadline)}</span>
                             </div>
