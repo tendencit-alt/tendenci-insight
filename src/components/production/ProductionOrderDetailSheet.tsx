@@ -117,7 +117,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
       if (orderError) throw orderError;
       if (!orderData) return null;
 
-      const [productionTypeRes, responsibleRes, clientRes, dealRes, phasesRes] = await Promise.all([
+      const results = await Promise.all([
         orderData.production_type_id 
           ? supabase.from('production_types').select('name, color').eq('id', orderData.production_type_id).maybeSingle()
           : Promise.resolve({ data: null }),
@@ -132,6 +132,12 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
           : Promise.resolve({ data: null }),
         supabase.from('production_phases').select('*').eq('production_order_id', orderId)
       ]);
+
+      const productionTypeRes = results[0];
+      const responsibleRes = results[1];
+      const clientRes = results[2];
+      const dealRes = results[3];
+      const phasesRes = results[4];
 
       const phaseTemplateIds = (phasesRes.data || []).map(p => p.phase_template_id).filter(Boolean);
       const { data: templates } = phaseTemplateIds.length > 0
@@ -150,10 +156,10 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         deal: dealRes.data,
         phases: (phasesRes.data || []).map(phase => ({
           ...phase,
-          phase_template: templates?.find(t => t.id === phase.phase_template_id) || null
+          phase_template: (templates as any[] | null)?.find(t => t.id === phase.phase_template_id) || null
         })),
-        related_ops: relatedOpsRes.data || []
-      };
+        related_ops: (relatedOpsRes.data as any[] | null) || []
+      } as any;
     },
     enabled: !!orderId
   });
