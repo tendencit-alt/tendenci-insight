@@ -11,7 +11,7 @@ export interface TimelineFiltersValue {
   range: "week" | "month" | "quarter" | "all";
   group: "none" | "client" | "phase" | "priority";
   density: "compact" | "normal" | "expanded";
-  sort: "order" | "date" | "priority" | "client";
+  sort: "eta" | "order" | "date" | "priority" | "client";
 }
 
 export const DEFAULT_FILTERS: TimelineFiltersValue = {
@@ -22,7 +22,7 @@ export const DEFAULT_FILTERS: TimelineFiltersValue = {
   range: "month",
   group: "client",
   density: "normal",
-  sort: "order",
+  sort: "eta",
 };
 
 interface Props {
@@ -92,8 +92,9 @@ export function TimelineFilters({ value, onChange, phases }: Props) {
         </SelectContent>
       </Select>
       <Select value={value.sort} onValueChange={(v) => set("sort", v as TimelineFiltersValue["sort"])}>
-        <SelectTrigger className="h-8 w-36"><SelectValue placeholder="Ordenar" /></SelectTrigger>
+        <SelectTrigger className="h-8 w-40"><SelectValue placeholder="Ordenar" /></SelectTrigger>
         <SelectContent>
+          <SelectItem value="eta">Menor prazo (ETA)</SelectItem>
           <SelectItem value="order">Nº Ordem</SelectItem>
           <SelectItem value="date">Data (Início)</SelectItem>
           <SelectItem value="priority">Prioridade</SelectItem>
