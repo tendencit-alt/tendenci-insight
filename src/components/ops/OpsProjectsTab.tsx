@@ -185,7 +185,7 @@ export function OpsProjectsTab() {
           return {
             id: o.id,
             name: `Pedido #${o.order_number}`,
-            value: Number(o.valor_total ?? 0),
+            order_valor_total: Number(o.valor_total ?? 0),
             deadline: effectiveDeadline,
             tenant_id: o.tenant_id ?? null,
             client: o.client,
