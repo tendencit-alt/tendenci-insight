@@ -34,7 +34,8 @@ import {
   FileSpreadsheet,
   Info,
   Timer,
-  CalendarRange
+  CalendarRange,
+  History as HistoryIcon
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { OpTimelineMini } from '@/components/ops/timeline/OpTimelineMini';
