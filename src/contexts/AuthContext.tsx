@@ -167,7 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, retryCount = 0) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -178,6 +178,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         console.error('Error fetching profile:', error);
         
+        // Handle database timeouts or connectivity issues
+        if (error.message?.includes('timeout') || error.message?.includes('failed to connect') || error.code === 'PGRST301') {
+          if (retryCount < 3) {
+            const delay = Math.pow(2, retryCount) * 1000;
+            console.log(`Retrying profile fetch in ${delay}ms... (Attempt ${retryCount + 1})`);
+            setTimeout(() => fetchProfile(userId, retryCount + 1), delay);
+            return;
+          }
+        }
+
         // If JWT expired, sign out (redirect happens via ProtectedRoute)
         if (error.code === 'PGRST301' || error.code === 'PGRST302' || error.code === 'PGRST303' || error.message?.includes('JWT')) {
           console.log('JWT expired, signing out...');
@@ -186,8 +196,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      console.log('Profile loaded:', data.email, data.role);
-      setProfile(data);
+      if (data) {
+        console.log('Profile loaded:', data.email, data.role);
+        setProfile(data);
+      }
     } catch (error) {
       console.error('Error in fetchProfile:', error);
     }

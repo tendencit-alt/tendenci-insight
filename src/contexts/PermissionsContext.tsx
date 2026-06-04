@@ -87,10 +87,10 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const [userLevel, setUserLevel] = useState<'system_owner' | 'tenant_owner' | 'tenant_admin' | 'operational'>('operational');
   const [overridesMap, setOverridesMap] = useState<Record<string, { can_view: boolean | null; can_create: boolean | null; can_edit: boolean | null; can_delete: boolean | null }>>({});
 
-  const fetchPermissions = useCallback(async () => {
+  const fetchPermissions = useCallback(async (retryCount = 0) => {
     if (!user?.id) return;
 
-    console.log('[Permissions] Fetching for user:', user.id, user.email);
+    console.log(`[Permissions] Fetching for user: ${user.id} (Attempt ${retryCount + 1})`);
 
     try {
       // 1) Profile + linked profile_type
@@ -102,6 +102,15 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
 
       if (profileError) {
         console.error('[Permissions] Profile error:', profileError);
+        // Handle database timeouts or connectivity issues
+        if (profileError.message?.includes('timeout') || profileError.message?.includes('failed to connect') || profileError.code === 'PGRST301') {
+          if (retryCount < 3) {
+            const delay = Math.pow(2, retryCount) * 1000;
+            console.log(`[Permissions] Retrying in ${delay}ms...`);
+            setTimeout(() => fetchPermissions(retryCount + 1), delay);
+            return;
+          }
+        }
         throw profileError;
       }
 
@@ -137,36 +146,41 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
           })),
           active: true,
         });
+        setLoading(false);
         return;
       }
 
       // 3) Source of truth: profile_type_permissions matrix
       const matrix: Record<string, ModulePermission> = {};
-      if (profile?.profile_type_id) {
-        const { data: matrixRows } = await supabase
-          .from('profile_type_permissions')
-          .select('module, can_view, can_create, can_edit, can_delete, can_approve, can_conciliate, can_export, can_admin')
-          .eq('profile_type_id', profile.profile_type_id);
+      const fetchMatrix = profile?.profile_type_id ? supabase
+        .from('profile_type_permissions')
+        .select('module, can_view, can_create, can_edit, can_delete, can_approve, can_conciliate, can_export, can_admin')
+        .eq('profile_type_id', profile.profile_type_id) : Promise.resolve({ data: [] });
 
-        matrixRows?.forEach((row: any) => {
-          matrix[row.module] = {
-            module: row.module,
-            can_view: !!row.can_view,
-            can_create: !!row.can_create,
-            can_edit: !!row.can_edit,
-            can_delete: !!row.can_delete,
-            ...{ can_approve: !!row.can_approve, can_conciliate: !!row.can_conciliate, can_export: !!row.can_export, can_admin: !!row.can_admin },
-          } as ModulePermission;
-        });
-      }
-
-      // 4) Optional per-user overrides (additive)
-      const { data: userOverrides } = await supabase
+      const fetchOverrides = supabase
         .from('user_permissions')
         .select('module, can_view, can_create, can_edit, can_delete')
         .eq('user_id', user.id);
 
-      userOverrides?.forEach((row: any) => {
+      const fetchFeatureOverrides = profile?.profile_type_id ? supabase
+        .from('profile_type_feature_overrides' as any)
+        .select('feature_key, can_view, can_create, can_edit, can_delete')
+        .eq('profile_type_id', profile.profile_type_id) : Promise.resolve({ data: [] });
+
+      const [matrixRes, overridesRes, featuresRes] = await Promise.all([fetchMatrix, fetchOverrides, fetchFeatureOverrides]);
+
+      matrixRes.data?.forEach((row: any) => {
+        matrix[row.module] = {
+          module: row.module,
+          can_view: !!row.can_view,
+          can_create: !!row.can_create,
+          can_edit: !!row.can_edit,
+          can_delete: !!row.can_delete,
+          ...{ can_approve: !!row.can_approve, can_conciliate: !!row.can_conciliate, can_export: !!row.can_export, can_admin: !!row.can_admin },
+        } as ModulePermission;
+      });
+
+      overridesRes.data?.forEach((row: any) => {
         const existing = matrix[row.module] ?? {
           module: row.module, can_view: false, can_create: false, can_edit: false, can_delete: false,
         };
@@ -179,23 +193,14 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
         };
       });
 
-      // 5) Feature overrides (granularidade por rota/aba)
-      if (profile?.profile_type_id && !isAdmin) {
-        const { data: ovRows } = await supabase
-          .from('profile_type_feature_overrides' as any)
-          .select('feature_key, can_view, can_create, can_edit, can_delete')
-          .eq('profile_type_id', profile.profile_type_id);
-        const ovMap: Record<string, any> = {};
-        ((ovRows as any[]) || []).forEach((r: any) => {
-          ovMap[r.feature_key] = {
-            can_view: r.can_view, can_create: r.can_create,
-            can_edit: r.can_edit, can_delete: r.can_delete,
-          };
-        });
-        setOverridesMap(ovMap);
-      } else {
-        setOverridesMap({});
-      }
+      const ovMap: Record<string, any> = {};
+      ((featuresRes.data as any[]) || []).forEach((r: any) => {
+        ovMap[r.feature_key] = {
+          can_view: r.can_view, can_create: r.can_create,
+          can_edit: r.can_edit, can_delete: r.can_delete,
+        };
+      });
+      setOverridesMap(ovMap);
 
       console.log('[Permissions] Matrix loaded modules:', Object.keys(matrix).length);
 
@@ -211,7 +216,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       console.log('[Permissions] Loading complete');
       setLoading(false);
     }
-  }, [user?.id, user?.email]);
+  }, [user?.id]);
 
   useEffect(() => {
     if (authLoading) {
