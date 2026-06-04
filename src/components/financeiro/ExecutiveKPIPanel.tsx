@@ -93,7 +93,7 @@ export function ExecutiveKPIPanel({ filters }: Props) {
         .neq("status", "CANCELADO").not("cash_date", "is", null);
       let netCash = openBal;
       (cashEntries || []).forEach((e: any) => {
-        netCash += e.type === "CREDITO" ? Number(e.amount) : -Number(e.amount);
+        netCash += e.type === "RECEITA" ? Number(e.amount) : -Number(e.amount);
       });
       return { openBal, netCash };
     },
