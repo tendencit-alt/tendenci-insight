@@ -117,7 +117,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
       {/* Body */}
       <div className="relative">
         {/* Vertical Grid Lines */}
-        <div className="absolute inset-0 flex-1 ml-[240px] pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 flex-1 ml-[240px] pointer-events-none overflow-hidden bg-white/20">
           {Array.from({ length: totalDays }).map((_, i) => {
             const left = (i / totalDays) * 100;
             const date = addDays(rangeStart, i);
