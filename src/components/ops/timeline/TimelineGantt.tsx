@@ -87,10 +87,8 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
             const days = [];
             // Determine dynamic step based on density and total range
             const dayWidth = 100 / totalDays;
-            const minLabelWidth = density === "compact" ? 35 : 45;
-            const step = Math.max(1, Math.ceil((minLabelWidth / dayWidth) / (100 / totalDays * 10))); 
-            // Simplified step calculation for better visibility
-            const finalStep = totalDays > 30 ? (totalDays > 60 ? 5 : 2) : 1;
+            // Balance visibility: show daily if enough space, else every 2 days, 5 days, etc.
+            const finalStep = totalDays < 20 ? 1 : (totalDays < 45 ? 2 : (totalDays < 90 ? 5 : 10));
 
             for (let i = 0; i < totalDays; i += finalStep) {
               const left = (i / totalDays) * 100;
