@@ -109,49 +109,49 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
       if (!orderId) return null;
       
       const { data: orderData } = await supabase
-        .from('production_orders')
+        .from('production_orders' as any)
         .select('*')
         .eq('id', orderId)
         .maybeSingle();
 
       if (!orderData) return null;
 
-      const results = await Promise.all([
+      const [pTypeRes, respRes, cliRes, dlRes, phsRes, relRes] = await Promise.all([
         orderData.production_type_id 
-          ? supabase.from('production_types').select('name').eq('id', orderData.production_type_id).maybeSingle()
+          ? supabase.from('production_types' as any).select('name').eq('id', orderData.production_type_id).maybeSingle()
           : Promise.resolve({ data: null }),
         orderData.responsible_id
-          ? supabase.from('profiles').select('full_name').eq('id', orderData.responsible_id).maybeSingle()
+          ? supabase.from('profiles' as any).select('full_name').eq('id', orderData.responsible_id).maybeSingle()
           : Promise.resolve({ data: null }),
         orderData.client_id
-          ? supabase.from('clients').select('name').eq('id', orderData.client_id).maybeSingle()
+          ? supabase.from('clients' as any).select('name').eq('id', orderData.client_id).maybeSingle()
           : Promise.resolve({ data: null }),
         orderData.deal_id
-          ? supabase.from('crm_deals').select('title').eq('id', orderData.deal_id).maybeSingle()
+          ? supabase.from('crm_deals' as any).select('title').eq('id', orderData.deal_id).maybeSingle()
           : Promise.resolve({ data: null }),
-        supabase.from('production_phases').select('*').eq('production_order_id', orderId),
+        supabase.from('production_phases' as any).select('*').eq('production_order_id', orderId),
         orderData.project_id
-          ? supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', orderData.project_id).neq('id', orderId)
+          ? supabase.from('production_orders' as any).select('id, title, status, order_number').eq('project_id', orderData.project_id).neq('id', orderId)
           : Promise.resolve({ data: [] })
       ]);
 
-      const phsArr = results[4].data || [];
+      const phsArr = phsRes.data || [];
       const tIds = phsArr.map((p: any) => p.phase_template_id).filter(Boolean);
       const tmplsRes = tIds.length > 0
-        ? await supabase.from('production_phase_templates').select('*').in('id', tIds)
+        ? await supabase.from('production_phase_templates' as any).select('*').in('id', tIds)
         : { data: [] };
 
       return {
-        ...orderData,
-        production_type: results[0].data,
-        responsible: results[1].data,
-        client: results[2].data,
-        deal: results[3].data,
+        ...(orderData as any),
+        production_type: pTypeRes.data,
+        responsible: respRes.data,
+        client: cliRes.data,
+        deal: dlRes.data,
         phases: phsArr.map((p: any) => ({
           ...p,
           phase_template: (tmplsRes.data || []).find((t: any) => t.id === p.phase_template_id) || null
         })),
-        related_ops: results[5].data || []
+        related_ops: relRes.data || []
       };
     },
     enabled: !!orderId
