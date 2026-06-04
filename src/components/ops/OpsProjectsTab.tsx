@@ -324,11 +324,12 @@ export function OpsProjectsTab() {
                         return (
                           <div 
                             key={r.id} 
-                            className={`p-3 rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer hover:border-primary hover:shadow-md transition-all active:scale-[0.98] relative z-10 ${projectSlaTone}`} 
+                            className={`p-3 rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer hover:border-primary hover:shadow-md transition-all active:scale-[0.98] relative z-[50] ${projectSlaTone}`} 
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
                               const orderId = r.id.includes('-') ? r.id.split('-')[0] : r.id;
+                              console.log('OpsProjectsTab: Clicked card, orderId:', orderId);
                               setSelectedOrderId(orderId);
                             }}
                           >
