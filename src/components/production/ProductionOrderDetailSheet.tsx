@@ -152,7 +152,9 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
             position,
             sla_dias_uteis_custom
           `)
-          .eq('production_order_id', orderId),
+          .eq('production_order_id', orderId)
+      ]);
+
       // Related OPs
       const relatedOpsRes = (orderData as any).project_id
         ? await supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', (orderData as any).project_id).neq('id', orderId)
