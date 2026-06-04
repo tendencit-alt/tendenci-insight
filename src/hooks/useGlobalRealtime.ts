@@ -20,13 +20,30 @@ export function useGlobalRealtime() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const invalidateAll = () => {
+    let lastInvalidation = 0;
+    const MIN_INTERVAL = 1000; // Mínimo de 1s entre invalidações totais para evitar "flicker"
+
+    const invalidateAll = (payload: any) => {
+      const now = Date.now();
+      const table = payload?.table;
+
+      // Se soubermos qual tabela mudou, podemos ser mais específicos
+      if (table) {
+        console.log(`[GlobalRT] Mudança detectada na tabela: ${table}`);
+        // Invalida apenas o que for relacionado àquela tabela (se as queryKeys seguirem o padrão)
+        queryClient.invalidateQueries({ queryKey: [table], refetchType: "active" });
+      }
+
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
       }
 
       debounceRef.current = setTimeout(() => {
-        queryClient.invalidateQueries({ refetchType: "active" });
+        if (now - lastInvalidation > MIN_INTERVAL) {
+          console.log("[GlobalRT] Invalidação global (debounce)");
+          queryClient.invalidateQueries({ refetchType: "active" });
+          lastInvalidation = now;
+        }
       }, REALTIME_DEBOUNCE_MS);
     };
 
@@ -35,19 +52,20 @@ export function useGlobalRealtime() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public" },
-        () => {
-          invalidateAll();
+        (payload) => {
+          invalidateAll(payload);
         }
       )
       .subscribe((status) => {
-        console.log("[GlobalRT] Channel status:", status);
+        if (status === 'SUBSCRIPTION_ERROR') {
+          console.error("[GlobalRT] Erro na subscrição Realtime");
+        }
       });
 
     return () => {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
       }
-
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
