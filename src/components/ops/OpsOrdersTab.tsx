@@ -351,7 +351,7 @@ export function OpsOrdersTab() {
                 const activeId = String(e.active?.id ?? "");
                 if (!overId.startsWith("col-") || !activeId) return;
                 const newSlug = overId.slice(4);
-                const ord = filtered.find((o) => o.id === activeId);
+                const ord = (filtered as any[]).find((o) => o.id === activeId);
                 if (!ord) return;
                 handleMove(activeId, ord._slug, newSlug);
               }}
