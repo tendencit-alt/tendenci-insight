@@ -108,52 +108,56 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
       if (!orderId) return null;
       
       // Query principal - dados básicos da OP
-      const { data: orderData, error: orderError } = await (supabase
+      const orderData = (await (supabase
         .from('production_orders')
         .select('*')
         .eq('id', orderId)
-        .maybeSingle() as any);
+        .maybeSingle() as any)).data;
       
-      if (orderError) throw orderError;
       if (!orderData) return null;
 
-      const results: any[] = await Promise.all([
-        (supabase.from('production_types').select('name, color').eq('id', orderData.production_type_id || '').maybeSingle() as any),
-        (supabase.from('profiles').select('full_name, email').eq('id', orderData.responsible_id || '').maybeSingle() as any),
-        (supabase.from('clients').select('name, phone').eq('id', orderData.client_id || '').maybeSingle() as any),
-        (supabase.from('crm_deals').select('title, value').eq('id', orderData.deal_id || '').maybeSingle() as any),
-        (supabase.from('production_phases').select('*').eq('production_order_id', orderId) as any)
-      ]);
+      const pType = orderData.production_type_id 
+        ? (await (supabase.from('production_types').select('name, color').eq('id', orderData.production_type_id).maybeSingle() as any)).data
+        : null;
+      
+      const resp = orderData.responsible_id
+        ? (await (supabase.from('profiles').select('full_name, email').eq('id', orderData.responsible_id).maybeSingle() as any)).data
+        : null;
 
-      const productionTypeData = results[0].data;
-      const responsibleData = results[1].data;
-      const clientData = results[2].data;
-      const dealData = results[3].data;
-      const phasesData = results[4].data || [];
+      const cli = orderData.client_id
+        ? (await (supabase.from('clients').select('name, phone').eq('id', orderData.client_id).maybeSingle() as any)).data
+        : null;
 
-      const templateIds = phasesData.map((p: any) => p.phase_template_id).filter(Boolean);
-      const { data: templates } = templateIds.length > 0
-        ? await (supabase.from('production_phase_templates').select('*').in('id', templateIds) as any)
-        : { data: [] };
+      const dl = orderData.deal_id
+        ? (await (supabase.from('crm_deals').select('title, value').eq('id', orderData.deal_id).maybeSingle() as any)).data
+        : null;
 
-      const { data: relOpsData } = (orderData as any).project_id
-        ? await (supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', (orderData as any).project_id).neq('id', orderId) as any)
-        : { data: [] };
+      const phs = (await (supabase.from('production_phases').select('*').eq('production_order_id', orderId) as any)).data || [];
 
-      const mappedPhases: any[] = phasesData.map((phase: any) => {
-        const t = (templates as any[] | null)?.find(t => t.id === phase.phase_template_id);
-        return { ...phase, phase_template: t || null };
-      });
+      const tmplIds = phs.map((p: any) => p.phase_template_id).filter(Boolean);
+      const tmpls = tmplIds.length > 0
+        ? (await (supabase.from('production_phase_templates').select('*').in('id', tmplIds) as any)).data || []
+        : [];
+
+      const relOps = orderData.project_id
+        ? (await (supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', orderData.project_id).neq('id', orderId) as any)).data || []
+        : [];
+
+      const mappedPhases: any[] = phs.map((phase: any) => ({
+        ...phase,
+        phase_template: (tmpls as any[]).find(t => t.id === phase.phase_template_id) || null
+      }));
 
       const res: any = {
         ...orderData,
-        production_type: productionTypeData,
-        responsible: responsibleData,
-        client: clientData,
-        deal: dealData,
+        production_type: pType,
+        responsible: resp,
+        client: cli,
+        deal: dl,
         phases: mappedPhases,
-        related_ops: (relOpsData as any[] | null) || []
+        related_ops: relOps
       };
+      return res;
       return res;
     },
     enabled: !!orderId
