@@ -217,12 +217,12 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                   </div>
                 )}
                 
-                {/* Onde deveríamos estar (Seta de Planejado) */}
+                {/* Onde deveríamos estar (Seta de Planejado - Meta) */}
                 {(() => {
-                  const today = new Date();
                   const totalPlannedDur = op.segments.reduce((acc, s) => acc + (s.duration_days || 0), 0) || 1;
                   const elapsedSinceStart = differenceInCalendarDays(today, opStart);
                   
+                  // Só mostra a META se o projeto já começou e não passou muito do fim planejado
                   if (elapsedSinceStart >= 0) {
                     let accumulatedDur = 0;
                     let targetSlug = op.segments[0]?.slug;
