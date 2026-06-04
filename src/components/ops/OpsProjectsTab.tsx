@@ -254,9 +254,7 @@ export function OpsProjectsTab() {
   }, [filtered, doneSlugs]);
 
   const openDetail = (orderId: string) => {
-    console.log("Opening detail for order:", orderId);
     setSelectedOrderId(orderId);
-    window.dispatchEvent(new CustomEvent('open-order-detail', { detail: { orderId } }));
   };
 
   // Kanban columns: "Sem OP" virtual column + every tenant-managed status, in sort_order.
@@ -315,7 +313,7 @@ export function OpsProjectsTab() {
                       <span className="text-xs font-semibold text-foreground">{col.label}</span>
                       <Badge variant="secondary" className="text-xs">{colRows.length}</Badge>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 relative">
                       {colRows.map((r) => {
                         const projectSlaTone =
                           r.slaOverdue > 0
@@ -326,16 +324,19 @@ export function OpsProjectsTab() {
                         return (
                         <div 
                           key={r.id} 
-                          className={`p-3 rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer hover:border-primary hover:shadow-md transition-all active:bg-accent ${projectSlaTone}`} 
-                          onClick={() => {
+                          className={`p-3 rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer hover:border-primary hover:shadow-md transition-all active:bg-accent relative z-20 ${projectSlaTone}`} 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             const orderId = r.id.includes('-') ? r.id.split('-')[0] : r.id;
-                            openDetail(orderId);
+                            console.log("Card clicked for order:", orderId);
+                            setSelectedOrderId(orderId);
                           }}
                         >
-                          <div className="text-sm font-bold truncate pointer-events-none text-primary">{r.name || "Sem nome"}</div>
-                          <div className="text-xs text-muted-foreground truncate pointer-events-none mb-3">{r.client?.name ?? "—"}</div>
+                          <div className="text-sm font-bold truncate text-primary">{r.name || "Sem nome"}</div>
+                          <div className="text-xs text-muted-foreground truncate mb-3">{r.client?.name ?? "—"}</div>
 
-                          <div className={`mt-2 flex items-center justify-between pointer-events-none p-2 rounded-md bg-muted/40 border border-border/50 text-[11px] ${r.isLate ? "text-destructive font-bold" : "text-muted-foreground"}`}>
+                          <div className={`mt-2 flex items-center justify-between p-2 rounded-md bg-muted/40 border border-border/50 text-[11px] ${r.isLate ? "text-destructive font-bold" : "text-muted-foreground"}`}>
                             <div className="flex items-center gap-2">
                               <CalendarClock className="h-3.5 w-3.5" />
                               <span>{fmtBR(r.deadline)}</span>
@@ -348,7 +349,7 @@ export function OpsProjectsTab() {
                             <span className="font-mono font-bold text-foreground text-[10px]">R$ {Number(r.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                           </div>
 
-                          <div className="mt-3 pointer-events-none">
+                          <div className="mt-3">
                             <Progress value={r.progressPct} className="h-1.5" title={`Progresso total do projeto: ${r.progressPct}%`} />
                             <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground gap-1">
                               <span className="font-medium text-primary">{(r as any)._opsCountInStatus} de {r.total} OPs</span>
