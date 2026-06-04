@@ -12,7 +12,7 @@ export function useOpsOrders(filters?: { status?: string; type?: string }) {
     queryFn: async () => {
       let q = supabase
         .from("production_orders")
-        .select("*, clients(name), production_types(name), suppliers(name)")
+        .select("*, clients(name), production_types(name), suppliers(name), orders(data_emissao)")
         .eq("tenant_id", activeTenantId!)
         .order("created_at", { ascending: false });
       if (filters?.status) q = q.eq("status", filters.status);
