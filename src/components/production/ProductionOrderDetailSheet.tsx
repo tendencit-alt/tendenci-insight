@@ -120,10 +120,10 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         ? await (supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', orderData.project_id).neq('id', orderId) as any)
         : { data: [] };
 
-      const phs = phsRes.data || [];
-      const tmplIds = phs.map((p: any) => p.phase_template_id).filter(Boolean);
+      const phsArr = phsRes.data || [];
+      const tmplIds = phsArr.map((p: any) => p.phase_template_id).filter(Boolean);
       const tmplsRes = tmplIds.length > 0
-        ? await (supabase.from('production_phase_templates').select('*').in('id', templateIds) as any)
+        ? await (supabase.from('production_phase_templates').select('*').in('id', tmplIds) as any)
         : { data: [] };
 
       const res: any = {
@@ -132,7 +132,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         responsible: respRes.data,
         client: cliRes.data,
         deal: dlRes.data,
-        phases: phs.map((p: any) => ({
+        phases: phsArr.map((p: any) => ({
           ...p,
           phase_template: (tmplsRes.data || []).find((t: any) => t.id === p.phase_template_id) || null
         })),
