@@ -117,21 +117,25 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
       if (orderError) throw orderError;
       if (!orderData) return null;
 
-      const productionTypeRes = orderData.production_type_id 
-        ? await supabase.from('production_types').select('name, color').eq('id', orderData.production_type_id).maybeSingle()
-        : { data: null };
-      
-      const responsibleRes = orderData.responsible_id
-        ? await supabase.from('profiles').select('full_name, email').eq('id', orderData.responsible_id).maybeSingle()
-        : { data: null };
+      const results = await Promise.all([
+        orderData.production_type_id 
+          ? supabase.from('production_types').select('name, color').eq('id', orderData.production_type_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        orderData.responsible_id
+          ? supabase.from('profiles').select('full_name, email').eq('id', orderData.responsible_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        orderData.client_id
+          ? supabase.from('clients').select('name, phone').eq('id', orderData.client_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        orderData.deal_id
+          ? supabase.from('crm_deals').select('title, value').eq('id', orderData.deal_id).maybeSingle()
+          : Promise.resolve({ data: null })
+      ]);
 
-      const clientRes = orderData.client_id
-        ? await supabase.from('clients').select('name, phone').eq('id', orderData.client_id).maybeSingle()
-        : { data: null };
-
-      const dealRes = orderData.deal_id
-        ? await supabase.from('crm_deals').select('title, value').eq('id', orderData.deal_id).maybeSingle()
-        : { data: null };
+      const productionTypeRes = results[0];
+      const responsibleRes = results[1];
+      const clientRes = results[2];
+      const dealRes = results[3];
 
       const phasesRes = await supabase.from('production_phases').select('*').eq('production_order_id', orderId);
 
