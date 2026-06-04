@@ -179,7 +179,10 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         responsible: responsibleRes.data,
         client: clientRes.data,
         deal: dealRes.data,
-        phases: phasesWithTemplates
+        phases: phasesWithTemplates,
+        related_ops: orderData.project_id 
+          ? (await supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', orderData.project_id).neq('id', orderId)).data || []
+          : []
       };
     },
     enabled: !!orderId
@@ -425,6 +428,35 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
                       <Badge variant="outline" className="mt-2">
                         {order.production_type.name}
                       </Badge>
+                    )}
+                    {order.related_ops && (order.related_ops as any[]).length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Outras OPs do Projeto</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(order.related_ops as any[]).map((op: any) => (
+                            <Badge 
+                              key={op.id} 
+                              variant="secondary" 
+                              className="text-[10px] gap-1.5 py-0.5 cursor-pointer hover:bg-secondary/80"
+                              onClick={() => {
+                                onOpenChange(false);
+                                setTimeout(() => {
+                                  const next = new URLSearchParams(window.location.search);
+                                  next.set("op", op.id);
+                                  window.history.replaceState(null, "", "?" + next.toString());
+                                  // Dispara evento para o componente pai notar a mudança se necessário
+                                  window.dispatchEvent(new PopStateEvent('popstate'));
+                                }, 100);
+                              }}
+                            >
+                              <span className="opacity-60 font-mono">#{op.order_number}</span>
+                              {op.title}
+                              <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+                              <span className="opacity-70">{statusColumns.find(c => c.slug === op.status)?.label || op.status}</span>
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
                   <div className="flex gap-2 shrink-0">
