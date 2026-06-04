@@ -333,7 +333,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
                     <TabsTrigger value="info" className="flex-1 gap-1.5"><Info className="h-4 w-4" />Informações</TabsTrigger>
                     <TabsTrigger value="cronograma" className="flex-1 gap-1.5"><CalendarRange className="h-4 w-4" />Cronograma</TabsTrigger>
                     <TabsTrigger value="ficha" className="flex-1 gap-1.5"><FileText className="h-4 w-4" />Ficha Técnica</TabsTrigger>
-                    <TabsTrigger value="logs" className="flex-1 gap-1.5"><History className="h-4 w-4" />Atualizações</TabsTrigger>
+                    <TabsTrigger value="logs" className="flex-1 gap-1.5"><HistoryIcon className="h-4 w-4" />Atualizações</TabsTrigger>
                   </TabsList>
                   <TabsContent value="info" className="space-y-4 pt-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -345,7 +345,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
                     </div>
                   </TabsContent>
                   <TabsContent value="cronograma" className="pt-4"><OpTimelineMini opId={orderId} /></TabsContent>
-                  <TabsContent value="ficha" className="pt-4"><ProductionFichaTecnica orderId={orderId} /></TabsContent>
+                  <TabsContent value="ficha" className="pt-4"><ProductionFichaTecnica productionOrderId={orderId} /></TabsContent>
                   <TabsContent value="logs" className="pt-4"><ProductionUpdates orderId={orderId} /></TabsContent>
                 </Tabs>
               </div>
@@ -353,7 +353,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
           ) : null}
         </SheetContent>
       </Sheet>
-      <EditProductionOrderDialog open={editDialogOpen} onOpenChange={setEditDialogOpen} order={order} />
+      <EditProductionOrderDialog open={editDialogOpen} onOpenChange={setEditDialogOpen} orderId={orderId} />
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader><AlertDialogTitle>Confirmar exclusão</AlertDialogTitle><AlertDialogDescription>Deseja excluir permanentemente esta ordem de produção?</AlertDialogDescription></AlertDialogHeader>
