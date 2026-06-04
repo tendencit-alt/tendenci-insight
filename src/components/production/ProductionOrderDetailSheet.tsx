@@ -111,23 +111,19 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
       const { data: orderData } = await (supabase.from('production_orders').select('*').eq('id', orderId).maybeSingle() as any);
       if (!orderData) return null;
 
-      const pTypeReq = (supabase.from('production_types').select('name').eq('id', orderData.production_type_id || '').maybeSingle() as any);
-      const respReq = (supabase.from('profiles').select('full_name').eq('id', orderData.responsible_id || '').maybeSingle() as any);
-      const cliReq = (supabase.from('clients').select('name').eq('id', orderData.client_id || '').maybeSingle() as any);
-      const dlReq = (supabase.from('crm_deals').select('title').eq('id', orderData.deal_id || '').maybeSingle() as any);
-      const phsReq = (supabase.from('production_phases').select('*').eq('production_order_id', orderId) as any);
-      const relReq = orderData.project_id
-        ? (supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', orderData.project_id).neq('id', orderId) as any)
-        : Promise.resolve({ data: [] });
-
-      const [pTypeRes, respRes, cliRes, dlRes, phsRes, relRes] = await Promise.all([
-        pTypeReq, respReq, cliReq, dlReq, phsReq, relReq
-      ]);
+      const pTypeRes = await (supabase.from('production_types').select('name').eq('id', orderData.production_type_id || '').maybeSingle() as any);
+      const respRes = await (supabase.from('profiles').select('full_name').eq('id', orderData.responsible_id || '').maybeSingle() as any);
+      const cliRes = await (supabase.from('clients').select('name').eq('id', orderData.client_id || '').maybeSingle() as any);
+      const dlRes = await (supabase.from('crm_deals').select('title').eq('id', orderData.deal_id || '').maybeSingle() as any);
+      const phsRes = await (supabase.from('production_phases').select('*').eq('production_order_id', orderId) as any);
+      const relRes = orderData.project_id
+        ? await (supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', orderData.project_id).neq('id', orderId) as any)
+        : { data: [] };
 
       const phs = phsRes.data || [];
       const tmplIds = phs.map((p: any) => p.phase_template_id).filter(Boolean);
       const tmplsRes = tmplIds.length > 0
-        ? await (supabase.from('production_phase_templates').select('*').in('id', tmplIds) as any)
+        ? await (supabase.from('production_phase_templates').select('*').in('id', templateIds) as any)
         : { data: [] };
 
       const res: any = {
