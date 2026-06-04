@@ -248,7 +248,9 @@ export function OpsProjectsTab() {
   }, [filtered, doneSlugs]);
 
   const openDetail = (orderId: string) => {
+    console.log("Opening detail for order:", orderId);
     setSelectedOrderId(orderId);
+    window.dispatchEvent(new CustomEvent('open-order-detail', { detail: { orderId } }));
   };
 
   // Kanban columns: "Sem OP" virtual column + every tenant-managed status, in sort_order.
@@ -316,26 +318,30 @@ export function OpsProjectsTab() {
                             ? "bg-amber-500/10 border-amber-500/40 dark:bg-amber-500/15"
                             : "";
                         return (
-                        <Card key={r.id} className={`p-3 cursor-pointer hover:shadow-md transition ${projectSlaTone}`} onClick={() => openDetail(r.id.split('-')[0])}>
-                          <div className="text-sm font-medium truncate">{r.name || "Sem nome"}</div>
-                          <div className="text-xs text-muted-foreground truncate">{r.client?.name ?? "—"}</div>
+                        <div 
+                          key={r.id} 
+                          className={`p-3 rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer hover:border-primary hover:shadow-md transition-all active:bg-accent ${projectSlaTone}`} 
+                          onClick={() => openDetail(r.id.split('-')[0])}
+                        >
+                          <div className="text-sm font-bold truncate pointer-events-none text-primary">{r.name || "Sem nome"}</div>
+                          <div className="text-xs text-muted-foreground truncate pointer-events-none mb-3">{r.client?.name ?? "—"}</div>
 
-                          {/* Prazo de entrega + botão editar */}
-                          <div className="mt-2 flex items-center justify-between gap-2 text-[11px]">
-                            <div className={`flex items-center gap-1 ${r.isLate ? "text-destructive font-medium" : "text-muted-foreground"}`}>
-                              <CalendarClock className="h-3 w-3" />
+                          <div className={`mt-2 flex items-center justify-between pointer-events-none p-2 rounded-md bg-muted/40 border border-border/50 text-[11px] ${r.isLate ? "text-destructive font-bold" : "text-muted-foreground"}`}>
+                            <div className="flex items-center gap-2">
+                              <CalendarClock className="h-3.5 w-3.5" />
                               <span>Prazo: {fmtBR(r.deadline)}</span>
                             </div>
+                            <span className="font-mono font-bold text-foreground">R$ {Number(r.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                           </div>
 
-                          <div className="mt-2">
+                          <div className="mt-3 pointer-events-none">
                             <Progress value={r.progressPct} className="h-1.5" title={`Progresso total do projeto: ${r.progressPct}%`} />
                             <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground gap-1">
                               <span className="font-medium text-primary">{(r as any)._opsCountInStatus} de {r.total} OPs</span>
                               <div className="flex items-center gap-1">
                                 {r.slaAlerts > 0 && (
                                   <Badge
-                                    variant="outline"
+                                    variant="secondary"
                                     className={`text-[10px] gap-0.5 px-1.5 py-0 ${
                                       r.slaOverdue > 0
                                         ? "bg-destructive/10 text-destructive border-destructive/30"
@@ -350,7 +356,7 @@ export function OpsProjectsTab() {
                               </div>
                             </div>
                           </div>
-                        </Card>
+                        </div>
                         );
                       })}
                       {colRows.length === 0 && (
@@ -391,7 +397,7 @@ export function OpsProjectsTab() {
                     ? SEM_OP_META
                     : { label: columnsBySlug[r.aggStatus]?.label ?? r.aggStatus, tone: colorTone(columnsBySlug[r.aggStatus]?.color ?? "slate") };
                   return (
-                    <TableRow key={r.id} className="cursor-pointer" onClick={() => openDetail(r.id.split('-')[0])}>
+                    <TableRow key={r.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openDetail(r.id.split('-')[0])}>
                       <TableCell className="font-medium">{r.name || "—"}</TableCell>
                       <TableCell className="text-muted-foreground">{r.client?.name ?? "—"}</TableCell>
                       <TableCell className="text-right">R$ {Number(r.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
