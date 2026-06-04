@@ -316,7 +316,7 @@ export function OpsProjectsTab() {
                             ? "bg-amber-500/10 border-amber-500/40 dark:bg-amber-500/15"
                             : "";
                         return (
-                        <Card key={r.id} className={`p-3 cursor-pointer hover:shadow-md transition ${projectSlaTone}`} onClick={() => openDetail(r.id.split('-')[0])}>
+                        <div key={r.id} className={`p-3 rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer hover:shadow-md transition ${projectSlaTone}`} onClick={() => openDetail(r.id.split('-')[0])}>
                           <div className="text-sm font-medium truncate">{r.name || "Sem nome"}</div>
                           <div className="text-xs text-muted-foreground truncate">{r.client?.name ?? "—"}</div>
 
