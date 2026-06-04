@@ -386,7 +386,7 @@ export function OpsProjectsTab() {
                     ? SEM_OP_META
                     : { label: columnsBySlug[r.aggStatus]?.label ?? r.aggStatus, tone: colorTone(columnsBySlug[r.aggStatus]?.color ?? "slate") };
                   return (
-                    <TableRow key={r.id} className="cursor-pointer" onClick={() => openDetail(r.id)}>
+                    <TableRow key={r.id} className="cursor-pointer" onClick={() => setSelectedOrderId(r.id.split('-')[0])}>
                       <TableCell className="font-medium">{r.name || "—"}</TableCell>
                       <TableCell className="text-muted-foreground">{r.client?.name ?? "—"}</TableCell>
                       <TableCell className="text-right">R$ {Number(r.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
