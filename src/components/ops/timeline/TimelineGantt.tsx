@@ -78,26 +78,42 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
   return (
     <Card className="overflow-hidden">
       {/* Header with time scale */}
-      <div className="flex border-b bg-muted/40 text-xs">
-        <div className="flex-shrink-0 px-3 py-2 font-medium" style={{ width: labelWidth }}>
+      <div className="flex border-b bg-muted/40 text-xs select-none">
+        <div className="flex-shrink-0 px-4 py-3 font-semibold border-r border-border/50 bg-muted/20" style={{ width: labelWidth }}>
           Ordem de Produção
         </div>
-        <div className="flex-1 relative h-8">
-          {Array.from({ length: Math.min(totalDays + 1, 60) }).map((_, i) => {
-            const step = Math.max(1, Math.ceil(totalDays / 30));
-            if (i % step !== 0) return null;
-            const left = (i / totalDays) * 100;
-            const date = addDays(rangeStart, i);
-            return (
-              <div
-                key={i}
-                className="absolute top-0 bottom-0 border-l border-border/50 text-[10px] text-muted-foreground pl-1"
-                style={{ left: `${left}%` }}
-              >
-                {format(date, "dd/MM", { locale: ptBR })}
-              </div>
-            );
-          })}
+        <div className="flex-1 relative h-10 overflow-hidden">
+          {(() => {
+            const days = [];
+            // Determine dynamic step based on density and total range
+            const dayWidth = 100 / totalDays;
+            const minLabelWidth = density === "compact" ? 35 : 45;
+            const step = Math.max(1, Math.ceil((minLabelWidth / dayWidth) / (100 / totalDays * 10))); 
+            // Simplified step calculation for better visibility
+            const finalStep = totalDays > 30 ? (totalDays > 60 ? 5 : 2) : 1;
+
+            for (let i = 0; i < totalDays; i += finalStep) {
+              const left = (i / totalDays) * 100;
+              const date = addDays(rangeStart, i);
+              const isWeekend = [0, 6].includes(date.getDay());
+              
+              days.push(
+                <div
+                  key={i}
+                  className={`absolute top-0 bottom-0 border-l border-border/60 flex flex-col justify-center pl-1.5 transition-all ${
+                    isWeekend ? "bg-muted/10" : ""
+                  }`}
+                  style={{ left: `${left}%`, width: `${(finalStep / totalDays) * 100}%` }}
+                >
+                  <span className="text-[10px] font-bold text-foreground/80">{format(date, "dd/MM")}</span>
+                  <span className="text-[8px] text-muted-foreground uppercase opacity-70">
+                    {format(date, "EEE", { locale: ptBR }).replace(".", "")}
+                  </span>
+                </div>
+              );
+            }
+            return days;
+          })()}
         </div>
       </div>
 
