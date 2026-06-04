@@ -464,12 +464,18 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
                 {/* Fase atual e botão avançar */}
                 {order.status !== 'concluido' && (
                   <div className="p-4 rounded-lg bg-muted/50 space-y-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-3">
                       <div>
                         <p className="text-sm text-muted-foreground">Fase Atual</p>
                         <p className="font-medium">
-                          {currentPhase?.phase_template?.name || 'Aguardando início'}
+                          {statusColumns.find(c => c.slug === order.status)?.label || order.status}
                         </p>
+                      </div>
+                      <ProductionOrderChecklist 
+                        productionOrderId={orderId} 
+                        statusSlug={order.status} 
+                      />
+                    </div>
                       </div>
                       {nextPhase && (
                         <div className="text-right">
