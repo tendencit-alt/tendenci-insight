@@ -52,6 +52,7 @@ interface AggregatedRow extends ProjectProductionRow {
   isLate: boolean;
   slaAlerts: number;
   slaOverdue: number;
+  value: number;
 }
 
 const SEM_OP_META = { label: "Sem OP", tone: "bg-muted text-muted-foreground border-border" };
