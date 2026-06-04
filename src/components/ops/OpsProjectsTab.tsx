@@ -322,59 +322,61 @@ export function OpsProjectsTab() {
                             ? "bg-amber-500/10 border-amber-500/40 dark:bg-amber-500/15"
                             : "";
                         return (
-                        <div 
-                          key={r.id} 
-                          className={`p-3 rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer hover:border-primary hover:shadow-md transition-all active:scale-[0.98] ${projectSlaTone}`} 
-                          onClick={() => {
-                            const orderId = r.id.includes('-') ? r.id.split('-')[0] : r.id;
-                            setSelectedOrderId(orderId);
-                          }}
-                        >
-                          <div className="text-sm font-bold truncate text-primary mb-1">{r.name || "Sem nome"}</div>
-                          <div className="text-xs text-muted-foreground truncate mb-3">{r.client?.name ?? "—"}</div>
+                          <div 
+                            key={r.id} 
+                            className={`p-3 rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer hover:border-primary hover:shadow-md transition-all active:scale-[0.98] relative z-10 ${projectSlaTone}`} 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const orderId = r.id.includes('-') ? r.id.split('-')[0] : r.id;
+                              setSelectedOrderId(orderId);
+                            }}
+                          >
+                            <div className="text-sm font-bold truncate text-primary mb-1 pointer-events-none">{r.name || "Sem nome"}</div>
+                            <div className="text-xs text-muted-foreground truncate mb-3 pointer-events-none">{r.client?.name ?? "—"}</div>
 
-                          <div className="space-y-2 mt-2">
-                            <div className={`flex items-center justify-between p-2 rounded-md bg-muted/40 border border-border/50 text-[11px] ${r.isLate ? "text-destructive font-bold" : "text-muted-foreground"}`}>
-                              <div className="flex items-center gap-1.5 overflow-hidden">
-                                <CalendarClock className="h-3.5 w-3.5 shrink-0" />
-                                <span className="truncate">{fmtBR(r.deadline)}</span>
-                              </div>
-                              {r._due?.hasDue && (
-                                <span className="shrink-0 px-1.5 py-0.5 rounded-full bg-background/50 border border-border/50 font-medium">
-                                  {r._due.elapsedDays}d/{r._due.totalDays}d
-                                </span>
-                              )}
-                            </div>
-                            
-                            <div className="flex items-center justify-end px-1">
-                              <span className="font-mono font-bold text-foreground text-[11px]">R$ {Number(r.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                            </div>
-                          </div>
-
-                          <div className="mt-3">
-                            <Progress value={r.progressPct} className="h-1.5" title={`Progresso total: ${r.progressPct}%`} />
-                            <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground gap-1">
-                              <span className="font-semibold text-primary/80 uppercase tracking-tighter">
-                                {(r as any)._opsCountInStatus} de {r.total} OPs
-                              </span>
-                              <div className="flex items-center gap-1">
-                                {r.slaAlerts > 0 && (
-                                  <Badge
-                                    variant="secondary"
-                                    className={`text-[9px] h-4 gap-0.5 px-1 py-0 font-bold ${
-                                      r.slaOverdue > 0
-                                        ? "bg-destructive/10 text-destructive border-destructive/20"
-                                        : "bg-amber-500/10 text-amber-700 border-amber-500/20 dark:text-amber-300"
-                                    }`}
-                                  >
-                                    <Clock className="h-2 w-2" />SLA {r.slaAlerts}
-                                  </Badge>
+                            <div className="space-y-2 mt-2 pointer-events-none">
+                              <div className={`flex items-center justify-between p-2 rounded-md bg-muted/40 border border-border/50 text-[11px] ${r.isLate ? "text-destructive font-bold" : "text-muted-foreground"}`}>
+                                <div className="flex items-center gap-1.5 overflow-hidden">
+                                  <CalendarClock className="h-3.5 w-3.5 shrink-0" />
+                                  <span className="truncate">{fmtBR(r.deadline)}</span>
+                                </div>
+                                {r._due?.hasDue && (
+                                  <span className="shrink-0 px-1.5 py-0.5 rounded-full bg-background/50 border border-border/50 font-medium">
+                                    {r._due.elapsedDays}d/{r._due.totalDays}d
+                                  </span>
                                 )}
-                                {r.isLate && <span className="text-destructive font-bold uppercase text-[9px] tracking-tight">Atrasado</span>}
+                              </div>
+                              
+                              <div className="flex items-center justify-end px-1">
+                                <span className="font-mono font-bold text-foreground text-[11px]">R$ {Number(r.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                              </div>
+                            </div>
+
+                            <div className="mt-3 pointer-events-none">
+                              <Progress value={r.progressPct} className="h-1.5" title={`Progresso total: ${r.progressPct}%`} />
+                              <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground gap-1">
+                                <span className="font-semibold text-primary/80 uppercase tracking-tighter">
+                                  {(r as any)._opsCountInStatus} de {r.total} OPs
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  {r.slaAlerts > 0 && (
+                                    <Badge
+                                      variant="secondary"
+                                      className={`text-[9px] h-4 gap-0.5 px-1 py-0 font-bold ${
+                                        r.slaOverdue > 0
+                                          ? "bg-destructive/10 text-destructive border-destructive/20"
+                                          : "bg-amber-500/10 text-amber-700 border-amber-500/20 dark:text-amber-300"
+                                      }`}
+                                    >
+                                      <Clock className="h-2 w-2" />SLA {r.slaAlerts}
+                                    </Badge>
+                                  )}
+                                  {r.isLate && <span className="text-destructive font-bold uppercase text-[9px] tracking-tight">Atrasado</span>}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
                         );
                       })}
                       {colRows.length === 0 && (
