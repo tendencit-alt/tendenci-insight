@@ -114,69 +114,33 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         .eq('id', orderId)
         .maybeSingle();
       
-      if (orderError) {
-        console.error('Error fetching production order:', orderError);
-        throw orderError;
-      }
-      
+      if (orderError) throw orderError;
       if (!orderData) return null;
 
-      // Buscar dados relacionados em paralelo
       const [productionTypeRes, responsibleRes, clientRes, dealRes, phasesRes] = await Promise.all([
-        // Production type
         orderData.production_type_id 
           ? supabase.from('production_types').select('name, color').eq('id', orderData.production_type_id).maybeSingle()
           : Promise.resolve({ data: null }),
-        // Responsible
         orderData.responsible_id
           ? supabase.from('profiles').select('full_name, email').eq('id', orderData.responsible_id).maybeSingle()
           : Promise.resolve({ data: null }),
-        // Client
         orderData.client_id
           ? supabase.from('clients').select('name, phone').eq('id', orderData.client_id).maybeSingle()
           : Promise.resolve({ data: null }),
-        // Deal
         orderData.deal_id
           ? supabase.from('crm_deals').select('title, value').eq('id', orderData.deal_id).maybeSingle()
           : Promise.resolve({ data: null }),
-        // Phases com templates
-        supabase
-          .from('production_phases')
-          .select(`
-            id,
-            status,
-            started_at,
-            completed_at,
-            notes,
-            phase_template_id,
-            position,
-            sla_dias_uteis_custom
-          `)
-          .eq('production_order_id', orderId)
+        supabase.from('production_phases').select('*').eq('production_order_id', orderId)
       ]);
 
-      // Related OPs
+      const phaseTemplateIds = (phasesRes.data || []).map(p => p.phase_template_id).filter(Boolean);
+      const { data: templates } = phaseTemplateIds.length > 0
+        ? await supabase.from('production_phase_templates').select('*').in('id', phaseTemplateIds)
+        : { data: [] };
+
       const relatedOpsRes = (orderData as any).project_id
         ? await supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', (orderData as any).project_id).neq('id', orderId)
         : { data: [] };
-
-      // Buscar templates das phases
-      const phaseTemplateIds = (phasesRes.data || [])
-        .map(p => p.phase_template_id)
-        .filter(Boolean);
-      
-      const { data: templates } = phaseTemplateIds.length > 0
-        ? await supabase
-            .from('production_phase_templates')
-            .select('id, name, color, position, sla_dias_uteis')
-            .in('id', phaseTemplateIds)
-        : { data: [] };
-
-      // Mapear templates para phases
-      const phasesWithTemplates = (phasesRes.data || []).map(phase => ({
-        ...phase,
-        phase_template: templates?.find(t => t.id === phase.phase_template_id) || null
-      }));
 
       return {
         ...orderData,
@@ -184,7 +148,10 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         responsible: responsibleRes.data,
         client: clientRes.data,
         deal: dealRes.data,
-        phases: phasesWithTemplates,
+        phases: (phasesRes.data || []).map(phase => ({
+          ...phase,
+          phase_template: templates?.find(t => t.id === phase.phase_template_id) || null
+        })),
         related_ops: relatedOpsRes.data || []
       };
     },
