@@ -167,7 +167,7 @@ export function OpsProjectsTab() {
       const { data, error } = await supabase
         .from("orders")
         .select(`
-          id, order_number, valor_total, data_entrega_prevista, status, tenant_id,
+          id, order_number, valor_total, data_emissao, data_entrega_prevista, status, tenant_id,
           client:clients(name),
           architect:architects(name),
           pos:production_orders(status, planned_end_date, status_changed_at, value)
