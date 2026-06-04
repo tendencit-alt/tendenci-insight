@@ -254,9 +254,7 @@ export function OpsProjectsTab() {
   }, [filtered, doneSlugs]);
 
   const openDetail = (orderId: string) => {
-    console.log("Opening detail for order:", orderId);
     setSelectedOrderId(orderId);
-    window.dispatchEvent(new CustomEvent('open-order-detail', { detail: { orderId } }));
   };
 
   // Kanban columns: "Sem OP" virtual column + every tenant-managed status, in sort_order.
