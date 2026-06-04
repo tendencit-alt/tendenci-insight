@@ -575,9 +575,16 @@ export function FinProjectsManager() {
                         {budget > 0 ? formatCurrency(budget) : "-"}
                       </TableCell>
                       <TableCell className="text-right">
-                        <span className={realized > 0 ? "text-orange-600 font-medium" : ""}>
-                          {realized > 0 ? formatCurrency(realized) : "-"}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className={realized > 0 ? "text-orange-600 font-bold" : ""}>
+                            {realized > 0 ? formatCurrency(realized) : "-"}
+                          </span>
+                          {totalDespesas > realized && (
+                            <span className="text-[10px] text-muted-foreground" title="Total incluindo não pagos">
+                              Previsto: {formatCurrency(totalDespesas)}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         {budget > 0 ? (
