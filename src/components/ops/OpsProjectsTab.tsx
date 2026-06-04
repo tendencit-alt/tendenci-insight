@@ -394,7 +394,7 @@ export function OpsProjectsTab() {
                     <TableRow key={r.id} className="cursor-pointer" onClick={() => openDetail(r.id)}>
                       <TableCell className="font-medium">{r.name || "—"}</TableCell>
                       <TableCell className="text-muted-foreground">{r.client?.name ?? "—"}</TableCell>
-                      <TableCell className="text-right">R$ {Number(r.value ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-right">R$ {Number(r.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
                       <TableCell className={r.isLate ? "text-destructive font-medium" : ""}>
                         {fmtBR(r.deadline)}
                       </TableCell>
