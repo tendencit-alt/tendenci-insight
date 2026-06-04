@@ -200,6 +200,16 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
               </div>
               
               <div className="flex-1 relative py-2.5">
+                {/* Linha do Dia Vigente (Hoje) - Preto */}
+                <div
+                  className="absolute top-0 bottom-0 border-l-2 border-dashed border-black/60 z-10"
+                  style={{ left: `${todayOffsetPct}%` }}
+                >
+                  <div className="absolute top-1/2 -translate-y-1/2 -left-3 text-[8px] font-black bg-black text-white px-1.5 py-0.5 rounded shadow-sm z-20">
+                    HOJE
+                  </div>
+                </div>
+
                 {/* due-date marker - Azul */}
                 {due && (
                   <div
