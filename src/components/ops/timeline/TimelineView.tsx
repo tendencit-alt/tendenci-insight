@@ -60,7 +60,10 @@ export function TimelineView() {
     // Sorting
     list.sort((a, b) => {
       if (filters.sort === "eta") {
-        return new Date(a.eta).getTime() - new Date(b.eta).getTime();
+        const today = new Date();
+        const daysLeftA = differenceInCalendarDays(new Date(a.eta), today);
+        const daysLeftB = differenceInCalendarDays(new Date(b.eta), today);
+        return daysLeftA - daysLeftB;
       }
       if (filters.sort === "order") {
         return String(a.order_number).localeCompare(String(b.order_number), undefined, { numeric: true });
