@@ -122,7 +122,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
       if (!orderData) return null;
 
       // Buscar dados relacionados em paralelo
-      const [productionTypeRes, responsibleRes, clientRes, dealRes, phasesRes] = await Promise.all([
+      const [productionTypeRes, responsibleRes, clientRes, dealRes, phasesRes, relatedOpsRes] = await Promise.all([
         // Production type
         orderData.production_type_id 
           ? supabase.from('production_types').select('name, color').eq('id', orderData.production_type_id).maybeSingle()
@@ -152,7 +152,11 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
             position,
             sla_dias_uteis_custom
           `)
-          .eq('production_order_id', orderId)
+          .eq('production_order_id', orderId),
+        // Related OPs
+        (orderData as any).project_id
+          ? supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', (orderData as any).project_id).neq('id', orderId)
+          : Promise.resolve({ data: [] })
       ]);
 
       // Buscar templates das phases
@@ -180,7 +184,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         client: clientRes.data,
         deal: dealRes.data,
         phases: phasesWithTemplates,
-        related_ops: []
+        related_ops: relatedOpsRes.data || []
       };
     },
     enabled: !!orderId
