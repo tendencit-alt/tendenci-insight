@@ -157,7 +157,7 @@ export function OpsProjectsTab() {
           id, order_number, valor_total, data_entrega_prevista, status, tenant_id,
           client:clients(name),
           architect:architects(name),
-          pos:production_orders(status, planned_end_date, status_changed_at)
+          pos:production_orders(status, planned_end_date, status_changed_at, value)
         `)
         .neq("status", "cancelado")
         .order("data_entrega_prevista", { ascending: true, nullsFirst: false });
