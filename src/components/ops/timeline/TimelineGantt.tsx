@@ -353,6 +353,3 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
     </Card>
   );
 }
-    </Card>
-  );
-}
