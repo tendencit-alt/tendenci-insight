@@ -102,7 +102,10 @@ export function ProjectKPIsDialog({ open, onOpenChange, project, projectData }: 
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Despesas</p>
-                    <p className="text-xl font-bold text-orange-600">{formatCurrency(despesas)}</p>
+                    <p className="text-xl font-bold text-orange-600">{formatCurrency(despesasPagas)}</p>
+                    {totalDespesas > despesasPagas && (
+                      <p className="text-[10px] text-muted-foreground">Total (inc. abertos): {formatCurrency(totalDespesas)}</p>
+                    )}
                     {budget > 0 && (
                       <p className="text-xs text-muted-foreground">{percentUsed.toFixed(1)}% do orçamento</p>
                     )}
