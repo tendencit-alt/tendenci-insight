@@ -332,17 +332,32 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate, produc
 
   // Financial summary
   const financialSummary = useMemo(() => {
-    if (!financialEntries) return { received: 0, pending: 0, total: 0, count: 0, receivedCount: 0, pendingCount: 0 };
-    const receivables = financialEntries.filter(e => e.type === 'receita');
-    const received = receivables.filter(e => ['pago', 'recebido', 'conciliado'].includes(e.status || '')).reduce((s, e) => s + Number(e.amount || 0), 0);
-    const total = receivables.reduce((s, e) => s + Number(e.amount || 0), 0);
+    if (!financialEntries || !order) return { received: 0, pending: 0, total: 0, count: 0, receivedCount: 0, pendingCount: 0 };
+    
+    // Suporta 'RECEITA' (DB) ou 'receita' (fallback)
+    const receivables = financialEntries.filter(e => e.type?.toLowerCase() === 'receita');
+    
+    // Statuses em caixa alta ou baixa: pago, recebido, conciliado, pago_recebido
+    const paidStatuses = ['pago', 'recebido', 'conciliado', 'pago_recebido'];
+    
+    const received = receivables
+      .filter(e => paidStatuses.includes(e.status?.toLowerCase() || ''))
+      .reduce((s, e) => s + Number(e.amount || 0), 0);
+    
+    const totalReceivables = receivables.reduce((s, e) => s + Number(e.amount || 0), 0);
+    
+    // Se não houver lançamentos de receita mas o pedido tiver valor, usamos o valor do pedido como base para pendente
+    const baseTotal = totalReceivables > 0 ? totalReceivables : Number(order.valor_total || 0);
+    
     return {
-      received, pending: total - received, total,
+      received, 
+      pending: baseTotal - received, 
+      total: baseTotal,
       count: receivables.length,
-      receivedCount: receivables.filter(e => ['pago', 'recebido', 'conciliado'].includes(e.status || '')).length,
-      pendingCount: receivables.filter(e => !['pago', 'recebido', 'conciliado'].includes(e.status || '')).length,
+      receivedCount: receivables.filter(e => paidStatuses.includes(e.status?.toLowerCase() || '')).length,
+      pendingCount: receivables.filter(e => !paidStatuses.includes(e.status?.toLowerCase() || '')).length,
     };
-  }, [financialEntries]);
+  }, [financialEntries, order]);
 
   // Compromissos sobre venda
   const compromissos = useMemo(() => {
