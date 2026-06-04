@@ -350,7 +350,7 @@ export function OpsProjectsTab() {
                               </div>
                             </div>
                           </div>
-                        </Card>
+                        </div>
                         );
                       })}
                       {colRows.length === 0 && (
