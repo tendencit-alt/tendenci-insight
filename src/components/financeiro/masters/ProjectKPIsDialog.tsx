@@ -185,7 +185,7 @@ export function ProjectKPIsDialog({ open, onOpenChange, project, projectData }: 
                       {pendingCount}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {entryCount > 0 ? ((reconciledCount / entryCount) * 100).toFixed(0) : 0}% conciliado
+                      {entryCount > 0 ? ((reconciledCount / entryCount) * 100).toFixed(0) : 0}% realizado
                     </p>
                   </div>
                   {pendingCount > 0 ? (
