@@ -134,15 +134,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           })}
         </div>
 
-        {/* "Hoje" guide line (Dia Vigente) - Preto */}
-        <div
-          className="absolute top-0 bottom-0 border-l-2 border-dashed border-black/80 z-50 pointer-events-none"
-          style={{ left: `calc(${labelWidth}px + ${todayOffsetPct}% * (100% - ${labelWidth}px) / 100)` }}
-        >
-          <div className="absolute top-1/2 -translate-y-1/2 -left-3 text-[8px] font-black bg-black text-white px-1.5 py-0.5 rounded shadow-sm z-50">
-            HOJE
-          </div>
-        </div>
+        {/* Marcador "Hoje" Global removido para usar lógica por OP */}
 
 
 
