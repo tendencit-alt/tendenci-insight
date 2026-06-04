@@ -328,8 +328,8 @@ export function ProjectKPIsDialog({ open, onOpenChange, project, projectData }: 
                         {entry.chart_account ? `${entry.chart_account.code} - ${entry.chart_account.name}` : "-"}
                       </TableCell>
                       <TableCell>
-                        {entry.reconciled ? (
-                          <Badge variant="secondary" className="text-xs">Conciliado</Badge>
+                        {entry.status === "PAGO_RECEBIDO" ? (
+                          <Badge variant="secondary" className="text-xs">Realizado</Badge>
                         ) : (
                           <Badge variant="outline" className="text-xs">{entry.status}</Badge>
                         )}
