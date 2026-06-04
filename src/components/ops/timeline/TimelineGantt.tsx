@@ -87,7 +87,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
         <div className="flex-1 relative h-12 overflow-hidden bg-white/50">
           {(() => {
             const days = [];
-            const finalStep = totalDays < 20 ? 1 : (totalDays < 45 ? 2 : (totalDays < 90 ? 5 : 10));
+            const finalStep = totalDays < 20 ? 1 : (totalDays < 45 ? 2 : (totalDays < 90 ? 7 : 7));
 
             for (let i = 0; i < totalDays; i += finalStep) {
               const left = (i / totalDays) * 100;
