@@ -59,7 +59,7 @@ export function ProjectKPIsDialog({ open, onOpenChange, project, projectData }: 
   const saldoOrcamento = budget - despesas;
   const percentUsed = budget > 0 ? (despesas / budget) * 100 : 0;
   const entryCount = projectData.entries.length;
-  const reconciledCount = projectData.entries.filter((e) => e.reconciled).length;
+  const reconciledCount = projectData.entries.filter((e) => e.status === "PAGO_RECEBIDO").length;
   const pendingCount = entryCount - reconciledCount;
 
   return (
@@ -167,7 +167,7 @@ export function ProjectKPIsDialog({ open, onOpenChange, project, projectData }: 
                     <p className="text-xs text-muted-foreground">Total Lançamentos</p>
                     <p className="text-lg font-bold">{entryCount}</p>
                     <p className="text-xs text-muted-foreground">
-                      {reconciledCount} conciliados
+                      {reconciledCount} realizados
                     </p>
                   </div>
                   <FolderKanban className="h-5 w-5 text-muted-foreground" />
@@ -175,17 +175,17 @@ export function ProjectKPIsDialog({ open, onOpenChange, project, projectData }: 
               </CardContent>
             </Card>
 
-            {/* Pendentes */}
+            {/* A Receber / A Pagar */}
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-muted-foreground">Pendentes</p>
+                    <p className="text-xs text-muted-foreground">Em Aberto</p>
                     <p className={`text-lg font-bold ${pendingCount > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
                       {pendingCount}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {entryCount > 0 ? ((reconciledCount / entryCount) * 100).toFixed(0) : 0}% conciliado
+                      {entryCount > 0 ? ((reconciledCount / entryCount) * 100).toFixed(0) : 0}% realizado
                     </p>
                   </div>
                   {pendingCount > 0 ? (
@@ -328,8 +328,8 @@ export function ProjectKPIsDialog({ open, onOpenChange, project, projectData }: 
                         {entry.chart_account ? `${entry.chart_account.code} - ${entry.chart_account.name}` : "-"}
                       </TableCell>
                       <TableCell>
-                        {entry.reconciled ? (
-                          <Badge variant="secondary" className="text-xs">Conciliado</Badge>
+                        {entry.status === "PAGO_RECEBIDO" ? (
+                          <Badge variant="secondary" className="text-xs">Realizado</Badge>
                         ) : (
                           <Badge variant="outline" className="text-xs">{entry.status}</Badge>
                         )}
