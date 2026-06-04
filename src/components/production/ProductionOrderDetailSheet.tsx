@@ -122,7 +122,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
       if (!orderData) return null;
 
       // Buscar dados relacionados em paralelo
-      const [productionTypeRes, responsibleRes, clientRes, dealRes, phasesRes, relatedOpsRes] = await Promise.all([
+      const [productionTypeRes, responsibleRes, clientRes, dealRes, phasesRes] = await Promise.all([
         // Production type
         orderData.production_type_id 
           ? supabase.from('production_types').select('name, color').eq('id', orderData.production_type_id).maybeSingle()
