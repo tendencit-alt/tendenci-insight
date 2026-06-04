@@ -139,16 +139,16 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
       const dealRes = results[3];
       const phasesRes = results[4];
 
-      const phaseTemplateIds = ((phasesRes.data || []) as any[]).map(p => p.phase_template_id).filter(Boolean);
-      const { data: templates } = phaseTemplateIds.length > 0
-        ? await (supabase.from('production_phase_templates').select('*').in('id', phaseTemplateIds) as any)
+      const templateIds = ((phasesRes.data || []) as any[]).map(p => p.phase_template_id).filter(Boolean);
+      const { data: templates } = templateIds.length > 0
+        ? await (supabase.from('production_phase_templates').select('*').in('id', templateIds) as any)
         : { data: [] };
 
-      const relatedOpsRes = (orderData as any).project_id
+      const { data: relOpsData } = (orderData as any).project_id
         ? await (supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', (orderData as any).project_id).neq('id', orderId) as any)
         : { data: [] };
 
-      const finalPhases: any[] = ((phasesRes.data || []) as any[]).map(phase => {
+      const mappedPhases: any[] = ((phasesRes.data || []) as any[]).map(phase => {
         const t = (templates as any[] | null)?.find(t => t.id === phase.phase_template_id);
         return { ...phase, phase_template: t || null };
       });
