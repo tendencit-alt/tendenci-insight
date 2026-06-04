@@ -91,6 +91,15 @@ export function TimelineFilters({ value, onChange, phases }: Props) {
           <SelectItem value="priority">Agrupar por prioridade</SelectItem>
         </SelectContent>
       </Select>
+      <Select value={value.sort} onValueChange={(v) => set("sort", v as TimelineFiltersValue["sort"])}>
+        <SelectTrigger className="h-8 w-36"><SelectValue placeholder="Ordenar" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="order">Nº Ordem</SelectItem>
+          <SelectItem value="date">Data (Início)</SelectItem>
+          <SelectItem value="priority">Prioridade</SelectItem>
+          <SelectItem value="client">Cliente</SelectItem>
+        </SelectContent>
+      </Select>
       <Select value={value.density} onValueChange={(v) => set("density", v as TimelineFiltersValue["density"])}>
         <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
         <SelectContent>
