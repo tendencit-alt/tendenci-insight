@@ -216,7 +216,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                     className="absolute top-0 bottom-0 border-l-2 border-dashed border-blue-600 z-10 group/due"
                     style={{ left: `${(differenceInCalendarDays(due, rangeStart) / totalDays) * 100}%` }}
                   >
-                    <div className="absolute top-0 -left-1.5 text-[8px] font-black bg-blue-600 text-white px-1 rounded-sm shadow-md z-20 flex items-center gap-1">
+                    <div className="absolute top-1/2 -translate-y-1/2 -left-3 text-[8px] font-black bg-blue-600 text-white px-1 rounded-sm shadow-md z-20 flex items-center gap-1">
                       FIM
                       {(() => {
                         const daysLeft = differenceInCalendarDays(due, today);
