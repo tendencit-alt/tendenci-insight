@@ -127,7 +127,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         ? await (supabase.from('production_phase_templates').select('*').in('id', tmplIds) as any)
         : { data: [] };
 
-      const res: any = {
+      const finalRes: any = {
         ...orderData,
         production_type: results[0].data,
         responsible: results[1].data,
@@ -139,7 +139,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         })),
         related_ops: results[5].data || []
       };
-      return res;
+      return finalRes;
     },
     enabled: !!orderId
   });
