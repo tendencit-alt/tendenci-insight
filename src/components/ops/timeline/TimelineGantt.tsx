@@ -87,9 +87,9 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
         <div className="flex-1 relative h-12 overflow-hidden bg-white/50">
           {(() => {
             const days = [];
-            const dayWidth = 100 / totalDays;
+            const finalStep = totalDays < 20 ? 1 : (totalDays < 45 ? 2 : (totalDays < 90 ? 5 : 10));
 
-            for (let i = 0; i < totalDays; i++) {
+            for (let i = 0; i < totalDays; i += finalStep) {
               const left = (i / totalDays) * 100;
               const date = addDays(rangeStart, i);
               const isWeekend = [0, 6].includes(date.getDay());
@@ -97,17 +97,15 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
               days.push(
                 <div
                   key={i}
-                  className={`absolute top-0 bottom-0 border-l border-border/60 flex flex-col justify-center transition-all ${
+                  className={`absolute top-0 bottom-0 border-l border-border/80 flex flex-col justify-center pl-2 transition-all ${
                     isWeekend ? "bg-muted/10" : ""
                   }`}
-                  style={{ left: `${left}%`, width: `${dayWidth}%` }}
+                  style={{ left: `${left}%`, width: `${(finalStep / totalDays) * 100}%` }}
                 >
-                  <div className="pl-1.5 flex flex-col">
-                    <span className="text-[10px] font-black text-foreground">{format(date, "dd/MM")}</span>
-                    <span className="text-[8px] font-bold text-muted-foreground uppercase opacity-70">
-                      {format(date, "EEE", { locale: ptBR }).replace(".", "")}
-                    </span>
-                  </div>
+                  <span className="text-[11px] font-black text-foreground">{format(date, "dd/MM")}</span>
+                  <span className="text-[9px] font-bold text-muted-foreground uppercase opacity-80">
+                    {format(date, "EEE", { locale: ptBR }).replace(".", "")}
+                  </span>
                 </div>
               );
             }
@@ -129,7 +127,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
             return (
               <div
                 key={i}
-                className={`absolute top-0 bottom-0 border-l border-border/60 ${isWeekend ? "bg-muted/10" : ""}`}
+                className={`absolute top-0 bottom-0 border-l border-border/40 ${isWeekend ? "bg-muted/10" : ""}`}
                 style={{ left: `${left}%`, width: `${(1 / totalDays) * 100}%` }}
               />
             );
