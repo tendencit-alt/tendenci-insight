@@ -167,7 +167,7 @@ export function ProjectKPIsDialog({ open, onOpenChange, project, projectData }: 
                     <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Pagamentos Confirmados</p>
                     <p className="text-lg font-bold">{entryCount}</p>
                     <p className="text-xs text-muted-foreground">
-                      {reconciledCount} realizados
+                      {reconciledCount} recebidos
                     </p>
                   </div>
                   <FolderKanban className="h-5 w-5 text-muted-foreground" />
