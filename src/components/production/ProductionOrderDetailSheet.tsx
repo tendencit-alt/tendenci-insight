@@ -464,21 +464,28 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
                 {/* Fase atual e botão avançar */}
                 {order.status !== 'concluido' && (
                   <div className="p-4 rounded-lg bg-muted/50 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Fase Atual</p>
-                        <p className="font-medium">
-                          {currentPhase?.phase_template?.name || 'Aguardando início'}
-                        </p>
-                      </div>
-                      {nextPhase && (
-                        <div className="text-right">
-                          <p className="text-sm text-muted-foreground">Próxima</p>
-                          <p className="font-medium text-primary">
-                            {nextPhase.phase_template?.name}
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Fase Atual</p>
+                          <p className="font-medium">
+                            {statusColumns.find(c => c.slug === order.status)?.label || order.status}
                           </p>
                         </div>
-                      )}
+                        {nextPhase && (
+                          <div className="text-right">
+                            <p className="text-sm text-muted-foreground">Próxima</p>
+                            <p className="font-medium text-primary">
+                              {nextPhase.phase_template?.name}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <ProductionOrderChecklist 
+                        productionOrderId={orderId} 
+                        statusSlug={order.status} 
+                      />
                     </div>
                     <Button 
                       className="w-full gap-2"
