@@ -56,6 +56,27 @@ export function TimelineView() {
         return isWithinInterval(eta, interval) || isWithinInterval(start, interval) || (start < interval.start && eta > interval.end);
       });
     }
+
+    // Sorting
+    list.sort((a, b) => {
+      if (filters.sort === "order") {
+        return String(a.order_number).localeCompare(String(b.order_number), undefined, { numeric: true });
+      }
+      if (filters.sort === "date") {
+        const dateA = new Date(a.actual_start_date ?? a.planned_start_date ?? a.status_changed_at).getTime();
+        const dateB = new Date(b.actual_start_date ?? b.planned_start_date ?? b.status_changed_at).getTime();
+        return dateA - dateB;
+      }
+      if (filters.sort === "priority") {
+        const pMap: Record<string, number> = { alta: 0, normal: 1, baixa: 2 };
+        return (pMap[a.priority] ?? 1) - (pMap[b.priority] ?? 1);
+      }
+      if (filters.sort === "client") {
+        return (a.client_name || "").localeCompare(b.client_name || "");
+      }
+      return 0;
+    });
+
     return list;
   }, [ops, filters]);
 
