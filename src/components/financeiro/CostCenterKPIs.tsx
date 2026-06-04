@@ -142,8 +142,10 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
           splits?.forEach(split => {
             addToCC(split.cost_center_id, split.type, split.amount, isRealizado);
           });
-        } else if (entry.cost_center_id) {
-          addToCC(entry.cost_center_id, entry.type, Number(entry.amount), isRealizado);
+        } else {
+          // Se não tiver CC, usamos uma chave especial
+          const ccId = entry.cost_center_id || "_sem_centro";
+          addToCC(ccId, entry.type, Number(entry.amount), isRealizado);
         }
       });
 
