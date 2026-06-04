@@ -107,62 +107,53 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
     queryKey: ['production-order-detail', orderId],
     queryFn: async () => {
       if (!orderId) return null;
-      const { data: orderData } = await (supabase.from('production_orders').select('*').eq('id', orderId).maybeSingle() as any);
-      if (!orderData) return null;
-
-      // Executando em série para evitar problemas de tipos complexos
-      let pType = null;
-      if (orderData.production_type_id) {
-        const { data } = await (supabase.from('production_types').select('name').eq('id', orderData.production_type_id).maybeSingle() as any);
-        pType = data;
-      }
       
-      let responsible = null;
-      if (orderData.responsible_id) {
-        const { data } = await (supabase.from('profiles').select('full_name').eq('id', orderData.responsible_id).maybeSingle() as any);
-        responsible = data;
-      }
+      const { data: orderDataRaw } = await supabase
+        .from('production_orders' as any)
+        .select('*')
+        .eq('id', orderId)
+        .maybeSingle();
 
-      let client = null;
-      if (orderData.client_id) {
-        const { data } = await (supabase.from('clients').select('name').eq('id', orderData.client_id).maybeSingle() as any);
-        client = data;
-      }
+      if (!orderDataRaw) return null;
+      const orderData = orderDataRaw as any;
 
-      let deal = null;
-      if (orderData.deal_id) {
-        const { data } = await (supabase.from('crm_deals').select('title').eq('id', orderData.deal_id).maybeSingle() as any);
-        deal = data;
-      }
+      const [pTypeRes, respRes, cliRes, dlRes, phsRes, relRes] = await Promise.all([
+        orderData.production_type_id 
+          ? supabase.from('production_types' as any).select('name').eq('id', orderData.production_type_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        orderData.responsible_id
+          ? supabase.from('profiles' as any).select('full_name').eq('id', orderData.responsible_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        orderData.client_id
+          ? supabase.from('clients' as any).select('name').eq('id', orderData.client_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        orderData.deal_id
+          ? supabase.from('crm_deals' as any).select('title').eq('id', orderData.deal_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        supabase.from('production_phases' as any).select('*').eq('production_order_id', orderId),
+        orderData.project_id
+          ? supabase.from('production_orders' as any).select('id, title, status, order_number').eq('project_id', orderData.project_id).neq('id', orderId)
+          : Promise.resolve({ data: [] })
+      ]);
 
-      const { data: phs } = await (supabase.from('production_phases').select('*').eq('production_order_id', orderId) as any);
-      const phasesArr = phs || [];
-
-      let relatedOps = [];
-      if (orderData.project_id) {
-        const { data } = await (supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', orderData.project_id).neq('id', orderId) as any);
-        relatedOps = data || [];
-      }
-
-      const tIds = phasesArr.map((p: any) => p.phase_template_id).filter(Boolean);
-      let tmpls = [];
-      if (tIds.length > 0) {
-        const { data } = await (supabase.from('production_phase_templates').select('*').in('id', tIds) as any);
-        tmpls = data || [];
-      }
+      const phsArr = phsRes.data || [];
+      const tIds = phsArr.map((p: any) => p.phase_template_id).filter(Boolean);
+      const tmplsRes = tIds.length > 0
+        ? await supabase.from('production_phase_templates' as any).select('*').in('id', tIds)
+        : { data: [] };
 
       return {
         ...orderData,
-        production_type: pType,
-        responsible,
-        client,
-        deal,
-        phases: phasesArr.map((p: any) => ({
+        production_type: pTypeRes.data,
+        responsible: respRes.data,
+        client: cliRes.data,
+        deal: dlRes.data,
+        phases: phsArr.map((p: any) => ({
           ...p,
-          phase_template: tmpls.find((t: any) => t.id === p.phase_template_id) || null
+          phase_template: (tmplsRes.data || []).find((t: any) => t.id === p.phase_template_id) || null
         })),
-        related_ops: relatedOps
-      } as any;
+        related_ops: relRes.data || []
+      };
     },
     enabled: !!orderId
   });
