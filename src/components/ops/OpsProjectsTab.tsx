@@ -117,11 +117,11 @@ function buildAggregator(
           else if (s.level === "warning") slaAlerts++;
         }
 
-        const isLate = !!p.deadline && parseLocalDate(p.deadline) < today && !doneSlugs.has(status);
+        const isLate = dueInfo.level === "late" && !doneSlugs.has(status);
 
         result.push({
           ...p,
-          id: `${p.id}-${status}`, // Unique ID for the card in this column
+          id: `${p.id}-${status}`,
           total,
           done,
           inProgress,
@@ -132,7 +132,7 @@ function buildAggregator(
           slaAlerts,
           slaOverdue,
           value: statusValue,
-          // Custom field to show which OPs are here
+          _due: dueInfo,
           _opsCountInStatus: opsInStatus.length
         } as any);
       });
