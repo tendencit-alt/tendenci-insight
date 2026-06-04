@@ -111,36 +111,36 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
       const { data: orderData } = await (supabase.from('production_orders').select('*').eq('id', orderId).maybeSingle() as any);
       if (!orderData) return null;
 
-      const [pTypeRes, respRes, cliRes, dlRes, phsRes] = await Promise.all([
+      const results = await Promise.all([
         (supabase.from('production_types').select('name').eq('id', orderData.production_type_id || '').maybeSingle() as any),
         (supabase.from('profiles').select('full_name').eq('id', orderData.responsible_id || '').maybeSingle() as any),
         (supabase.from('clients').select('name').eq('id', orderData.client_id || '').maybeSingle() as any),
         (supabase.from('crm_deals').select('title').eq('id', orderData.deal_id || '').maybeSingle() as any),
-        (supabase.from('production_phases').select('*').eq('production_order_id', orderId) as any)
+        (supabase.from('production_phases').select('*').eq('production_order_id', orderId) as any),
+        orderData.project_id
+          ? (supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', orderData.project_id).neq('id', orderId) as any)
+          : Promise.resolve({ data: [] })
       ]);
 
-      const phs = phsRes.data || [];
-      const tmplIds = phs.map((p: any) => p.phase_template_id).filter(Boolean);
-      const tmpls = tmplIds.length > 0
-        ? (await (supabase.from('production_phase_templates').select('*').in('id', tmplIds) as any)).data || []
-        : [];
+      const phs = results[4].data || [];
+      const templateIds = phs.map((p: any) => p.phase_template_id).filter(Boolean);
+      const tmplsRes = templateIds.length > 0
+        ? await (supabase.from('production_phase_templates').select('*').in('id', templateIds) as any)
+        : { data: [] };
 
-      const relOps = orderData.project_id
-        ? (await (supabase.from('production_orders').select('id, title, status, order_number').eq('project_id', orderData.project_id).neq('id', orderId) as any)).data || []
-        : [];
-
-      return {
+      const res: any = {
         ...orderData,
-        production_type: pTypeRes.data,
-        responsible: respRes.data,
-        client: cliRes.data,
-        deal: dlRes.data,
-        phases: phs.map((phase: any) => ({
-          ...phase,
-          phase_template: tmpls.find((t: any) => t.id === phase.phase_template_id) || null
+        production_type: results[0].data,
+        responsible: results[1].data,
+        client: results[2].data,
+        deal: results[3].data,
+        phases: phs.map((p: any) => ({
+          ...p,
+          phase_template: (tmplsRes.data || []).find((t: any) => t.id === p.phase_template_id) || null
         })),
-        related_ops: relOps
-      } as any;
+        related_ops: results[5].data || []
+      };
+      return res;
     },
     enabled: !!orderId
   });
