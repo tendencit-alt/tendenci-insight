@@ -34,12 +34,12 @@ function fmtBR(d: string | null | undefined): string {
 interface ProjectProductionRow {
   id: string;
   name: string | null;
-  value: number;
+  order_valor_total: number;
   deadline: string | null;
   tenant_id: string | null;
   client: { name: string | null } | null;
   architect: { name: string | null } | null;
-  pos: { status: string; planned_end_date: string | null; status_changed_at: string | null }[];
+  pos: { status: string; planned_end_date: string | null; status_changed_at: string | null; value: number | null }[];
 }
 
 interface AggregatedRow extends ProjectProductionRow {
@@ -52,6 +52,7 @@ interface AggregatedRow extends ProjectProductionRow {
   isLate: boolean;
   slaAlerts: number;
   slaOverdue: number;
+  value: number;
 }
 
 const SEM_OP_META = { label: "Sem OP", tone: "bg-muted text-muted-foreground border-border" };
@@ -76,7 +77,8 @@ function buildAggregator(
         result.push({
           ...p, total, done: 0, inProgress: 0, waiting: 0,
           progressPct: 0, aggStatus: "sem_op", isLate: false, slaAlerts: 0, slaOverdue: 0,
-        });
+          value: p.order_valor_total // Se não tem OP, mostra valor total do pedido
+        } as any);
         return;
       }
 
@@ -90,6 +92,9 @@ function buildAggregator(
         const opsInStatus = pos.filter(x => x.status === status);
         const inProgress = opsInStatus.filter(x => x.status === "em_producao").length;
         const waiting = opsInStatus.filter(x => x.status === "aguardando").length;
+        
+        // SOMAR VALOR DAS OPs DESTE STATUS
+        const statusValue = opsInStatus.reduce((sum, op) => sum + (Number(op.value) || 0), 0);
         
         let slaAlerts = 0;
         let slaOverdue = 0;
@@ -116,6 +121,7 @@ function buildAggregator(
           isLate,
           slaAlerts,
           slaOverdue,
+          value: statusValue,
           // Custom field to show which OPs are here
           _opsCountInStatus: opsInStatus.length
         } as any);
@@ -157,7 +163,7 @@ export function OpsProjectsTab() {
           id, order_number, valor_total, data_entrega_prevista, status, tenant_id,
           client:clients(name),
           architect:architects(name),
-          pos:production_orders(status, planned_end_date, status_changed_at)
+          pos:production_orders(status, planned_end_date, status_changed_at, value)
         `)
         .neq("status", "cancelado")
         .order("data_entrega_prevista", { ascending: true, nullsFirst: false });
@@ -180,7 +186,7 @@ export function OpsProjectsTab() {
           return {
             id: o.id,
             name: `Pedido #${o.order_number}`,
-            value: Number(o.valor_total ?? 0),
+            order_valor_total: Number(o.valor_total ?? 0),
             deadline: effectiveDeadline,
             tenant_id: o.tenant_id ?? null,
             client: o.client,
@@ -388,7 +394,7 @@ export function OpsProjectsTab() {
                     <TableRow key={r.id} className="cursor-pointer" onClick={() => openDetail(r.id)}>
                       <TableCell className="font-medium">{r.name || "—"}</TableCell>
                       <TableCell className="text-muted-foreground">{r.client?.name ?? "—"}</TableCell>
-                      <TableCell className="text-right">R$ {Number(r.value ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-right">R$ {Number(r.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
                       <TableCell className={r.isLate ? "text-destructive font-medium" : ""}>
                         {fmtBR(r.deadline)}
                       </TableCell>
