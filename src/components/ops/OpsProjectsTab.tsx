@@ -55,6 +55,7 @@ interface AggregatedRow extends ProjectProductionRow {
   slaAlerts: number;
   slaOverdue: number;
   value: number;
+  _due?: { hasDue: boolean; elapsedDays: number; totalDays: number; pct: number; level: string };
 }
 
 const SEM_OP_META = { label: "Sem OP", tone: "bg-muted text-muted-foreground border-border" };
