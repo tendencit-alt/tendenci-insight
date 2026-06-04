@@ -137,7 +137,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           className="absolute top-0 bottom-0 border-l-2 border-dashed border-black/80 z-50 pointer-events-none"
           style={{ left: `calc(${labelWidth}px + ${todayOffsetPct}% * (100% - ${labelWidth}px) / 100)` }}
         >
-          <div className="absolute -top-4 -left-4 text-[8px] font-black bg-black text-white px-1.5 py-0.5 rounded-sm shadow-sm tracking-tighter">
+          <div className="absolute top-0 -left-4 text-[8px] font-black bg-black text-white px-1.5 py-0.5 rounded-sm shadow-sm tracking-tighter">
             HOJE
           </div>
         </div>
@@ -212,7 +212,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                     className="absolute top-0 bottom-0 border-l-2 border-dashed border-blue-600 z-10 group/due"
                     style={{ left: `${(differenceInCalendarDays(due, rangeStart) / totalDays) * 100}%` }}
                   >
-                    <div className="absolute top-0 -left-1.5 translate-y-[-50%] text-[8px] font-black bg-blue-600 text-white px-1 rounded-sm shadow-md z-20">
+                    <div className="absolute top-0 -left-1.5 text-[8px] font-black bg-blue-600 text-white px-1 rounded-sm shadow-md z-20">
                       FIM
                     </div>
                   </div>
