@@ -416,7 +416,14 @@ export function OpsProjectsTab() {
                       <TableCell className="text-muted-foreground">{r.client?.name ?? "—"}</TableCell>
                       <TableCell className="text-right">R$ {Number(r.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
                       <TableCell className={r.isLate ? "text-destructive font-medium" : ""}>
-                        {fmtBR(r.deadline)}
+                        <div className="flex flex-col">
+                          <span>{fmtBR(r.deadline)}</span>
+                          {r._due?.hasDue && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {r._due.elapsedDays}d / {r._due.totalDays}d
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 min-w-[140px]">
