@@ -35,6 +35,7 @@ interface ProjectProductionRow {
   id: string;
   name: string | null;
   order_valor_total: number;
+  data_emissao: string | null;
   deadline: string | null;
   tenant_id: string | null;
   client: { name: string | null } | null;
