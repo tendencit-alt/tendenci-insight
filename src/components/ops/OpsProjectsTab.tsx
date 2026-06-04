@@ -324,50 +324,53 @@ export function OpsProjectsTab() {
                         return (
                         <div 
                           key={r.id} 
-                          className={`p-3 rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer hover:border-primary hover:shadow-md transition-all active:bg-accent relative z-20 ${projectSlaTone}`} 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
+                          className={`p-3 rounded-lg border bg-card text-card-foreground shadow-sm cursor-pointer hover:border-primary hover:shadow-md transition-all active:scale-[0.98] ${projectSlaTone}`} 
+                          onClick={() => {
                             const orderId = r.id.includes('-') ? r.id.split('-')[0] : r.id;
-                            console.log("Card clicked for order:", orderId);
                             setSelectedOrderId(orderId);
                           }}
                         >
-                          <div className="text-sm font-bold truncate text-primary">{r.name || "Sem nome"}</div>
+                          <div className="text-sm font-bold truncate text-primary mb-1">{r.name || "Sem nome"}</div>
                           <div className="text-xs text-muted-foreground truncate mb-3">{r.client?.name ?? "—"}</div>
 
-                          <div className={`mt-2 flex items-center justify-between p-2 rounded-md bg-muted/40 border border-border/50 text-[11px] ${r.isLate ? "text-destructive font-bold" : "text-muted-foreground"}`}>
-                            <div className="flex items-center gap-2">
-                              <CalendarClock className="h-3.5 w-3.5" />
-                              <span>{fmtBR(r.deadline)}</span>
+                          <div className="space-y-2 mt-2">
+                            <div className={`flex items-center justify-between p-2 rounded-md bg-muted/40 border border-border/50 text-[11px] ${r.isLate ? "text-destructive font-bold" : "text-muted-foreground"}`}>
+                              <div className="flex items-center gap-1.5 overflow-hidden">
+                                <CalendarClock className="h-3.5 w-3.5 shrink-0" />
+                                <span className="truncate">{fmtBR(r.deadline)}</span>
+                              </div>
                               {r._due?.hasDue && (
-                                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-background/50 border border-border/50">
-                                  {r._due.elapsedDays}d / {r._due.totalDays}d
+                                <span className="shrink-0 px-1.5 py-0.5 rounded-full bg-background/50 border border-border/50 font-medium">
+                                  {r._due.elapsedDays}d/{r._due.totalDays}d
                                 </span>
                               )}
                             </div>
-                            <span className="font-mono font-bold text-foreground text-[10px]">R$ {Number(r.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                            
+                            <div className="flex items-center justify-end px-1">
+                              <span className="font-mono font-bold text-foreground text-[11px]">R$ {Number(r.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                            </div>
                           </div>
 
                           <div className="mt-3">
-                            <Progress value={r.progressPct} className="h-1.5" title={`Progresso total do projeto: ${r.progressPct}%`} />
-                            <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground gap-1">
-                              <span className="font-medium text-primary">{(r as any)._opsCountInStatus} de {r.total} OPs</span>
+                            <Progress value={r.progressPct} className="h-1.5" title={`Progresso total: ${r.progressPct}%`} />
+                            <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground gap-1">
+                              <span className="font-semibold text-primary/80 uppercase tracking-tighter">
+                                {(r as any)._opsCountInStatus} de {r.total} OPs
+                              </span>
                               <div className="flex items-center gap-1">
                                 {r.slaAlerts > 0 && (
                                   <Badge
                                     variant="secondary"
-                                    className={`text-[10px] gap-0.5 px-1.5 py-0 ${
+                                    className={`text-[9px] h-4 gap-0.5 px-1 py-0 font-bold ${
                                       r.slaOverdue > 0
-                                        ? "bg-destructive/10 text-destructive border-destructive/30"
-                                        : "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300"
+                                        ? "bg-destructive/10 text-destructive border-destructive/20"
+                                        : "bg-amber-500/10 text-amber-700 border-amber-500/20 dark:text-amber-300"
                                     }`}
-                                    title={`${r.slaAlerts} OP(s) com alerta de prazo nesta fase${r.slaOverdue ? ` — ${r.slaOverdue} vencida(s)` : ""}`}
                                   >
-                                    <Clock className="h-2.5 w-2.5" />SLA {r.slaAlerts}
+                                    <Clock className="h-2 w-2" />SLA {r.slaAlerts}
                                   </Badge>
                                 )}
-                                {r.isLate && <span className="text-destructive font-medium">Atrasado</span>}
+                                {r.isLate && <span className="text-destructive font-bold uppercase text-[9px] tracking-tight">Atrasado</span>}
                               </div>
                             </div>
                           </div>
