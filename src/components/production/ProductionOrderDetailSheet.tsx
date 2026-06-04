@@ -423,7 +423,6 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
                                   const next = new URLSearchParams(window.location.search);
                                   next.set("op", op.id);
                                   window.history.replaceState(null, "", "?" + next.toString());
-                                  // Dispara evento para o componente pai notar a mudança se necessário
                                   window.dispatchEvent(new PopStateEvent('popstate'));
                                 }, 100);
                               }}
