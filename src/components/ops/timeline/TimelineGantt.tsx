@@ -372,6 +372,6 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           </div>
         </div>
       </div>
-    </Card>
+    </div>
   );
 }
