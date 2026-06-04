@@ -153,7 +153,7 @@ export function FinanceiroKPIs({ metrics, isLoading, onSelectKPI, dateFrom, date
                   {formatCurrency(resultado)}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Realizado: <span className="font-semibold text-foreground">{resultadoRealizadoPct.toFixed(1)}%</span>
+                  Liquidado: <span className="font-semibold text-foreground">{resultadoRealizadoPct.toFixed(1)}%</span>
                   <span className="ml-1 text-muted-foreground/70">({formatCurrency(resultadoRealizado)})</span>
                 </p>
               </div>
