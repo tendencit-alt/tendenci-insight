@@ -75,12 +75,14 @@ function buildAggregator(
     rows.forEach((p) => {
       const pos = (p.pos ?? []).map((x) => ({ ...x, status: resolve(x.status) }));
       const total = pos.length;
+      const dueInfo = dueDateUrgency(p.data_emissao, p.deadline);
       
       if (total === 0) {
         result.push({
           ...p, total, done: 0, inProgress: 0, waiting: 0,
-          progressPct: 0, aggStatus: "sem_op", isLate: false, slaAlerts: 0, slaOverdue: 0,
-          value: p.order_valor_total // Se não tem OP, mostra valor total do pedido
+          progressPct: 0, aggStatus: "sem_op", isLate: dueInfo.level === "late", slaAlerts: 0, slaOverdue: 0,
+          value: p.order_valor_total,
+          _due: dueInfo
         } as any);
         return;
       }
