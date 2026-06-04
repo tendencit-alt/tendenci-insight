@@ -313,7 +313,7 @@ export function OpsProjectsTab() {
                       <span className="text-xs font-semibold text-foreground">{col.label}</span>
                       <Badge variant="secondary" className="text-xs">{colRows.length}</Badge>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 relative">
                       {colRows.map((r) => {
                         const projectSlaTone =
                           r.slaOverdue > 0
