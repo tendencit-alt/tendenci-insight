@@ -153,7 +153,8 @@ export function OpsOrdersTab() {
   const enriched = useMemo(() => {
     return (orders as any[]).map((o) => {
       const slug = resolveSlug(o.status, validSlugs);
-      const due = dueDateUrgency(o.created_at, o.planned_end_date);
+      const emissionDate = (o.orders as any)?.data_emissao || o.created_at;
+      const due = dueDateUrgency(emissionDate, o.planned_end_date);
       const summary = phaseSummary[o.id] ?? { regressCount: 0, currentPhaseSince: o.status_changed_at };
       return {
         ...o,

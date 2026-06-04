@@ -11,6 +11,7 @@ import { LayoutGrid, List, Search, RefreshCw, Loader2, AlertTriangle, Clock, Che
 import { ProjectDetailSheet } from "@/components/projects/ProjectDetailSheet";
 import { OrderDetailSheet } from "@/components/orders/OrderDetailSheet";
 import { useProductionStatusColumns, colorTone, slaState } from "@/hooks/useProductionStatusColumns";
+import { dueDateUrgency } from "@/hooks/useProductionPhaseMove";
 import { ManageProductionStatusDialog } from "./ManageProductionStatusDialog";
 
 // Map legacy slugs that may still exist on production_orders rows.
@@ -35,6 +36,7 @@ interface ProjectProductionRow {
   id: string;
   name: string | null;
   order_valor_total: number;
+  data_emissao: string | null;
   deadline: string | null;
   tenant_id: string | null;
   client: { name: string | null } | null;
@@ -53,6 +55,7 @@ interface AggregatedRow extends ProjectProductionRow {
   slaAlerts: number;
   slaOverdue: number;
   value: number;
+  _due?: { hasDue: boolean; elapsedDays: number; totalDays: number; pct: number; level: string };
 }
 
 const SEM_OP_META = { label: "Sem OP", tone: "bg-muted text-muted-foreground border-border" };
@@ -72,12 +75,14 @@ function buildAggregator(
     rows.forEach((p) => {
       const pos = (p.pos ?? []).map((x) => ({ ...x, status: resolve(x.status) }));
       const total = pos.length;
+      const dueInfo = dueDateUrgency(p.data_emissao, p.deadline);
       
       if (total === 0) {
         result.push({
           ...p, total, done: 0, inProgress: 0, waiting: 0,
-          progressPct: 0, aggStatus: "sem_op", isLate: false, slaAlerts: 0, slaOverdue: 0,
-          value: p.order_valor_total // Se não tem OP, mostra valor total do pedido
+          progressPct: 0, aggStatus: "sem_op", isLate: dueInfo.level === "late", slaAlerts: 0, slaOverdue: 0,
+          value: p.order_valor_total,
+          _due: dueInfo
         } as any);
         return;
       }
@@ -112,11 +117,11 @@ function buildAggregator(
           else if (s.level === "warning") slaAlerts++;
         }
 
-        const isLate = !!p.deadline && parseLocalDate(p.deadline) < today && !doneSlugs.has(status);
+        const isLate = dueInfo.level === "late" && !doneSlugs.has(status);
 
         result.push({
           ...p,
-          id: `${p.id}-${status}`, // Unique ID for the card in this column
+          id: `${p.id}-${status}`,
           total,
           done,
           inProgress,
@@ -127,7 +132,7 @@ function buildAggregator(
           slaAlerts,
           slaOverdue,
           value: statusValue,
-          // Custom field to show which OPs are here
+          _due: dueInfo,
           _opsCountInStatus: opsInStatus.length
         } as any);
       });
@@ -166,7 +171,7 @@ export function OpsProjectsTab() {
       const { data, error } = await supabase
         .from("orders")
         .select(`
-          id, order_number, valor_total, data_entrega_prevista, status, tenant_id,
+          id, order_number, valor_total, data_emissao, data_entrega_prevista, status, tenant_id,
           client:clients(name),
           architect:architects(name),
           pos:production_orders(status, planned_end_date, status_changed_at, value)
@@ -193,6 +198,7 @@ export function OpsProjectsTab() {
             id: o.id,
             name: `Pedido #${o.order_number}`,
             order_valor_total: Number(o.valor_total ?? 0),
+            data_emissao: o.data_emissao,
             deadline: effectiveDeadline,
             tenant_id: o.tenant_id ?? null,
             client: o.client,
@@ -332,9 +338,14 @@ export function OpsProjectsTab() {
                           <div className={`mt-2 flex items-center justify-between pointer-events-none p-2 rounded-md bg-muted/40 border border-border/50 text-[11px] ${r.isLate ? "text-destructive font-bold" : "text-muted-foreground"}`}>
                             <div className="flex items-center gap-2">
                               <CalendarClock className="h-3.5 w-3.5" />
-                              <span>Prazo: {fmtBR(r.deadline)}</span>
+                              <span>{fmtBR(r.deadline)}</span>
+                              {r._due?.hasDue && (
+                                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-background/50 border border-border/50">
+                                  {r._due.elapsedDays}d / {r._due.totalDays}d
+                                </span>
+                              )}
                             </div>
-                            <span className="font-mono font-bold text-foreground">R$ {Number(r.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                            <span className="font-mono font-bold text-foreground text-[10px]">R$ {Number(r.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                           </div>
 
                           <div className="mt-3 pointer-events-none">
@@ -405,7 +416,14 @@ export function OpsProjectsTab() {
                       <TableCell className="text-muted-foreground">{r.client?.name ?? "—"}</TableCell>
                       <TableCell className="text-right">R$ {Number(r.value || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</TableCell>
                       <TableCell className={r.isLate ? "text-destructive font-medium" : ""}>
-                        {fmtBR(r.deadline)}
+                        <div className="flex flex-col">
+                          <span>{fmtBR(r.deadline)}</span>
+                          {r._due?.hasDue && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {r._due.elapsedDays}d / {r._due.totalDays}d
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 min-w-[140px]">
