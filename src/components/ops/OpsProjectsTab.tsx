@@ -133,6 +133,7 @@ function buildAggregator(
 }
 
 export function OpsProjectsTab() {
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [rawRows, setRawRows] = useState<ProjectProductionRow[]>([]);
   const [search, setSearch] = useState("");
