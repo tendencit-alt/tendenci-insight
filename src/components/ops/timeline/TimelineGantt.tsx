@@ -283,7 +283,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                   </div>
                 )}
 
-                {/* bar */}
+                {/* Indicador de Status (Barra colorida) */}
                 <div
                   className="absolute top-1/2 -translate-y-1/2 flex rounded overflow-hidden shadow-sm border border-black/5 ring-1 ring-black/5"
                   style={{
