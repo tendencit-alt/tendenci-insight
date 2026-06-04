@@ -159,8 +159,8 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         responsible: responsibleRes.data,
         client: clientRes.data,
         deal: dealRes.data,
-        phases: finalPhases,
-        related_ops: (relatedOpsRes.data as any[] | null) || []
+        phases: mappedPhases,
+        related_ops: (relOpsData as any[] | null) || []
       };
       return res;
     },
