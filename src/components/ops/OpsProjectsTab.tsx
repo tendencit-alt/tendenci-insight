@@ -34,12 +34,12 @@ function fmtBR(d: string | null | undefined): string {
 interface ProjectProductionRow {
   id: string;
   name: string | null;
-  value: number;
+  order_valor_total: number;
   deadline: string | null;
   tenant_id: string | null;
   client: { name: string | null } | null;
   architect: { name: string | null } | null;
-  pos: { status: string; planned_end_date: string | null; status_changed_at: string | null }[];
+  pos: { status: string; planned_end_date: string | null; status_changed_at: string | null; value: number | null }[];
 }
 
 interface AggregatedRow extends ProjectProductionRow {
