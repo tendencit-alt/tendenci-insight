@@ -163,16 +163,19 @@ export function FinProjectsManager() {
     const activeProjects = projects?.filter(p => p.status === "ativo") || [];
     
     let totalBudget = 0;
-    let totalRealized = 0;
+    let totalRealized = 0; // Despesas Pagas
+    let totalRecebido = 0; // Receitas Pagas
     let projectsOverBudget = 0;
     let projectsUnderBudget = 0;
     
     activeProjects.forEach(project => {
       const budget = Number(project.budget) || 0;
-      const realized = realizedByProject[project.id]?.despesas || 0;
+      const realizedDespesas = realizedByProject[project.id]?.despesasPagas || 0;
+      const realizedReceitas = realizedByProject[project.id]?.receitasPagas || 0;
       
       totalBudget += budget;
-      totalRealized += realized;
+      totalRealized += realizedDespesas;
+      totalRecebido += realizedReceitas;
       
       if (budget > 0 && realized > budget) {
         projectsOverBudget++;
