@@ -93,8 +93,13 @@ function buildAggregator(
         const inProgress = opsInStatus.filter(x => x.status === "em_producao").length;
         const waiting = opsInStatus.filter(x => x.status === "aguardando").length;
         
-        // SOMAR VALOR DAS OPs DESTE STATUS
-        const statusValue = opsInStatus.reduce((sum, op) => sum + (Number(op.value) || 0), 0);
+        // Se a OP tiver valor, usamos ele. Caso contrário, distribuímos o valor do pedido entre as OPs
+        const statusValue = opsInStatus.reduce((sum, op) => {
+          const opVal = Number(op.value);
+          if (opVal > 0) return sum + opVal;
+          // Distribuição proporcional se o valor da OP for 0
+          return sum + (p.order_valor_total / total);
+        }, 0);
         
         let slaAlerts = 0;
         let slaOverdue = 0;
