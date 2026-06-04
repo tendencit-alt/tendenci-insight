@@ -516,7 +516,8 @@ export function FinProjectsManager() {
               <TableBody>
                 {filteredProjects.map((project) => {
                   const budget = Number(project.budget) || 0;
-                  const realized = realizedByProject[project.id]?.despesas || 0;
+                  const realized = realizedByProject[project.id]?.despesasPagas || 0;
+                  const totalDespesas = realizedByProject[project.id]?.despesas || 0;
                   const saldo = budget - realized;
                   const percent = budget > 0 ? (realized / budget) * 100 : 0;
                   const budgetStatus = getBudgetStatus(budget, realized);
