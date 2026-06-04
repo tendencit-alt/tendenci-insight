@@ -82,7 +82,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
         <div className="flex-shrink-0 px-4 py-3 font-black text-[10px] uppercase tracking-wider border-r border-border/80 bg-muted/30" style={{ width: labelWidth }}>
           ORDEM DE PRODUÇÃO
         </div>
-        <div className="flex-1 relative h-10 overflow-hidden">
+        <div className="flex-1 relative h-12 overflow-hidden bg-white/50">
           {(() => {
             const days = [];
             // Determine dynamic step based on density and total range
