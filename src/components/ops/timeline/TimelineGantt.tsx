@@ -135,7 +135,12 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
         {/* "Hoje" guide line */}
         <div
-          className="absolute top-0 bottom-0 border-l-2 border-primary/40 z-10 pointer-events-none shadow-[0_0_8px_rgba(var(--primary),0.2)] after:content-['HOJE'] after:absolute after:-top-4 after:-left-4 after:text-[8px] after:font-black after:bg-primary after:text-white after:px-1.5 after:py-0.5 after:rounded-sm after:shadow-sm after:tracking-tighter"
+          className="absolute top-0 bottom-0 border-l-2 border-primary z-10 pointer-events-none after:content-['HOJE'] after:absolute after:-top-4 after:-left-4 after:text-[8px] after:font-black after:bg-primary after:text-white after:px-1.5 after:py-0.5 after:rounded-sm after:shadow-sm after:tracking-tighter"
+          style={{ left: `calc(${labelWidth}px + ${todayOffsetPct}% * (100% - ${labelWidth}px) / 100)` }}
+        />
+        {/* Adiciona linha vertical pontilhada para o dia atual para melhorar alinhamento visual */}
+        <div
+          className="absolute top-0 bottom-0 border-l border-dashed border-primary/20 z-0 pointer-events-none"
           style={{ left: `calc(${labelWidth}px + ${todayOffsetPct}% * (100% - ${labelWidth}px) / 100)` }}
         />
 
@@ -239,15 +244,18 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                       accumulatedWidth += ratioInTarget * ((op.segments[targetIdx].duration_days || 0) / totalPlannedDur) * 100;
                     }
 
+                    // IDEAL: Se a meta está após a data de fim ou em um ponto irreal, não desenha ou ajusta para o fim.
+                    const idealLeftPct = Math.min(100, Math.max(0, accumulatedWidth));
+                    
                     return (
                       <div 
-                        className="absolute top-0 -translate-y-1 z-30 text-blue-600 pointer-events-none transition-all duration-300 flex flex-col items-center group-hover:scale-110"
+                        className="absolute top-0 -translate-y-1 z-30 pointer-events-none transition-all duration-300 flex flex-col items-center group-hover:scale-110"
                         style={{ 
-                          left: `calc(${offsetPct}% + ${Math.min(100, Math.max(0, accumulatedWidth))}% * ${widthPct} / 100)`,
+                          left: `calc(${offsetPct}% + ${idealLeftPct}% * ${widthPct} / 100)`,
                         }}
                       >
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-600 border border-white shadow-sm" />
-                        <span className="text-[7px] font-black bg-blue-600 text-white px-1 rounded-sm mt-0.5 shadow-sm">IDEAL</span>
+                        <div className="w-2 h-2 rounded-full bg-blue-600 border-2 border-white shadow-md" />
+                        <span className="text-[8px] font-black bg-blue-600 text-white px-1.5 py-0.5 rounded shadow-sm mt-0.5">META</span>
                       </div>
                     );
                   }
@@ -325,26 +333,26 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
       
       {/* Legend and Analysis Helper */}
       <div className="bg-muted/30 px-4 py-3 flex flex-wrap items-center gap-x-8 gap-y-3 text-[10px] font-medium border-t">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-8">
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />
-            <span className="text-muted-foreground uppercase tracking-tight">Onde deveria estar (Meta)</span>
+            <div className="w-2.5 h-2.5 rounded-full bg-blue-600 border border-white shadow-sm" />
+            <span className="text-muted-foreground uppercase font-bold text-[9px]">Onde a OP deve estar (Meta)</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-foreground" />
-            <span className="text-muted-foreground uppercase tracking-tight">Onde realmente está (Hoje)</span>
+            <div className="w-2.5 h-2.5 rounded-full bg-foreground border border-white shadow-sm" />
+            <span className="text-muted-foreground uppercase font-bold text-[9px]">Onde a OP está (Progresso Real)</span>
           </div>
         </div>
         
         <div className="flex items-center gap-4 border-l border-border/50 pl-6">
-          <span className="text-muted-foreground italic">Dica de avaliação:</span>
-          <div className="flex items-center gap-2 text-blue-600">
-            <span className="font-bold">✓ No Prazo:</span>
-            <span>HOJE está à frente ou igual ao IDEAL.</span>
+          <span className="text-muted-foreground italic font-semibold">Leitura do painel:</span>
+          <div className="flex items-center gap-1.5 text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+            <span className="font-bold text-[9px]">✓ No Prazo:</span>
+            <span className="text-[9px]">Real está à frente ou igual à Meta.</span>
           </div>
-          <div className="flex items-center gap-2 text-destructive">
-            <span className="font-bold">⚠ Atrasado:</span>
-            <span>HOJE está atrás do IDEAL.</span>
+          <div className="flex items-center gap-1.5 text-destructive bg-destructive/5 px-2 py-0.5 rounded border border-destructive/10">
+            <span className="font-bold text-[9px]">⚠ Atrasado:</span>
+            <span className="text-[9px]">Real está atrás da Meta.</span>
           </div>
         </div>
       </div>
