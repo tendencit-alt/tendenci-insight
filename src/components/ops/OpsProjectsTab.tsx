@@ -122,6 +122,7 @@ function buildAggregator(
         result.push({
           ...p,
           id: `${p.id}-${status}`,
+          order_id: p.id,
           total,
           done,
           inProgress,
@@ -328,8 +329,8 @@ export function OpsProjectsTab() {
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              const orderId = r.id.includes('-') ? r.id.split('-')[0] : r.id;
-                              console.log('OpsProjectsTab: Clicked card, orderId:', orderId);
+                              const orderId = (r as any).order_id || r.id;
+                              console.log('OpsProjectsTab: Opening order details for:', orderId);
                               setSelectedOrderId(orderId);
                             }}
                           >
