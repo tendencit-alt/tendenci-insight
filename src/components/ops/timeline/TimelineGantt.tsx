@@ -154,6 +154,9 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           const opStart = new Date(startSource);
           const opEta = new Date(op.eta);
           const due = op.planned_end_date ? new Date(op.planned_end_date) : null;
+          
+          // Ajuste para evitar que os marcadores HOJE/META fiquem "presos" no início/fim de forma confusa
+          const today = new Date();
 
           const offsetPct = (differenceInCalendarDays(opStart, rangeStart) / totalDays) * 100;
           const widthPct = Math.max(
