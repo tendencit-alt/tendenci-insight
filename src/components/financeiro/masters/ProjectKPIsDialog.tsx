@@ -159,7 +159,7 @@ export function ProjectKPIsDialog({ open, onOpenChange, project, projectData }: 
                     <p className={`text-lg font-bold ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {formatCurrency(saldo)}
                     </p>
-                    <p className="text-xs text-muted-foreground">Receitas - Despesas</p>
+                    <p className="text-xs text-muted-foreground">Recebido - Pago</p>
                   </div>
                   <DollarSign className="h-5 w-5 text-muted-foreground" />
                 </div>
