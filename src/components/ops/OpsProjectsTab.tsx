@@ -242,7 +242,6 @@ export function OpsProjectsTab() {
     return { inProd, waiting, late, slaAlerts, doneMonth, onTimePct };
   }, [filtered, doneSlugs]);
 
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const openDetail = (orderId: string) => {
     setSelectedOrderId(orderId);
   };
