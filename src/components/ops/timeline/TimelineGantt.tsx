@@ -347,7 +347,10 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
         })}
       </div>
       
-      {/* Legend and Analysis Helper */}
+        </div>
+      </div>
+      
+      {/* Legend and Analysis Helper - Fora do scroll horizontal */}
       <div className="bg-muted/30 px-4 py-3 flex flex-wrap items-center gap-x-8 gap-y-3 text-[10px] font-medium border-t">
         <div className="flex items-center gap-8">
           <div className="flex items-center gap-2">
@@ -372,8 +375,6 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           </div>
         </div>
       </div>
-    </div>
-  </div>
-</Card>
+    </Card>
   );
 }
