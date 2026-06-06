@@ -29,6 +29,7 @@ export function OpTimelineMini({ opId }: Props) {
   if (!op) return <div className="text-xs text-muted-foreground">Cronograma indisponível para esta OP.</div>;
 
   const currentIdx = op.segments.findIndex((s) => s.slug === op.status);
+  const displayHistory = op.history.filter((entry) => entry.direction !== "deadline");
   const eta = new Date(op.eta);
   const due = op.planned_end_date ? new Date(op.planned_end_date) : null;
   const desvio = due
@@ -63,7 +64,7 @@ export function OpTimelineMini({ opId }: Props) {
             const isPast = currentIdx >= 0 && idx < currentIdx;
             const isCurrent = idx === currentIdx;
             const Icon = isPast ? CheckCircle2 : isCurrent ? PlayCircle : Circle;
-            const histItem = op.history.find((h) => h.phase === s.slug && h.exited_at);
+            const histItem = displayHistory.find((h) => h.phase === s.slug && h.exited_at);
             return (
               <div key={s.slug} className="flex items-center gap-2 text-sm">
                 <Icon className={`h-4 w-4 ${isPast ? "text-emerald-500" : isCurrent ? "text-primary" : "text-muted-foreground"}`} />
