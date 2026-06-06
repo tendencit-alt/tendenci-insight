@@ -349,27 +349,27 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
       </div>
       
       {/* Legend and Analysis Helper - Fora do scroll horizontal */}
-      <div className="bg-muted/30 px-4 py-3 flex flex-wrap items-center gap-x-8 gap-y-3 text-[10px] font-medium border-t">
-        <div className="flex items-center gap-8">
+      <div className="bg-gradient-to-b from-muted/20 to-muted/40 px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-[10px] font-medium border-t border-border/40">
+        <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-blue-600 border border-white shadow-sm" />
-            <span className="text-muted-foreground uppercase font-bold text-[9px]">Onde a OP DEVE estar (Meta)</span>
+            <div className="w-2.5 h-2.5 rounded-full bg-blue-600 ring-2 ring-background shadow-sm" />
+            <span className="text-muted-foreground/90 uppercase tracking-wider font-semibold text-[9px]">Onde a OP deve estar (Meta)</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-black border border-white shadow-sm" />
-            <span className="text-muted-foreground uppercase font-bold text-[9px]">Onde a OP REALMENTE está (Executado)</span>
+            <div className="w-2.5 h-2.5 rounded-full bg-foreground ring-2 ring-background shadow-sm" />
+            <span className="text-muted-foreground/90 uppercase tracking-wider font-semibold text-[9px]">Onde a OP realmente está (Executado)</span>
           </div>
         </div>
-        
-        <div className="flex items-center gap-4 border-l border-border/50 pl-6">
-          <span className="text-muted-foreground italic font-semibold">Dica de avaliação:</span>
-          <div className="flex items-center gap-1.5 text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
-            <span className="font-bold text-[9px]">✓ NO PRAZO:</span>
-            <span className="text-[9px]">EXECUTADO está à frente ou igual à META.</span>
+
+        <div className="flex items-center gap-3 border-l border-border/40 pl-6">
+          <span className="text-muted-foreground/70 italic font-medium">Dica:</span>
+          <div className="flex items-center gap-1.5 text-blue-700 bg-blue-50/80 px-2.5 py-1 rounded-full ring-1 ring-blue-200/60">
+            <span className="font-bold text-[9px]">✓ NO PRAZO</span>
+            <span className="text-[9px] text-blue-700/80">Executado ≥ Meta</span>
           </div>
-          <div className="flex items-center gap-1.5 text-destructive bg-destructive/5 px-2 py-0.5 rounded border border-destructive/10">
-            <span className="font-bold text-[9px]">⚠ ATRASADO:</span>
-            <span className="text-[9px]">EXECUTADO está atrás da META.</span>
+          <div className="flex items-center gap-1.5 text-destructive bg-destructive/5 px-2.5 py-1 rounded-full ring-1 ring-destructive/15">
+            <span className="font-bold text-[9px]">⚠ ATRASADO</span>
+            <span className="text-[9px] text-destructive/80">Executado &lt; Meta</span>
           </div>
         </div>
       </div>
