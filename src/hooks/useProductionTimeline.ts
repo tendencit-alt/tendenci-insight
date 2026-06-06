@@ -35,6 +35,7 @@ export interface TimelineOp {
   planned_end_date: string | null;
   actual_start_date: string | null;
   actual_end_date: string | null;
+  order_emission_date: string | null;
   status_changed_at: string;
   current_phase_label: string | null;
   current_phase_color: string | null;
