@@ -181,20 +181,20 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
               key={op.id}
               role="button"
               onClick={() => onSelect(op)}
-              className={`flex border-b hover:bg-accent/40 group transition-all ${
-                highlightId === op.id ? "bg-primary/5 ring-inset ring-1 ring-primary" : ""
+              className={`flex border-b border-border/30 hover:bg-accent/30 group transition-all duration-200 cursor-pointer ${
+                highlightId === op.id ? "bg-primary/5 ring-inset ring-1 ring-primary/40" : ""
               }`}
               style={{ height: rowHeight }}
             >
               <div
-                className="flex-shrink-0 flex items-center gap-3 px-4 py-1 overflow-hidden border-r border-border/80 bg-muted/20"
+                className="flex-shrink-0 flex items-center gap-2.5 px-4 py-1 overflow-hidden border-r border-border/40"
                 style={{ width: labelWidth }}
               >
-                <span className="text-[10px] font-black text-foreground bg-white border border-border shadow-sm px-1.5 py-0.5 rounded">#{op.order_number}</span>
+                <span className="text-[10px] font-bold text-muted-foreground bg-muted/40 ring-1 ring-border/40 px-1.5 py-0.5 rounded-md tracking-tight group-hover:bg-primary/10 group-hover:text-primary group-hover:ring-primary/30 transition-colors">#{op.order_number}</span>
                 <div className="flex-1 min-w-0 flex flex-col">
-                  <span className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">{op.title}</span>
+                  <span className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors tracking-tight">{op.title}</span>
                   {op.is_late_planned && (
-                    <span className="text-[9px] font-black text-destructive uppercase tracking-tighter">OP ATRASADA</span>
+                    <span className="text-[9px] font-bold text-destructive uppercase tracking-wider">OP atrasada</span>
                   )}
                 </div>
               </div>
