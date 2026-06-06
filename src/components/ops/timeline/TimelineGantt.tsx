@@ -297,11 +297,11 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
                 {/* Indicador de Status (Barra colorida) */}
                 <div
-                  className="absolute top-1/2 -translate-y-1/2 flex rounded overflow-hidden shadow-sm border border-black/5 ring-1 ring-black/5"
+                  className="absolute top-1/2 -translate-y-1/2 flex rounded-full overflow-hidden shadow-md ring-1 ring-black/5"
                   style={{
                     left: `${Math.max(0, offsetPct)}%`,
                     width: `${Math.max(1, widthPct)}%`,
-                    height: rowHeight - 20,
+                    height: rowHeight - 22,
                   }}
                 >
                   {op.segments.map((s, idx) => {
@@ -312,13 +312,13 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                     return (
                       <div
                         key={s.slug}
-                        className={`relative h-full ${cls} ${isPast ? "opacity-90" : isCurrent ? "ring-inset ring-1 ring-black/20" : "opacity-30"}`}
+                        className={`relative h-full ${cls} ${isPast ? "opacity-95" : isCurrent ? "ring-inset ring-1 ring-white/40 shadow-inner" : "opacity-25"} transition-opacity`}
                         style={{ width: `${w}%` }}
                         title={`${s.label}: ${s.duration_days} dias`}
                       >
                         {isCurrent && op.current_duration_days ? (
                           <div
-                            className="absolute inset-y-0 left-0 bg-white/30 animate-[pulse_2s_infinite]"
+                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-white/40 to-white/10 animate-[pulse_2s_infinite]"
                             style={{
                               width: `${Math.min(100, ((op.days_in_current ?? 0) / (op.current_duration_days || 1)) * 100)}%`,
                             }}
