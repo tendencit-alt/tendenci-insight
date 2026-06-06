@@ -76,15 +76,15 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
   const todayOffsetPct = Math.max(0, Math.min(100, (differenceInCalendarDays(today, rangeStart) / totalDays) * 100));
 
   return (
-    <Card className="overflow-hidden border-border/60 shadow-sm rounded-xl bg-card">
+    <Card className="overflow-hidden rounded-[24px] border border-border/50 bg-gradient-to-b from-card via-card to-muted/10 shadow-[var(--shadow-card)]">
       <div className="overflow-x-auto">
         <div className="min-w-[1200px]">
           {/* Header with time scale */}
-      <div className="flex border-b border-border/60 bg-gradient-to-b from-muted/40 to-muted/10 text-xs select-none backdrop-blur-sm">
-        <div className="flex-shrink-0 px-4 py-3 font-semibold text-[10px] uppercase tracking-[0.12em] text-muted-foreground/80 border-r border-border/50" style={{ width: labelWidth }}>
+      <div className="flex border-b border-border/50 bg-gradient-to-b from-background via-muted/15 to-muted/30 text-xs select-none backdrop-blur-sm">
+        <div className="flex-shrink-0 px-5 py-4 font-semibold text-[10px] uppercase tracking-[0.16em] text-muted-foreground/80 border-r border-border/40 bg-background/60" style={{ width: labelWidth }}>
           Ordem de Produção
         </div>
-        <div className="flex-1 relative h-12 overflow-hidden">
+        <div className="flex-1 relative h-14 overflow-hidden">
           {(() => {
             const days = [];
             const finalStep = totalDays < 20 ? 1 : (totalDays < 45 ? 2 : (totalDays < 90 ? 7 : 7));
@@ -97,13 +97,13 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
               days.push(
                 <div
                   key={i}
-                  className={`absolute top-0 bottom-0 border-l border-border/30 flex flex-col justify-center pl-2 transition-all ${
-                    isWeekend ? "bg-muted/20" : ""
+                    className={`absolute top-0 bottom-0 border-l border-border/20 flex flex-col justify-center pl-2.5 transition-all ${
+                      isWeekend ? "bg-muted/20" : ""
                   }`}
                   style={{ left: `${left}%`, width: `${(finalStep / totalDays) * 100}%` }}
                 >
-                  <span className="text-[11px] font-semibold text-foreground/90 tracking-tight">{format(date, "dd/MM")}</span>
-                  <span className="text-[9px] font-medium text-muted-foreground/70 uppercase tracking-wider">
+                    <span className="text-[11px] font-semibold text-foreground/90 tracking-tight">{format(date, "dd/MM")}</span>
+                    <span className="text-[9px] font-medium text-muted-foreground/70 uppercase tracking-[0.14em]">
                     {format(date, "EEE", { locale: ptBR }).replace(".", "")}
                   </span>
                 </div>
@@ -117,7 +117,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
       </div>
 
       {/* Body */}
-      <div className="relative bg-gradient-to-b from-background to-muted/5">
+      <div className="relative bg-gradient-to-b from-background via-background to-muted/10">
         {/* Vertical Grid Lines */}
         <div className="absolute inset-0 flex-1 ml-[240px] pointer-events-none overflow-hidden">
           {Array.from({ length: totalDays }).map((_, i) => {
@@ -127,7 +127,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
             return (
               <div
                 key={i}
-                className={`absolute top-0 bottom-0 border-l border-border/20 ${isWeekend ? "bg-muted/15" : ""}`}
+                className={`absolute top-0 bottom-0 border-l border-border/15 ${isWeekend ? "bg-muted/15" : ""}`}
                 style={{ left: `${left}%`, width: `${(1 / totalDays) * 100}%` }}
               />
             );
@@ -139,8 +139,56 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
 
         {ops.length === 0 && (
-          <div className="p-12 text-center text-sm text-muted-foreground bg-muted/5">
-            Nenhuma OP no período. Ajuste os filtros ou crie novas ordens de produção.
+          <div className="relative overflow-hidden px-6 py-12 md:px-10 md:py-14">
+            <div className="absolute inset-0 bg-gradient-to-br from-muted/10 via-background to-muted/20" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+            <div className="relative grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-2 rounded-full border border-border/50 bg-background/80 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground shadow-sm">
+                  <span className="h-2 w-2 rounded-full bg-primary/70" />
+                  Cronograma sem OPs visíveis
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold tracking-tight text-foreground">Ajuste os filtros para revelar a linha do tempo</h3>
+                  <p className="max-w-xl text-sm leading-6 text-muted-foreground">
+                    Nenhuma ordem apareceu no recorte atual. A estrutura do cronograma continua a mesma, mas a visualização agora prioriza leitura, contraste e foco no estado operacional.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <div className="rounded-full border border-border/50 bg-background/75 px-3 py-1.5 text-xs text-muted-foreground shadow-sm">Amplie o período</div>
+                  <div className="rounded-full border border-border/50 bg-background/75 px-3 py-1.5 text-xs text-muted-foreground shadow-sm">Revise agrupamento</div>
+                  <div className="rounded-full border border-border/50 bg-background/75 px-3 py-1.5 text-xs text-muted-foreground shadow-sm">Busque por OP ou cliente</div>
+                </div>
+              </div>
+
+              <div className="rounded-[22px] border border-border/50 bg-background/70 p-4 shadow-sm">
+                <div className="grid gap-3">
+                  <div className="flex items-center gap-3 rounded-2xl border border-border/40 bg-muted/20 p-3">
+                    <div className="h-10 w-10 rounded-2xl bg-primary/10 ring-1 ring-primary/20" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-2.5 w-24 rounded-full bg-muted" />
+                      <div className="h-2 w-40 rounded-full bg-muted/70" />
+                    </div>
+                  </div>
+                  <div className="space-y-2 rounded-2xl border border-border/40 bg-card/80 p-4">
+                    <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                      <span>Prévia da faixa temporal</span>
+                      <span>ETA</span>
+                    </div>
+                    <div className="relative h-10 rounded-full bg-muted/30 ring-1 ring-border/40 overflow-hidden">
+                      <div className="absolute inset-y-1 left-[10%] w-[58%] rounded-full bg-gradient-to-r from-primary/75 via-primary/60 to-primary/40" />
+                      <div className="absolute inset-y-0 left-[53%] border-l-2 border-dashed border-foreground/70" />
+                      <div className="absolute inset-y-0 left-[76%] border-l-2 border-dashed border-primary" />
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                      <span className="rounded-full bg-muted/40 px-2.5 py-1">Meta</span>
+                      <span className="rounded-full bg-muted/40 px-2.5 py-1">Executado</span>
+                      <span className="rounded-full bg-muted/40 px-2.5 py-1">Prazo final</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -181,16 +229,16 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
               key={op.id}
               role="button"
               onClick={() => onSelect(op)}
-              className={`flex border-b border-border/30 hover:bg-accent/30 group transition-all duration-200 cursor-pointer ${
+              className={`flex border-b border-border/20 hover:bg-accent/20 group transition-all duration-200 cursor-pointer ${
                 highlightId === op.id ? "bg-primary/5 ring-inset ring-1 ring-primary/40" : ""
               }`}
               style={{ height: rowHeight }}
             >
               <div
-                className="flex-shrink-0 flex items-center gap-2.5 px-4 py-1 overflow-hidden border-r border-border/40"
+                className="flex-shrink-0 flex items-center gap-3 px-4 py-1.5 overflow-hidden border-r border-border/30 bg-background/55"
                 style={{ width: labelWidth }}
               >
-                <span className="text-[10px] font-bold text-muted-foreground bg-muted/40 ring-1 ring-border/40 px-1.5 py-0.5 rounded-md tracking-tight group-hover:bg-primary/10 group-hover:text-primary group-hover:ring-primary/30 transition-colors">#{op.order_number}</span>
+                <span className="text-[10px] font-bold text-muted-foreground bg-muted/55 ring-1 ring-border/40 px-2 py-1 rounded-full tracking-tight group-hover:bg-primary/10 group-hover:text-primary group-hover:ring-primary/30 transition-colors">#{op.order_number}</span>
                 <div className="flex-1 min-w-0 flex flex-col">
                   <span className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors tracking-tight">{op.title}</span>
                   {op.is_late_planned && (
@@ -199,13 +247,13 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                 </div>
               </div>
               
-              <div className="flex-1 relative py-2.5">
+              <div className="flex-1 relative py-2.5 bg-gradient-to-r from-transparent via-background/40 to-transparent">
                 {/* Linha do Dia Vigente (Hoje) - Preto */}
                 <div
-                  className="absolute top-0 bottom-0 border-l-2 border-dashed border-black/60 z-10"
+                  className="absolute top-0 bottom-0 border-l-2 border-dashed border-foreground/70 z-10"
                   style={{ left: `${todayOffsetPct}%` }}
                 >
-                  <div className="absolute top-1/2 -translate-y-1/2 -left-3 text-[8px] font-black bg-black text-white px-1.5 py-0.5 rounded shadow-sm z-20">
+                  <div className="absolute top-1/2 -translate-y-1/2 -left-3 text-[8px] font-black bg-foreground text-background px-1.5 py-0.5 rounded-full shadow-sm z-20">
                     HOJE
                   </div>
                 </div>
@@ -213,10 +261,10 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                 {/* due-date marker - Azul */}
                 {due && (
                   <div
-                    className="absolute top-0 bottom-0 border-l-2 border-dashed border-blue-600 z-10 group/due"
+                      className="absolute top-0 bottom-0 border-l-2 border-dashed border-primary z-10 group/due"
                     style={{ left: `${(differenceInCalendarDays(due, rangeStart) / totalDays) * 100}%` }}
                   >
-                    <div className="absolute top-1/2 -translate-y-1/2 -left-3 text-[8px] font-black bg-blue-600 text-white px-1 rounded-sm shadow-md z-20 flex items-center gap-1">
+                      <div className="absolute top-1/2 -translate-y-1/2 -left-3 text-[8px] font-black bg-primary text-primary-foreground px-2 py-0.5 rounded-full shadow-md z-20 flex items-center gap-1">
                       FIM
                       {(() => {
                         const daysLeft = differenceInCalendarDays(due, today);
@@ -268,8 +316,8 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                           left: `calc(${offsetPct}% + ${idealLeftPct}% * ${widthPct} / 100)`,
                         }}
                       >
-                        <div className="w-2 h-2 rounded-full bg-blue-600 border-2 border-white shadow-md" />
-                        <span className="text-[8px] font-black bg-blue-600 text-white px-1.5 py-0.5 rounded shadow-sm mt-0.5">META</span>
+                        <div className="w-2.5 h-2.5 rounded-full bg-primary border-2 border-background shadow-md" />
+                        <span className="text-[8px] font-black bg-primary text-primary-foreground px-2 py-0.5 rounded-full shadow-sm mt-1">META</span>
                       </div>
                     );
                   }
@@ -290,14 +338,14 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                       })()}% * ${widthPct} / 100)`,
                     }}
                   >
-                    <span className="text-[8px] font-black bg-black text-white px-1.5 py-0.5 rounded shadow-sm mb-0.5 uppercase">EXECUTADO</span>
-                    <div className="w-2 h-2 rounded-full bg-black border-2 border-white shadow-md" />
+                     <span className="text-[8px] font-black bg-foreground text-background px-2 py-0.5 rounded-full shadow-sm mb-1 uppercase">EXECUTADO</span>
+                     <div className="w-2.5 h-2.5 rounded-full bg-foreground border-2 border-background shadow-md" />
                   </div>
                 )}
 
                 {/* Indicador de Status (Barra colorida) */}
                 <div
-                  className="absolute top-1/2 -translate-y-1/2 flex rounded-full overflow-hidden shadow-md ring-1 ring-black/5"
+                   className="absolute top-1/2 -translate-y-1/2 flex rounded-full overflow-hidden shadow-md ring-1 ring-border/30"
                   style={{
                     left: `${Math.max(0, offsetPct)}%`,
                     width: `${Math.max(1, widthPct)}%`,
@@ -349,10 +397,10 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
       </div>
       
       {/* Legend and Analysis Helper - Fora do scroll horizontal */}
-      <div className="bg-gradient-to-b from-muted/20 to-muted/40 px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-[10px] font-medium border-t border-border/40">
+      <div className="bg-gradient-to-b from-background via-muted/15 to-muted/30 px-4 py-3.5 flex flex-wrap items-center gap-x-6 gap-y-2 text-[10px] font-medium border-t border-border/30">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-blue-600 ring-2 ring-background shadow-sm" />
+            <div className="w-2.5 h-2.5 rounded-full bg-primary ring-2 ring-background shadow-sm" />
             <span className="text-muted-foreground/90 uppercase tracking-wider font-semibold text-[9px]">Onde a OP deve estar (Meta)</span>
           </div>
           <div className="flex items-center gap-2">
@@ -363,9 +411,9 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
         <div className="flex items-center gap-3 border-l border-border/40 pl-6">
           <span className="text-muted-foreground/70 italic font-medium">Dica:</span>
-          <div className="flex items-center gap-1.5 text-blue-700 bg-blue-50/80 px-2.5 py-1 rounded-full ring-1 ring-blue-200/60">
+          <div className="flex items-center gap-1.5 text-primary bg-primary/10 px-2.5 py-1 rounded-full ring-1 ring-primary/20">
             <span className="font-bold text-[9px]">✓ NO PRAZO</span>
-            <span className="text-[9px] text-blue-700/80">Executado ≥ Meta</span>
+            <span className="text-[9px] text-primary/80">Executado ≥ Meta</span>
           </div>
           <div className="flex items-center gap-1.5 text-destructive bg-destructive/5 px-2.5 py-1 rounded-full ring-1 ring-destructive/15">
             <span className="font-bold text-[9px]">⚠ ATRASADO</span>
