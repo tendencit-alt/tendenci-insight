@@ -146,7 +146,11 @@ export function ManageProductionStatusDialog() {
             <Label className="text-sm font-medium">Adicionar status personalizado</Label>
             <div className="space-y-2 rounded-md border bg-muted/20 p-3">
               <div className="flex items-end gap-2 flex-wrap">
-                <div className="flex-1 min-w-[220px]">
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">Cor</Label>
+                  <ColorPicker value={newColor} onChange={setNewColor} />
+                </div>
+                <div className="flex-1 min-w-[200px]">
                   <Label className="text-xs text-muted-foreground mb-1 block">Nome do status</Label>
                   <Input
                     placeholder="Ex.: Em Revisão"
