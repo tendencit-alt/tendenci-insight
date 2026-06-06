@@ -43,6 +43,7 @@ export function PhaseHistoryDialog({ open, onOpenChange, opId, orderNumber }: Pr
     cols.forEach((c) => { m[c.slug] = c.label; });
     return m;
   }, [cols]);
+  const displayRows = useMemo(() => rows.filter((row) => row.direction !== "deadline"), [rows]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -58,10 +59,10 @@ export function PhaseHistoryDialog({ open, onOpenChange, opId, orderNumber }: Pr
         </DialogHeader>
         <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
           {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
-          {!isLoading && rows.length === 0 && (
+          {!isLoading && displayRows.length === 0 && (
             <p className="text-sm text-muted-foreground">Sem histórico registrado.</p>
           )}
-          {rows.map((r) => {
+          {displayRows.map((r) => {
             const isDeadline = r.direction === "deadline";
             const Icon = isDeadline
               ? CalendarClock

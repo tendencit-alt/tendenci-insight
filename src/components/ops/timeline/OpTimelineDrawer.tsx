@@ -26,13 +26,14 @@ function hhmm(hours: number) {
 export function OpTimelineDrawer({ op, onClose, onOpenInKanban }: Props) {
   if (!op) return null;
   const phaseLabelMap = new Map(op.segments.map((segment) => [segment.slug, segment.label]));
+  const displayHistory = op.history.filter((entry) => entry.direction !== "deadline");
+  const phaseHistory = displayHistory.length > 0
+    ? displayHistory
+    : [{ phase: op.status, entered_at: op.status_changed_at, exited_at: null, duration_hours: Math.max(0, (op.days_in_current ?? 0) * 24) }];
   const currentSeg = op.segments.find((s) => s.slug === op.status);
   const nextSeg = currentSeg
     ? op.segments.find((s) => s.sort_order > currentSeg.sort_order)
     : op.segments[0];
-  const completedSegs = currentSeg
-    ? op.segments.filter((s) => s.sort_order < currentSeg.sort_order)
-    : [];
   const pctCurrent =
     currentSeg && op.days_in_current != null && currentSeg.duration_days > 0
       ? Math.min(100, Math.round((op.days_in_current / currentSeg.duration_days) * 100))
@@ -105,16 +106,11 @@ export function OpTimelineDrawer({ op, onClose, onOpenInKanban }: Props) {
 
           <section className="space-y-1.5">
             <div className="text-xs uppercase tracking-wide text-muted-foreground">Histórico de fases</div>
-            {completedSegs.length === 0 && op.history.length === 0 && (
-              <div className="text-xs text-muted-foreground">Sem fases anteriores registradas.</div>
-            )}
-            {op.history
-              .filter((h) => h.exited_at)
-              .map((h, idx) => (
-                <div key={idx} className="flex items-center justify-between text-xs">
+            {phaseHistory.map((h, idx) => (
+                <div key={`${h.phase}-${h.entered_at}-${idx}`} className="flex items-center justify-between text-xs">
                   <span>{phaseLabelMap.get(h.phase) ?? h.phase}</span>
                   <span className="text-muted-foreground flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> {hhmm(h.duration_hours)}
+                    <Clock className="h-3 w-3" /> {hhmm(h.duration_hours)}{!h.exited_at ? " · atual" : ""}
                   </span>
                 </div>
               ))}
