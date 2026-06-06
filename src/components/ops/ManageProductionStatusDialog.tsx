@@ -239,6 +239,7 @@ function StatusRow({ column, unit, onUpdate, onDelete }: StatusRowProps) {
     <div className="flex flex-col gap-2 p-3 rounded-md border bg-card hover:bg-muted/20 transition-colors">
       {/* Linha 1: nome + prazo + ordem + ação */}
       <div className="flex items-center gap-2">
+        <ColorPicker value={column.color} onChange={(c) => onUpdate({ color: c })} />
         <div className="flex-1 min-w-0">
           <Input
             value={label}
