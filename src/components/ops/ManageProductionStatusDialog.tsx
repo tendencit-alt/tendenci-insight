@@ -15,8 +15,45 @@ import {
   useDeleteProductionStatusColumn,
   useSetTenantSlaUnit,
   STATUS_COLOR_PALETTE,
+  colorSwatch,
   slaSuffix,
 } from "@/hooks/useProductionStatusColumns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+
+function ColorPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          title="Escolher cor"
+          className={cn(
+            "h-9 w-9 shrink-0 rounded-md ring-1 ring-border hover:ring-primary/60 transition-all shadow-sm",
+            colorSwatch(value),
+          )}
+        />
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-2" align="start">
+        <div className="grid grid-cols-7 gap-1.5">
+          {STATUS_COLOR_PALETTE.map((c) => (
+            <button
+              key={c.key}
+              type="button"
+              onClick={() => onChange(c.key)}
+              title={c.key}
+              className={cn(
+                "h-6 w-6 rounded-md ring-1 ring-border hover:scale-110 transition-transform",
+                c.swatch,
+                value === c.key && "ring-2 ring-foreground ring-offset-2 ring-offset-background",
+              )}
+            />
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export function ManageProductionStatusDialog() {
   const [open, setOpen] = useState(false);
