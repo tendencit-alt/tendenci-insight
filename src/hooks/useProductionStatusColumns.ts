@@ -14,6 +14,7 @@ export interface ProductionStatusColumn {
   sort_order: number;
   is_system: boolean;
   sla_days: number | null;
+  duration_days?: number | null;
   sla_unit: SlaUnit;
 }
 
@@ -118,6 +119,7 @@ export function useCreateProductionStatusColumn() {
           color: "blue", // Padronizado para azul conforme solicitação do usuário
           sort_order: input.sort_order ?? 100,
           sla_days: input.sla_days ?? null,
+          duration_days: input.sla_days ?? null,
           sla_unit: input.sla_unit ?? "days",
           is_system: false,
         } as any);
@@ -140,6 +142,7 @@ export function useCreateProductionStatusColumn() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["production_status_columns"] });
+      qc.invalidateQueries({ queryKey: ["production-timeline"] });
       toast.success("Status criado");
     },
     onError: (e: any) => toast.error("Erro ao criar status", { description: e.message }),
@@ -151,14 +154,21 @@ export function useUpdateProductionStatusColumn() {
   return useMutation({
     mutationFn: async (input: { id: string; label?: string; color?: string; sort_order?: number; sla_days?: number | null; sla_unit?: SlaUnit }) => {
       const { id, ...patch } = input;
+      const payload = {
+        ...patch,
+        ...(Object.prototype.hasOwnProperty.call(patch, "sla_days")
+          ? { duration_days: patch.sla_days ?? null }
+          : {}),
+      };
       const { error } = await supabase
         .from("production_status_columns" as any)
-        .update(patch as any)
+        .update(payload as any)
         .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["production_status_columns"] });
+      qc.invalidateQueries({ queryKey: ["production-timeline"] });
       toast.success("Status atualizado");
     },
     onError: (e: any) => toast.error("Erro ao atualizar status", { description: e.message }),
@@ -177,6 +187,7 @@ export function useDeleteProductionStatusColumn() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["production_status_columns"] });
+      qc.invalidateQueries({ queryKey: ["production-timeline"] });
       toast.success("Status removido");
     },
     onError: (e: any) => toast.error("Erro ao remover status", { description: e.message }),
@@ -197,6 +208,7 @@ export function useSetTenantSlaUnit() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["production_status_columns"] });
+      qc.invalidateQueries({ queryKey: ["production-timeline"] });
       toast.success("Unidade de prazo atualizada");
     },
     onError: (e: any) => toast.error("Erro ao atualizar unidade", { description: e.message }),
