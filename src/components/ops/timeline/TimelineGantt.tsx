@@ -76,15 +76,15 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
   const todayOffsetPct = Math.max(0, Math.min(100, (differenceInCalendarDays(today, rangeStart) / totalDays) * 100));
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden border-border/60 shadow-sm rounded-xl bg-card">
       <div className="overflow-x-auto">
         <div className="min-w-[1200px]">
           {/* Header with time scale */}
-      <div className="flex border-b bg-muted/40 text-xs select-none">
-        <div className="flex-shrink-0 px-4 py-3 font-black text-[10px] uppercase tracking-wider border-r border-border/80 bg-muted/30" style={{ width: labelWidth }}>
-          ORDEM DE PRODUÇÃO
+      <div className="flex border-b border-border/60 bg-gradient-to-b from-muted/40 to-muted/10 text-xs select-none backdrop-blur-sm">
+        <div className="flex-shrink-0 px-4 py-3 font-semibold text-[10px] uppercase tracking-[0.12em] text-muted-foreground/80 border-r border-border/50" style={{ width: labelWidth }}>
+          Ordem de Produção
         </div>
-        <div className="flex-1 relative h-12 overflow-hidden bg-white/50">
+        <div className="flex-1 relative h-12 overflow-hidden">
           {(() => {
             const days = [];
             const finalStep = totalDays < 20 ? 1 : (totalDays < 45 ? 2 : (totalDays < 90 ? 7 : 7));
@@ -93,17 +93,17 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
               const left = (i / totalDays) * 100;
               const date = addDays(rangeStart, i);
               const isWeekend = [0, 6].includes(date.getDay());
-              
+
               days.push(
                 <div
                   key={i}
-                  className={`absolute top-0 bottom-0 border-l border-border/80 flex flex-col justify-center pl-2 transition-all ${
-                    isWeekend ? "bg-muted/10" : ""
+                  className={`absolute top-0 bottom-0 border-l border-border/30 flex flex-col justify-center pl-2 transition-all ${
+                    isWeekend ? "bg-muted/20" : ""
                   }`}
                   style={{ left: `${left}%`, width: `${(finalStep / totalDays) * 100}%` }}
                 >
-                  <span className="text-[11px] font-black text-foreground">{format(date, "dd/MM")}</span>
-                  <span className="text-[9px] font-bold text-muted-foreground uppercase opacity-80">
+                  <span className="text-[11px] font-semibold text-foreground/90 tracking-tight">{format(date, "dd/MM")}</span>
+                  <span className="text-[9px] font-medium text-muted-foreground/70 uppercase tracking-wider">
                     {format(date, "EEE", { locale: ptBR }).replace(".", "")}
                   </span>
                 </div>
