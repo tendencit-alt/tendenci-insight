@@ -34,9 +34,6 @@ export function OpTimelineDrawer({ op, onClose, onOpenInKanban }: Props) {
   const nextSeg = currentSeg
     ? op.segments.find((s) => s.sort_order > currentSeg.sort_order)
     : op.segments[0];
-  const completedSegs = currentSeg
-    ? op.segments.filter((s) => s.sort_order < currentSeg.sort_order)
-    : [];
   const pctCurrent =
     currentSeg && op.days_in_current != null && currentSeg.duration_days > 0
       ? Math.min(100, Math.round((op.days_in_current / currentSeg.duration_days) * 100))
