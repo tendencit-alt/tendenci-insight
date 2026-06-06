@@ -143,10 +143,10 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
               {/* Timeline column - full width, normalized per OP */}
               <div className="relative px-3 sm:px-4 py-2 flex flex-col justify-center">
-                {/* Date labels (start/end) */}
+                {/* Date labels (start/end of axis) */}
                 <div className="flex justify-between text-[9px] font-medium text-muted-foreground/70 mb-1 tracking-tight">
                   <span>{format(opStart, "dd/MM")}</span>
-                  <span>{format(opEta, "dd/MM")}</span>
+                  <span>{format(axisEnd, "dd/MM")}</span>
                 </div>
 
                 {/* Bar track */}
