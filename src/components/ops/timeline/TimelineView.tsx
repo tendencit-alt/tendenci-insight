@@ -160,9 +160,14 @@ export function TimelineView() {
       <TimelineFilters value={filters} onChange={setFilters} phases={phases} />
 
       {grouped.map((g) => (
-        <div key={g.key} className="space-y-1">
+        <div key={g.key} className="space-y-1.5">
           {filters.group !== "none" && (
-            <div className="text-xs font-medium text-muted-foreground px-1">{g.key} · {g.ops.length}</div>
+            <div className="flex items-center gap-2 px-1">
+              <div className="h-1.5 w-1.5 rounded-full bg-primary/60" />
+              <span className="text-xs font-semibold text-foreground/80">{g.key}</span>
+              <span className="text-[10px] text-muted-foreground bg-muted/60 rounded-full px-1.5 py-0.5">{g.ops.length}</span>
+              <div className="flex-1 h-px bg-gradient-to-r from-border/60 to-transparent" />
+            </div>
           )}
           <TimelineGantt
             ops={g.ops}
