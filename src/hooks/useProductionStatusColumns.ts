@@ -133,7 +133,7 @@ export function useCreateProductionStatusColumn() {
           tenant_id: activeTenantId,
           slug,
           label: input.label,
-          color: "blue", // Padronizado para azul conforme solicitação do usuário
+          color: input.color ?? "blue",
           sort_order: input.sort_order ?? 100,
           sla_days: input.sla_days ?? null,
           duration_days: input.sla_days ?? null,
