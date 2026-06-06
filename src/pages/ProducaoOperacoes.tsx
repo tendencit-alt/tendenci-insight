@@ -51,13 +51,9 @@ export default function ProducaoOperacoes() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleChange} className="space-y-4">
-          <TabsList className="h-auto rounded-2xl border border-border/50 bg-card/70 p-1.5 shadow-sm">
-            <TabsTrigger value="producao" className="gap-1.5 rounded-xl px-4 py-2.5 data-[state=active]:shadow-none data-[state=active]:bg-background">
-              <Factory className="h-4 w-4" />Produção
-            </TabsTrigger>
-            <TabsTrigger value="cronograma" className="gap-1.5 rounded-xl px-4 py-2.5 data-[state=active]:shadow-none data-[state=active]:bg-background">
-              <CalendarRange className="h-4 w-4" />Cronograma
-            </TabsTrigger>
+          <TabsList>
+            <TabsTrigger value="producao" className="gap-1.5"><Factory className="h-4 w-4" />Produção</TabsTrigger>
+            <TabsTrigger value="cronograma" className="gap-1.5"><CalendarRange className="h-4 w-4" />Cronograma</TabsTrigger>
           </TabsList>
 
           <TabsContent value="producao"><OpsWorkTab /></TabsContent>
