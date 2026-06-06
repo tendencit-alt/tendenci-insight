@@ -25,6 +25,7 @@ function hhmm(hours: number) {
 
 export function OpTimelineDrawer({ op, onClose, onOpenInKanban }: Props) {
   if (!op) return null;
+  const phaseLabelMap = new Map(op.segments.map((segment) => [segment.slug, segment.label]));
   const currentSeg = op.segments.find((s) => s.slug === op.status);
   const nextSeg = currentSeg
     ? op.segments.find((s) => s.sort_order > currentSeg.sort_order)
@@ -111,7 +112,7 @@ export function OpTimelineDrawer({ op, onClose, onOpenInKanban }: Props) {
               .filter((h) => h.exited_at)
               .map((h, idx) => (
                 <div key={idx} className="flex items-center justify-between text-xs">
-                  <span>{h.phase}</span>
+                  <span>{phaseLabelMap.get(h.phase) ?? h.phase}</span>
                   <span className="text-muted-foreground flex items-center gap-1">
                     <Clock className="h-3 w-3" /> {hhmm(h.duration_hours)}
                   </span>
