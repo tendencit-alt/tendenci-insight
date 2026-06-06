@@ -330,7 +330,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                 </div>
                 {/* ETA label */}
                 <div
-                  className={`absolute top-1/2 -translate-y-1/2 ${etaClass} rounded px-2 py-0.5 text-[9px] font-black whitespace-nowrap shadow-md z-20 flex items-center gap-1 border-2 border-white group-hover:scale-105 transition-transform`}
+                  className={`absolute top-1/2 -translate-y-1/2 ${etaClass} rounded-full px-2.5 py-0.5 text-[10px] font-bold whitespace-nowrap shadow-md z-20 flex items-center gap-1 ring-2 ring-background group-hover:scale-105 transition-transform tracking-tight`}
                   style={{
                     left: `${offsetPct + widthPct}%`,
                     marginLeft: '12px',
