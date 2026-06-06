@@ -67,18 +67,24 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
         )}
 
         {ops.map((op) => {
-          const startSource = op.actual_start_date ?? op.planned_start_date ?? op.status_changed_at;
+          // STANDARD start: real start → planned start → phase change → emission date
+          const startSource =
+            op.actual_start_date ?? op.planned_start_date ?? op.status_changed_at ?? op.order_emission_date;
           const opStart = new Date(startSource);
           const opEta = new Date(op.eta);
           const due = op.planned_end_date ? new Date(op.planned_end_date) : null;
 
-          const opSpanDays = Math.max(1, differenceInCalendarDays(opEta, opStart));
+          // Bar axis spans from start until the latest of ETA / planned end / today
+          const axisEnd = new Date(
+            Math.max(opEta.getTime(), due?.getTime() ?? 0, today.getTime())
+          );
+          const opSpanDays = Math.max(1, differenceInCalendarDays(axisEnd, opStart));
 
-          // Today position relative to OP span
           const todayPct = clampPct((differenceInCalendarDays(today, opStart) / opSpanDays) * 100);
           const duePct = due ? clampPct((differenceInCalendarDays(due, opStart) / opSpanDays) * 100) : null;
+          const etaPct = clampPct((differenceInCalendarDays(opEta, opStart) / opSpanDays) * 100);
 
-          // ETA status color
+          // ETA badge color
           let etaClass = "bg-blue-600 text-white";
           let etaStatusLabel = "Dentro do prazo";
           if (due) {
@@ -95,20 +101,19 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           const totalDur = op.segments.reduce((acc, s) => acc + (s.duration_days || 0), 0) || 1;
           const currentIdx = op.segments.findIndex((s) => s.slug === op.status);
 
-          // META: where the OP should be based on elapsed days vs planned phase durations
-          const elapsedSinceStart = Math.max(0, differenceInCalendarDays(today, opStart));
-          const metaPct = clampPct((elapsedSinceStart / totalDur) * 100);
+          // META = "where we should be by today" — same time axis as HOJE
+          const metaPct = todayPct;
 
-          // EXECUTADO: where the OP actually is, based on completed phases + progress in current
-          let executadoPct = 0;
+          // EXECUTADO = days of planned work already done, projected on the time axis
+          let execDays = 0;
           if (currentIdx >= 0) {
             for (let i = 0; i < currentIdx; i++) {
-              executadoPct += ((op.segments[i].duration_days || 0) / totalDur) * 100;
+              execDays += op.segments[i].duration_days || 0;
             }
             const ratio = Math.min(1, (op.days_in_current ?? 0) / (op.current_duration_days || 1));
-            executadoPct += ratio * ((op.segments[currentIdx].duration_days || 0) / totalDur) * 100;
+            execDays += ratio * (op.segments[currentIdx].duration_days || 0);
           }
-          executadoPct = clampPct(executadoPct);
+          const executadoPct = clampPct((execDays / opSpanDays) * 100);
 
           const isDone = op.status === "concluido" || op.status === "entregue";
 
@@ -138,10 +143,10 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
               {/* Timeline column - full width, normalized per OP */}
               <div className="relative px-3 sm:px-4 py-2 flex flex-col justify-center">
-                {/* Date labels (start/end) */}
+                {/* Date labels (start/end of axis) */}
                 <div className="flex justify-between text-[9px] font-medium text-muted-foreground/70 mb-1 tracking-tight">
                   <span>{format(opStart, "dd/MM")}</span>
-                  <span>{format(opEta, "dd/MM")}</span>
+                  <span>{format(axisEnd, "dd/MM")}</span>
                 </div>
 
                 {/* Bar track */}
