@@ -78,6 +78,8 @@ export function EditPrazoDialog({
       queryClient.invalidateQueries({ queryKey: ['production-orders'] });
       queryClient.invalidateQueries({ queryKey: ['production-order-detail', orderId] });
       queryClient.invalidateQueries({ queryKey: ['production-order-logs', orderId] });
+      queryClient.invalidateQueries({ queryKey: ['production-timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['ops-orders'] });
       toast.success('Prazo atualizado com sucesso!');
       onOpenChange(false);
     },
