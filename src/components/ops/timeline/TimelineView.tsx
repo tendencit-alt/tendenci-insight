@@ -180,12 +180,13 @@ export function TimelineView() {
 
 function KpiCard({ icon, label, value, tone, hint }: { icon: React.ReactNode; label: string; value: number | string; tone?: string; hint?: string }) {
   const card = (
-    <Card className="cursor-help">
-      <CardContent className="p-3 flex items-center gap-2">
-        <div className="h-8 w-8 rounded-md bg-muted/50 flex items-center justify-center">{icon}</div>
+    <Card className="cursor-help group relative overflow-hidden border-border/60 bg-gradient-to-br from-card to-muted/20 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      <CardContent className="p-3 flex items-center gap-2.5">
+        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-muted/60 to-muted/30 ring-1 ring-border/40 flex items-center justify-center shadow-inner">{icon}</div>
         <div className="min-w-0">
-          <div className="text-[11px] text-muted-foreground leading-tight">{label}</div>
-          <div className={`text-lg font-semibold leading-tight truncate ${tone ?? ""}`}>{value}</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground/80 leading-tight font-medium">{label}</div>
+          <div className={`text-xl font-bold leading-tight truncate tracking-tight ${tone ?? "text-foreground"}`}>{value}</div>
         </div>
       </CardContent>
     </Card>
