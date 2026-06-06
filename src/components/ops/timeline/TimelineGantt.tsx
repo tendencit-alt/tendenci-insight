@@ -139,8 +139,56 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
 
         {ops.length === 0 && (
-          <div className="p-12 text-center text-sm text-muted-foreground bg-muted/5">
-            Nenhuma OP no período. Ajuste os filtros ou crie novas ordens de produção.
+          <div className="relative overflow-hidden px-6 py-12 md:px-10 md:py-14">
+            <div className="absolute inset-0 bg-gradient-to-br from-muted/10 via-background to-muted/20" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+            <div className="relative grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-2 rounded-full border border-border/50 bg-background/80 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground shadow-sm">
+                  <span className="h-2 w-2 rounded-full bg-primary/70" />
+                  Cronograma sem OPs visíveis
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold tracking-tight text-foreground">Ajuste os filtros para revelar a linha do tempo</h3>
+                  <p className="max-w-xl text-sm leading-6 text-muted-foreground">
+                    Nenhuma ordem apareceu no recorte atual. A estrutura do cronograma continua a mesma, mas a visualização agora prioriza leitura, contraste e foco no estado operacional.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <div className="rounded-full border border-border/50 bg-background/75 px-3 py-1.5 text-xs text-muted-foreground shadow-sm">Amplie o período</div>
+                  <div className="rounded-full border border-border/50 bg-background/75 px-3 py-1.5 text-xs text-muted-foreground shadow-sm">Revise agrupamento</div>
+                  <div className="rounded-full border border-border/50 bg-background/75 px-3 py-1.5 text-xs text-muted-foreground shadow-sm">Busque por OP ou cliente</div>
+                </div>
+              </div>
+
+              <div className="rounded-[22px] border border-border/50 bg-background/70 p-4 shadow-sm">
+                <div className="grid gap-3">
+                  <div className="flex items-center gap-3 rounded-2xl border border-border/40 bg-muted/20 p-3">
+                    <div className="h-10 w-10 rounded-2xl bg-primary/10 ring-1 ring-primary/20" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-2.5 w-24 rounded-full bg-muted" />
+                      <div className="h-2 w-40 rounded-full bg-muted/70" />
+                    </div>
+                  </div>
+                  <div className="space-y-2 rounded-2xl border border-border/40 bg-card/80 p-4">
+                    <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                      <span>Prévia da faixa temporal</span>
+                      <span>ETA</span>
+                    </div>
+                    <div className="relative h-10 rounded-full bg-muted/30 ring-1 ring-border/40 overflow-hidden">
+                      <div className="absolute inset-y-1 left-[10%] w-[58%] rounded-full bg-gradient-to-r from-primary/75 via-primary/60 to-primary/40" />
+                      <div className="absolute inset-y-0 left-[53%] border-l-2 border-dashed border-foreground/70" />
+                      <div className="absolute inset-y-0 left-[76%] border-l-2 border-dashed border-primary" />
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                      <span className="rounded-full bg-muted/40 px-2.5 py-1">Meta</span>
+                      <span className="rounded-full bg-muted/40 px-2.5 py-1">Executado</span>
+                      <span className="rounded-full bg-muted/40 px-2.5 py-1">Prazo final</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
