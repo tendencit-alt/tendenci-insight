@@ -48,20 +48,33 @@ export function slaSuffix(unit: SlaUnit): string {
 
 
 export const STATUS_COLOR_PALETTE = [
-  { key: "slate",   tone: "bg-slate-500/10 text-slate-700 border-slate-500/30 dark:text-slate-300" },
-  { key: "blue",    tone: "bg-blue-500/10 text-blue-700 border-blue-500/30 dark:text-blue-300" },
-  { key: "amber",   tone: "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300" },
-  { key: "orange",  tone: "bg-orange-500/10 text-orange-700 border-orange-500/30 dark:text-orange-300" },
-  { key: "emerald", tone: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300" },
-  { key: "green",   tone: "bg-green-500/10 text-green-700 border-green-500/30 dark:text-green-300" },
-  { key: "purple",  tone: "bg-purple-500/10 text-purple-700 border-purple-500/30 dark:text-purple-300" },
-  { key: "rose",    tone: "bg-rose-500/10 text-rose-700 border-rose-500/30 dark:text-rose-300" },
-  { key: "red",     tone: "bg-red-500/10 text-red-700 border-red-500/30 dark:text-red-300" },
+  { key: "slate",   tone: "bg-slate-500/10 text-slate-700 border-slate-500/30 dark:text-slate-300",     swatch: "bg-slate-500" },
+  { key: "gray",    tone: "bg-gray-500/10 text-gray-700 border-gray-500/30 dark:text-gray-300",         swatch: "bg-gray-500" },
+  { key: "red",     tone: "bg-red-500/10 text-red-700 border-red-500/30 dark:text-red-300",             swatch: "bg-red-600" },
+  { key: "orange",  tone: "bg-orange-500/10 text-orange-700 border-orange-500/30 dark:text-orange-300", swatch: "bg-orange-600" },
+  { key: "amber",   tone: "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300",     swatch: "bg-amber-600" },
+  { key: "yellow",  tone: "bg-yellow-500/10 text-yellow-700 border-yellow-500/30 dark:text-yellow-300", swatch: "bg-yellow-500" },
+  { key: "lime",    tone: "bg-lime-500/10 text-lime-700 border-lime-500/30 dark:text-lime-300",         swatch: "bg-lime-500" },
+  { key: "green",   tone: "bg-green-500/10 text-green-700 border-green-500/30 dark:text-green-300",     swatch: "bg-green-600" },
+  { key: "emerald", tone: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300", swatch: "bg-emerald-600" },
+  { key: "teal",    tone: "bg-teal-500/10 text-teal-700 border-teal-500/30 dark:text-teal-300",         swatch: "bg-teal-600" },
+  { key: "cyan",    tone: "bg-cyan-500/10 text-cyan-700 border-cyan-500/30 dark:text-cyan-300",         swatch: "bg-cyan-600" },
+  { key: "sky",     tone: "bg-sky-500/10 text-sky-700 border-sky-500/30 dark:text-sky-300",             swatch: "bg-sky-600" },
+  { key: "blue",    tone: "bg-blue-500/10 text-blue-700 border-blue-500/30 dark:text-blue-300",         swatch: "bg-blue-600" },
+  { key: "indigo",  tone: "bg-indigo-500/10 text-indigo-700 border-indigo-500/30 dark:text-indigo-300", swatch: "bg-indigo-600" },
+  { key: "violet",  tone: "bg-violet-500/10 text-violet-700 border-violet-500/30 dark:text-violet-300", swatch: "bg-violet-600" },
+  { key: "purple",  tone: "bg-purple-500/10 text-purple-700 border-purple-500/30 dark:text-purple-300", swatch: "bg-purple-600" },
+  { key: "fuchsia", tone: "bg-fuchsia-500/10 text-fuchsia-700 border-fuchsia-500/30 dark:text-fuchsia-300", swatch: "bg-fuchsia-600" },
+  { key: "pink",    tone: "bg-pink-500/10 text-pink-700 border-pink-500/30 dark:text-pink-300",         swatch: "bg-pink-600" },
+  { key: "rose",    tone: "bg-rose-500/10 text-rose-700 border-rose-500/30 dark:text-rose-300",         swatch: "bg-rose-600" },
 ];
 
 export function colorTone(color: string): string {
-  // Padronizado para azul conforme solicitação do usuário
-  return STATUS_COLOR_PALETTE.find((c) => c.key === "blue")?.tone ?? STATUS_COLOR_PALETTE[0].tone;
+  return STATUS_COLOR_PALETTE.find((c) => c.key === color)?.tone ?? STATUS_COLOR_PALETTE[0].tone;
+}
+
+export function colorSwatch(color: string): string {
+  return STATUS_COLOR_PALETTE.find((c) => c.key === color)?.swatch ?? "bg-muted-foreground";
 }
 
 export function useProductionStatusColumns() {
@@ -120,7 +133,7 @@ export function useCreateProductionStatusColumn() {
           tenant_id: activeTenantId,
           slug,
           label: input.label,
-          color: "blue", // Padronizado para azul conforme solicitação do usuário
+          color: input.color ?? "blue",
           sort_order: input.sort_order ?? 100,
           sla_days: input.sla_days ?? null,
           duration_days: input.sla_days ?? null,
