@@ -65,12 +65,16 @@ export function colorTone(color: string): string {
 }
 
 export function useProductionStatusColumns() {
+  const { activeTenantId } = useActiveTenant();
+
   return useQuery({
-    queryKey: ["production_status_columns"],
+    queryKey: ["production_status_columns", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("production_status_columns" as any)
         .select("*")
+        .eq("tenant_id", activeTenantId)
         .order("sort_order", { ascending: true });
       if (error) throw error;
       return (data ?? []) as unknown as ProductionStatusColumn[];
