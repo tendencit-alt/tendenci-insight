@@ -144,3 +144,6 @@ verify_jwt = false
 
 [functions.pluggy-sync-daily]
 verify_jwt = false
+
+[functions.pluggy-handle-connection]
+verify_jwt = true
