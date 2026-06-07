@@ -22,10 +22,9 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } },
     );
 
-    const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(
-      authHeader.replace("Bearer ", ""),
-    );
-    if (claimsErr || !claimsData?.claims?.sub) {
+    const { data: userData, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !userData?.user?.id) {
+      console.error("[pluggy-connect-token] auth failed", userErr);
       return json({ error: "Unauthorized" }, 401);
     }
 
@@ -33,6 +32,11 @@ Deno.serve(async (req) => {
     if (tErr || !tenantId) {
       console.error("[pluggy-connect-token] tenant resolution failed", tErr);
       return json({ error: "Tenant não encontrado" }, 403);
+    }
+
+    if (!PLUGGY_CLIENT_ID || !PLUGGY_CLIENT_SECRET) {
+      console.error("[pluggy-connect-token] missing Pluggy secrets");
+      return json({ error: "Pluggy não configurado" }, 500);
     }
 
     // 1) auth → api_key
@@ -47,11 +51,11 @@ Deno.serve(async (req) => {
     if (!authRes.ok) {
       const body = await authRes.text();
       console.error("[pluggy-connect-token] auth failed", authRes.status, body);
-      return json({ error: "Falha ao autenticar no Pluggy" }, 500);
+      return json({ error: "Falha ao autenticar no Pluggy", details: `status ${authRes.status}` }, 500);
     }
     const { apiKey } = await authRes.json();
 
-    // 2) connect_token vinculado ao tenant
+    // 2) connect_token vinculado ao tenant (clientUserId top-level conforme API Pluggy)
     const ctRes = await fetch(`${PLUGGY_BASE_URL}/connect_token`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-API-KEY": apiKey },
@@ -60,14 +64,14 @@ Deno.serve(async (req) => {
     if (!ctRes.ok) {
       const body = await ctRes.text();
       console.error("[pluggy-connect-token] connect_token failed", ctRes.status, body);
-      return json({ error: "Falha ao gerar connect token" }, 500);
+      return json({ error: "Falha ao gerar connect token", details: `status ${ctRes.status}` }, 500);
     }
     const ct = await ctRes.json();
 
     return json({ accessToken: ct.accessToken, expiresIn: ct.expiresIn ?? 1800 });
   } catch (e) {
     console.error("[pluggy-connect-token] unexpected", e);
-    return json({ error: "Erro inesperado" }, 500);
+    return json({ error: "Erro inesperado", details: e instanceof Error ? e.message : String(e) }, 500);
   }
 });
 
