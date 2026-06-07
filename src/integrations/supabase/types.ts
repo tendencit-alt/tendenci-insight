@@ -15808,6 +15808,7 @@ export type Database = {
           created_at: string
           duration_days: number | null
           id: string
+          is_seed_default: boolean
           is_system: boolean
           label: string
           sla_days: number | null
@@ -15822,6 +15823,7 @@ export type Database = {
           created_at?: string
           duration_days?: number | null
           id?: string
+          is_seed_default?: boolean
           is_system?: boolean
           label: string
           sla_days?: number | null
@@ -15836,6 +15838,7 @@ export type Database = {
           created_at?: string
           duration_days?: number | null
           id?: string
+          is_seed_default?: boolean
           is_system?: boolean
           label?: string
           sla_days?: number | null
@@ -24255,6 +24258,10 @@ export type Database = {
         Returns: number
       }
       seed_default_product_category: {
+        Args: { _tenant_id: string }
+        Returns: number
+      }
+      seed_default_production_status_columns: {
         Args: { _tenant_id: string }
         Returns: number
       }
