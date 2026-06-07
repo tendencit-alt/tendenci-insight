@@ -238,9 +238,9 @@ export default function Bancos() {
               <Landmark className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Bancos Conectados</h1>
+              <h1 className="text-3xl font-bold tracking-tight">Contas Bancárias</h1>
               <p className="text-sm text-muted-foreground">
-                Seus extratos chegam automaticamente. Última sincronização: <strong>{lastSync}</strong>.
+                Conecte suas contas e receba extratos automaticamente via Open Finance. Última sincronização: <strong>{lastSync}</strong>.
               </p>
             </div>
           </div>

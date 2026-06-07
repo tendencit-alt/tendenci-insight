@@ -14,8 +14,10 @@ const ROUTE_LABELS: Record<string, string> = {
   "bi-dashboard": "Dashboard Executivo",
   "relatorios": "KPI's",
   "settings": "Configurações",
+  "configuracoes": "Configurações",
+  "contas-bancarias": "Contas Bancárias",
   "cadastros-financeiros": "Cadastros Financeiros",
-  
+
   "tarefas": "Tarefas",
   "users": "Usuários",
 };
