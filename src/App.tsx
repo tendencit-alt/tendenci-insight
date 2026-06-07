@@ -191,8 +191,8 @@ const App = () => (
               <Route path="/financeiro" element={<ProtectedRoute><PermissionGuard module="financeiro"><Financeiro /></PermissionGuard></ProtectedRoute>} />
               <Route path="/cadastros-financeiros" element={<ProtectedRoute><PermissionGuard module="cadastros_financeiros"><CadastrosFinanceiros /></PermissionGuard></ProtectedRoute>} />
               <Route path="/financeiro/rh-pj" element={<ProtectedRoute><PermissionGuard module="financeiro" action="admin"><FinanceiroRhPj /></PermissionGuard></ProtectedRoute>} />
-              <Route path="/configuracoes/financeiro/contas-bancarias" element={<ProtectedRoute><PermissionGuard module="cadastros_financeiros"><Bancos /></PermissionGuard></ProtectedRoute>} />
-              <Route path="/financeiro/bancos" element={<Navigate to="/configuracoes/financeiro/contas-bancarias" replace />} />
+              <Route path="/configuracoes/financeiro/contas-bancarias" element={<Navigate to="/cadastros-financeiros?tab=bank-accounts" replace />} />
+              <Route path="/financeiro/bancos" element={<Navigate to="/cadastros-financeiros?tab=bank-accounts" replace />} />
               <Route path="/rh" element={<ProtectedRoute><RecursosHumanos /></ProtectedRoute>} />
               <Route path="/producao-operacoes" element={<ProtectedRoute><ProducaoOperacoes /></ProtectedRoute>} />
 
