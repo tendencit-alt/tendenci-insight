@@ -23600,6 +23600,7 @@ export type Database = {
           valor_total: number
         }[]
       }
+      get_bank_dashboard_data: { Args: never; Returns: Json }
       get_billing_analytics_kpis: { Args: never; Returns: Json }
       get_billing_ops_overview: {
         Args: never
