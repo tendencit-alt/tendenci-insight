@@ -133,6 +133,7 @@ const ERP_MODULES: ModuleGroup[] = [
       { label: "Contas a Pagar e Receber", route: "/financeiro?tab=obligations", icon: "ArrowUpCircle", module: "financeiro", available: true },
       { label: "Tesouraria", route: "/financeiro?tab=treasury", icon: "Landmark", module: "financeiro", available: true },
       { label: "Conciliação Bancária", route: "/financeiro?tab=reconciliation", icon: "GitCompare", module: "financeiro", available: true },
+      { label: "Bancos", route: "/financeiro/bancos", icon: "Landmark", module: "financeiro", available: true },
       { label: "Fluxo de Caixa", route: "/financeiro?tab=cashflow", icon: "TrendingUp", module: "financeiro", available: true },
       { label: "DRE Gerencial", route: "/financeiro?tab=dre", icon: "BarChart2", module: "financeiro", available: true },
       { label: "Resultado Financeiro", route: "/financeiro?tab=financial-result", icon: "DollarSign", module: "financeiro", available: true },
