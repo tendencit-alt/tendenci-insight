@@ -1124,6 +1124,203 @@ export type Database = {
           },
         ]
       }
+      bank_accounts: {
+        Row: {
+          account_number: string | null
+          account_subtype: string | null
+          account_type: string
+          agency: string | null
+          balance: number
+          connection_id: string
+          created_at: string
+          currency_code: string
+          id: string
+          marketing_name: string | null
+          owner_name: string | null
+          pluggy_account_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_number?: string | null
+          account_subtype?: string | null
+          account_type: string
+          agency?: string | null
+          balance?: number
+          connection_id: string
+          created_at?: string
+          currency_code?: string
+          id?: string
+          marketing_name?: string | null
+          owner_name?: string | null
+          pluggy_account_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string | null
+          account_subtype?: string | null
+          account_type?: string
+          agency?: string | null
+          balance?: number
+          connection_id?: string
+          created_at?: string
+          currency_code?: string
+          id?: string
+          marketing_name?: string | null
+          owner_name?: string | null
+          pluggy_account_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_accounts_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "bank_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_accounts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_connections: {
+        Row: {
+          bank_logo_url: string | null
+          bank_name: string
+          created_at: string
+          created_by: string | null
+          id: string
+          last_error_message: string | null
+          last_sync_at: string | null
+          pluggy_connector_id: number
+          pluggy_item_id: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          bank_logo_url?: string | null
+          bank_name: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          last_error_message?: string | null
+          last_sync_at?: string | null
+          pluggy_connector_id: number
+          pluggy_item_id: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          bank_logo_url?: string | null
+          bank_name?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          last_error_message?: string | null
+          last_sync_at?: string | null
+          pluggy_connector_id?: number
+          pluggy_item_id?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_connections_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_transactions: {
+        Row: {
+          account_id: string
+          amount: number
+          category: string | null
+          category_id: string | null
+          created_at: string
+          date: string
+          description: string
+          id: string
+          merchant_name: string | null
+          payment_data: Json | null
+          pluggy_transaction_id: string
+          raw_payload: Json | null
+          reconciled_at: string | null
+          reconciled_by: string | null
+          reconciled_id: string | null
+          reconciled_with: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          category?: string | null
+          category_id?: string | null
+          created_at?: string
+          date: string
+          description: string
+          id?: string
+          merchant_name?: string | null
+          payment_data?: Json | null
+          pluggy_transaction_id: string
+          raw_payload?: Json | null
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciled_id?: string | null
+          reconciled_with?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          category?: string | null
+          category_id?: string | null
+          created_at?: string
+          date?: string
+          description?: string
+          id?: string
+          merchant_name?: string | null
+          payment_data?: Json | null
+          pluggy_transaction_id?: string
+          raw_payload?: Json | null
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciled_id?: string | null
+          reconciled_with?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_transactions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       benchmark_clusters: {
         Row: {
           active: boolean
@@ -23648,6 +23845,23 @@ export type Database = {
         }[]
       }
       get_phase_business_days: { Args: { p_phase_id: string }; Returns: number }
+      get_pluggy_connections_for_user: {
+        Args: never
+        Returns: {
+          account_count: number
+          bank_logo_url: string
+          bank_name: string
+          created_at: string
+          id: string
+          last_error_message: string
+          last_sync_at: string
+          pluggy_connector_id: number
+          pluggy_item_id: string
+          status: string
+          tenant_id: string
+          total_balance: number
+        }[]
+      }
       get_production_timeline: { Args: { _tenant_id?: string }; Returns: Json }
       get_project_stats_by_type: {
         Args: never
