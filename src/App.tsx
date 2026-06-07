@@ -46,6 +46,7 @@ import CatalogoPublicoProduto from "./pages/CatalogoPublicoProduto";
 import Financeiro from "./pages/Financeiro";
 import CadastrosFinanceiros from "./pages/CadastrosFinanceiros";
 import FinanceiroRhPj from "./pages/FinanceiroRhPj";
+import Bancos from "./pages/Bancos";
 
 import ResetPassword from "./pages/ResetPassword";
 import SuperAdmin from "./pages/SuperAdmin";
@@ -190,6 +191,7 @@ const App = () => (
               <Route path="/financeiro" element={<ProtectedRoute><PermissionGuard module="financeiro"><Financeiro /></PermissionGuard></ProtectedRoute>} />
               <Route path="/cadastros-financeiros" element={<ProtectedRoute><PermissionGuard module="cadastros_financeiros"><CadastrosFinanceiros /></PermissionGuard></ProtectedRoute>} />
               <Route path="/financeiro/rh-pj" element={<ProtectedRoute><PermissionGuard module="financeiro" action="admin"><FinanceiroRhPj /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/financeiro/bancos" element={<ProtectedRoute><PermissionGuard module="financeiro"><Bancos /></PermissionGuard></ProtectedRoute>} />
               <Route path="/rh" element={<ProtectedRoute><RecursosHumanos /></ProtectedRoute>} />
               <Route path="/producao-operacoes" element={<ProtectedRoute><ProducaoOperacoes /></ProtectedRoute>} />
 
