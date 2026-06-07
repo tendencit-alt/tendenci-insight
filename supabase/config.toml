@@ -135,3 +135,12 @@ verify_jwt = true
 
 [functions.asaas-cancel-subscription]
 verify_jwt = true
+
+[functions.pluggy-connect-token]
+verify_jwt = true
+
+[functions.pluggy-webhook]
+verify_jwt = false
+
+[functions.pluggy-sync-daily]
+verify_jwt = false

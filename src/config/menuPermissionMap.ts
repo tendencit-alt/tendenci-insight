@@ -87,6 +87,7 @@ export const MENU_PERMISSION_MAP: MenuRoot[] = [
       { key: '/financeiro/compromissos-venda', label: 'Compromissos sobre Venda', module: 'financeiro' },
       { key: '/financeiro',         label: 'Tesouraria',                       module: 'financeiro' },
       { key: '/conciliacao',        label: 'Conciliação Bancária',             module: 'financeiro' },
+      { key: '/financeiro/bancos',  label: 'Bancos (Open Finance)',            module: 'financeiro' },
       { key: '/resultado-financeiro', label: 'Forecast Financeiro',            module: 'financeiro' },
       { key: '/planning',           label: 'Metas Financeiras',                module: 'planejamento' },
     ],
