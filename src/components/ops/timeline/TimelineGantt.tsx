@@ -191,16 +191,25 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                   </div>
 
                   {/* FIM (due) line */}
-                  {duePct !== null && (
-                    <div
-                      className="absolute -top-1 -bottom-1 border-l-2 border-dashed border-blue-600 z-10 pointer-events-none"
-                      style={{ left: `${duePct}%` }}
-                    >
-                      <div className="absolute -bottom-3 -translate-x-1/2 text-[8px] font-black bg-blue-600 text-white px-1.5 py-0.5 rounded shadow-sm">
-                        FIM
+                  {duePct !== null && due && (() => {
+                    const daysToDue = differenceInCalendarDays(due, today);
+                    const daysLabel =
+                      daysToDue > 0
+                        ? `faltam ${daysToDue}d`
+                        : daysToDue === 0
+                          ? "hoje"
+                          : `${Math.abs(daysToDue)}d em atraso`;
+                    return (
+                      <div
+                        className="absolute -top-1 -bottom-1 border-l-2 border-dashed border-blue-600 z-10 pointer-events-none"
+                        style={{ left: `${duePct}%` }}
+                      >
+                        <div className="absolute -bottom-3 -translate-x-1/2 text-[8px] font-black bg-blue-600 text-white px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
+                          FIM · {daysLabel}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* META marker */}
                   <div
