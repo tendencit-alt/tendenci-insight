@@ -96,20 +96,28 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
     }
   };
 
-  const getDeadlineStatus = (deadline: string | null, status: string) => {
-    if (!deadline || status === 'entregue' || status === 'cancelado') return null;
+  const getDeadlineStatus = (deadline: string | null, status: string, orderId: string) => {
+    if (status === 'entregue' || status === 'cancelado') return null;
+    
+    // We try to use the same logic as the production timeline/Gantt
+    // but in a simplified version for the table cell.
+    // The user wants to "espelhar" (mirror) the cronograma communication.
+    
+    if (!deadline) return null;
     const deadlineDate = parseDateOnly(deadline);
     if (!deadlineDate) return null;
+    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const dn = new Date(deadlineDate);
     dn.setHours(0, 0, 0, 0);
     const days = differenceInDays(dn, today);
 
-    if (days < 0) return { label: `${Math.abs(days)}d atrasado`, className: 'border-destructive/20 bg-destructive/10 text-destructive', isLate: true };
-    if (days === 0) return { label: 'Hoje', className: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-400', isLate: false };
-    if (days <= 7) return { label: `${days}d`, className: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-400', isLate: false };
-    return { label: `${days}d`, className: 'border-border bg-muted text-muted-foreground', isLate: false };
+    if (days < 0) return { label: `${Math.abs(days)}d`, className: 'bg-destructive text-white border-transparent', isLate: true };
+    if (days === 0) return { label: 'Hoje', className: 'bg-blue-600 text-white border-transparent', isLate: false };
+    if (days <= 2) return { label: `${days}d`, className: 'bg-amber-500 text-white border-transparent', isLate: false };
+    
+    return { label: `${days}d`, className: 'bg-blue-600 text-white border-transparent', isLate: false };
   };
 
   if (isLoading) {
