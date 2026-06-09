@@ -88,6 +88,7 @@ function DragCard({
 export function OpsOrdersTab() {
   const [typeFilter, setTypeFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [showArchived, setShowArchived] = useState(false);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [checklistsOpen, setChecklistsOpen] = useState(false);
@@ -167,15 +168,24 @@ export function OpsOrdersTab() {
   }, [orders, validSlugs, phaseSummary]);
 
   const filtered = useMemo(() => {
+    let base = enriched;
+    
+    // Logic: Archived means status is "concluido" or "entregue"
+    if (showArchived) {
+      base = base.filter(o => o._slug === "concluido" || o._slug === "entregue");
+    } else {
+      base = base.filter(o => o._slug !== "concluido" && o._slug !== "entregue");
+    }
+
     const q = search.trim().toLowerCase();
-    if (!q) return enriched;
-    return enriched.filter((o) =>
+    if (!q) return base;
+    return base.filter((o) =>
       (o.title ?? "").toLowerCase().includes(q) ||
       String(o.order_number ?? "").includes(q) ||
       (o.clients?.name ?? "").toLowerCase().includes(q) ||
       (o.suppliers?.name ?? "").toLowerCase().includes(q)
     );
-  }, [enriched, search]);
+  }, [enriched, search, showArchived]);
 
   // KPIs unificados — mesma fonte do Cronograma (RPC get_production_timeline).
   // Garante 100% de paridade entre as abas Produção e Cronograma.
@@ -260,9 +270,15 @@ export function OpsOrdersTab() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
+          <Tabs value={showArchived ? "archived" : "active"} onValueChange={(v) => setShowArchived(v === "archived")} className="mr-2">
+            <TabsList className="h-8">
+              <TabsTrigger value="active" className="text-xs py-1">Ativas</TabsTrigger>
+              <TabsTrigger value="archived" className="text-xs py-1">Arquivadas</TabsTrigger>
+            </TabsList>
+          </Tabs>
           <Select value={statusFilter || "all"} onValueChange={(v) => setStatusFilter(v === "all" ? "" : v)}>
-            <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectTrigger className="w-40 h-9 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos status</SelectItem>
               {statusColumns.map((c) => (
