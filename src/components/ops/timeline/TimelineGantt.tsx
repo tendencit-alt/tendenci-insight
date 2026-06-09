@@ -97,34 +97,40 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
             }
           }
 
-          // Time axis logic:
-          // HOJE: where we are relative to the full period shown (opStart to axisEnd)
+          // 1. Time axis logic (Visual scale)
           const todayPct = clampPct((differenceInCalendarDays(today, opStart) / opSpanDays) * 100);
 
-          // META: The expected progress (planned work) based on time elapsed
-          // If 50% of time has passed, META should be at 50% of the bar.
-          const metaPct = todayPct;
+          // 2. Calculation of planned progress (Meta)
+          // How much time has passed vs total planned time
+          const totalPlannedDaysForMeta = due ? differenceInCalendarDays(due, opStart) : opSpanDays;
+          const daysPassed = differenceInCalendarDays(today, opStart);
+          const metaProgressRatio = clampPct((daysPassed / (totalPlannedDaysForMeta || 1)) * 100) / 100;
 
-          // EXECUTADO: Actual completion based on status segments
-          const totalPlannedDays = op.segments.reduce((acc, s) => acc + (s.duration_days || 0), 0) || 1;
+          // 3. Calculation of real progress (Executado)
+          const totalPlannedDaysStatus = op.segments.reduce((acc, s) => acc + (s.duration_days || 0), 0) || 1;
           let completedPlannedDays = 0;
           const currentIdx = op.segments.findIndex((s) => s.slug === op.status);
           
           if (currentIdx >= 0) {
-            // Add all previous segments as fully completed
             for (let i = 0; i < currentIdx; i++) {
               completedPlannedDays += op.segments[i].duration_days || 0;
             }
-            // Add progress of the current segment
             const currentSegDuration = op.segments[currentIdx].duration_days || 1;
             const currentSegRatio = Math.min(1, (op.days_in_current ?? 0) / (op.current_duration_days || currentSegDuration));
             completedPlannedDays += currentSegRatio * currentSegDuration;
           }
+          const execProgressRatio = clampPct((completedPlannedDays / totalPlannedDaysStatus) * 100) / 100;
 
-          // Projection: Convert completed planned work days to the visual axis percentage
-          const executadoPct = clampPct((completedPlannedDays / totalPlannedDays) * 100);
+          // 4. Mapping to visual bar scale (opSpanDays)
+          // We map the 0-100% progress of "Planned" and "Status" to the visual width of the segments bar
+          // The segments bar represents totalPlannedDaysStatus in terms of internal proportions, 
+          // but visually it occupies the full track width? No, the track width is opSpanDays.
+          // Actually, the segments bar is 100% width of the track in current implementation? 
+          // Let's check: <div className="absolute inset-0 flex ..."> contains segments.
+          // Yes, so the segments bar is the full width of the track.
+          const metaPct = metaProgressRatio * 100;
+          const executadoPct = execProgressRatio * 100;
 
-          // Force colors for debugging if needed, but let's just make markers more visible
           const metaMarkerClass = "text-[8px] font-black bg-blue-600 text-white px-1.5 py-0.5 rounded shadow-[0_0_10px_rgba(37,99,235,0.5)] border border-white/20";
           const execMarkerClass = "text-[8px] font-black bg-foreground text-background px-1.5 py-0.5 rounded shadow-[0_0_10px_rgba(0,0,0,0.3)] border border-white/20 uppercase";
           
@@ -169,7 +175,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                     className="absolute inset-0 flex rounded-full overflow-hidden shadow-md ring-1 ring-black/5"
                   >
                     {op.segments.map((s, idx) => {
-                      const w = ((s.duration_days || 0) / totalPlannedDays) * 100;
+                      const w = ((s.duration_days || 0) / totalPlannedDaysStatus) * 100;
                       const isPast = currentIdx >= 0 && idx < currentIdx;
                       const isCurrent = idx === currentIdx;
                       const cls = segColor(s.color);
@@ -211,13 +217,13 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                         ? `${daysToDue}d`
                         : daysToDue === 0
                           ? "hoje"
-                          : `${Math.abs(daysToDue)}d em atraso`;
+                          : `${Math.abs(daysToDue)}d`; // Removed "em atraso" as per previous instruction and keeping it clean
                     return (
                       <div
-                        className="absolute -top-1 -bottom-1 border-l-2 border-dashed border-blue-600 z-10 pointer-events-none"
+                        className="absolute -top-1 -bottom-1 border-l-2 border-dashed border-blue-600/40 z-10 pointer-events-none"
                         style={{ left: `${duePct}%` }}
                       >
-                        <div className="absolute -bottom-3 -translate-x-1/2 text-[8px] font-black bg-blue-600 text-white px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
+                        <div className="absolute -bottom-4 -translate-x-1/2 text-[8px] font-black bg-blue-600/80 text-white px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
                           FIM · {daysLabel}
                         </div>
                       </div>
