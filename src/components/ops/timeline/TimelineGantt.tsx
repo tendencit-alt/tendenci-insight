@@ -195,10 +195,10 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
                   {/* HOJE line */}
                   <div
-                    className="absolute -top-1 -bottom-1 border-l-2 border-dashed border-foreground/70 z-10 pointer-events-none"
+                    className="absolute -top-1 -bottom-1 border-l-2 border-dashed border-red-500/60 z-10 pointer-events-none"
                     style={{ left: `${todayPct}%` }}
                   >
-                    <div className="absolute -top-3 -translate-x-1/2 text-[8px] font-black bg-foreground text-background px-1.5 py-0.5 rounded shadow-sm">
+                    <div className="absolute -top-4 -translate-x-1/2 text-[8px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded shadow-sm border border-white/20">
                       HOJE
                     </div>
                   </div>
