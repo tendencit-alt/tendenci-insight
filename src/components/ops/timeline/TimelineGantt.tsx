@@ -123,6 +123,16 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
           // Projection: Convert completed planned work days to the visual axis percentage
           const executadoPct = clampPct((completedPlannedDays / totalPlannedDays) * 100);
+
+          // DEBUG LOGS (will be visible in browser console)
+          console.log(`OP #${op.order_number} - ${op.title}`, {
+            opSpanDays,
+            totalPlannedDays,
+            completedPlannedDays,
+            todayPct,
+            metaPct,
+            executadoPct
+          });
           
           const isDone = op.status === "concluido" || op.status === "entregue";
 
