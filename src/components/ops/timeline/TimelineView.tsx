@@ -71,8 +71,8 @@ export function TimelineView() {
         return String(a.order_number).localeCompare(String(b.order_number), undefined, { numeric: true });
       }
       if (filters.sort === "date") {
-        const dateA = new Date(a.actual_start_date ?? a.planned_start_date ?? a.status_changed_at).getTime();
-        const dateB = new Date(b.actual_start_date ?? b.planned_start_date ?? b.status_changed_at).getTime();
+        const dateA = new Date(a.order_emission_date ?? a.actual_start_date ?? a.planned_start_date ?? a.status_changed_at).getTime();
+        const dateB = new Date(b.order_emission_date ?? b.actual_start_date ?? b.planned_start_date ?? b.status_changed_at).getTime();
         return dateA - dateB;
       }
       if (filters.sort === "priority") {
