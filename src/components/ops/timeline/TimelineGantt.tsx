@@ -80,7 +80,6 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           );
           const opSpanDays = Math.max(1, differenceInCalendarDays(axisEnd, opStart));
 
-          const todayPct = clampPct((differenceInCalendarDays(today, opStart) / opSpanDays) * 100);
           const duePct = due ? clampPct((differenceInCalendarDays(due, opStart) / opSpanDays) * 100) : null;
           const etaPct = clampPct((differenceInCalendarDays(opEta, opStart) / opSpanDays) * 100);
 
