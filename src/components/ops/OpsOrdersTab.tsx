@@ -178,6 +178,10 @@ export function OpsOrdersTab() {
       base = base.filter(o => o._slug !== "concluido" && o._slug !== "entregue");
     }
 
+    if (onTimeOnly) {
+      base = base.filter(o => o._due.level !== "late");
+    }
+
     const q = search.trim().toLowerCase();
     if (!q) return base;
     return base.filter((o) =>
@@ -278,6 +282,17 @@ export function OpsOrdersTab() {
               <TabsTrigger value="archived" className="text-xs py-1">Arquivadas</TabsTrigger>
             </TabsList>
           </Tabs>
+
+          <Button
+            size="sm"
+            variant={onTimeOnly ? "default" : "outline"}
+            className="h-8 text-xs gap-1.5"
+            onClick={() => setOnTimeOnly(!onTimeOnly)}
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            No Prazo
+          </Button>
+
           <Select value={statusFilter || "all"} onValueChange={(v) => setStatusFilter(v === "all" ? "" : v)}>
             <SelectTrigger className="w-40 h-9 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
