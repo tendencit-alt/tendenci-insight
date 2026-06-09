@@ -89,6 +89,7 @@ export function OpsOrdersTab() {
   const [typeFilter, setTypeFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [showArchived, setShowArchived] = useState(false);
+  const [onTimeOnly, setOnTimeOnly] = useState(false);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [checklistsOpen, setChecklistsOpen] = useState(false);
