@@ -195,7 +195,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                     const daysToDue = differenceInCalendarDays(due, today);
                     const daysLabel =
                       daysToDue > 0
-                        ? `faltam ${daysToDue}d`
+                        ? `${daysToDue}d`
                         : daysToDue === 0
                           ? "hoje"
                           : `${Math.abs(daysToDue)}d em atraso`;
