@@ -200,14 +200,22 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                   </div>
 
                   {/* HOJE line */}
-                  <div
-                    className="absolute -top-1 -bottom-1 border-l-2 border-dashed border-red-500/60 z-10 pointer-events-none"
-                    style={{ left: `${todayPct}%` }}
-                  >
-                    <div className="absolute -top-4 -translate-x-1/2 text-[8px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded shadow-sm border border-white/20">
-                      HOJE
-                    </div>
-                  </div>
+                  {(() => {
+                    const isLate = executadoPct < metaPct;
+                    const colorClass = isLate ? "bg-red-500" : "bg-blue-600";
+                    const borderClass = isLate ? "border-red-500/60" : "border-blue-600/60";
+                    
+                    return (
+                      <div
+                        className={`absolute -top-1 -bottom-1 border-l-2 border-dashed ${borderClass} z-10 pointer-events-none`}
+                        style={{ left: `${todayPct}%` }}
+                      >
+                        <div className={`absolute -top-4 -translate-x-1/2 text-[8px] font-black ${colorClass} text-white px-1.5 py-0.5 rounded shadow-sm border border-white/20 uppercase`}>
+                          HOJE
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* FIM (due) line */}
                   {duePct !== null && due && (() => {
