@@ -136,8 +136,6 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           const metaMarkerClass = "text-[8px] font-black bg-blue-600 text-white px-1.5 py-0.5 rounded shadow-[0_0_10px_rgba(37,99,235,0.5)] border border-white/20";
           const execMarkerClass = "text-[8px] font-black bg-foreground text-background px-1.5 py-0.5 rounded shadow-[0_0_10px_rgba(0,0,0,0.3)] border border-white/20 uppercase";
           
-          const isDone = op.status === "concluido" || op.status === "entregue";
-
           return (
             <div
               key={op.id}
