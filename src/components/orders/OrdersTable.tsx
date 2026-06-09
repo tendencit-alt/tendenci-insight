@@ -201,7 +201,7 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
               <TableBody>
                 {paginatedOrders.map((order) => {
                   const sc = STATUS_CONFIG[order.status] || { label: order.status, className: 'border-border bg-muted text-muted-foreground' };
-                  const dl = getDeadlineStatus(order.data_entrega_prevista, order.status);
+                  const dl = getDeadlineStatus(order.data_entrega_prevista, order.status, order.id);
                   const canEdit = isMaster || isStatusEditable(order.status);
 
                   return (
