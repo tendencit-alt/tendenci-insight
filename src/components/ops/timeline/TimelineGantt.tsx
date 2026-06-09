@@ -99,6 +99,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
           // 1. Time axis logic (Visual scale)
           const todayPct = clampPct((differenceInCalendarDays(today, opStart) / opSpanDays) * 100);
+          const isDone = op.status === "concluido" || op.status === "entregue";
 
           // 2. Calculation of planned progress (Meta)
           // How much time has passed vs total planned time
@@ -115,8 +116,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
             for (let i = 0; i < currentIdx; i++) {
               completedPlannedDays += op.segments[i].duration_days || 0;
             }
-            // Logic for the current segment: 
-            // If it's the LAST segment (e.g. "concluido"), we consider it 100% finished
+            // Logic for the current segment
             const isLastSegment = currentIdx === op.segments.length - 1;
             const currentSegDuration = op.segments[currentIdx].duration_days || 1;
             
@@ -130,12 +130,6 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           const execProgressRatio = clampPct((completedPlannedDays / totalPlannedDaysStatus) * 100) / 100;
 
           // 4. Mapping to visual bar scale (opSpanDays)
-          // We map the 0-100% progress of "Planned" and "Status" to the visual width of the segments bar
-          // The segments bar represents totalPlannedDaysStatus in terms of internal proportions, 
-          // but visually it occupies the full track width? No, the track width is opSpanDays.
-          // Actually, the segments bar is 100% width of the track in current implementation? 
-          // Let's check: <div className="absolute inset-0 flex ..."> contains segments.
-          // Yes, so the segments bar is the full width of the track.
           const metaPct = metaProgressRatio * 100;
           const executadoPct = execProgressRatio * 100;
 
