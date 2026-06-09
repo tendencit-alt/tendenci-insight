@@ -52,7 +52,7 @@ export function TimelineView() {
           : { start: startOfMonth(now), end: endOfMonth(now) };
       list = list.filter((o) => {
         const eta = new Date(o.eta);
-        const start = new Date(o.actual_start_date ?? o.planned_start_date ?? o.status_changed_at);
+        const start = new Date(o.order_emission_date ?? o.actual_start_date ?? o.planned_start_date ?? o.status_changed_at);
         return isWithinInterval(eta, interval) || isWithinInterval(start, interval) || (start < interval.start && eta > interval.end);
       });
     }
