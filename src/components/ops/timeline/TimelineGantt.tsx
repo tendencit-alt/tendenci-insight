@@ -226,19 +226,21 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
                   {/* META marker */}
                   <div
-                    className="absolute -top-2 z-20 pointer-events-none -translate-x-1/2 flex flex-col items-center"
+                    className="absolute -top-3 z-30 pointer-events-none -translate-x-1/2 flex flex-col items-center"
                     style={{ left: `${metaPct}%` }}
                   >
-                    <span className="text-[8px] font-black bg-blue-600 text-white px-1.5 py-0.5 rounded shadow-sm">META</span>
+                    <span className={metaMarkerClass}>META</span>
+                    <div className="w-0.5 h-1.5 bg-blue-600 mt-0.5" />
                   </div>
-
+238:
                   {/* EXECUTADO marker */}
                   {!isDone && currentIdx !== -1 && (
                     <div
-                      className="absolute -bottom-2 z-20 pointer-events-none -translate-x-1/2 flex flex-col items-center"
+                      className="absolute -bottom-3 z-30 pointer-events-none -translate-x-1/2 flex flex-col items-center"
                       style={{ left: `${executadoPct}%` }}
                     >
-                      <span className="text-[8px] font-black bg-foreground text-background px-1.5 py-0.5 rounded shadow-sm uppercase">Exec</span>
+                      <div className="w-0.5 h-1.5 bg-foreground mb-0.5" />
+                      <span className={execMarkerClass}>Exec</span>
                     </div>
                   )}
                 </div>
