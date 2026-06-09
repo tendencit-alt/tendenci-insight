@@ -98,23 +98,33 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
             }
           }
 
-          const totalDur = op.segments.reduce((acc, s) => acc + (s.duration_days || 0), 0) || 1;
-          const currentIdx = op.segments.findIndex((s) => s.slug === op.status);
+          // Time axis logic:
+          // HOJE: where we are relative to the full period shown (opStart to axisEnd)
+          const todayPct = clampPct((differenceInCalendarDays(today, opStart) / opSpanDays) * 100);
 
-          // META = "where we should be by today" — same time axis as HOJE
+          // META: The expected progress (planned work) based on time elapsed
+          // If 50% of time has passed, META should be at 50% of the bar.
           const metaPct = todayPct;
 
-          // EXECUTADO = days of planned work already done, projected on the time axis
-          let execDays = 0;
+          // EXECUTADO: Actual completion based on status segments
+          const totalPlannedDays = op.segments.reduce((acc, s) => acc + (s.duration_days || 0), 0) || 1;
+          let completedPlannedDays = 0;
+          const currentIdx = op.segments.findIndex((s) => s.slug === op.status);
+          
           if (currentIdx >= 0) {
+            // Add all previous segments as fully completed
             for (let i = 0; i < currentIdx; i++) {
-              execDays += op.segments[i].duration_days || 0;
+              completedPlannedDays += op.segments[i].duration_days || 0;
             }
-            const ratio = Math.min(1, (op.days_in_current ?? 0) / (op.current_duration_days || 1));
-            execDays += ratio * (op.segments[currentIdx].duration_days || 0);
+            // Add progress of the current segment
+            const currentSegDuration = op.segments[currentIdx].duration_days || 1;
+            const currentSegRatio = Math.min(1, (op.days_in_current ?? 0) / (op.current_duration_days || currentSegDuration));
+            completedPlannedDays += currentSegRatio * currentSegDuration;
           }
-          const executadoPct = clampPct((execDays / opSpanDays) * 100);
 
+          // Projection: Convert completed planned work days to the visual axis percentage
+          const executadoPct = clampPct((completedPlannedDays / totalPlannedDays) * 100);
+          
           const isDone = op.status === "concluido" || op.status === "entregue";
 
           return (
