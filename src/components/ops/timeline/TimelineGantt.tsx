@@ -165,7 +165,7 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                     className="absolute inset-0 flex rounded-full overflow-hidden shadow-md ring-1 ring-black/5"
                   >
                     {op.segments.map((s, idx) => {
-                      const w = ((s.duration_days || 0) / totalDur) * 100;
+                      const w = ((s.duration_days || 0) / totalPlannedDays) * 100;
                       const isPast = currentIdx >= 0 && idx < currentIdx;
                       const isCurrent = idx === currentIdx;
                       const cls = segColor(s.color);
