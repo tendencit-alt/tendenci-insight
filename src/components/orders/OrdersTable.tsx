@@ -246,8 +246,7 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
                               {format(parseDateOnly(order.data_entrega_prevista)!, 'dd/MM/yy', { locale: ptBR })}
                             </span>
                             {dl && (
-                              <Badge variant="outline" className={`px-1 py-0 text-[10px] ${dl.className}`}>
-                                {dl.isLate && <AlertTriangle className="mr-0.5 h-2.5 w-2.5" />}
+                              <Badge variant="outline" className={`px-1.5 py-0.5 text-[10px] font-black uppercase tracking-tight shadow-sm ${dl.className}`}>
                                 {dl.label}
                               </Badge>
                             )}
