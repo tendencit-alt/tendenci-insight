@@ -99,12 +99,13 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
           // 1. Time axis logic (Visual scale)
           const todayPct = clampPct((differenceInCalendarDays(today, opStart) / opSpanDays) * 100);
+          const isDone = op.status === "concluido" || op.status === "entregue";
 
           // 2. Calculation of planned progress (Meta)
           // How much time has passed vs total planned time
-          const totalPlannedDaysForMeta = due ? differenceInCalendarDays(due, opStart) : opSpanDays;
+          const totalPlannedDaysForMeta = due ? Math.max(1, differenceInCalendarDays(due, opStart)) : opSpanDays;
           const daysPassed = differenceInCalendarDays(today, opStart);
-          const metaProgressRatio = clampPct((daysPassed / (totalPlannedDaysForMeta || 1)) * 100) / 100;
+          const metaProgressRatio = clampPct((daysPassed / totalPlannedDaysForMeta) * 100) / 100;
 
           // 3. Calculation of real progress (Executado)
           const totalPlannedDaysStatus = op.segments.reduce((acc, s) => acc + (s.duration_days || 0), 0) || 1;
@@ -115,27 +116,26 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
             for (let i = 0; i < currentIdx; i++) {
               completedPlannedDays += op.segments[i].duration_days || 0;
             }
+            // Logic for the current segment
+            const isLastSegment = currentIdx === op.segments.length - 1;
             const currentSegDuration = op.segments[currentIdx].duration_days || 1;
-            const currentSegRatio = Math.min(1, (op.days_in_current ?? 0) / (op.current_duration_days || currentSegDuration));
-            completedPlannedDays += currentSegRatio * currentSegDuration;
+            
+            if (isLastSegment || isDone) {
+              completedPlannedDays += currentSegDuration;
+            } else {
+              const currentSegRatio = Math.min(1, (op.days_in_current ?? 0) / (op.current_duration_days || currentSegDuration));
+              completedPlannedDays += currentSegRatio * currentSegDuration;
+            }
           }
           const execProgressRatio = clampPct((completedPlannedDays / totalPlannedDaysStatus) * 100) / 100;
 
           // 4. Mapping to visual bar scale (opSpanDays)
-          // We map the 0-100% progress of "Planned" and "Status" to the visual width of the segments bar
-          // The segments bar represents totalPlannedDaysStatus in terms of internal proportions, 
-          // but visually it occupies the full track width? No, the track width is opSpanDays.
-          // Actually, the segments bar is 100% width of the track in current implementation? 
-          // Let's check: <div className="absolute inset-0 flex ..."> contains segments.
-          // Yes, so the segments bar is the full width of the track.
           const metaPct = metaProgressRatio * 100;
           const executadoPct = execProgressRatio * 100;
 
           const metaMarkerClass = "text-[8px] font-black bg-blue-600 text-white px-1.5 py-0.5 rounded shadow-[0_0_10px_rgba(37,99,235,0.5)] border border-white/20";
           const execMarkerClass = "text-[8px] font-black bg-foreground text-background px-1.5 py-0.5 rounded shadow-[0_0_10px_rgba(0,0,0,0.3)] border border-white/20 uppercase";
           
-          const isDone = op.status === "concluido" || op.status === "entregue";
-
           return (
             <div
               key={op.id}
