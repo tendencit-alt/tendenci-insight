@@ -67,9 +67,9 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
         )}
 
         {ops.map((op) => {
-          // STANDARD start: real start → planned start → phase change → emission date
+          // A data de início deve ser a data da emissão do pedido, como solicitado
           const startSource =
-            op.actual_start_date ?? op.planned_start_date ?? op.status_changed_at ?? op.order_emission_date;
+            op.order_emission_date ?? op.actual_start_date ?? op.planned_start_date ?? op.status_changed_at;
           const opStart = new Date(startSource);
           const opEta = new Date(op.eta);
           const due = op.planned_end_date ? new Date(op.planned_end_date) : null;
