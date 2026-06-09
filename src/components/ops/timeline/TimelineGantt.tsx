@@ -102,9 +102,9 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
           // 2. Calculation of planned progress (Meta)
           // How much time has passed vs total planned time
-          const totalPlannedDaysForMeta = due ? differenceInCalendarDays(due, opStart) : opSpanDays;
+          const totalPlannedDaysForMeta = due ? Math.max(1, differenceInCalendarDays(due, opStart)) : opSpanDays;
           const daysPassed = differenceInCalendarDays(today, opStart);
-          const metaProgressRatio = clampPct((daysPassed / (totalPlannedDaysForMeta || 1)) * 100) / 100;
+          const metaProgressRatio = clampPct((daysPassed / totalPlannedDaysForMeta) * 100) / 100;
 
           // 3. Calculation of real progress (Executado)
           const totalPlannedDaysStatus = op.segments.reduce((acc, s) => acc + (s.duration_days || 0), 0) || 1;
@@ -115,9 +115,17 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
             for (let i = 0; i < currentIdx; i++) {
               completedPlannedDays += op.segments[i].duration_days || 0;
             }
+            // Logic for the current segment: 
+            // If it's the LAST segment (e.g. "concluido"), we consider it 100% finished
+            const isLastSegment = currentIdx === op.segments.length - 1;
             const currentSegDuration = op.segments[currentIdx].duration_days || 1;
-            const currentSegRatio = Math.min(1, (op.days_in_current ?? 0) / (op.current_duration_days || currentSegDuration));
-            completedPlannedDays += currentSegRatio * currentSegDuration;
+            
+            if (isLastSegment || isDone) {
+              completedPlannedDays += currentSegDuration;
+            } else {
+              const currentSegRatio = Math.min(1, (op.days_in_current ?? 0) / (op.current_duration_days || currentSegDuration));
+              completedPlannedDays += currentSegRatio * currentSegDuration;
+            }
           }
           const execProgressRatio = clampPct((completedPlannedDays / totalPlannedDaysStatus) * 100) / 100;
 
