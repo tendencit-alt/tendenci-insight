@@ -1,6 +1,7 @@
 import { TimelineOp } from "@/hooks/useProductionTimeline";
 import { Card } from "@/components/ui/card";
 import { format, differenceInCalendarDays } from "date-fns";
+import { Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
 
 interface Props {
   ops: TimelineOp[];
