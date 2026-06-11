@@ -263,13 +263,15 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
               {/* ETA column */}
               <div className="px-2 py-2 border-l border-border/40 flex items-center justify-end">
-                <span
-                  className={`${etaClass} rounded-full px-2 py-0.5 text-[10px] font-bold whitespace-nowrap shadow-sm ring-2 ring-background tracking-tight flex items-center gap-1`}
-                  title={etaStatusLabel}
-                >
-                  <Clock className="h-2.5 w-2.5" />
-                  {format(opEta, "dd/MM")}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <Clock className={`h-4 w-4 ${isEtaLate ? "text-destructive" : "text-blue-600"}`} />
+                  <span
+                    className={`${etaClass} rounded-full px-2 py-0.5 text-[10px] font-bold whitespace-nowrap shadow-sm ring-2 ring-background tracking-tight`}
+                    title={etaStatusLabel}
+                  >
+                    {format(opEta, "dd/MM")}
+                  </span>
+                </div>
               </div>
             </div>
           );
