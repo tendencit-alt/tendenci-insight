@@ -288,12 +288,12 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
         </div>
         <div className="flex items-center gap-3 border-l border-border/40 pl-6">
           <div className="flex items-center gap-1.5 text-blue-700 bg-blue-50/80 px-2.5 py-1 rounded-full ring-1 ring-blue-200/60">
-            <span className="font-bold text-[9px]">✓ NO PRAZO</span>
-            <span className="text-[9px] text-blue-700/80">Executado ≥ Meta</span>
+            <span className="font-bold text-[9px]">✓ NO PRAZO (ETA)</span>
+            <span className="text-[9px] text-blue-700/80">Projetado ≤ Prazo</span>
           </div>
           <div className="flex items-center gap-1.5 text-destructive bg-destructive/5 px-2.5 py-1 rounded-full ring-1 ring-destructive/15">
-            <span className="font-bold text-[9px]">⚠ ATRASADO</span>
-            <span className="text-[9px] text-destructive/80">Executado &lt; Meta</span>
+            <span className="font-bold text-[9px]">⚠ ATRASADO (ETA)</span>
+            <span className="text-[9px] text-destructive/80">Projetado &gt; Prazo</span>
           </div>
         </div>
       </div>
