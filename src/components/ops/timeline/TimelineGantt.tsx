@@ -90,13 +90,13 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           let isEtaLate = false;
           
           if (due) {
-            // Usamos startOfDay para garantir que a comparação seja apenas pela data, ignorando as horas
-            const opEtaDate = new Date(opEta.getFullYear(), opEta.getMonth(), opEta.getDate());
-            const dueDate = new Date(due.getFullYear(), due.getMonth(), due.getDate());
-            const desvioDays = differenceInCalendarDays(opEtaDate, dueDate);
+            // Forçamos a comparação apenas por data (ano/mês/dia)
+            const opEtaStr = format(opEta, "yyyy-MM-dd");
+            const dueStr = format(due, "yyyy-MM-dd");
             
-            if (desvioDays > 0) {
+            if (opEtaStr > dueStr) {
               etaClass = "bg-destructive text-white";
+              const desvioDays = differenceInCalendarDays(opEta, due);
               etaStatusLabel = `Atrasado: ${desvioDays}d`;
               isEtaLate = true;
             }
@@ -206,8 +206,9 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
                   {/* HOJE line */}
                   {(() => {
-                    // Só fica vermelho se houver um atraso significativo (mais de 1% de diferença)
-                    const isLate = metaPct > (executadoPct + 1);
+                    // Forçamos HOJE a ser sempre AZUL a menos que o ETA esteja atrasado
+                    // ou o executado esteja visivelmente atrás da meta (margem de 2%)
+                    const isLate = isEtaLate || (metaPct > (executadoPct + 2));
                     const colorClass = isLate ? "bg-red-500" : "bg-blue-600";
                     const borderClass = isLate ? "border-red-500/60" : "border-blue-600/60";
                     
