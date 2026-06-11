@@ -90,13 +90,13 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           let isEtaLate = false;
           
           if (due) {
-            // Usamos startOfDay para garantir que a comparação seja apenas pela data, ignorando as horas
-            const opEtaDate = new Date(opEta.getFullYear(), opEta.getMonth(), opEta.getDate());
-            const dueDate = new Date(due.getFullYear(), due.getMonth(), due.getDate());
-            const desvioDays = differenceInCalendarDays(opEtaDate, dueDate);
+            // Forçamos a comparação apenas por data (ano/mês/dia)
+            const opEtaStr = format(opEta, "yyyy-MM-dd");
+            const dueStr = format(due, "yyyy-MM-dd");
             
-            if (desvioDays > 0) {
+            if (opEtaStr > dueStr) {
               etaClass = "bg-destructive text-white";
+              const desvioDays = differenceInCalendarDays(opEta, due);
               etaStatusLabel = `Atrasado: ${desvioDays}d`;
               isEtaLate = true;
             }
