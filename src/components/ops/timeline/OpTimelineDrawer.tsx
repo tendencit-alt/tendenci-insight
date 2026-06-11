@@ -48,12 +48,18 @@ export function OpTimelineDrawer({ op, onClose, onOpenInKanban }: Props) {
       : `${formatDistanceStrict(eta, due, { locale: ptBR })} de folga`
     : "Sem prazo definido";
 
-  let etaBadge: { variant: "default" | "secondary" | "destructive"; label: string } = {
+  let etaBadge: { variant: "default" | "secondary" | "destructive"; label: string; colorClass?: string } = {
     variant: "default",
     label: "No prazo",
+    colorClass: "bg-blue-600 hover:bg-blue-700"
   };
-  if (due && desvioMs > 0) etaBadge = { variant: "destructive", label: "Atrasada projetada" };
-  else if (due && desvioMs > -2 * 86400000) etaBadge = { variant: "secondary", label: "Alerta de prazo" };
+  if (due && desvioMs > 0) {
+    etaBadge = { 
+      variant: "destructive", 
+      label: "Atrasada",
+      colorClass: "bg-destructive"
+    };
+  }
 
   return (
     <Sheet open={!!op} onOpenChange={(o) => !o && onClose()}>
@@ -62,7 +68,7 @@ export function OpTimelineDrawer({ op, onClose, onOpenInKanban }: Props) {
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>OP #{op.order_number}</span>
             <Badge variant="outline" className="text-[10px] h-4">{op.priority}</Badge>
-            <Badge variant={etaBadge.variant} className="text-[10px] h-4">{etaBadge.label}</Badge>
+            <Badge variant={etaBadge.variant} className={`text-[10px] h-4 ${etaBadge.colorClass}`}>{etaBadge.label}</Badge>
           </div>
           <SheetTitle className="text-base">{op.title}</SheetTitle>
         </SheetHeader>

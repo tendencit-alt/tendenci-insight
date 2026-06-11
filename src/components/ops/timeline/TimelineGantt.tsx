@@ -1,6 +1,7 @@
 import { TimelineOp } from "@/hooks/useProductionTimeline";
 import { Card } from "@/components/ui/card";
 import { format, differenceInCalendarDays } from "date-fns";
+import { Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
 
 interface Props {
   ops: TimelineOp[];
@@ -83,17 +84,17 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           const duePct = due ? clampPct((differenceInCalendarDays(due, opStart) / opSpanDays) * 100) : null;
           const etaPct = clampPct((differenceInCalendarDays(opEta, opStart) / opSpanDays) * 100);
 
-          // ETA badge color
+          // ETA badge color - Simplificado para Azul (No Prazo) e Vermelho (Atrasado)
           let etaClass = "bg-blue-600 text-white";
-          let etaStatusLabel = "Dentro do prazo";
+          let etaStatusLabel = "No prazo";
+          let isEtaLate = false;
+          
           if (due) {
             const desvioDays = differenceInCalendarDays(opEta, due);
             if (desvioDays > 0) {
               etaClass = "bg-destructive text-white";
-              etaStatusLabel = `Atraso: ${desvioDays}d`;
-            } else if (desvioDays > -2) {
-              etaClass = "bg-amber-500 text-white";
-              etaStatusLabel = "Prazo apertado";
+              etaStatusLabel = `Atrasado: ${desvioDays}d`;
+              isEtaLate = true;
             }
           }
 
@@ -201,9 +202,8 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
                   {/* HOJE line */}
                   {(() => {
-                    const isLate = executadoPct < metaPct;
-                    const colorClass = isLate ? "bg-red-500" : "bg-blue-600";
-                    const borderClass = isLate ? "border-red-500/60" : "border-blue-600/60";
+                    const colorClass = isEtaLate ? "bg-red-500" : "bg-blue-600";
+                    const borderClass = isEtaLate ? "border-red-500/60" : "border-blue-600/60";
                     
                     return (
                       <div
@@ -264,9 +264,10 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
               {/* ETA column */}
               <div className="px-2 py-2 border-l border-border/40 flex items-center justify-end">
                 <span
-                  className={`${etaClass} rounded-full px-2 py-0.5 text-[10px] font-bold whitespace-nowrap shadow-sm ring-2 ring-background tracking-tight`}
+                  className={`${etaClass} rounded-full px-2 py-0.5 text-[10px] font-bold whitespace-nowrap shadow-sm ring-2 ring-background tracking-tight flex items-center gap-1`}
                   title={etaStatusLabel}
                 >
+                  <Clock className="h-2.5 w-2.5" />
                   {format(opEta, "dd/MM")}
                 </span>
               </div>
@@ -287,12 +288,12 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
         </div>
         <div className="flex items-center gap-3 border-l border-border/40 pl-6">
           <div className="flex items-center gap-1.5 text-blue-700 bg-blue-50/80 px-2.5 py-1 rounded-full ring-1 ring-blue-200/60">
-            <span className="font-bold text-[9px]">✓ NO PRAZO</span>
-            <span className="text-[9px] text-blue-700/80">Executado ≥ Meta</span>
+            <span className="font-bold text-[9px]">✓ NO PRAZO (ETA)</span>
+            <span className="text-[9px] text-blue-700/80">Projetado ≤ Prazo</span>
           </div>
           <div className="flex items-center gap-1.5 text-destructive bg-destructive/5 px-2.5 py-1 rounded-full ring-1 ring-destructive/15">
-            <span className="font-bold text-[9px]">⚠ ATRASADO</span>
-            <span className="text-[9px] text-destructive/80">Executado &lt; Meta</span>
+            <span className="font-bold text-[9px]">⚠ ATRASADO (ETA)</span>
+            <span className="text-[9px] text-destructive/80">Projetado &gt; Prazo</span>
           </div>
         </div>
       </div>

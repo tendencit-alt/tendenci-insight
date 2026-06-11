@@ -1,7 +1,7 @@
 import { useProductionTimeline } from "@/hooks/useProductionTimeline";
 import { format, formatDistanceStrict } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckCircle2, Circle, PlayCircle } from "lucide-react";
+import { CheckCircle2, Circle, PlayCircle, Clock } from "lucide-react";
 
 interface Props {
   opId: string;
@@ -50,8 +50,10 @@ export function OpTimelineMini({ opId }: Props) {
               : "—"}
           </div>
         </div>
-        <div className="rounded-lg border p-3">
-          <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Previsão de término</div>
+        <div className={`rounded-lg border p-3 ${due && eta.getTime() > due.getTime() ? "bg-destructive/5 border-destructive/20" : "bg-blue-50/30 border-blue-100"}`}>
+          <div className={`text-[11px] uppercase tracking-wide flex items-center gap-1.5 ${due && eta.getTime() > due.getTime() ? "text-destructive" : "text-blue-600"}`}>
+            <Clock className="h-3 w-3" /> Previsão de término
+          </div>
           <div className="font-medium">{format(eta, "dd/MM/yyyy")}</div>
           <div className="text-xs text-muted-foreground">{desvio}</div>
         </div>
