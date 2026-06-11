@@ -206,9 +206,8 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
                   {/* HOJE line */}
                   {(() => {
-                    // Forçamos HOJE a ser sempre AZUL a menos que o ETA esteja atrasado
-                    // ou o executado esteja visivelmente atrás da meta (margem de 2%)
-                    const isLate = isEtaLate || (metaPct > (executadoPct + 2));
+                    // Forçamos HOJE a ser sempre AZUL a menos que o ETA esteja atrasado em relação ao prazo final
+                    const isLate = isEtaLate;
                     const colorClass = isLate ? "bg-red-500" : "bg-blue-600";
                     const borderClass = isLate ? "border-red-500/60" : "border-blue-600/60";
                     
