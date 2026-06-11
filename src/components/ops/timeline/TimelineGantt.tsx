@@ -90,9 +90,11 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           let isEtaLate = false;
           
           if (due) {
-            const desvioDays = differenceInCalendarDays(opEta, due);
-            // Consideramos atraso apenas se a diferença de dias for maior que 0
-            // Se o ETA for no mesmo dia do prazo final (desvioDays === 0), ainda está no prazo.
+            // Usamos startOfDay para garantir que a comparação seja apenas pela data, ignorando as horas
+            const opEtaDate = new Date(opEta.getFullYear(), opEta.getMonth(), opEta.getDate());
+            const dueDate = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+            const desvioDays = differenceInCalendarDays(opEtaDate, dueDate);
+            
             if (desvioDays > 0) {
               etaClass = "bg-destructive text-white";
               etaStatusLabel = `Atrasado: ${desvioDays}d`;
@@ -204,7 +206,8 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
                   {/* HOJE line */}
                   {(() => {
-                    const isLate = executadoPct < metaPct;
+                    // Só fica vermelho se houver um atraso significativo (mais de 1% de diferença)
+                    const isLate = metaPct > (executadoPct + 1);
                     const colorClass = isLate ? "bg-red-500" : "bg-blue-600";
                     const borderClass = isLate ? "border-red-500/60" : "border-blue-600/60";
                     
