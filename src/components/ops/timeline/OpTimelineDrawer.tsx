@@ -68,7 +68,7 @@ export function OpTimelineDrawer({ op, onClose, onOpenInKanban }: Props) {
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>OP #{op.order_number}</span>
             <Badge variant="outline" className="text-[10px] h-4">{op.priority}</Badge>
-            <Badge variant={etaBadge.variant} className="text-[10px] h-4">{etaBadge.label}</Badge>
+            <Badge variant={etaBadge.variant} className={`text-[10px] h-4 ${etaBadge.colorClass}`}>{etaBadge.label}</Badge>
           </div>
           <SheetTitle className="text-base">{op.title}</SheetTitle>
         </SheetHeader>
