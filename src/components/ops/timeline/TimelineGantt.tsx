@@ -244,9 +244,9 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
                     style={{ left: `${metaPct}%` }}
                   >
                     <span className={metaMarkerClass}>META</span>
-                    <div className="w-0.5 h-1.5 bg-blue-600 mt-0.5" />
+                    <div className=\"w-0.5 h-1.5 bg-blue-600 mt-0.5\" />
                   </div>
-238:
+
                   {/* EXECUTADO marker */}
                   {!isDone && currentIdx !== -1 && (
                     <div
