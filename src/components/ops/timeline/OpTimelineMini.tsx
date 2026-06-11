@@ -1,7 +1,7 @@
 import { useProductionTimeline } from "@/hooks/useProductionTimeline";
 import { format, formatDistanceStrict } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CheckCircle2, Circle, PlayCircle } from "lucide-react";
+import { CheckCircle2, Circle, PlayCircle, Clock } from "lucide-react";
 
 interface Props {
   opId: string;
