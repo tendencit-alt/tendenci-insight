@@ -48,12 +48,18 @@ export function OpTimelineDrawer({ op, onClose, onOpenInKanban }: Props) {
       : `${formatDistanceStrict(eta, due, { locale: ptBR })} de folga`
     : "Sem prazo definido";
 
-  let etaBadge: { variant: "default" | "secondary" | "destructive"; label: string } = {
+  let etaBadge: { variant: "default" | "secondary" | "destructive"; label: string; colorClass?: string } = {
     variant: "default",
     label: "No prazo",
+    colorClass: "bg-blue-600 hover:bg-blue-700"
   };
-  if (due && desvioMs > 0) etaBadge = { variant: "destructive", label: "Atrasada projetada" };
-  else if (due && desvioMs > -2 * 86400000) etaBadge = { variant: "secondary", label: "Alerta de prazo" };
+  if (due && desvioMs > 0) {
+    etaBadge = { 
+      variant: "destructive", 
+      label: "Atrasada",
+      colorClass: "bg-destructive"
+    };
+  }
 
   return (
     <Sheet open={!!op} onOpenChange={(o) => !o && onClose()}>
