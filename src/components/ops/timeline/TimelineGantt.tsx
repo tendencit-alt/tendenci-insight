@@ -202,9 +202,8 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
                   {/* HOJE line */}
                   {(() => {
-                    const isLate = executadoPct < metaPct;
-                    const colorClass = isLate ? "bg-red-500" : "bg-blue-600";
-                    const borderClass = isLate ? "border-red-500/60" : "border-blue-600/60";
+                    const colorClass = isEtaLate ? "bg-red-500" : "bg-blue-600";
+                    const borderClass = isEtaLate ? "border-red-500/60" : "border-blue-600/60";
                     
                     return (
                       <div
