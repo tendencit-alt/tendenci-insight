@@ -84,17 +84,17 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
           const duePct = due ? clampPct((differenceInCalendarDays(due, opStart) / opSpanDays) * 100) : null;
           const etaPct = clampPct((differenceInCalendarDays(opEta, opStart) / opSpanDays) * 100);
 
-          // ETA badge color
+          // ETA badge color - Simplificado para Azul (No Prazo) e Vermelho (Atrasado)
           let etaClass = "bg-blue-600 text-white";
-          let etaStatusLabel = "Dentro do prazo";
+          let etaStatusLabel = "No prazo";
+          let isEtaLate = false;
+          
           if (due) {
             const desvioDays = differenceInCalendarDays(opEta, due);
             if (desvioDays > 0) {
               etaClass = "bg-destructive text-white";
-              etaStatusLabel = `Atraso: ${desvioDays}d`;
-            } else if (desvioDays > -2) {
-              etaClass = "bg-amber-500 text-white";
-              etaStatusLabel = "Prazo apertado";
+              etaStatusLabel = `Atrasado: ${desvioDays}d`;
+              isEtaLate = true;
             }
           }
 
