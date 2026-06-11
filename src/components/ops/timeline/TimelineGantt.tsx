@@ -206,7 +206,8 @@ export function TimelineGantt({ ops, density, onSelect, highlightId }: Props) {
 
                   {/* HOJE line */}
                   {(() => {
-                    const isLate = executadoPct < metaPct;
+                    // Só fica vermelho se houver um atraso significativo (mais de 1% de diferença)
+                    const isLate = metaPct > (executadoPct + 1);
                     const colorClass = isLate ? "bg-red-500" : "bg-blue-600";
                     const borderClass = isLate ? "border-red-500/60" : "border-blue-600/60";
                     
