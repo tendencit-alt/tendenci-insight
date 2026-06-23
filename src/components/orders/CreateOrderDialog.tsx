@@ -838,7 +838,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           percentual_forma_2: parcelasSecundaria?.percentual || 0,
           data_primeiro_vencimento: parcelasPrincipal?.data_vencimento || null,
           condicao_pagamento: null,
-          observacao_pagamento: (parcelas.length > 2 || parcelas.some(p => p.numero_parcelas > 1)) 
+          observacao_pagamento: (parcelas.length > 1 || parcelas.some(p => p.numero_parcelas > 1)) 
             ? JSON.stringify(parcelas) 
             : (formData.observacao_pagamento || null),
           data_entrega_prevista: formData.data_entrega_prevista || null,
