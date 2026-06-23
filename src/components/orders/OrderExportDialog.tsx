@@ -128,7 +128,7 @@ const buildPaymentPlan = (order: any, total: number): PaymentPlanRow[] => {
         {
           id: '1',
           forma_pagamento: order?.forma_pagamento,
-          percentual: order?.percentual_forma_1 ?? 100,
+          percentual: order?.percentual_forma_1 ?? (order?.forma_pagamento ? 100 : 0),
           data_vencimento: order?.data_primeiro_vencimento,
           numero_parcelas: 1,
         },
