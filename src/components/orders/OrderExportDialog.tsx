@@ -32,6 +32,134 @@ interface BrandingInfo {
   instagram_url: string;
 }
 
+interface PaymentPlanRow {
+  id: string;
+  forma: string;
+  formaLabel: string;
+  percentual: number;
+  valor: number;
+  dataVencimento: string;
+  numeroParcelas: number;
+  carenciaBoleto?: number;
+  antecipacaoAutomatica?: boolean;
+}
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  pix: 'PIX',
+  cartao_credito: 'Cartão de Crédito',
+  cartao_debito: 'Cartão de Débito',
+  link_pagamento: 'Link de Pagamento',
+  boleto: 'Boleto',
+  transferencia: 'Transferência',
+  permuta: 'Permuta',
+  dinheiro: 'Dinheiro',
+};
+
+const DELIVERY_LABELS: Record<string, string> = {
+  a_combinar: 'A combinar',
+  entrega_tendenci: 'Entrega própria',
+  transportadora: 'Transportadora',
+  retirada: 'Retirada',
+  terceirizada: 'Terceirizada',
+  entrega: 'Entrega',
+};
+
+const toNumber = (value: unknown, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const escapeHtml = (value: unknown) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#039;');
+
+const normalizeColor = (value: string | null | undefined) => {
+  const color = String(value || '').trim();
+  return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color) ? color : '#1f2937';
+};
+
+const formatDateSafe = (value: unknown, pattern = 'dd/MM/yyyy') => {
+  if (!value) return '';
+  const raw = String(value);
+  const dateOnly = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const date = dateOnly
+    ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+    : new Date(raw);
+  if (Number.isNaN(date.getTime())) return '';
+  return format(date, pattern, { locale: ptBR });
+};
+
+const getPaymentFormLabel = (forma: unknown) => {
+  const key = String(forma || '');
+  return PAYMENT_METHOD_LABELS[key] || (key ? key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ') : '—');
+};
+
+const getDeliveryLabel = (tipo: unknown) => {
+  const key = String(tipo || '');
+  return DELIVERY_LABELS[key] || (key ? key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ') : '—');
+};
+
+const parseStoredPaymentPlan = (raw: unknown): any[] | null => {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith('[')) return null;
+  try {
+    const parsed = JSON.parse(trimmed);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const getPaymentNote = (order: any) => {
+  const raw = typeof order?.observacao_pagamento === 'string' ? order.observacao_pagamento.trim() : '';
+  if (raw && !parseStoredPaymentPlan(raw)) return raw;
+  return order?.condicao_pagamento || '';
+};
+
+const buildPaymentPlan = (order: any, total: number): PaymentPlanRow[] => {
+  const parsedPlan = parseStoredPaymentPlan(order?.observacao_pagamento);
+  const rowsSource = parsedPlan && parsedPlan.length > 0
+    ? parsedPlan
+    : [
+        {
+          id: '1',
+          forma_pagamento: order?.forma_pagamento,
+          percentual: order?.percentual_forma_1 ?? (order?.forma_pagamento ? 100 : 0),
+          data_vencimento: order?.data_primeiro_vencimento,
+          numero_parcelas: order?.parcelas || 1,
+        },
+        ...(order?.forma_pagamento_2 || toNumber(order?.percentual_forma_2) > 0 ? [{
+          id: '2',
+          forma_pagamento: order?.forma_pagamento_2,
+          percentual: order?.percentual_forma_2,
+          data_vencimento: '',
+          numero_parcelas: 1,
+        }] : []),
+      ];
+
+  return rowsSource
+    .filter((row) => row?.forma_pagamento || toNumber(row?.percentual) > 0 || row?.data_vencimento)
+    .map((row, index) => {
+      const percentual = toNumber(row.percentual, index === 0 ? 100 : 0);
+      const numeroParcelas = Math.max(1, Math.round(toNumber(row.numero_parcelas, 1)));
+      return {
+        id: String(row.id || index + 1),
+        forma: row.forma_pagamento || '',
+        formaLabel: getPaymentFormLabel(row.forma_pagamento),
+        percentual,
+        valor: total * (percentual / 100),
+        dataVencimento: row.data_vencimento || (index === 0 ? order?.data_primeiro_vencimento || '' : ''),
+        numeroParcelas,
+        carenciaBoleto: row.carencia_boleto ? toNumber(row.carencia_boleto) : undefined,
+        antecipacaoAutomatica: typeof row.antecipacao_automatica === 'boolean' ? row.antecipacao_automatica : undefined,
+      };
+    });
+};
+
 export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExportDialogProps) {
   const [copied, setCopied] = useState(false);
   const [branding, setBranding] = useState<BrandingInfo>({
@@ -77,11 +205,14 @@ export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExp
 
   const generateNFData = () => {
     const client = order.client || {};
+    const total = toNumber(order.valor_total);
+    const paymentPlan = buildPaymentPlan(order, total);
     return {
       pedido: {
         numero: order.order_number,
         data_emissao: order.data_emissao,
         data_aprovacao: order.data_aprovacao,
+        status: order.status || '',
       },
       emitente: {
         cnpj: branding.cnpj || '00.000.000/0001-00',
@@ -124,23 +255,37 @@ export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExp
         ncm: item.ncm || '',
         cfop: item.cfop || '',
         unidade: item.unidade || 'UN',
-        quantidade: Number(item.quantidade),
-        valor_unitario: Number(item.valor_unitario),
-        valor_total: Number(item.valor_total),
+        quantidade: toNumber(item.quantidade),
+        valor_unitario: toNumber(item.valor_unitario),
+        valor_total: toNumber(item.valor_total),
         observacoes: item.especificacoes || '',
       })),
       totais: {
-        subtotal: order.subtotal || 0,
-        desconto_percentual: order.desconto_percentual || 0,
-        desconto_valor: order.desconto_valor || 0,
-        valor_frete: order.valor_frete || 0,
-        valor_total: order.valor_total || 0,
+        subtotal: toNumber(order.subtotal),
+        subtotal_itens: items.reduce((sum, item) => sum + toNumber(item.valor_total), 0),
+        desconto_percentual: toNumber(order.desconto_percentual),
+        desconto_valor: toNumber(order.desconto_valor),
+        valor_frete: toNumber(order.valor_frete),
+        valor_total: total,
       },
       pagamento: {
-        forma: order.forma_pagamento || '',
+        forma: paymentPlan[0]?.forma || order.forma_pagamento || '',
+        forma_label: paymentPlan[0]?.formaLabel || getPaymentFormLabel(order.forma_pagamento),
         condicao: order.condicao_pagamento || '',
-        parcelas: order.parcelas || 1,
-        data_primeiro_vencimento: order.data_primeiro_vencimento || '',
+        parcelas: paymentPlan.reduce((sum, p) => sum + p.numeroParcelas, 0) || 1,
+        data_primeiro_vencimento: paymentPlan[0]?.dataVencimento || order.data_primeiro_vencimento || '',
+        formas: paymentPlan.map((p) => ({
+          forma: p.forma,
+          forma_label: p.formaLabel,
+          percentual: p.percentual,
+          valor: p.valor,
+          numero_parcelas: p.numeroParcelas,
+          valor_por_parcela: p.numeroParcelas > 0 ? p.valor / p.numeroParcelas : p.valor,
+          data_vencimento: p.dataVencimento || '',
+          carencia_boleto: p.carenciaBoleto || null,
+          antecipacao_automatica: p.antecipacaoAutomatica ?? null,
+        })),
+        observacao: getPaymentNote(order),
       },
       transporte: order.tipo_entrega === 'transportadora' ? {
         transportadora_nome: order.transportadora_nome || '',
@@ -181,11 +326,27 @@ export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExp
     }
 
     const client = order.client || {};
-    const primary = branding.primary_color || '#1f2937';
-    const subtotal = Number(order.subtotal || 0);
-    const descontoValor = Number(order.desconto_valor || 0) + (subtotal * Number(order.desconto_percentual || 0) / 100);
-    const frete = Number(order.valor_frete || 0);
-    const total = Number(order.valor_total || 0);
+    const primary = normalizeColor(branding.primary_color);
+    const itemSubtotal = items.reduce((sum, item) => sum + toNumber(item.valor_total), 0);
+    const subtotal = order.subtotal !== null && order.subtotal !== undefined ? toNumber(order.subtotal) : itemSubtotal;
+    const descontoPercentual = toNumber(order.desconto_percentual);
+    const descontoPercentualValor = subtotal * (descontoPercentual / 100);
+    const descontoManualValor = toNumber(order.desconto_valor);
+    const descontoValor = descontoManualValor + descontoPercentualValor;
+    const frete = toNumber(order.valor_frete);
+    const total = order.valor_total !== null && order.valor_total !== undefined
+      ? toNumber(order.valor_total)
+      : subtotal - descontoValor + frete;
+    const totalCalculado = subtotal - descontoValor + frete;
+    const paymentPlan = buildPaymentPlan(order, total);
+    const paymentTotal = paymentPlan.reduce((sum, p) => sum + p.valor, 0);
+    const paymentDiff = paymentTotal - total;
+    const paymentNote = getPaymentNote(order);
+    const companyDisplayName = branding.trade_name || branding.company_name || 'Sua Empresa';
+    const statusLabel = order.status ? String(order.status).replace(/_/g, ' ') : '';
+    const dataEmissaoLabel = formatDateSafe(order.data_emissao, "dd 'de' MMMM 'de' yyyy") || formatDateSafe(order.created_at, "dd 'de' MMMM 'de' yyyy");
+    const dataAprovacaoLabel = formatDateSafe(order.data_aprovacao, 'dd/MM/yyyy');
+    const dataEntregaPrevistaLabel = formatDateSafe(order.data_entrega_prevista, 'dd/MM/yyyy');
 
     const enderecoCliente = [
       client.logradouro && `${client.logradouro}${client.numero ? ', ' + client.numero : ''}`,
@@ -209,12 +370,37 @@ export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExp
       branding.website,
     ].filter(Boolean).join(' • ');
 
+    const paymentRowsHtml = paymentPlan.length > 0 ? paymentPlan.map((p, index) => `
+      <tr>
+        <td>${index + 1}</td>
+        <td>
+          <div class="desc-main">${escapeHtml(p.formaLabel)}</div>
+          ${p.numeroParcelas > 1 ? `<div class="desc-sub">${p.numeroParcelas}x de ${formatCurrency(p.valor / p.numeroParcelas)}</div>` : ''}
+          ${p.carenciaBoleto ? `<div class="desc-sub">Carência boleto: ${escapeHtml(p.carenciaBoleto)} dias</div>` : ''}
+          ${typeof p.antecipacaoAutomatica === 'boolean' ? `<div class="desc-sub">Antecipação: ${p.antecipacaoAutomatica ? 'sim' : 'não'}</div>` : ''}
+        </td>
+        <td class="num">${p.percentual.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</td>
+        <td class="num">${p.numeroParcelas}x</td>
+        <td class="num">${p.dataVencimento ? escapeHtml(formatDateSafe(p.dataVencimento)) : '—'}</td>
+        <td class="num"><strong>${formatCurrency(p.valor)}</strong></td>
+      </tr>
+    `).join('') : `
+      <tr><td colspan="6" class="muted-center">Nenhuma forma de pagamento cadastrada.</td></tr>
+    `;
+
+    const deliveryDetails = [
+      dataEntregaPrevistaLabel && `Previsão: ${dataEntregaPrevistaLabel}`,
+      typeof order.requer_montagem === 'boolean' && `Montagem: ${order.requer_montagem ? 'sim' : 'não'}`,
+      order.tipo_entrega === 'transportadora' && order.transportadora_nome && `Transportadora: ${order.transportadora_nome}`,
+      order.tipo_entrega === 'transportadora' && order.transportadora_cnpj && `CNPJ transp.: ${order.transportadora_cnpj}`,
+    ].filter(Boolean).join(' • ');
+
     const html = `
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8" />
-<title>Pedido ${order.order_number} — ${branding.trade_name || branding.company_name || 'Pedido'}</title>
+<title>Pedido ${escapeHtml(order.order_number)} — ${escapeHtml(companyDisplayName)}</title>
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; background: #f4f5f7; color: #1f2937; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -255,6 +441,11 @@ export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExp
   .pay-card { background: #f9fafb; border-radius: 6px; padding: 12px 14px; border-left: 3px solid ${primary}; }
   .pay-card .k { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; font-weight: 600; }
   .pay-card .v { font-size: 13px; color: #111827; font-weight: 600; margin-top: 4px; }
+  .muted-center { text-align: center; color: #9ca3af; padding: 14px 8px; }
+  .summary-line { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 10px; padding: 10px 12px; border-radius: 6px; background: #f9fafb; color: #374151; font-size: 12px; }
+  .summary-line strong { color: #111827; }
+  .checkline { margin-top: 8px; font-size: 10px; color: #6b7280; text-align: right; }
+  .warning { color: #92400e; background: #fffbeb; border: 1px solid #fde68a; padding: 8px 10px; border-radius: 6px; font-size: 11px; margin-top: 8px; }
 
   .notes { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 12px 16px; border-radius: 4px; font-size: 12px; color: #78350f; line-height: 1.6; }
 
@@ -281,38 +472,50 @@ export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExp
   <div class="page">
     <header class="top">
       <div class="brand">
-        ${branding.logo_url ? `<img src="${branding.logo_url}" alt="Logo" />` : ''}
-        <div class="company">${branding.trade_name || branding.company_name || 'Sua Empresa'}</div>
+        ${branding.logo_url ? `<img src="${escapeHtml(branding.logo_url)}" alt="Logo" />` : ''}
+        <div class="company">${escapeHtml(companyDisplayName)}</div>
         <div class="meta">
-          ${branding.company_name && branding.trade_name && branding.company_name !== branding.trade_name ? `${branding.company_name}<br/>` : ''}
-          ${branding.cnpj ? `CNPJ ${branding.cnpj}<br/>` : ''}
-          ${branding.address ? `${branding.address}<br/>` : ''}
-          ${contatoEmpresa ? `${contatoEmpresa}` : ''}
+          ${branding.company_name && branding.trade_name && branding.company_name !== branding.trade_name ? `${escapeHtml(branding.company_name)}<br/>` : ''}
+          ${branding.cnpj ? `CNPJ ${escapeHtml(branding.cnpj)}<br/>` : ''}
+          ${branding.address ? `${escapeHtml(branding.address)}<br/>` : ''}
+          ${contatoEmpresa ? `${escapeHtml(contatoEmpresa)}` : ''}
         </div>
       </div>
       <div class="pedido-card">
         <div class="label">Pedido</div>
-        <div class="num">#${order.order_number}</div>
-        <div class="date">${order.data_emissao ? format(new Date(order.data_emissao), "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : ''}</div>
-        ${order.status ? `<div class="status">${order.status}</div>` : ''}
+        <div class="num">#${escapeHtml(order.order_number)}</div>
+        <div class="date">${escapeHtml(dataEmissaoLabel)}</div>
+        ${statusLabel ? `<div class="status">${escapeHtml(statusLabel)}</div>` : ''}
       </div>
     </header>
+
+    ${(dataAprovacaoLabel || dataEntregaPrevistaLabel) ? `
+    <section>
+      <div class="grid-2">
+        ${dataAprovacaoLabel ? `<div class="field"><div class="k">Data de Aprovação</div><div class="v">${escapeHtml(dataAprovacaoLabel)}</div></div>` : ''}
+        ${dataEntregaPrevistaLabel ? `<div class="field"><div class="k">Entrega Prevista</div><div class="v">${escapeHtml(dataEntregaPrevistaLabel)}</div></div>` : ''}
+      </div>
+    </section>` : ''}
 
     <section>
       <div class="section-title">Cliente</div>
       <div class="grid-2">
-        <div class="field"><div class="k">Nome / Razão Social</div><div class="v">${client.razao_social || client.name || '—'}</div></div>
-        <div class="field"><div class="k">CPF / CNPJ</div><div class="v">${client.cpf_cnpj || '—'}</div></div>
-        <div class="field"><div class="k">E-mail</div><div class="v">${client.email || '—'}</div></div>
-        <div class="field"><div class="k">Telefone</div><div class="v">${client.phone || '—'}</div></div>
-        ${enderecoCliente ? `<div class="field" style="grid-column: 1 / -1;"><div class="k">Endereço</div><div class="v">${enderecoCliente}</div></div>` : ''}
+        <div class="field"><div class="k">Nome / Razão Social</div><div class="v">${escapeHtml(client.razao_social || client.name || '—')}</div></div>
+        <div class="field"><div class="k">CPF / CNPJ</div><div class="v">${escapeHtml(client.cpf_cnpj || '—')}</div></div>
+        <div class="field"><div class="k">E-mail</div><div class="v">${escapeHtml(client.email || '—')}</div></div>
+        <div class="field"><div class="k">Telefone</div><div class="v">${escapeHtml(client.phone || '—')}</div></div>
+        ${enderecoCliente ? `<div class="field" style="grid-column: 1 / -1;"><div class="k">Endereço</div><div class="v">${escapeHtml(enderecoCliente)}</div></div>` : ''}
       </div>
     </section>
 
-    ${enderecoEntrega ? `
+    ${(enderecoEntrega || order.tipo_entrega || deliveryDetails) ? `
     <section>
-      <div class="section-title">Endereço de Entrega</div>
-      <div class="field"><div class="v">${enderecoEntrega}</div></div>
+      <div class="section-title">Entrega</div>
+      <div class="grid-2">
+        <div class="field"><div class="k">Tipo de Entrega</div><div class="v">${escapeHtml(getDeliveryLabel(order.tipo_entrega))}</div></div>
+        ${deliveryDetails ? `<div class="field"><div class="k">Detalhes</div><div class="v">${escapeHtml(deliveryDetails)}</div></div>` : ''}
+        ${enderecoEntrega ? `<div class="field" style="grid-column: 1 / -1;"><div class="k">Endereço de Entrega</div><div class="v">${escapeHtml(enderecoEntrega)}</div></div>` : ''}
+      </div>
     </section>` : ''}
 
     <section>
@@ -332,13 +535,13 @@ export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExp
             <tr>
               <td>${i + 1}</td>
               <td>
-                <div class="desc-main">${item.descricao || '—'}</div>
-                ${item.codigo_produto ? `<div class="desc-sub">Cód. ${item.codigo_produto}</div>` : ''}
-                ${item.especificacoes ? `<div class="desc-sub">${item.especificacoes}</div>` : ''}
+                <div class="desc-main">${escapeHtml(item.descricao || '—')}</div>
+                ${item.codigo_produto ? `<div class="desc-sub">Cód. ${escapeHtml(item.codigo_produto)}</div>` : ''}
+                ${item.especificacoes ? `<div class="desc-sub">${escapeHtml(item.especificacoes)}</div>` : ''}
               </td>
-              <td class="num">${Number(item.quantidade)} ${item.unidade || 'UN'}</td>
-              <td class="num">${formatCurrency(Number(item.valor_unitario))}</td>
-              <td class="num"><strong>${formatCurrency(Number(item.valor_total))}</strong></td>
+              <td class="num">${toNumber(item.quantidade)} ${escapeHtml(item.unidade || 'UN')}</td>
+              <td class="num">${formatCurrency(toNumber(item.valor_unitario))}</td>
+              <td class="num"><strong>${formatCurrency(toNumber(item.valor_total))}</strong></td>
             </tr>
           `).join('')}
         </tbody>
@@ -350,29 +553,43 @@ export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExp
           ${descontoValor > 0 ? `<div class="row"><span>Desconto</span><span>− ${formatCurrency(descontoValor)}</span></div>` : ''}
           ${frete > 0 ? `<div class="row"><span>Frete</span><span>${formatCurrency(frete)}</span></div>` : ''}
           <div class="row total"><span>Total</span><span>${formatCurrency(total)}</span></div>
+          ${Math.abs(totalCalculado - total) >= 0.01 ? `<div class="checkline">Total calculado: ${formatCurrency(totalCalculado)}</div>` : ''}
         </div>
       </div>
     </section>
 
-    ${(order.forma_pagamento || order.condicao_pagamento || order.parcelas) ? `
     <section>
       <div class="section-title">Pagamento</div>
-      <div class="pay-grid">
-        ${order.forma_pagamento ? `<div class="pay-card"><div class="k">Forma</div><div class="v">${order.forma_pagamento}</div></div>` : ''}
-        ${order.condicao_pagamento ? `<div class="pay-card"><div class="k">Condição</div><div class="v">${order.condicao_pagamento}</div></div>` : ''}
-        ${order.parcelas ? `<div class="pay-card"><div class="k">Parcelas</div><div class="v">${order.parcelas}x</div></div>` : ''}
+      <table>
+        <thead>
+          <tr>
+            <th style="width:32px;">#</th>
+            <th>Forma</th>
+            <th class="num" style="width:90px;">%</th>
+            <th class="num" style="width:70px;">Parcelas</th>
+            <th class="num" style="width:100px;">Vencimento</th>
+            <th class="num" style="width:120px;">Valor</th>
+          </tr>
+        </thead>
+        <tbody>${paymentRowsHtml}</tbody>
+      </table>
+      <div class="summary-line">
+        <span>Total das formas de pagamento</span>
+        <strong>${formatCurrency(paymentTotal)}</strong>
       </div>
-    </section>` : ''}
+      ${Math.abs(paymentDiff) >= 0.01 ? `<div class="warning">Atenção: a soma das formas de pagamento difere do total do pedido em ${formatCurrency(paymentDiff)}.</div>` : ''}
+      ${paymentNote ? `<div class="field" style="margin-top: 10px;"><div class="k">Observação de Pagamento</div><div class="v">${escapeHtml(paymentNote).replace(/\n/g, '<br/>')}</div></div>` : ''}
+    </section>
 
     ${order.observacoes_nf ? `
     <section>
       <div class="section-title">Observações</div>
-      <div class="notes">${String(order.observacoes_nf).replace(/\n/g, '<br/>')}</div>
+      <div class="notes">${escapeHtml(order.observacoes_nf).replace(/\n/g, '<br/>')}</div>
     </section>` : ''}
 
     <div class="footer">
-      ${branding.company_name ? `<strong>${branding.company_name}</strong>${branding.cnpj ? ` • CNPJ ${branding.cnpj}` : ''}<br/>` : ''}
-      ${contatoEmpresa || ''}
+      ${branding.company_name ? `<strong>${escapeHtml(branding.company_name)}</strong>${branding.cnpj ? ` • CNPJ ${escapeHtml(branding.cnpj)}` : ''}<br/>` : ''}
+      ${escapeHtml(contatoEmpresa) || ''}
       ${(branding.whatsapp_url || branding.instagram_url) ? `<br/>${[branding.whatsapp_url && 'WhatsApp', branding.instagram_url && 'Instagram'].filter(Boolean).join(' • ')}` : ''}
       <br/><br/>Pedido gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
     </div>
@@ -388,6 +605,16 @@ export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExp
     printWindow.document.write(html);
     printWindow.document.close();
   };
+
+  const previewTotal = toNumber(order?.valor_total);
+  const previewPaymentPlan = buildPaymentPlan(order, previewTotal);
+  const previewPaymentText = previewPaymentPlan.length > 0
+    ? previewPaymentPlan
+        .map((p) => `${p.formaLabel} ${p.percentual.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%${p.numeroParcelas > 1 ? ` em ${p.numeroParcelas}x` : ''}`)
+        .join(' • ')
+    : 'Sem pagamento cadastrado';
+  const previewPaymentTotal = previewPaymentPlan.reduce((sum, p) => sum + p.valor, 0);
+  const previewPaymentMatchesTotal = Math.abs(previewPaymentTotal - previewTotal) < 0.01;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -460,6 +687,18 @@ export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExp
                     {items?.length > 3 && (
                       <p className="text-xs text-muted-foreground">+ {items.length - 3} itens...</p>
                     )}
+                  </div>
+
+                  <div className="text-sm border-t pt-3 mt-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Pagamento no PDF</p>
+                        <p className="text-xs text-muted-foreground break-words">{previewPaymentText}</p>
+                      </div>
+                      <Badge variant={previewPaymentMatchesTotal ? 'secondary' : 'destructive'} className="shrink-0">
+                        {previewPaymentMatchesTotal ? 'Conferido' : 'Divergente'}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
 
