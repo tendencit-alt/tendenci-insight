@@ -477,10 +477,39 @@ export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExp
   .toolbar button { background: ${primary}; color: #fff; border: none; padding: 10px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
   .toolbar button.secondary { background: #fff; color: #374151; border: 1px solid #d1d5db; }
 
+  @page { size: A4 portrait; margin: 8mm 10mm; }
   @media print {
-    body { background: #fff; }
-    .page { box-shadow: none; margin: 0; max-width: none; padding: 24px 32px; border-radius: 0; }
-    .toolbar { display: none; }
+    html, body { background: #fff; width: 210mm; }
+    .page { box-shadow: none; margin: 0; max-width: none; padding: 0; border-radius: 0; font-size: 10px; }
+    .toolbar { display: none !important; }
+    .top { padding-bottom: 10px; }
+    .brand img { max-height: 44px; }
+    .brand .company { font-size: 13px; }
+    .brand .meta { font-size: 9px; line-height: 1.3; }
+    .pedido-card .num { font-size: 20px; }
+    .pedido-card .date { font-size: 10px; }
+    .pedido-card .status { font-size: 8px; padding: 2px 7px; margin-top: 4px; }
+    section { margin-top: 12px; page-break-inside: avoid; }
+    .section-title { font-size: 9px; margin-bottom: 6px; padding-bottom: 3px; }
+    .grid-2 { gap: 6px 18px; }
+    .field { font-size: 10px; line-height: 1.3; }
+    .field .k { font-size: 8px; }
+    table { font-size: 10px; page-break-inside: auto; }
+    thead { display: table-header-group; }
+    tr, td, th { page-break-inside: avoid; }
+    thead th { padding: 5px 6px; font-size: 8px; }
+    tbody td { padding: 6px 6px; }
+    .desc-sub { font-size: 9px; }
+    .totals { width: 280px; font-size: 10px; }
+    .totals .row { padding: 4px 0; }
+    .totals .row.total { font-size: 13px; padding: 7px 0 2px; }
+    .pay-grid { gap: 6px; }
+    .pay-card { padding: 7px 9px; }
+    .pay-card .k { font-size: 8px; }
+    .pay-card .v { font-size: 11px; }
+    .summary-line { padding: 6px 10px; font-size: 10px; margin-top: 6px; }
+    .notes { padding: 8px 12px; font-size: 10px; line-height: 1.4; }
+    .footer { margin-top: 16px; padding-top: 10px; font-size: 8px; line-height: 1.4; }
   }
 </style>
 </head>
