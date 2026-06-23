@@ -477,9 +477,9 @@ export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExp
   .toolbar button { background: ${primary}; color: #fff; border: none; padding: 10px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
   .toolbar button.secondary { background: #fff; color: #374151; border: 1px solid #d1d5db; }
 
-  @page { size: A4 portrait; margin: 8mm 10mm; }
+  @page { size: A4 portrait; margin: 10mm; }
   @media print {
-    html, body { background: #fff; width: 210mm; }
+    html, body { background: #fff; width: auto; margin: 0; padding: 0; }
     .page { box-shadow: none; margin: 0; max-width: none; padding: 0; border-radius: 0; font-size: 10px; }
     .toolbar { display: none !important; }
     .top { padding-bottom: 10px; }
