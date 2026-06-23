@@ -105,18 +105,39 @@ const getDeliveryLabel = (tipo: unknown) => {
 const parseStoredPaymentPlan = (raw: unknown): any[] | null => {
   if (typeof raw !== 'string') return null;
   const trimmed = raw.trim();
-  if (!trimmed.startsWith('[')) return null;
+  if (!trimmed.startsWith('[') && !trimmed.startsWith('{')) return null;
   try {
     const parsed = JSON.parse(trimmed);
-    return Array.isArray(parsed) ? parsed : null;
+    if (Array.isArray(parsed)) return parsed;
+    if (parsed && typeof parsed === 'object' && Array.isArray((parsed as any).parcelas)) {
+      return (parsed as any).parcelas;
+    }
+    return null;
   } catch {
     return null;
   }
 };
 
+const parseStoredPaymentNote = (raw: unknown): string | null => {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith('{')) return null;
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (parsed && typeof parsed === 'object' && typeof (parsed as any).note === 'string') {
+      return (parsed as any).note;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+};
+
 const getPaymentNote = (order: any) => {
   const raw = typeof order?.observacao_pagamento === 'string' ? order.observacao_pagamento.trim() : '';
-  if (raw && !parseStoredPaymentPlan(raw)) return raw;
+  const embeddedNote = parseStoredPaymentNote(raw);
+  if (embeddedNote && embeddedNote.trim()) return embeddedNote;
+  if (raw && !parseStoredPaymentPlan(raw) && !raw.startsWith('{')) return raw;
   return order?.condicao_pagamento || '';
 };
 
