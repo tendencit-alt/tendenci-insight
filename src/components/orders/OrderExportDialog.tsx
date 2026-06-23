@@ -130,7 +130,7 @@ const buildPaymentPlan = (order: any, total: number): PaymentPlanRow[] => {
           forma_pagamento: order?.forma_pagamento,
           percentual: order?.percentual_forma_1 ?? (order?.forma_pagamento ? 100 : 0),
           data_vencimento: order?.data_primeiro_vencimento,
-          numero_parcelas: 1,
+          numero_parcelas: order?.parcelas || 1,
         },
         ...(order?.forma_pagamento_2 || toNumber(order?.percentual_forma_2) > 0 ? [{
           id: '2',
