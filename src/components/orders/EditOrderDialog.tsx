@@ -456,12 +456,20 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         });
       }
 
-      // Try to parse extended parcelas from observacao_pagamento
-      if (order.observacao_pagamento) {
+      // Try to parse extended parcelas from observacao_pagamento (suporta formato legado em array ou novo objeto {parcelas, note})
+      let parsedNote: string | null = null;
+      if (order.observacao_pagamento && typeof order.observacao_pagamento === 'string' && (order.observacao_pagamento.trim().startsWith('[') || order.observacao_pagamento.trim().startsWith('{'))) {
         try {
           const parsed = JSON.parse(order.observacao_pagamento);
+          let parcelasArr: any[] | null = null;
           if (Array.isArray(parsed) && parsed.length > 0) {
-            parcelasData = parsed.map((p: any) => ({
+            parcelasArr = parsed;
+          } else if (parsed && typeof parsed === 'object' && Array.isArray(parsed.parcelas)) {
+            parcelasArr = parsed.parcelas;
+            if (typeof parsed.note === 'string') parsedNote = parsed.note;
+          }
+          if (parcelasArr && parcelasArr.length > 0) {
+            parcelasData = parcelasArr.map((p: any) => ({
               ...p,
               numero_parcelas: p.numero_parcelas || 1,
               // Backward-compat: pedidos antigos não tinham este campo; manter taxa ligada para preservar o comportamento anterior
@@ -484,8 +492,10 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         architect_id: order.architect_id || '',
         project_id: (order as any).project_id || '',
         chart_account_id: (order as any).chart_account_id || '',
-        observacao_pagamento: typeof order.observacao_pagamento === 'string' && !order.observacao_pagamento.startsWith('[') 
-          ? order.observacao_pagamento : '',
+        observacao_pagamento: parsedNote !== null
+          ? parsedNote
+          : (typeof order.observacao_pagamento === 'string' && !order.observacao_pagamento.trim().startsWith('[') && !order.observacao_pagamento.trim().startsWith('{')
+            ? order.observacao_pagamento : ''),
         data_entrega_prevista: order.data_entrega_prevista?.split('T')[0] || '',
         tipo_entrega: order.tipo_entrega || '',
         requer_montagem: (order as any).requer_montagem ?? true,
@@ -1015,7 +1025,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           data_primeiro_vencimento: parcelasPrincipal?.data_vencimento || null,
           condicao_pagamento: null,
           observacao_pagamento: (parcelas.length > 1 || parcelas.some((p) => p.numero_parcelas > 1))
-            ? JSON.stringify(parcelas)
+            ? JSON.stringify({ parcelas, note: formData.observacao_pagamento || '' })
             : (formData.observacao_pagamento || null),
           data_entrega_prevista: formData.data_entrega_prevista || null,
           tipo_entrega: formData.tipo_entrega || null,
