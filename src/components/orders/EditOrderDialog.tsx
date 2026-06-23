@@ -1015,7 +1015,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           data_primeiro_vencimento: parcelasPrincipal?.data_vencimento || null,
           condicao_pagamento: null,
           observacao_pagamento: (parcelas.length > 1 || parcelas.some((p) => p.numero_parcelas > 1))
-            ? JSON.stringify(parcelas)
+            ? JSON.stringify({ parcelas, note: formData.observacao_pagamento || '' })
             : (formData.observacao_pagamento || null),
           data_entrega_prevista: formData.data_entrega_prevista || null,
           tipo_entrega: formData.tipo_entrega || null,
