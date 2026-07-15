@@ -1024,9 +1024,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           percentual_forma_2: parcelasSecundaria?.percentual || 0,
           data_primeiro_vencimento: parcelasPrincipal?.data_vencimento || null,
           condicao_pagamento: null,
-          observacao_pagamento: (parcelas.length > 1 || parcelas.some((p) => p.numero_parcelas > 1))
-            ? JSON.stringify({ parcelas, note: formData.observacao_pagamento || '' })
-            : (formData.observacao_pagamento || null),
+          observacao_pagamento: JSON.stringify({ parcelas, note: formData.observacao_pagamento || '' }),
           data_entrega_prevista: formData.data_entrega_prevista || null,
           tipo_entrega: formData.tipo_entrega || null,
           requer_montagem: formData.requer_montagem,
