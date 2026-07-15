@@ -143,6 +143,14 @@ const getPaymentNote = (order: any) => {
 
 const buildPaymentPlan = (order: any, total: number): PaymentPlanRow[] => {
   const parsedPlan = parseStoredPaymentPlan(order?.observacao_pagamento);
+  const getFallbackInstallments = (forma: unknown) => {
+    const key = String(forma || '');
+    if (key === 'boleto') return order?.numero_parcelas_boleto ?? order?.parcelas ?? 1;
+    if (key === 'cartao_credito') return order?.numero_parcelas_cartao ?? order?.parcelas ?? 1;
+    if (key === 'link_pagamento') return order?.numero_parcelas_link ?? order?.parcelas ?? 1;
+    return order?.parcelas ?? 1;
+  };
+
   const rowsSource = parsedPlan && parsedPlan.length > 0
     ? parsedPlan
     : [
@@ -151,14 +159,22 @@ const buildPaymentPlan = (order: any, total: number): PaymentPlanRow[] => {
           forma_pagamento: order?.forma_pagamento,
           percentual: order?.percentual_forma_1 ?? (order?.forma_pagamento ? 100 : 0),
           data_vencimento: order?.data_primeiro_vencimento,
-          numero_parcelas: order?.parcelas || 1,
+          numero_parcelas: getFallbackInstallments(order?.forma_pagamento),
+          carencia_boleto: order?.forma_pagamento === 'boleto' ? order?.carencia_boleto : undefined,
+          antecipacao_automatica: order?.forma_pagamento === 'boleto'
+            ? toNumber(order?.taxa_boleto_valor) > 0
+            : order?.forma_pagamento === 'cartao_credito'
+              ? toNumber(order?.taxa_cartao_valor) > 0
+              : order?.forma_pagamento === 'link_pagamento'
+                ? toNumber(order?.taxa_link_valor) > 0
+                : undefined,
         },
         ...(order?.forma_pagamento_2 || toNumber(order?.percentual_forma_2) > 0 ? [{
           id: '2',
           forma_pagamento: order?.forma_pagamento_2,
           percentual: order?.percentual_forma_2,
           data_vencimento: '',
-          numero_parcelas: 1,
+          numero_parcelas: getFallbackInstallments(order?.forma_pagamento_2),
         }] : []),
       ];
 
@@ -477,12 +493,12 @@ export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExp
   .toolbar button { background: ${primary}; color: #fff; border: none; padding: 10px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
   .toolbar button.secondary { background: #fff; color: #374151; border: 1px solid #d1d5db; }
 
-  @page { size: A4; margin: 10mm; }
+  @page { size: A4; margin: 8mm 10mm; }
   @media print {
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+    html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; width: auto !important; min-height: auto !important; overflow: visible !important; }
     .toolbar { display: none !important; }
-    .page { background: #fff !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; max-width: 100% !important; width: 100% !important; border-radius: 0 !important; font-size: 10px; }
+    .page { display: block !important; visibility: visible !important; background: #fff !important; box-shadow: none !important; margin: 0 auto !important; padding: 0 !important; max-width: 100% !important; width: 100% !important; min-height: auto !important; border-radius: 0 !important; font-size: 10px; overflow: visible !important; }
     .top { padding-bottom: 10px; }
     .brand img { max-height: 44px; }
     .brand .company { font-size: 13px; }
@@ -490,7 +506,7 @@ export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExp
     .pedido-card .num { font-size: 20px; }
     .pedido-card .date { font-size: 10px; }
     .pedido-card .status { font-size: 8px; padding: 2px 7px; margin-top: 4px; }
-    section { margin-top: 12px; page-break-inside: avoid; break-inside: avoid; }
+    section { margin-top: 12px; page-break-inside: auto; break-inside: auto; }
     .section-title { font-size: 9px; margin-bottom: 6px; padding-bottom: 3px; }
     .grid-2 { gap: 6px 18px; }
     .field { font-size: 10px; line-height: 1.3; }
@@ -517,7 +533,7 @@ export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExp
 <body>
   <div class="toolbar">
     <button class="secondary" onclick="window.close()">Fechar</button>
-    <button onclick="window.print()">Salvar PDF / Imprimir</button>
+    <button onclick="printOrder()">Salvar PDF / Imprimir</button>
   </div>
 
   <div class="page">
@@ -647,6 +663,18 @@ export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExp
   </div>
 
   <script>
+    async function printOrder() {
+      try {
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
+        const images = Array.from(document.images || []);
+        await Promise.all(images.map((img) => img.complete ? Promise.resolve() : new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        })));
+      } catch (_) {}
+      window.focus();
+      requestAnimationFrame(() => setTimeout(() => window.print(), 100));
+    }
     window.addEventListener('load', () => { setTimeout(() => window.focus(), 100); });
   </script>
 </body>
@@ -655,6 +683,7 @@ export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExp
     printWindow.document.open();
     printWindow.document.write(html);
     printWindow.document.close();
+    printWindow.focus();
   };
 
   const previewTotal = toNumber(order?.valor_total);
