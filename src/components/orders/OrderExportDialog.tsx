@@ -533,7 +533,7 @@ export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExp
 <body>
   <div class="toolbar">
     <button class="secondary" onclick="window.close()">Fechar</button>
-    <button onclick="window.print()">Salvar PDF / Imprimir</button>
+    <button onclick="printOrder()">Salvar PDF / Imprimir</button>
   </div>
 
   <div class="page">
@@ -663,6 +663,18 @@ export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExp
   </div>
 
   <script>
+    async function printOrder() {
+      try {
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
+        const images = Array.from(document.images || []);
+        await Promise.all(images.map((img) => img.complete ? Promise.resolve() : new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        })));
+      } catch (_) {}
+      window.focus();
+      requestAnimationFrame(() => setTimeout(() => window.print(), 100));
+    }
     window.addEventListener('load', () => { setTimeout(() => window.focus(), 100); });
   </script>
 </body>
