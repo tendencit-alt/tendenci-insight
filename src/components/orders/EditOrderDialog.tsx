@@ -681,7 +681,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const subtotal = items.reduce((sum, item) => sum + item.valor_total, 0);
   const descontoPerc = subtotal * (formData.desconto_percentual / 100);
   const descontoTotal = descontoPerc + Number(formData.desconto_valor || 0);
-  const totalSemTaxa = subtotal - descontoTotal + Number(formData.valor_frete || 0);
+  const acrescimoTotal = Number(formData.acrescimo_valor || 0);
+  const totalSemTaxa = subtotal - descontoTotal + acrescimoTotal + Number(formData.valor_frete || 0);
 
   // Calcular taxa de cartão automaticamente - SOMA de todos os cartões
   const parcelasCartao = parcelas.filter(p => p.forma_pagamento === 'cartao_credito' && p.antecipacao_automatica === true);
