@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LayoutDashboard, DollarSign, TrendingUp, Wallet, AlertTriangle } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
+import { useActiveTenant } from "@/hooks/useActiveTenant";
 
 const fmtBRL = (n: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n || 0);
@@ -34,30 +35,41 @@ function Kpi({
 }
 
 export default function DashboardSimple() {
+  const { activeTenantId } = useActiveTenant();
+
   const { data, isLoading } = useQuery({
-    queryKey: ["dashboard-simple-kpis"],
+    queryKey: ["dashboard-simple-kpis", activeTenantId],
+    enabled: !!activeTenantId,
     queryFn: async () => {
       const start = format(startOfMonth(new Date()), "yyyy-MM-dd");
       const end = format(endOfMonth(new Date()), "yyyy-MM-dd");
       const today = format(new Date(), "yyyy-MM-dd");
+      const tid = activeTenantId as string;
 
       const [ledgerRes, banks, overdue, recvAll] = await Promise.all([
         supabase
           .from("fin_ledger_entries")
           .select("amount, entry_type, type, status, chart_account:fin_chart_accounts(grupo_fluxo)")
+          .eq("tenant_id", tid)
           .in("status", ["PAGO_RECEBIDO", "CONCILIADO"])
           .gte("cash_date", start)
           .lte("cash_date", end),
-        supabase.from("fin_bank_accounts").select("current_balance"),
+        supabase
+          .from("fin_bank_accounts")
+          .select("current_balance")
+          .eq("tenant_id", tid)
+          .eq("active", true),
         supabase
           .from("fin_receivables")
           .select("amount", { count: "exact" })
+          .eq("tenant_id", tid)
           .lt("due_date", today)
-          .neq("status", "received"),
+          .not("status", "in", "(RECEBIDO,PAGO,CANCELADO)"),
         supabase
           .from("fin_receivables")
           .select("amount")
-          .neq("status", "cancelled"),
+          .eq("tenant_id", tid)
+          .neq("status", "CANCELADO"),
       ]);
 
       const sumByFlow = (kind: "ENTRADA" | "SAIDA") =>
