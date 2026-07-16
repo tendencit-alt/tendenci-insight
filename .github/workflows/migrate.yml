@@ -1,0 +1,29 @@
+name: Apply Supabase migrations
+on:
+  push:
+    branches: [main]
+    paths: ['supabase/migrations/**']
+  workflow_dispatch:
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply new migrations
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -c "create table if not exists public._mig_log(name text primary key, ok boolean, err text, at timestamptz default now());"
+          for f in $(ls supabase/migrations/*.sql | sort); do
+            n=$(basename "$f")
+            prev=$(psql "$DB_URL" -tAc "select ok::text from public._mig_log where name='$n'")
+            if [ "$prev" = "true" ]; then continue; fi
+            echo "Aplicando $n"
+            if psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$f"; then
+              psql "$DB_URL" -c "insert into public._mig_log(name, ok) values ('$n', true) on conflict (name) do update set ok=true, err=null, at=now();"
+            else
+              psql "$DB_URL" -c "insert into public._mig_log(name, ok, err) values ('$n', false, 'action failed') on conflict (name) do update set ok=false, at=now();"
+              if [ -z "$prev" ]; then exit 1; fi
+            fi
+          done
