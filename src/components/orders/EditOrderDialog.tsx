@@ -1046,6 +1046,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           observacoes_nf: formData.observacoes || null,
           desconto_percentual: formData.desconto_percentual,
           desconto_valor: formData.desconto_valor,
+          acrescimo_valor: formData.acrescimo_valor || 0,
+          acrescimo_justificativa: formData.acrescimo_justificativa?.trim() || null,
           valor_frete: formData.valor_frete,
           subtotal,
           valor_total: total,
