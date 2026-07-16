@@ -963,6 +963,11 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
       toast.error('O pedido precisa ter ao menos um item. Adicione itens antes de salvar.');
       return;
     }
+    if (Number(formData.acrescimo_valor || 0) > 0 && !formData.acrescimo_justificativa?.trim()) {
+      toast.error('Informe a justificativa do acréscimo');
+      return;
+    }
+
 
     setLoading(true);
     try {
