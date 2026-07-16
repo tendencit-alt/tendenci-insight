@@ -1708,9 +1708,32 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                   <MoneyInput className="w-24 h-8" value={formData.desconto_valor} onChange={(v) => setFormData({ ...formData, desconto_valor: v })} disabled={!isEditable} />
                 </div>
                 <div className="flex items-center gap-2">
+                  <span>Acréscimo (R$):</span>
+                  <MoneyInput className="w-24 h-8" value={formData.acrescimo_valor} onChange={(v) => setFormData({ ...formData, acrescimo_valor: v })} disabled={!isEditable} />
+                </div>
+                {Number(formData.acrescimo_valor || 0) > 0 && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs">Justificativa do acréscimo <span className="text-destructive">*</span></span>
+                    <Textarea
+                      rows={2}
+                      placeholder="Informe o motivo do acréscimo"
+                      value={formData.acrescimo_justificativa}
+                      onChange={(e) => setFormData({ ...formData, acrescimo_justificativa: e.target.value })}
+                      disabled={!isEditable}
+                      className="text-xs"
+                    />
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
                   <span>Frete:</span>
                   <MoneyInput className="w-24 h-8" value={formData.valor_frete} onChange={(v) => setFormData({ ...formData, valor_frete: v })} disabled={!isEditable} />
                 </div>
+                {acrescimoTotal > 0 && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Total Acréscimos:</span>
+                    <span>+{formatCurrency(acrescimoTotal)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-bold text-lg border-t pt-2">
                   <span>Total:</span>
                   <span>{formatCurrency(total)}</span>
