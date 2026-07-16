@@ -177,6 +177,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     observacoes: '',
     desconto_percentual: 0,
     desconto_valor: 0,
+    acrescimo_valor: 0,
+    acrescimo_justificativa: '',
     valor_frete: 0,
   });
 
