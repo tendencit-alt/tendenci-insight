@@ -1232,6 +1232,26 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     />
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="text-xs">Acréscimo (R$):</span>
+                    <MoneyInput
+                      className="h-8 w-full sm:w-24"
+                      value={formData.acrescimo_valor}
+                      onChange={(v) => setFormData({ ...formData, acrescimo_valor: v })}
+                    />
+                  </div>
+                  {Number(formData.acrescimo_valor || 0) > 0 && (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs">Justificativa do acréscimo <span className="text-destructive">*</span></span>
+                      <Textarea
+                        rows={2}
+                        placeholder="Informe o motivo do acréscimo"
+                        value={formData.acrescimo_justificativa}
+                        onChange={(e) => setFormData({ ...formData, acrescimo_justificativa: e.target.value })}
+                        className="text-xs"
+                      />
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <span className="text-xs">Frete:</span>
                     <MoneyInput
                       className="h-8 w-full sm:w-24"
@@ -1243,6 +1263,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     <div className="flex justify-between gap-3 text-muted-foreground">
                       <span>Total Descontos:</span>
                       <span className="text-right">-{formatCurrency(descontoTotal)}</span>
+                    </div>
+                  )}
+                  {acrescimoTotal > 0 && (
+                    <div className="flex justify-between gap-3 text-muted-foreground">
+                      <span>Total Acréscimos:</span>
+                      <span className="text-right">+{formatCurrency(acrescimoTotal)}</span>
                     </div>
                   )}
                   <div className="flex justify-between gap-3 border-t pt-2 text-lg font-bold">
