@@ -5,9 +5,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    // Fail-closed: sem ASAAS_WEBHOOK_SECRET configurado, nenhum payload é aceito.
+    // Configure o mesmo token em Supabase Secrets e no painel de webhooks do Asaas.
     const secret = Deno.env.get("ASAAS_WEBHOOK_SECRET");
     const provided = req.headers.get("asaas-access-token") ?? req.headers.get("Asaas-Access-Token");
-    if (secret && provided !== secret) {
+    if (!secret || provided !== secret) {
       return json({ error: "invalid_signature" }, 401);
     }
 
@@ -81,8 +83,12 @@ Deno.serve(async (req) => {
 
     // audit
     try {
+      // Colunas alinhadas ao schema real de audit_log (event_type/table_name/record_id)
       await admin.from("audit_log").insert({
-        action: `asaas_webhook_${event.event.toLowerCase()}`,
+        event_type: `asaas_webhook_${event.event.toLowerCase()}`,
+        event_source: "asaas_webhook",
+        table_name: "tenant_subscriptions",
+        record_id: subId ?? customerId ?? "-",
         tenant_id: tenantId,
         metadata: { event_id: event.id, raw: event },
       });
