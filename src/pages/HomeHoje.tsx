@@ -81,7 +81,7 @@ export default function HomeHoje() {
         // Saldo em caixa: contas bancárias ativas do tenant
         supabase
           .from("fin_bank_accounts")
-          .select("opening_balance")
+          .select("current_balance")
           .eq("tenant_id", tid)
           .eq("active", true),
         // Contas vencidas (recebíveis) do tenant ativo
@@ -96,7 +96,7 @@ export default function HomeHoje() {
       return {
         revenue: (revenueEntries.data || []).reduce((s, r: any) => s + Math.abs(Number(r.amount || 0)), 0),
         openOrders: openOrders.count || 0,
-        cash: (banks.data || []).reduce((s, b: any) => s + Number(b.opening_balance || 0), 0),
+        cash: (banks.data || []).reduce((s, b: any) => s + Number(b.current_balance || 0), 0),
         overdueCount: overdueReceivables.count || 0,
         overdueAmount: (overdueReceivables.data || []).reduce((s, p: any) => s + Number(p.amount || 0), 0),
       };
