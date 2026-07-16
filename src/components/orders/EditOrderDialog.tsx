@@ -512,6 +512,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         observacoes: order.entrega_observacoes || order.observacoes_internas || order.observacoes_nf || '',
         desconto_percentual: order.desconto_percentual || 0,
         desconto_valor: order.desconto_valor || 0,
+        acrescimo_valor: (order as any).acrescimo_valor || 0,
+        acrescimo_justificativa: (order as any).acrescimo_justificativa || '',
         valor_frete: order.valor_frete || 0,
         transportadora_nome: order.transportadora_nome || '',
         transportadora_cnpj: order.transportadora_cnpj || '',
