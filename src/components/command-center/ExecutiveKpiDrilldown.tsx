@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { format, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import { ArrowRight } from "lucide-react";
 
 export type KpiKey = "cashBalance" | "monthlyResult" | "openOrders" | "overduePayables" | "overdueReceivables" | "goalProgress";
@@ -173,7 +173,7 @@ function DrillRow({ kpiKey, row }: { kpiKey: KpiKey; row: any }) {
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium truncate">{row.description ?? "Sem descrição"}</p>
           <p className="text-[10px] text-muted-foreground">
-            {row.supplier?.name ?? "—"} · venc. {row.due_date ? format(new Date(row.due_date), "dd/MM/yyyy") : "—"}
+            {row.supplier?.name ?? "—"} · venc. {row.due_date ? format(parseISO(row.due_date), "dd/MM/yyyy") : "—"}
           </p>
         </div>
         <Badge variant="destructive" className="text-[10px]">{row.status}</Badge>
@@ -190,7 +190,7 @@ function DrillRow({ kpiKey, row }: { kpiKey: KpiKey; row: any }) {
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium truncate">{row.description ?? "Sem descrição"}</p>
           <p className="text-[10px] text-muted-foreground">
-            {row.customer?.name ?? "—"} · venc. {row.due_date ? format(new Date(row.due_date), "dd/MM/yyyy") : "—"}
+            {row.customer?.name ?? "—"} · venc. {row.due_date ? format(parseISO(row.due_date), "dd/MM/yyyy") : "—"}
           </p>
         </div>
         <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-700 dark:text-amber-400">{row.status}</Badge>
@@ -210,9 +210,9 @@ function DrillRow({ kpiKey, row }: { kpiKey: KpiKey; row: any }) {
         <p className="text-[10px] text-muted-foreground truncate">
           {row.chart_account?.name ? `${row.chart_account.name} · ` : ""}
           {row.cash_date
-            ? `pago ${format(new Date(row.cash_date), "dd/MM/yyyy")}`
+            ? `pago ${format(parseISO(row.cash_date), "dd/MM/yyyy")}`
             : row.competence_date
-            ? `comp. ${format(new Date(row.competence_date), "dd/MM/yyyy")}`
+            ? `comp. ${format(parseISO(row.competence_date), "dd/MM/yyyy")}`
             : ""}
         </p>
       </div>
