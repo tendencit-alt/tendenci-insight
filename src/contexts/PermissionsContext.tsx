@@ -98,7 +98,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
         .from('profiles')
         .select('role, is_owner, profile_type_id, profile_types(name, display_name)')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         console.error('[Permissions] Profile error:', profileError);
@@ -112,6 +112,13 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
           }
         }
         throw profileError;
+      }
+
+      // Perfil não provisionado (0 linhas): não lançar exceção — tratar explicitamente
+      if (!profile) {
+        console.warn('[Permissions] Profile not provisioned for user:', user.id);
+        setPermissions(null);
+        return;
       }
 
       const ownerFlag = profile?.is_owner === true;
@@ -240,7 +247,8 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   }, [user?.id, authLoading, fetchPermissions]);
 
   const hasModuleAccess = useCallback((module: AppModule | string, action: PermissionAction = 'view'): boolean => {
-    if (loading) return true;
+    // Fail-closed durante o loading (alinhado com useCan); menus/guards já tratam loading explicitamente
+    if (loading) return false;
     if (isMaster) return true;
     if (!permissions?.permissions?.length) return false;
 
