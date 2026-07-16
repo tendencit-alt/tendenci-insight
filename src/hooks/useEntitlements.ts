@@ -18,7 +18,8 @@ export interface ResolvedEntitlement {
 /** Carrega o mapa completo de entitlements do tenant atual (cache global). */
 export function useTenantEntitlements() {
   const { profile } = useAuth() as any;
-  const tenantId = profile?.tenant_id as string | undefined;
+  // Tenant ATIVO (mesma regra do useActiveTenant): current_tenant_id tem precedência
+  const tenantId = (profile?.current_tenant_id ?? profile?.tenant_id) as string | undefined;
 
   return useQuery({
     queryKey: ["entitlements", tenantId],
