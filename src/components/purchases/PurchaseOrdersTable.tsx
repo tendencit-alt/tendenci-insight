@@ -1,7 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface PurchaseOrdersTableProps {
@@ -98,7 +98,7 @@ export default function PurchaseOrdersTable({ orders, isLoading, onSelect }: Pur
                 </TableCell>
                 <TableCell className="text-sm">
                   {order.expected_date 
-                    ? format(new Date(order.expected_date), "dd/MM/yyyy", { locale: ptBR })
+                    ? format(parseISO(order.expected_date), "dd/MM/yyyy", { locale: ptBR })
                     : "-"}
                 </TableCell>
                 <TableCell className="text-right font-medium">
