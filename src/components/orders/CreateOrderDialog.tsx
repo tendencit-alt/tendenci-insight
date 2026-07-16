@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { format as formatDateFns, addMonths } from 'date-fns';
 import { usePaymentLinkRates } from '@/hooks/usePaymentLinkRates';
 import { useFinanceRates } from '@/hooks/useFinanceRates';
 import { useStrategicResourceDefaults } from '@/hooks/useStrategicResourceDefaults';
@@ -341,15 +342,16 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
   // Adicionar nova forma de pagamento
   const adicionarFormaPagamento = () => {
-    const hoje = new Date();
-    hoje.setMonth(hoje.getMonth() + parcelas.length);
+    // addMonths evita overflow de fim de mês (31/01 + 1 mês = 03/03) e
+    // format usa timezone local (toISOString gerava dia seguinte após 21h BRT)
+    const vencimento = addMonths(new Date(), parcelas.length);
     setParcelas([
       ...parcelas,
       {
         id: String(Date.now()),
         forma_pagamento: '',
         percentual: 0,
-        data_vencimento: hoje.toISOString().split('T')[0],
+        data_vencimento: formatDateFns(vencimento, 'yyyy-MM-dd'),
         numero_parcelas: 1
       }
     ]);
@@ -1321,7 +1323,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                       if (checked) {
                         const amanha = new Date();
                         amanha.setDate(amanha.getDate() + 1);
-                        newParcelas[index].data_vencimento = amanha.toISOString().split('T')[0];
+                        newParcelas[index].data_vencimento = formatDateFns(amanha, 'yyyy-MM-dd');
                       }
                       setParcelas(newParcelas);
                     };
@@ -1353,7 +1355,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                                     newParcelas[index].antecipacao_automatica = false;
                                   }
                                   if (v === 'link_pagamento') {
-                                    newParcelas[index].data_vencimento = new Date().toISOString().split('T')[0];
+                                    newParcelas[index].data_vencimento = formatDateFns(new Date(), 'yyyy-MM-dd');
                                   }
                                   setParcelas(newParcelas);
                                 }}
@@ -1520,7 +1522,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                                   newParcelas[index].antecipacao_automatica = false;
                                 }
                                 if (v === 'link_pagamento') {
-                                  newParcelas[index].data_vencimento = new Date().toISOString().split('T')[0];
+                                  newParcelas[index].data_vencimento = formatDateFns(new Date(), 'yyyy-MM-dd');
                                 }
                                 setParcelas(newParcelas);
                               }}
