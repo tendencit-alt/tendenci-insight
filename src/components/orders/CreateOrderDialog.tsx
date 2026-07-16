@@ -858,6 +858,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           observacoes_nf: formData.observacoes,
           desconto_percentual: formData.desconto_percentual,
           desconto_valor: formData.desconto_valor,
+          acrescimo_valor: formData.acrescimo_valor || 0,
+          acrescimo_justificativa: formData.acrescimo_justificativa?.trim() || null,
           valor_frete: formData.valor_frete,
           subtotal,
           valor_total: total,
