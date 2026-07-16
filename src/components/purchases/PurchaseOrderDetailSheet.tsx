@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Edit, CheckCircle, XCircle, Package, Trash2, Copy, Printer, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -186,13 +186,13 @@ export default function PurchaseOrderDetailSheet({ order, open, onOpenChange, on
                   {order.expected_date && (
                     <div>
                       <span className="text-muted-foreground">Previsão:</span>
-                      <span className="ml-2">{format(new Date(order.expected_date), "dd/MM/yyyy", { locale: ptBR })}</span>
+                      <span className="ml-2">{format(parseISO(order.expected_date), "dd/MM/yyyy", { locale: ptBR })}</span>
                     </div>
                   )}
                   {order.received_date && (
                     <div>
                       <span className="text-muted-foreground">Recebido:</span>
-                      <span className="ml-2">{format(new Date(order.received_date), "dd/MM/yyyy", { locale: ptBR })}</span>
+                      <span className="ml-2">{format(parseISO(order.received_date), "dd/MM/yyyy", { locale: ptBR })}</span>
                     </div>
                   )}
                   {order.payment_terms && (
