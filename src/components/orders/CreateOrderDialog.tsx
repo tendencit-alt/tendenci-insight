@@ -720,6 +720,10 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         toast.error('Todos os itens precisam ter um projeto definido');
         return;
       }
+      if (Number(formData.acrescimo_valor || 0) > 0 && !formData.acrescimo_justificativa?.trim()) {
+        toast.error('Informe a justificativa do acréscimo');
+        return;
+      }
       setActiveTab('pagamento');
     } else if (activeTab === 'pagamento') {
       if (allMissingStrategicResponsibles.length > 0) {
