@@ -245,6 +245,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     observacoes: '',
     desconto_percentual: 0,
     desconto_valor: 0,
+    acrescimo_valor: 0,
+    acrescimo_justificativa: '',
     valor_frete: 0,
     transportadora_nome: '',
     transportadora_cnpj: '',
@@ -510,6 +512,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         observacoes: order.entrega_observacoes || order.observacoes_internas || order.observacoes_nf || '',
         desconto_percentual: order.desconto_percentual || 0,
         desconto_valor: order.desconto_valor || 0,
+        acrescimo_valor: (order as any).acrescimo_valor || 0,
+        acrescimo_justificativa: (order as any).acrescimo_justificativa || '',
         valor_frete: order.valor_frete || 0,
         transportadora_nome: order.transportadora_nome || '',
         transportadora_cnpj: order.transportadora_cnpj || '',
@@ -677,7 +681,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const subtotal = items.reduce((sum, item) => sum + item.valor_total, 0);
   const descontoPerc = subtotal * (formData.desconto_percentual / 100);
   const descontoTotal = descontoPerc + Number(formData.desconto_valor || 0);
-  const totalSemTaxa = subtotal - descontoTotal + Number(formData.valor_frete || 0);
+  const acrescimoTotal = Number(formData.acrescimo_valor || 0);
+  const totalSemTaxa = subtotal - descontoTotal + acrescimoTotal + Number(formData.valor_frete || 0);
 
   // Calcular taxa de cartão automaticamente - SOMA de todos os cartões
   const parcelasCartao = parcelas.filter(p => p.forma_pagamento === 'cartao_credito' && p.antecipacao_automatica === true);
@@ -958,6 +963,11 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
       toast.error('O pedido precisa ter ao menos um item. Adicione itens antes de salvar.');
       return;
     }
+    if (Number(formData.acrescimo_valor || 0) > 0 && !formData.acrescimo_justificativa?.trim()) {
+      toast.error('Informe a justificativa do acréscimo');
+      return;
+    }
+
 
     setLoading(true);
     try {
@@ -1041,6 +1051,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           observacoes_nf: formData.observacoes || null,
           desconto_percentual: formData.desconto_percentual,
           desconto_valor: formData.desconto_valor,
+          acrescimo_valor: formData.acrescimo_valor || 0,
+          acrescimo_justificativa: formData.acrescimo_justificativa?.trim() || null,
           valor_frete: formData.valor_frete,
           subtotal,
           valor_total: total,
@@ -1701,9 +1713,32 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                   <MoneyInput className="w-24 h-8" value={formData.desconto_valor} onChange={(v) => setFormData({ ...formData, desconto_valor: v })} disabled={!isEditable} />
                 </div>
                 <div className="flex items-center gap-2">
+                  <span>Acréscimo (R$):</span>
+                  <MoneyInput className="w-24 h-8" value={formData.acrescimo_valor} onChange={(v) => setFormData({ ...formData, acrescimo_valor: v })} disabled={!isEditable} />
+                </div>
+                {Number(formData.acrescimo_valor || 0) > 0 && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs">Justificativa do acréscimo <span className="text-destructive">*</span></span>
+                    <Textarea
+                      rows={2}
+                      placeholder="Informe o motivo do acréscimo"
+                      value={formData.acrescimo_justificativa}
+                      onChange={(e) => setFormData({ ...formData, acrescimo_justificativa: e.target.value })}
+                      disabled={!isEditable}
+                      className="text-xs"
+                    />
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
                   <span>Frete:</span>
                   <MoneyInput className="w-24 h-8" value={formData.valor_frete} onChange={(v) => setFormData({ ...formData, valor_frete: v })} disabled={!isEditable} />
                 </div>
+                {acrescimoTotal > 0 && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Total Acréscimos:</span>
+                    <span>+{formatCurrency(acrescimoTotal)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-bold text-lg border-t pt-2">
                   <span>Total:</span>
                   <span>{formatCurrency(total)}</span>

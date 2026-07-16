@@ -177,6 +177,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     observacoes: '',
     desconto_percentual: 0,
     desconto_valor: 0,
+    acrescimo_valor: 0,
+    acrescimo_justificativa: '',
     valor_frete: 0,
   });
 
@@ -504,7 +506,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const subtotal = items.reduce((sum, item) => sum + item.valor_total, 0);
   const descontoPercentual = subtotal * (formData.desconto_percentual / 100);
   const descontoTotal = descontoPercentual + Number(formData.desconto_valor || 0);
-  const totalSemTaxa = subtotal - descontoTotal + Number(formData.valor_frete || 0);
+  const acrescimoTotal = Number(formData.acrescimo_valor || 0);
+  const totalSemTaxa = subtotal - descontoTotal + acrescimoTotal + Number(formData.valor_frete || 0);
   
   // Calcular taxa de cartão automaticamente - SOMA de todos os cartões COM antecipação automática
   const parcelasCartao = parcelas.filter(p => p.forma_pagamento === 'cartao_credito' && p.antecipacao_automatica === true);
@@ -717,6 +720,10 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         toast.error('Todos os itens precisam ter um projeto definido');
         return;
       }
+      if (Number(formData.acrescimo_valor || 0) > 0 && !formData.acrescimo_justificativa?.trim()) {
+        toast.error('Informe a justificativa do acréscimo');
+        return;
+      }
       setActiveTab('pagamento');
     } else if (activeTab === 'pagamento') {
       if (allMissingStrategicResponsibles.length > 0) {
@@ -855,6 +862,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           observacoes_nf: formData.observacoes,
           desconto_percentual: formData.desconto_percentual,
           desconto_valor: formData.desconto_valor,
+          acrescimo_valor: formData.acrescimo_valor || 0,
+          acrescimo_justificativa: formData.acrescimo_justificativa?.trim() || null,
           valor_frete: formData.valor_frete,
           subtotal,
           valor_total: total,
@@ -1227,6 +1236,26 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     />
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="text-xs">Acréscimo (R$):</span>
+                    <MoneyInput
+                      className="h-8 w-full sm:w-24"
+                      value={formData.acrescimo_valor}
+                      onChange={(v) => setFormData({ ...formData, acrescimo_valor: v })}
+                    />
+                  </div>
+                  {Number(formData.acrescimo_valor || 0) > 0 && (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs">Justificativa do acréscimo <span className="text-destructive">*</span></span>
+                      <Textarea
+                        rows={2}
+                        placeholder="Informe o motivo do acréscimo"
+                        value={formData.acrescimo_justificativa}
+                        onChange={(e) => setFormData({ ...formData, acrescimo_justificativa: e.target.value })}
+                        className="text-xs"
+                      />
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <span className="text-xs">Frete:</span>
                     <MoneyInput
                       className="h-8 w-full sm:w-24"
@@ -1238,6 +1267,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     <div className="flex justify-between gap-3 text-muted-foreground">
                       <span>Total Descontos:</span>
                       <span className="text-right">-{formatCurrency(descontoTotal)}</span>
+                    </div>
+                  )}
+                  {acrescimoTotal > 0 && (
+                    <div className="flex justify-between gap-3 text-muted-foreground">
+                      <span>Total Acréscimos:</span>
+                      <span className="text-right">+{formatCurrency(acrescimoTotal)}</span>
                     </div>
                   )}
                   <div className="flex justify-between gap-3 border-t pt-2 text-lg font-bold">
