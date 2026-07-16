@@ -245,6 +245,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     observacoes: '',
     desconto_percentual: 0,
     desconto_valor: 0,
+    acrescimo_valor: 0,
+    acrescimo_justificativa: '',
     valor_frete: 0,
     transportadora_nome: '',
     transportadora_cnpj: '',
