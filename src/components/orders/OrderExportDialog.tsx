@@ -371,10 +371,12 @@ export function OrderExportDialog({ order, items, open, onOpenChange }: OrderExp
     const descontoManualValor = toNumber(order.desconto_valor);
     const descontoValor = descontoManualValor + descontoPercentualValor;
     const frete = toNumber(order.valor_frete);
+    const acrescimoValor = toNumber((order as any).acrescimo_valor);
+    const acrescimoJustificativa = ((order as any).acrescimo_justificativa || '').toString().trim();
     const total = order.valor_total !== null && order.valor_total !== undefined
       ? toNumber(order.valor_total)
-      : subtotal - descontoValor + frete;
-    const totalCalculado = subtotal - descontoValor + frete;
+      : subtotal - descontoValor + acrescimoValor + frete;
+    const totalCalculado = subtotal - descontoValor + acrescimoValor + frete;
     const paymentPlan = buildPaymentPlan(order, total);
     const paymentTotal = paymentPlan.reduce((sum, p) => sum + p.valor, 0);
     const paymentDiff = paymentTotal - total;
