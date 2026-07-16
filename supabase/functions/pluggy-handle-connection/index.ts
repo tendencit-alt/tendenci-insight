@@ -25,8 +25,9 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { data: claims } = await supabase.auth.getClaims(authHeader.replace("Bearer ", ""));
-    const userId = claims?.claims?.sub;
+    // getUser em vez de getClaims: getClaims não existe no supabase-js@2.45.0
+    const { data: userData } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+    const userId = userData?.user?.id;
     if (!userId) return json({ error: "Unauthorized" }, 401);
 
     const { data: tenantId } = await supabase.rpc("get_user_tenant_id");
