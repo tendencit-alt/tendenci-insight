@@ -13010,6 +13010,8 @@ export type Database = {
       }
       orders: {
         Row: {
+          acrescimo_justificativa: string | null
+          acrescimo_valor: number
           approved_by: string | null
           architect_id: string | null
           carencia_boleto: number | null
@@ -13106,6 +13108,8 @@ export type Database = {
           vendedor_id: string | null
         }
         Insert: {
+          acrescimo_justificativa?: string | null
+          acrescimo_valor?: number
           approved_by?: string | null
           architect_id?: string | null
           carencia_boleto?: number | null
@@ -13202,6 +13206,8 @@ export type Database = {
           vendedor_id?: string | null
         }
         Update: {
+          acrescimo_justificativa?: string | null
+          acrescimo_valor?: number
           approved_by?: string | null
           architect_id?: string | null
           carencia_boleto?: number | null
